@@ -1,0 +1,6 @@
+*.bak
+*.backup
+*.pre-stable
+.DS_Store
+._*
+build/
