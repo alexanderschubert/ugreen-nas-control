@@ -101,6 +101,9 @@ func ReadSensors() Sensors {
 		}
 	}
 
+	// hwmon numbers follow probe order; nvme0, nvme1, ... read better.
+	sort.SliceStable(s.NVMe, func(i, j int) bool { return s.NVMe[i].Name < s.NVMe[j].Name })
+
 	// Without a package sensor the hottest core counts.
 	if s.CPU == nil {
 		for _, c := range s.CPUCores {
