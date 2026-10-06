@@ -1,0 +1,70 @@
+name: Tag release
+
+# The .plg downloads its files from the tag v<version> and the ugreen-nas-fan
+# binary from the release of that tag, so both have to exist as soon as a new
+# version reaches main.
+on:
+  push:
+    branches: [main]
+    paths: [plugin/ugreen-nas-control.plg]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read the plugin version
+        id: version
+        run: |
+          version="$(sed -n 's/^<!ENTITY version *"\([^"]*\)">.*/\1/p' plugin/ugreen-nas-control.plg)"
+          if [ -z "$version" ]; then
+            echo "::error::No version entity found in plugin/ugreen-nas-control.plg"
+            exit 1
+          fi
+          echo "tag=v${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Create the tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "${TAG} already exists."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "UGREEN NAS Control ${TAG#v}"
+          git push origin "${TAG}"
+          echo "Created ${TAG}."
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: fan/go.mod
+
+      - name: Build ugreen-nas-fan from the tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git checkout "${TAG}"
+          cd fan
+          go test ./...
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o ugreen-nas-fan .
+
+      - name: Create the release with the binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" fan/ugreen-nas-fan --clobber
+          else
+            gh release create "${TAG}" fan/ugreen-nas-fan --title "UGREEN NAS Control ${TAG#v}" --notes "Plugin version ${TAG#v}. Install: https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/plugin/ugreen-nas-control.plg"
+          fi

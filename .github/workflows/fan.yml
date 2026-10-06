@@ -1,0 +1,33 @@
+name: Fan tool
+
+on:
+  push:
+    branches: [main]
+    paths: [fan/**, .github/workflows/fan.yml]
+  pull_request:
+    paths: [fan/**, .github/workflows/fan.yml]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fan
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: fan/go.mod
+
+      - run: gofmt -d . | tee /dev/stderr | (! read)
+      - run: go vet ./...
+      - run: go test ./...
+
+      # Static binary: runs on every Unraid kernel without libraries.
+      - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o ugreen-nas-fan .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ugreen-nas-fan
+          path: fan/ugreen-nas-fan
