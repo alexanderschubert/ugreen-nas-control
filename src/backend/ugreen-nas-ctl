@@ -1,0 +1,83 @@
+#!/bin/bash
+#
+# UGREEN NAS Control: starts and stops the fan daemon (ugreen-nas-fan daemon),
+# which drives the fans after the curves in fan.cfg.
+#
+set -u
+
+HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+FAN_TOOL="${UGREEN_NAS_FAN:-$HERE/ugreen-nas-fan}"
+PIDFILE="${UGREEN_FAN_PIDFILE:-/var/run/ugreen-nas-control.pid}"
+ERRLOG="${UGREEN_FAN_ERRLOG:-/var/run/ugreen-nas-control.err}"
+
+usage() {
+    cat <<USAGE
+Usage:
+  ugreen-nas-ctl start|stop|restart|status   fan daemon (also runs in mode "bios",
+                                             where it only watches)
+USAGE
+}
+
+running() {
+    [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null
+}
+
+start() {
+    local probe
+
+    if running; then
+        echo "Fan daemon is already running."
+        return 0
+    fi
+
+    if ! probe="$("$FAN_TOOL" probe 2>&1)"; then
+        echo "ERROR: $(printf '%s' "$probe" | sed -n 's/.*"error": "\(.*\)".*/\1/p' | grep . || echo "$probe")" >&2
+        return 1
+    fi
+
+    setsid "$FAN_TOOL" daemon </dev/null >/dev/null 2>"$ERRLOG" &
+    echo $! > "$PIDFILE"
+
+    # A daemon that cannot start (no BIOS snapshot, no ports) ends at once.
+    sleep 0.5
+    if ! running; then
+        rm -f "$PIDFILE"
+        echo "ERROR: Fan daemon did not start: $(head -n 1 "$ERRLOG" 2>/dev/null)" >&2
+        return 1
+    fi
+
+    echo "Fan daemon started."
+}
+
+# The daemon writes the BIOS fan settings back on SIGTERM; wait for that.
+stop() {
+    local pid
+    local i
+
+    if running; then
+        pid="$(cat "$PIDFILE")"
+        kill "$pid" 2>/dev/null
+        for i in $(seq 1 50); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.1
+        done
+    fi
+    rm -f "$PIDFILE"
+
+    echo "Fan daemon stopped."
+}
+
+case "${1:-}" in
+    start) start ;;
+    stop) stop ;;
+    restart) stop >/dev/null; start ;;
+    status)
+        if running; then
+            echo "running (pid $(cat "$PIDFILE"))"
+        else
+            echo "stopped"
+            exit 3
+        fi
+        ;;
+    *) usage; exit 2 ;;
+esac

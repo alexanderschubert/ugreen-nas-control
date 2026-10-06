@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE PLUGIN [
+<!ENTITY name      "ugreen-nas-control">
+<!ENTITY author    "Alexander Schubert">
+<!ENTITY version   "0.1.0">
+<!ENTITY launch    "Settings/UGREENNASControl">
+<!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
+<!ENTITY gitURL    "&repo;/v&version;">
+<!ENTITY releaseURL "https://github.com/alexanderschubert/ugreen-nas-control/releases/download/v&version;">
+<!ENTITY pluginURL "&repo;/main/plugin/ugreen-nas-control.plg">
+<!ENTITY bootDIR   "/boot/config/plugins/&name;">
+<!ENTITY srcDIR    "&bootDIR;/&version;">
+]>
+
+<PLUGIN
+  name="&name;"
+  author="&author;"
+  version="&version;"
+  launch="&launch;"
+  pluginURL="&pluginURL;"
+  icon="ugreen-nas-control.png"
+  min="7.0.0"
+  support="https://github.com/alexanderschubert/ugreen-nas-control/issues"
+>
+
+<CHANGES>
+
+### 0.1.0
+- First version: system info, temperatures (CPU, mainboard, fan controller, NVMe, disks) and fan control for the DXP6800 Pro
+- Fan modes BIOS, Quiet, Standard, Performance, Full speed and custom curves for the CPU fan and the case fans
+- Emergency rules, minimum speed, Unraid notification for a stopped fan, BIOS values back when stopped or removed
+- Dashboard tile, English and German interface
+
+</CHANGES>
+
+<!-- Plugin files, cached on the boot device (/boot: USB flash drive or SSD) per version so a reboot needs no network -->
+
+<FILE Name="&srcDIR;/backend/ugreen-nas-ctl">
+<URL>&gitURL;/src/backend/ugreen-nas-ctl</URL>
+</FILE>
+
+<!-- Static binary built by the "Tag release" workflow and attached to the release -->
+<FILE Name="&srcDIR;/backend/ugreen-nas-fan">
+<URL>&releaseURL;/ugreen-nas-fan</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/api.php">
+<URL>&gitURL;/src/web/api.php</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/UGREENNASControl.page">
+<URL>&gitURL;/src/web/UGREENNASControl.page</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/UGREENNASDashboard.page">
+<URL>&gitURL;/src/web/UGREENNASDashboard.page</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/images/ugreen-nas-control.png">
+<URL>&gitURL;/src/web/images/ugreen-nas-control.png</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/icons/ugreen-nas-control.png">
+<URL>&gitURL;/src/web/icons/ugreen-nas-control.png</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/include/lang.php">
+<URL>&gitURL;/src/web/include/lang.php</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/css/app.css">
+<URL>&gitURL;/src/web/css/app.css</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/js/i18n.js">
+<URL>&gitURL;/src/web/js/i18n.js</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/js/app.js">
+<URL>&gitURL;/src/web/js/app.js</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/js/dash.js">
+<URL>&gitURL;/src/web/js/dash.js</URL>
+</FILE>
+
+<!-- ========================================================= -->
+<!-- INSTALL -->
+<!-- ========================================================= -->
+
+<!-- Entities are not expanded inside CDATA, so the scripts get them as variables first. -->
+<FILE Run="/bin/bash">
+<INLINE>
+NAME="&name;"
+VERSION="&version;"
+BOOT_DIR="&bootDIR;"
+SRC_DIR="&srcDIR;"
+<![CDATA[
+
+PLUGIN_DIR="/usr/local/emhttp/plugins/${NAME}"
+
+log() {
+    echo "[UGREEN NAS Control] $1"
+}
+
+log "Installing ${VERSION} on kernel $(uname -r)"
+
+# The daemon of the previous version hands the fans back to the BIOS values first.
+if [ -x "${PLUGIN_DIR}/backend/ugreen-nas-ctl" ]; then
+    "${PLUGIN_DIR}/backend/ugreen-nas-ctl" stop >/dev/null 2>&1
+fi
+
+#
+# Web interface and backend
+#
+
+rm -rf "${PLUGIN_DIR}"
+mkdir -p "${PLUGIN_DIR}"
+cp -r "${SRC_DIR}/." "${PLUGIN_DIR}/"
+chmod 755 "${PLUGIN_DIR}/backend/ugreen-nas-ctl" "${PLUGIN_DIR}/backend/ugreen-nas-fan"
+
+#
+# Fan control: the IT8613E is reached through /dev/port, no kernel module.
+# This also runs at boot.
+#
+
+if "${PLUGIN_DIR}/backend/ugreen-nas-fan" probe >/dev/null 2>&1; then
+    "${PLUGIN_DIR}/backend/ugreen-nas-ctl" start 2>&1 | sed 's/^/[UGREEN NAS Control] /'
+else
+    log "WARNING: No supported fan controller found; only system info and temperatures are available."
+fi
+
+#
+# Drop cached files of older versions
+#
+
+for dir in "${BOOT_DIR}"/*/; do
+    [ -d "${dir}" ] || continue
+    case "$(basename "${dir}")" in
+        "${VERSION}") ;;
+        *) rm -rf "${dir}" ;;
+    esac
+done
+
+log "Installation complete."
+
+]]>
+</INLINE>
+</FILE>
+
+<!-- ========================================================= -->
+<!-- REMOVE -->
+<!-- ========================================================= -->
+
+<FILE Run="/bin/bash" Method="remove">
+<INLINE>
+NAME="&name;"
+BOOT_DIR="&bootDIR;"
+<![CDATA[
+
+PLUGIN_DIR="/usr/local/emhttp/plugins/${NAME}"
+
+log() {
+    echo "[UGREEN NAS Control] $1"
+}
+
+# Stopping writes the BIOS fan values back.
+if [ -x "${PLUGIN_DIR}/backend/ugreen-nas-ctl" ]; then
+    "${PLUGIN_DIR}/backend/ugreen-nas-ctl" stop >/dev/null 2>&1
+fi
+
+rm -rf "${PLUGIN_DIR}"
+rm -rf "${BOOT_DIR}"
+rm -f /var/run/ugreen-nas-control.*
+
+log "Removed, the fans run at the BIOS values again."
+
+]]>
+</INLINE>
+</FILE>
+
+</PLUGIN>

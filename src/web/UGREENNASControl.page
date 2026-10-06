@@ -1,0 +1,246 @@
+Menu="Utilities"
+Title="UGREEN NAS Control"
+Icon="ugreen-nas-control.png"
+Markdown="false"
+---
+<?php
+$unc_var = is_file('/var/local/emhttp/var.ini')
+    ? parse_ini_file('/var/local/emhttp/var.ini')
+    : [];
+
+require_once '/usr/local/emhttp/plugins/ugreen-nas-control/include/lang.php';
+[$unc_lang, $unc_lang_setting] = unc_language();
+
+$unc_version = preg_match(
+    '/ENTITY\s+version\s+"([^"]+)"/',
+    (string)@file_get_contents('/boot/config/plugins/ugreen-nas-control.plg'),
+    $unc_match
+) ? $unc_match[1] : 'dev';
+?>
+
+<script>
+window.UGREEN_NAS_CSRF_TOKEN = <?= json_encode($unc_var['csrf_token'] ?? '') ?>;
+window.UGREEN_NAS_VERSION = <?= json_encode($unc_version) ?>;
+window.UGREEN_NAS_LANG = <?= json_encode($unc_lang) ?>;
+window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
+</script>
+
+<link rel="stylesheet" href="<?autov('/plugins/ugreen-nas-control/css/app.css')?>">
+
+<div class="unc" id="unc">
+
+<aside class="unc-side">
+
+    <div class="unc-brand">
+        <img class="unc-brand-icon" src="/plugins/ugreen-nas-control/images/ugreen-nas-control.png" alt="">
+        <div>
+            <strong>UGREEN NAS Control</strong>
+            <small data-model>UGREEN NAS</small>
+        </div>
+    </div>
+
+    <nav class="unc-nav">
+        <button type="button" class="active" data-nav="overview"><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.overview">Übersicht</span></button>
+        <button type="button" data-nav="curves"><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
+        <button type="button" data-nav="safety"><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
+        <button type="button" data-nav="about"><span class="unc-ico" data-unc-icon="info"></span><span data-i18n="nav.about">Über</span></button>
+    </nav>
+
+</aside>
+
+<main class="unc-main">
+
+<header class="unc-head">
+    <div>
+        <h1>UGREEN NAS Control <span class="unc-badge" id="unc-online" data-i18n="head.connecting">Verbinde…</span></h1>
+        <p data-i18n-html="head.subtitle">Systeminfo, Temperaturen und Lüfter deines <span data-model>UGREEN NAS</span> direkt in Unraid.</p>
+    </div>
+    <div class="unc-banner" id="unc-banner" hidden>
+        <span class="unc-banner-icon"><span class="unc-ico" data-unc-icon="check"></span></span>
+        <div>
+            <strong data-i18n="banner.connected">Lüfter-Chip erkannt</strong>
+            <small id="unc-chip">IT8613E</small>
+        </div>
+    </div>
+</header>
+
+<div class="unc-warning" id="unc-chip-error" hidden>
+    <span class="unc-ico" data-unc-icon="alert"></span>
+    <div>
+        <strong data-i18n="warn.chip">Kein Lüfter-Chip gefunden.</strong>
+        <span id="unc-chip-error-text"></span>
+    </div>
+</div>
+
+<div class="unc-warning" id="unc-failsafe" hidden>
+    <span class="unc-ico" data-unc-icon="alert"></span>
+    <div>
+        <strong data-i18n="warn.failsafe">Notfall: alle Lüfter laufen auf 100 %.</strong>
+        <span id="unc-failsafe-text"></span>
+    </div>
+</div>
+
+<div class="unc-warning" id="unc-stalled" hidden>
+    <span class="unc-ico" data-unc-icon="alert"></span>
+    <div>
+        <strong data-i18n="warn.stalled">Ein Lüfter dreht sich nicht.</strong>
+        <span id="unc-stalled-text"></span>
+    </div>
+</div>
+
+<!-- ================= Übersicht ================= -->
+
+<section class="unc-view active" data-view="overview">
+    <div class="unc-grid">
+        <div class="unc-col">
+            <article class="unc-card">
+                <h2 data-i18n="fans.title">Lüfter</h2>
+                <div class="unc-fans" id="unc-fans"></div>
+                <p class="unc-muted unc-follow" id="unc-follow"></p>
+            </article>
+
+            <article class="unc-card">
+                <h2 data-i18n="mode.title">Lüftermodus</h2>
+                <div class="unc-effects" id="unc-modes"></div>
+                <p class="unc-hint" id="unc-mode-hint"></p>
+            </article>
+        </div>
+
+        <div class="unc-col">
+            <article class="unc-card">
+                <h2 data-i18n="temps.title">Temperaturen</h2>
+                <div class="unc-temps" id="unc-temps"></div>
+            </article>
+
+            <article class="unc-card">
+                <h2 data-i18n="system.title">System</h2>
+                <dl class="unc-facts" id="unc-system"></dl>
+            </article>
+        </div>
+    </div>
+</section>
+
+<!-- ================= Lüfterkurven ================= -->
+
+<section class="unc-view" data-view="curves">
+    <article class="unc-card">
+        <h2 data-i18n="curves.title">Lüfterkurven</h2>
+        <p class="unc-muted" data-i18n="curves.intro">Zwischen den Punkten steigt die Drehzahl gleichmäßig. Beim Speichern wechselt der Lüftermodus auf „Eigene Kurve“.</p>
+
+        <div class="unc-curves">
+            <div class="unc-curve" data-curve="cpu">
+                <h3 data-i18n="curves.cpu">CPU-Lüfter</h3>
+                <small class="unc-muted" data-i18n="curves.cpu_source">folgt der CPU-Temperatur</small>
+                <svg class="unc-chart" viewBox="0 0 320 200" data-chart></svg>
+                <div class="unc-points" data-points></div>
+            </div>
+            <div class="unc-curve" data-curve="case">
+                <h3 data-i18n="curves.case">Gehäuselüfter</h3>
+                <small class="unc-muted" data-i18n="curves.case_source">folgen der wärmsten Festplatte oder NVMe</small>
+                <svg class="unc-chart" viewBox="0 0 320 200" data-chart></svg>
+                <div class="unc-points" data-points></div>
+            </div>
+        </div>
+
+        <div class="unc-form unc-curve-from">
+            <label for="unc-curve-preset" data-i18n="curves.load">Vorlage laden</label>
+            <div class="unc-inline">
+                <select id="unc-curve-preset">
+                    <option value="quiet" data-i18n="mode.quiet">Leise</option>
+                    <option value="standard" data-i18n="mode.standard" selected>Standard</option>
+                    <option value="performance" data-i18n="mode.performance">Leistung</option>
+                </select>
+                <button type="button" class="unc-btn" id="unc-curve-load"><span class="unc-ico" data-unc-icon="reset"></span><span data-i18n="curves.load_button">Übernehmen</span></button>
+            </div>
+        </div>
+
+        <div class="unc-actions">
+            <button type="button" class="unc-btn primary" id="unc-curves-save"><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="common.save">Speichern</span></button>
+        </div>
+    </article>
+</section>
+
+<!-- ================= Sicherheit ================= -->
+
+<section class="unc-view" data-view="safety">
+    <article class="unc-card">
+        <h2 data-i18n="safety.title">Sicherheit</h2>
+        <p class="unc-muted" data-i18n="safety.intro">Grenzen, die in jedem Lüftermodus außer „BIOS“ gelten.</p>
+
+        <div class="unc-form">
+            <label for="unc-min" data-i18n="safety.min">Mindestdrehzahl</label>
+            <div class="unc-inline">
+                <input type="range" id="unc-min" min="10" max="60" step="1" value="25">
+                <output class="unc-value" id="unc-min-value">25 %</output>
+            </div>
+
+            <label for="unc-cpu-crit" data-i18n="safety.cpu_crit">CPU-Notfall ab</label>
+            <div class="unc-inline">
+                <input type="range" id="unc-cpu-crit" min="70" max="105" step="1" value="90">
+                <output class="unc-value" id="unc-cpu-crit-value">90 °C</output>
+            </div>
+
+            <label for="unc-disk-crit" data-i18n="safety.disk_crit">Festplatten-Notfall ab</label>
+            <div class="unc-inline">
+                <input type="range" id="unc-disk-crit" min="40" max="70" step="1" value="55">
+                <output class="unc-value" id="unc-disk-crit-value">55 °C</output>
+            </div>
+
+            <label for="unc-nvme-offset" data-i18n="safety.nvme_offset">NVMe-Abzug</label>
+            <div class="unc-inline">
+                <input type="range" id="unc-nvme-offset" min="0" max="40" step="1" value="15">
+                <output class="unc-value" id="unc-nvme-offset-value">15 °C</output>
+            </div>
+        </div>
+
+        <p class="unc-hint" data-i18n="safety.hint">Wird die CPU- oder eine Festplatten-Grenze erreicht oder ist die CPU-Temperatur nicht lesbar, laufen alle Lüfter auf 100 %. NVMe-SSDs vertragen mehr Wärme als Festplatten; für die Gehäuselüfter zählen sie deshalb mit diesem Abzug.</p>
+
+        <label class="unc-switch-row">
+            <span class="unc-switch">
+                <input type="checkbox" id="unc-stall-notify">
+                <span></span>
+            </span>
+            <span>
+                <strong data-i18n="safety.stall">Unraid-Benachrichtigung, wenn ein Lüfter steht</strong>
+                <small data-i18n="safety.stall_hint">Wenn ein angesteuerter Lüfter 16 Sekunden lang 0 U/min meldet.</small>
+            </span>
+        </label>
+
+        <div class="unc-actions">
+            <button type="button" class="unc-btn primary" id="unc-safety-save"><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="common.save">Speichern</span></button>
+        </div>
+    </article>
+</section>
+
+<!-- ================= Über ================= -->
+
+<section class="unc-view" data-view="about">
+    <article class="unc-card">
+        <h2 data-i18n="about.title">Über</h2>
+        <dl class="unc-facts">
+            <dt>Plugin</dt><dd>UGREEN NAS Control <span id="unc-version"></span></dd>
+            <dt data-i18n="about.source">Quellcode</dt><dd><a href="https://github.com/alexanderschubert/ugreen-nas-control" target="_blank" rel="noopener">github.com/alexanderschubert/ugreen-nas-control</a></dd>
+            <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip ITE IT8613E direkt über seine I/O-Ports an, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
+            <dt data-i18n="about.leds">LEDs</dt><dd data-i18n-html="about.leds_text">Die Front-LEDs steuert das Plugin <a href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">UGREEN LED Control</a>.</dd>
+            <dt data-i18n="about.license">Lizenz</dt><dd>MIT</dd>
+        </dl>
+
+        <div class="unc-form unc-lang">
+            <label for="unc-language" data-i18n="language.label">Sprache der Oberfläche</label>
+            <select id="unc-language">
+                <option value="auto" data-i18n="language.auto">Wie Unraid</option>
+                <option value="de">Deutsch</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+    </article>
+</section>
+
+</main>
+
+<div class="unc-toast" id="unc-toast" role="status"></div>
+
+</div>
+
+<script src="<?autov('/plugins/ugreen-nas-control/js/i18n.js')?>"></script>
+<script src="<?autov('/plugins/ugreen-nas-control/js/app.js')?>"></script>
