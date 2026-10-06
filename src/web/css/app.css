@@ -692,6 +692,16 @@
 
 .unc-facts dt {
     color: var(--unc-muted);
+    text-align: left;
+}
+
+/* Unraid gives dt/dd widths and margins of its own. */
+.unc .unc-facts dt,
+.unc .unc-facts dd {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    float: none;
 }
 
 /* Same footprint as the 32 px font icons of Unraid's own tiles. */
@@ -777,8 +787,8 @@
     color: var(--unc-red);
 }
 
-.unc-follow {
-    margin-top: 14px;
+.unc-card > .unc-follow {
+    margin: 14px 0 0;
 }
 
 .unc-effects + .unc-hint {
