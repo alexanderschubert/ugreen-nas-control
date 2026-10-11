@@ -36,6 +36,11 @@ cp "$ROOT/src/web/icons/ugreen-nas-control.png" "$DEST/icons/"
 chmod 755 "$DEST/backend/ugreen-nas-ctl" "$DEST/backend/ugreen-nas-fan"
 find "$DEST" -type f ! -path "$DEST/backend/*" -exec chmod 644 {} +
 
+# The copy replaced the .page files, and with them a favorite's Menu label.
+if [ -x /usr/local/emhttp/webGui/scripts/restore_favorites ]; then
+    /usr/local/emhttp/webGui/scripts/restore_favorites
+fi
+
 "$DEST/backend/ugreen-nas-fan" probe
 "$DEST/backend/ugreen-nas-ctl" start
 
