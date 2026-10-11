@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.1.0">
+<!ENTITY version   "0.1.1">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 0.1.1
+- Fix: a plugin marked as favorite (heart icon in Settings) lost the mark on update and got it back only after a reboot; the update now restores it right away
 
 ### 0.1.0
 - First version: system info, temperatures (CPU, mainboard, fan controller, NVMe, disks) and fan control for the DXP6800 Pro
@@ -118,6 +121,13 @@ rm -rf "${PLUGIN_DIR}"
 mkdir -p "${PLUGIN_DIR}"
 cp -r "${SRC_DIR}/." "${PLUGIN_DIR}/"
 chmod 755 "${PLUGIN_DIR}/backend/ugreen-nas-ctl" "${PLUGIN_DIR}/backend/ugreen-nas-fan"
+
+# A favorite (the heart on the Settings page) is a label in the Menu line of the
+# .page file, which the copy above has just replaced. Unraid puts it back at
+# boot only, so do that now as well.
+if [ -x /usr/local/emhttp/webGui/scripts/restore_favorites ]; then
+    /usr/local/emhttp/webGui/scripts/restore_favorites
+fi
 
 #
 # Fan control: the IT8613E is reached through /dev/port, no kernel module.
