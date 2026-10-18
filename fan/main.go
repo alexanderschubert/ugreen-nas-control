@@ -33,6 +33,7 @@ func usage() {
   probe               fan controller found? (JSON)
   status              fans, temperatures and system info (JSON)
   info                system info only, no hardware access (JSON)
+  hardware            RAM, NVMe, disk bays, network ports; read only (JSON)
   set <fan|cpu|case|all> <0-100>
                       set a fan speed by hand (the daemon overrides it)
   restore             write back the fan settings the BIOS made
@@ -90,6 +91,9 @@ func main() {
 	switch os.Args[1] {
 	case "info":
 		printJSON(ReadInfo())
+
+	case "hardware":
+		printJSON(ReadHardware())
 
 	case "probe":
 		chip, err := openChip()

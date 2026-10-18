@@ -41,6 +41,7 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
 
     <nav class="unc-nav">
         <button type="button" class="active" data-nav="overview"><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.overview">Übersicht</span></button>
+        <button type="button" data-nav="case"><span class="unc-ico" data-unc-icon="box"></span><span data-i18n="nav.case">Gehäuse</span></button>
         <button type="button" data-nav="curves"><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
         <button type="button" data-nav="safety"><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
         <button type="button" data-nav="leds"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds">LEDs</span></button>
@@ -119,6 +120,28 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
             </article>
         </div>
     </div>
+</section>
+
+<!-- ================= Gehäuse ================= -->
+
+<section class="unc-view" data-view="case">
+    <div class="unc-tiles" id="unc-case-tiles"></div>
+
+    <article class="unc-card">
+        <h2 data-i18n="case.front">Vorderseite</h2>
+        <div class="unc-chassis unc-front" id="unc-front"></div>
+    </article>
+
+    <article class="unc-card">
+        <h2 data-i18n="case.rear">Rückseite</h2>
+        <div class="unc-chassis unc-rear" id="unc-rear"></div>
+    </article>
+
+    <article class="unc-card">
+        <h2 data-i18n="case.inside">Innenraum</h2>
+        <div class="unc-board" id="unc-inside"></div>
+        <p class="unc-hint" data-i18n="case.inside_hint">Die M.2-Plätze werden am PCIe-Anschluss erkannt: die zwei Plätze auf dem Mainboard hängen direkt an der CPU, jede weitere SSD sitzt auf einer Karte im PCIe-Steckplatz. Welcher Platz „1“ und „2“ ist, ist eine Vermutung.</p>
+    </article>
 </section>
 
 <!-- ================= Lüfterkurven ================= -->
