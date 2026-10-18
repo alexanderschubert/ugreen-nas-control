@@ -52,7 +52,15 @@ func printJSON(v any) {
 	_ = enc.Encode(v)
 }
 
+// openChip refuses any model but the one the fan wiring is known for.
 func openChip() (*Chip, error) {
+	if err := requireSupportedModel(); err != nil {
+		return nil, err
+	}
+	return openChipUnchecked()
+}
+
+func openChipUnchecked() (*Chip, error) {
 	p, err := openPorts()
 	if err != nil {
 		return nil, err
@@ -168,7 +176,9 @@ func main() {
 		if err := json.Unmarshal(b, &s); err != nil {
 			fail(err)
 		}
-		chip, err := openChip()
+		// Not model-checked: the snapshot only exists if this tool saved it, and
+		// putting the BIOS values back must always work.
+		chip, err := openChipUnchecked()
 		if err != nil {
 			fail(err)
 		}

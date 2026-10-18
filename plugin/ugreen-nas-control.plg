@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.1.1">
+<!ENTITY version   "0.1.2">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 0.1.2
+- The plugin is now made for the DXP6800 Pro only: on any other model it no longer touches the fan controller (the fan wiring is only known for this model); system info and temperatures still work
 
 ### 0.1.1
 - Fix: a plugin marked as favorite (heart icon in Settings) lost the mark on update and got it back only after a reboot; the update now restores it right away

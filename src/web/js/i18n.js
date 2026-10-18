@@ -13,7 +13,7 @@ window.UNC_I18N = {
         'head.subtitle': 'Systeminfo, Temperaturen und Lüfter deines <span data-model>UGREEN NAS</span> direkt in Unraid.',
         'banner.connected': 'Lüfter-Chip erkannt',
 
-        'warn.chip': 'Kein Lüfter-Chip gefunden.',
+        'warn.chip': 'Lüfter-Chip nicht nutzbar.',
         'warn.failsafe': 'Notfall: alle Lüfter laufen auf 100 %.',
         'warn.stalled': 'Ein Lüfter dreht sich nicht.',
         'failsafe.cpu_unreadable': 'Die CPU-Temperatur ist nicht lesbar.',
@@ -124,7 +124,7 @@ window.UNC_I18N = {
         'head.subtitle': 'System info, temperatures and fans of your <span data-model>UGREEN NAS</span> right in Unraid.',
         'banner.connected': 'Fan controller found',
 
-        'warn.chip': 'No fan controller found.',
+        'warn.chip': 'Fan controller not usable.',
         'warn.failsafe': 'Emergency: all fans run at 100 %.',
         'warn.stalled': 'A fan does not spin.',
         'failsafe.cpu_unreadable': 'The CPU temperature cannot be read.',

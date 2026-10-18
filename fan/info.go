@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -22,6 +23,25 @@ type Info struct {
 	Kernel   string `json:"kernel"`
 	Unraid   string `json:"unraid"`
 	Uptime   int    `json:"uptime"`
+}
+
+// ModelSupported tells whether the fan wiring of this tool (see roles and the
+// IT8613E channels) is that of the machine: only the DXP6800 Pro is known.
+func ModelSupported(model string) bool {
+	return strings.HasPrefix(model, "DXP6800")
+}
+
+// requireSupportedModel keeps every access to the Super-I/O ports to the model
+// the tool was made for; other boards may wire the fan headers differently.
+func requireSupportedModel() error {
+	model := readString(filepath.Join(dmiDir, "product_name"))
+	if ModelSupported(model) {
+		return nil
+	}
+	if model == "" {
+		model = "unknown model"
+	}
+	return fmt.Errorf("%s is not supported: UGREEN NAS Control is made for the DXP6800 Pro only", model)
 }
 
 func ReadInfo() Info {
