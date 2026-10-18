@@ -1,6 +1,6 @@
 # UGREEN NAS Control
 
-Unraid plugin for UGREEN DXP NAS devices: system info, temperatures and fan control, like the
+Unraid plugin for the UGREEN DXP6800 Pro: system info, temperatures and fan control, like the
 fan settings of UGOS.
 
 - **System**: model, BIOS, CPU, memory, Unraid and kernel version, uptime
@@ -17,14 +17,12 @@ fan settings of UGOS.
 The front LEDs are handled by the separate plugin
 [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control).
 
-## Supported models
+## Supported model
 
-| Model | Fan controller | Status |
-| --- | --- | --- |
-| DXP6800 Pro | ITE IT8613E | tested: CPU fan on header 2, case fans on headers 3 and 4 |
-
-Other UGREEN models with an IT8613E are detected, but their fan headers may be wired differently.
-Reports are welcome in the [issues](https://github.com/alexanderschubert/ugreen-nas-control/issues).
+Made for the **UGREEN DXP6800 Pro** (ITE IT8613E; CPU fan on header 2, case fans on headers 3 and 4),
+the only model it is developed and tested on. On any other model the plugin does not touch the fan
+controller: it refuses to start and the settings page says so. System info and temperatures
+still work, as they only read.
 
 ## Install
 
