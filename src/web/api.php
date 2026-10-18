@@ -115,6 +115,7 @@ if ($method === 'GET') {
     $config = read_settings();
 
     $data['running'] = run(CTL, ['status'])['code'] === 0;
+    $data['led'] = json_decode(run(CTL, ['led-status'])['output'], true) ?: ['enabled' => false, 'supported' => false, 'blocker' => 'model'];
     $data['settings'] = [
         'mode' => in_array($config['mode'] ?? '', MODES, true) ? $config['mode'] : 'standard',
         'cpu_curve' => $config['cpu_curve'] ?? '',
@@ -243,6 +244,29 @@ if ($action === 'lang') {
             'ok' => false,
             'error' => CONFIG_FILE . ' is not writable'
         ], 500);
+    }
+
+    respond(['ok' => true]);
+}
+
+// The LED part (a copy of UGREEN LED Control) is off until this switch turns it on.
+if ($action === 'led') {
+    $value = (string)($input['value'] ?? '');
+
+    if (!in_array($value, ['on', 'off'], true)) {
+        respond([
+            'ok' => false,
+            'error' => 'Invalid value'
+        ], 400);
+    }
+
+    $result = run(CTL, [$value === 'on' ? 'led-enable' : 'led-disable']);
+
+    if ($result['code'] !== 0) {
+        respond([
+            'ok' => false,
+            'error' => $result['output']
+        ], 409);
     }
 
     respond(['ok' => true]);
