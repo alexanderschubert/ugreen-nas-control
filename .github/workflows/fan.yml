@@ -61,7 +61,7 @@ jobs:
           bash -n scripts/sync-led.sh
 
       - name: Switch and conflict rules of the LED part
-        run: scripts/test-led-ctl.sh
+        run: bash scripts/test-led-ctl.sh
 
       - name: PHP syntax
         run: |
