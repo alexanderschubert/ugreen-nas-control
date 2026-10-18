@@ -95,6 +95,21 @@ $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if ($method === 'GET') {
     $action = $_GET['action'] ?? 'status';
 
+    // Built-in hardware (RAM, NVMe, bays, network ports); only reads.
+    if ($action === 'hardware') {
+        $result = run(FAN_TOOL, ['hardware']);
+        $data = json_decode($result['output'], true);
+
+        if (!is_array($data)) {
+            respond([
+                'ok' => false,
+                'error' => $result['output']
+            ], 500);
+        }
+
+        respond(['ok' => true] + $data);
+    }
+
     if ($action !== 'status') {
         respond([
             'ok' => false,

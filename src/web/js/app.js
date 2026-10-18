@@ -37,6 +37,7 @@
         gauge: '<path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 13 4-5"/>',
         flame: '<path d="M12 22c4 0 7-3 7-7 0-5-5-7-5-13-3 2-5 5-5 8-1-1-2-2-2-4-1 2-2 4-2 7 0 5 3 9 7 9z"/>',
         max: '<path d="M12 3v12M7 8l5-5 5 5M5 21h14"/>',
+        box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
         bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>',
         pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
     };
@@ -71,7 +72,10 @@
         curves: { cpu: [], case: [] },
         curvesDirty: false,
         safetyDirty: false,
-        busy: false
+        busy: false,
+        hw: null,
+        hwError: false,
+        view: 'overview'
     };
 
     /*
@@ -490,6 +494,201 @@
 
     /*
      * ---------------------------------------------------------
+     * Case: tiles, front, rear and inside
+     * ---------------------------------------------------------
+     */
+
+    // Drive sizes are sold in powers of ten.
+    function fmtSize(bytes) {
+        if (!bytes) return '';
+        const tb = bytes / 1e12;
+        if (tb >= 1) return `${tb >= 10 ? Math.round(tb) : Math.round(tb * 10) / 10} TB`;
+        return `${Math.round(bytes / 1e9)} GB`;
+    }
+
+    const fmtRam = mb => mb >= 1024 ? `${Math.round(mb / 1024)} GB` : `${mb} MB`;
+
+    function tempClass(temp, kind) {
+        if (temp == null) return '';
+        const [warm, hot] = LIMITS[kind];
+        return temp >= hot ? 'hot' : temp >= warm ? 'warm' : 'ok';
+    }
+
+    const tempBadge = (temp, kind) => temp == null ? '' : `<b class="unc-t ${tempClass(temp, kind)}">${temp} °C</b>`;
+
+    function speedText(mbit) {
+        if (mbit >= 1000) return `${mbit / 1000} Gbit/s`;
+        return `${mbit} Mbit/s`;
+    }
+
+    const port = (kind, label, extra = '') => `
+        <div class="unc-port ${kind}">
+            <span class="unc-jack"></span>
+            <small>${escapeHtml(label)}</small>
+            ${extra ? `<em>${escapeHtml(extra)}</em>` : ''}
+        </div>`;
+
+    function renderCaseTiles(hw) {
+        const info = state.data?.info || {};
+        const ramMB = hw.memory.reduce((sum, m) => sum + m.size_mb, 0);
+        const modules = hw.memory.filter(m => m.size_mb > 0);
+        const bays = hw.bays || [];
+        const filled = bays.filter(b => b.present);
+        const driveBytes = filled.reduce((sum, b) => sum + b.size_bytes, 0);
+        const hottestBay = Math.max(-1, ...filled.map(b => b.temp ?? -1));
+        const nvmeBytes = hw.nvme.reduce((sum, n) => sum + n.size_bytes, 0);
+        const hottestNvme = Math.max(-1, ...hw.nvme.map(n => n.temp ?? -1));
+        const links = hw.net.filter(n => n.link);
+        const cpuTemp = state.data?.sensors?.cpu;
+
+        const tiles = [
+            ['cpu', t('tile.cpu'), (info.cpu || '').replace(/\(R\)|\(TM\)|CPU|^\d+th Gen\s+Intel\s*/gi, '').replace(/\s+/g, ' ').trim() || '–',
+                [info.threads ? t('system.threads', { n: info.threads }) : '', cpuTemp != null ? deg(cpuTemp) : ''].filter(Boolean).join(' · ')],
+            ['ram', t('tile.ram'), ramMB ? `${fmtRam(ramMB)} ${modules[0]?.type || ''}`.trim() : '–',
+                modules.length ? t('tile.ram_sub', { n: modules.length, size: fmtRam(modules[0].size_mb), speed: modules[0].configured_mt || modules[0].speed_mt }) : ''],
+            ['drives', t('tile.drives'), bays.length ? t('tile.drives_val', { n: filled.length, total: bays.length }) : '–',
+                [fmtSize(driveBytes), hottestBay >= 0 ? t('tile.hottest', { t: deg(hottestBay) }) : ''].filter(Boolean).join(' · ')],
+            ['nvme', t('tile.nvme'), t('tile.nvme_val', { n: hw.nvme.length }),
+                [fmtSize(nvmeBytes), hottestNvme >= 0 ? t('tile.hottest', { t: deg(hottestNvme) }) : ''].filter(Boolean).join(' · ')],
+            ['net', t('tile.net'), links.length ? links.map(n => speedText(n.speed_mbit)).join(' · ') : t('tile.net_none'),
+                hw.net.map(n => `${n.name}${n.link ? '' : ' ✕'}`).join(' · ')]
+        ];
+
+        q('#unc-case-tiles').innerHTML = tiles.map(([id, title, value, sub]) => `
+            <div class="unc-tile ${id}">
+                <small>${escapeHtml(title)}</small>
+                <strong>${escapeHtml(value)}</strong>
+                <span>${escapeHtml(sub)}</span>
+            </div>`).join('');
+    }
+
+    function bayHtml(bay) {
+        const title = t('case.bay', { n: bay.bay });
+        if (!bay.present) {
+            return `<div class="unc-bay empty"><small>${escapeHtml(title)}</small><span>${escapeHtml(t('case.empty'))}</span></div>`;
+        }
+        const status = bay.standby
+            ? `<b class="unc-t standby">${escapeHtml(t('case.standby'))}</b>`
+            : tempBadge(bay.temp, bay.hdd ? 'disk' : 'nvme');
+        return `
+            <div class="unc-bay">
+                <small>${escapeHtml(title)}</small>
+                <strong>${escapeHtml(bay.role || bay.device)}</strong>
+                <span class="unc-model">${escapeHtml(bay.model)}</span>
+                <span class="unc-meta">${escapeHtml([fmtSize(bay.size_bytes), t(bay.hdd ? 'case.hdd' : 'case.ssd')].join(' · '))}</span>
+                ${status}
+            </div>`;
+    }
+
+    function renderFront(hw) {
+        q('#unc-front').innerHTML = `
+            <div class="unc-bays">${(hw.bays || []).map(bayHtml).join('')}</div>
+            <div class="unc-ports">
+                ${port('usbc', t('case.tb4'))}
+                ${port('usbc', t('case.tb4'))}
+                ${port('usba', t('case.usb_a'))}
+                <div class="unc-power"><span></span><small>${escapeHtml(t('case.power'))}</small></div>
+            </div>`;
+    }
+
+    function renderRear(hw) {
+        const lan = n => {
+            const p = hw.net[n];
+            const label = t('case.lan', { n: n + 1 });
+            if (!p) return port('rj45', label);
+            return port(`rj45 ${p.link ? 'up' : 'down'}`, `${label} · ${p.name}`, p.link ? speedText(p.speed_mbit) : t('case.no_link'));
+        };
+
+        q('#unc-rear').innerHTML = `
+            <div class="unc-ports rear">
+                ${lan(0)}
+                ${lan(1)}
+                ${port('hdmi', t('case.hdmi'))}
+                ${port('usba', t('case.usb_a'))}
+                ${port('usb2', t('case.usb2'))}
+                ${port('usb2', t('case.usb2'))}
+                <div class="unc-power ac"><span></span><small>${escapeHtml(t('case.ac'))}</small></div>
+            </div>`;
+    }
+
+    function nvmeHtml(n) {
+        return `
+            <div class="unc-ssd">
+                <strong>${escapeHtml(n.model || n.id)}</strong>
+                <span>${escapeHtml([n.id, fmtSize(n.size_bytes)].filter(Boolean).join(' · '))}</span>
+                ${tempBadge(n.temp, 'nvme')}
+            </div>`;
+    }
+
+    function renderInside(hw) {
+        const ramSlots = hw.memory.map((m, i) => {
+            const slot = t('case.ram_slot', { n: i + 1 });
+            if (!m.size_mb) {
+                return `<div class="unc-slot ram empty"><small>${escapeHtml(slot)}</small><span>${escapeHtml(t('case.empty'))}</span></div>`;
+            }
+            const speed = m.configured_mt && m.configured_mt !== m.speed_mt
+                ? t('case.running_at', { speed: m.configured_mt, max: m.speed_mt })
+                : `${m.speed_mt} MT/s`;
+            return `
+                <div class="unc-slot ram">
+                    <small>${escapeHtml(slot)}</small>
+                    <strong>${escapeHtml(`${fmtRam(m.size_mb)} ${m.type}`)}</strong>
+                    <span>${escapeHtml(speed)}</span>
+                    <span class="unc-model">${escapeHtml([m.manufacturer, m.part_number].filter(Boolean).join(' · '))}</span>
+                </div>`;
+        }).join('');
+
+        const m2 = n => {
+            const ssd = hw.nvme.find(d => d.slot === `m2-${n}`);
+            return `
+                <div class="unc-slot m2 ${ssd ? '' : 'empty'}">
+                    <small>${escapeHtml(t('case.m2_slot', { n }))}</small>
+                    ${ssd ? nvmeHtml(ssd) : `<span>${escapeHtml(t('case.empty'))}</span>`}
+                </div>`;
+        };
+
+        const card = hw.nvme.filter(d => d.slot === 'pcie');
+        const pcie = `
+            <div class="unc-slot pcie ${card.length ? '' : 'empty'}">
+                <small>${escapeHtml(t('case.pcie_slot'))}</small>
+                ${card.length
+                    ? `<span class="unc-model">${escapeHtml(t('case.pcie_card', { n: card.length }))}</span>${card.map(nvmeHtml).join('')}`
+                    : `<span>${escapeHtml(t('case.free'))}</span>`}
+            </div>`;
+
+        q('#unc-inside').innerHTML = `
+            <div class="unc-board-col">${ramSlots}</div>
+            <div class="unc-board-col">${m2(1)}${m2(2)}</div>
+            <div class="unc-board-col">${pcie}</div>`;
+    }
+
+    function renderCase() {
+        if (!state.hw) {
+            const text = t(state.hwError ? 'case.error' : 'case.loading');
+            ['#unc-case-tiles', '#unc-front', '#unc-rear', '#unc-inside'].forEach(id => {
+                q(id).innerHTML = `<p class="unc-muted">${escapeHtml(text)}</p>`;
+            });
+            return;
+        }
+        renderCaseTiles(state.hw);
+        renderFront(state.hw);
+        renderRear(state.hw);
+        renderInside(state.hw);
+    }
+
+    async function loadHardware() {
+        try {
+            state.hw = await api({ action: 'hardware' });
+            state.hwError = false;
+        } catch (error) {
+            state.hw = null;
+            state.hwError = true;
+        }
+        renderCase();
+    }
+
+    /*
+     * ---------------------------------------------------------
      * Loading
      * ---------------------------------------------------------
      */
@@ -510,6 +709,8 @@
      */
 
     function showView(view) {
+        state.view = view;
+        if (view === 'case') loadHardware();
         qa('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === view));
         qa('.unc-view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
     }
@@ -613,6 +814,7 @@
 
         setInterval(() => {
             if (!document.hidden && !state.busy) load();
+            if (!document.hidden && state.view === 'case' && !state.busy) loadHardware();
         }, 3000);
     }
 
