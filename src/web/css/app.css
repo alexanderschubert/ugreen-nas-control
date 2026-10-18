@@ -1139,59 +1139,6 @@
     min-height: 17px;
 }
 
-.unc-chassis {
-    display: grid;
-    gap: 16px;
-    padding: 16px;
-    border: 2px solid #2a3440;
-    border-radius: 14px;
-    background: linear-gradient(180deg, #1a212a, #12171d);
-}
-
-.unc-front {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: stretch;
-}
-
-.unc-bays {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 10px;
-}
-
-.unc-bay {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-height: 150px;
-    padding: 10px;
-    border: 1px solid var(--unc-border);
-    border-radius: 8px;
-    background: var(--unc-card-2);
-    border-left: 3px solid var(--unc-amber);
-    min-width: 0;
-}
-
-.unc-bay.empty {
-    border-left-color: var(--unc-border);
-    border-style: dashed;
-    justify-content: center;
-    align-items: center;
-    color: var(--unc-muted);
-}
-
-.unc-bay small,
-.unc-slot small {
-    color: var(--unc-muted);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-}
-
-.unc-bay strong {
-    font-size: 15px;
-}
-
 .unc-model,
 .unc-meta {
     color: var(--unc-muted);
@@ -1199,6 +1146,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.unc-slot small {
+    color: var(--unc-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
 }
 
 .unc-t {
@@ -1212,78 +1166,211 @@
 .unc-t.hot { color: var(--unc-red); }
 .unc-t.standby { color: var(--unc-muted); font-weight: 500; }
 
-.unc-ports {
+.unc-stage {
+    padding: 22px 26px 18px;
+    border: 1px solid var(--unc-border);
+    border-radius: var(--unc-radius);
+    background:
+        radial-gradient(ellipse at 50% 100%, rgba(47, 124, 246, .18), transparent 60%),
+        linear-gradient(180deg, #1a2029, #0f1318);
+}
+
+/* Front: the metal frame, six trays with number, state and knob, the strip below. */
+.unc-nas {
+    padding: 10px 10px 8px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #4a5058, #2a2f36 8%, #1b1f24);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+
+.unc-nas-bays {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 7px;
+    padding: 8px;
+    border-radius: 6px;
+    background: #090b0e;
+}
+
+.unc-nbay {
+    container-type: inline-size;
+    display: grid;
+    grid-template-rows: auto auto auto auto 1fr auto auto;
+    justify-items: center;
+    gap: 6px;
+    aspect-ratio: 1 / 2.15;
+    padding: 12px 0 10px;
+    border-radius: 5px;
+    background: linear-gradient(180deg, #3a4048, #24292f 55%, #1d2126);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07);
+    color: #c9d0d7;
+    font-family: "DIN Alternate", "Bahnschrift", "Arial Narrow", sans-serif;
+    min-width: 0;
+}
+
+.unc-nbay .no {
+    font-size: clamp(14px, 2.4vw, 28px);
+    font-weight: 600;
+    line-height: 1;
+}
+
+.unc-nbay .info {
+    max-width: 92%;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: clamp(9px, 17cqi, 17px);
+    font-weight: 600;
+    line-height: 1.15;
+    white-space: nowrap;
+}
+
+.unc-nbay .info.ok { color: #e5e9ee; }
+.unc-nbay .info.warm { background: rgba(255, 140, 0, .18); color: #fdba74; }
+.unc-nbay .info.hot { background: rgba(239, 68, 68, .2); color: #fca5a5; }
+.unc-nbay .info.standby,
+.unc-nbay .info.empty { color: var(--unc-muted); font-weight: 500; }
+
+.unc-nbay .role,
+.unc-nbay .size {
+    max-width: 92%;
+    overflow: hidden;
+    color: #8f99a4;
+    font-size: clamp(8px, 12cqi, 12px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.unc-nbay .role { color: #c9d0d7; font-weight: 600; }
+
+.unc-nbay .knob {
+    align-self: end;
+    grid-row: 6;
+    width: 32%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid #4b525b;
+    background: #15181c;
+}
+
+.unc-nbay .bar {
+    grid-row: 7;
+    width: 56%;
+    height: 5px;
+    border-radius: 3px;
+    background: #2c3138;
+}
+
+.unc-nbay .bar.ok { background: #22c55e; box-shadow: 0 0 8px rgba(34, 197, 94, .6); }
+.unc-nbay .bar.warm { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, .6); }
+.unc-nbay .bar.hot { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, .6); }
+.unc-nbay .bar.standby { background: #1f4d31; }
+
+.unc-nbay.empty { opacity: .55; }
+
+.unc-nas-front {
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
+    align-items: center;
+    padding: 9px 12px 3px;
+    color: #6f7882;
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.unc-nas-front .spacer { flex: 1; }
+
+.unc-nas-front .speeds {
+    display: inline-flex;
+    gap: 10px;
+    color: #c9d1da;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.unc-nas-front .brand {
+    margin-left: 10px;
+    color: #8f99a4;
+    font-size: 13px;
+    letter-spacing: .18em;
+}
+
+.unc-pled {
+    width: 16px;
+    height: 6px;
+    border-radius: 3px;
+    background: #2c3138;
+}
+
+.unc-pled.power { background: #e9edf1; box-shadow: 0 0 6px rgba(255, 255, 255, .5); }
+.unc-pled.lan.on { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, .6); }
+
+.unc-front-ports {
+    display: inline-flex;
+    gap: 14px;
     align-items: flex-end;
 }
 
-.unc-ports.rear {
-    gap: 16px;
-}
-
-.unc-port {
+/* Sockets, front and rear. */
+.unc-socket {
     display: grid;
     justify-items: center;
-    gap: 6px;
-    min-width: 76px;
+    gap: 5px;
+    min-width: 56px;
+    color: #8f99a4;
+    font-size: 10px;
+    letter-spacing: .04em;
     text-align: center;
+    text-transform: none;
 }
 
-.unc-port small {
+.unc-socket svg { width: 44px; height: auto; }
+.unc-socket svg .shell { fill: #0b0e12; stroke: #5a6572; stroke-width: 2; }
+.unc-socket svg .tongue { fill: #2a313a; }
+.unc-socket svg .tongue.blue { fill: #2f7cf6; }
+.unc-socket svg .pins { stroke: #8a6b1d; stroke-width: 1.4; }
+.unc-socket svg .led { fill: #2c3138; }
+
+.unc-socket.ac svg { width: 62px; }
+.unc-socket.hdmi svg { width: 54px; }
+.unc-socket.rj45 svg { width: 62px; }
+.unc-socket.rj45.up svg .shell { stroke: #22c55e; }
+.unc-socket.rj45.up svg .led.link { fill: #22c55e; }
+.unc-socket.rj45.up svg .led.act { fill: #f59e0b; }
+.unc-socket.rj45.up svg .led.act.fast { fill: #22c55e; }
+
+.unc-socket em {
     color: var(--unc-muted);
     font-size: 11px;
-    line-height: 1.2;
-}
-
-.unc-port em {
     font-style: normal;
-    font-size: 12px;
-    font-weight: 650;
 }
 
-.unc-port.up em { color: var(--unc-green); }
-.unc-port.down em { color: var(--unc-muted); font-weight: 500; }
+.unc-socket.rj45.up em { color: var(--unc-green); font-weight: 650; }
 
-.unc-jack {
-    display: block;
-    width: 44px;
-    height: 20px;
-    border: 2px solid #4a5767;
-    border-radius: 4px;
-    background: #090c10;
+.unc-front-ports .unc-socket { min-width: 40px; }
+.unc-front-ports .unc-socket svg { width: 34px; }
+
+/* Rear: the back panel with the sockets in a row. */
+.unc-nas-rear {
+    padding: 22px 26px 18px;
+    border-radius: 12px;
+    background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .02) 0 2px, transparent 2px 6px),
+        linear-gradient(180deg, #4a5058, #2a2f36 6%, #1b1f24);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .2);
 }
 
-.unc-port.usbc .unc-jack { width: 34px; height: 14px; border-radius: 8px; }
-.unc-port.usba .unc-jack { width: 40px; height: 14px; border-color: #3b82f6; }
-.unc-port.usb2 .unc-jack { width: 40px; height: 14px; }
-.unc-port.hdmi .unc-jack { width: 46px; height: 14px; border-radius: 2px 2px 8px 8px; }
-.unc-port.rj45 .unc-jack { width: 52px; height: 40px; }
-.unc-port.rj45.up .unc-jack { border-color: var(--unc-green); }
-
-.unc-power {
-    display: grid;
-    justify-items: center;
-    gap: 6px;
-}
-
-.unc-power small {
-    color: var(--unc-muted);
-    font-size: 11px;
-}
-
-.unc-power span {
-    width: 26px;
-    height: 26px;
-    border: 2px solid #4a5767;
-    border-radius: 50%;
-}
-
-.unc-power.ac span {
-    width: 46px;
-    height: 26px;
-    border-radius: 4px;
+.unc-rear-ports {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px 26px;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 18px 22px;
+    border-radius: 8px;
+    background: #090b0e;
 }
 
 .unc-board {
@@ -1357,12 +1444,91 @@
 }
 
 @media (max-width: 1100px) {
-    .unc-front { grid-template-columns: minmax(0, 1fr); }
-    .unc-bays { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .unc-board { grid-template-columns: minmax(0, 1fr); }
 }
 
-.unc-bay .unc-model {
-    white-space: normal;
-    overflow-wrap: anywhere;
+
+/* ---------- About ---------- */
+
+.unc .unc-about h2 {
+    margin: 0 0 4px;
+    font-size: 24px;
+}
+
+.unc-about-head {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.unc-about-icon {
+    flex: none;
+    width: 76px;
+    height: 76px;
+    border-radius: 18px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+}
+
+.unc-about-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.unc-about-badges .unc-badge {
+    padding: 1px 10px;
+    font-size: 12px;
+}
+
+.unc-about-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.unc .unc-link-tile {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid var(--unc-border);
+    border-radius: 12px;
+    background: var(--unc-card-2);
+    color: var(--unc-text);
+    text-decoration: none;
+    transition: border-color .15s, background .15s;
+}
+
+.unc .unc-link-tile:hover {
+    border-color: var(--unc-accent);
+    background: rgba(47, 124, 246, .08);
+}
+
+.unc .unc-link-tile svg {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    color: var(--unc-accent);
+}
+
+.unc .unc-link-tile svg.unc-ico-fill {
+    fill: currentColor;
+    stroke: none;
+}
+
+.unc-link-tile strong {
+    display: block;
+    font-size: 15px;
+}
+
+.unc-link-tile small {
+    color: var(--unc-muted);
 }

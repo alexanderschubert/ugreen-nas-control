@@ -521,13 +521,6 @@
         return `${mbit} Mbit/s`;
     }
 
-    const port = (kind, label, extra = '') => `
-        <div class="unc-port ${kind}">
-            <span class="unc-jack"></span>
-            <small>${escapeHtml(label)}</small>
-            ${extra ? `<em>${escapeHtml(extra)}</em>` : ''}
-        </div>`;
-
     function renderCaseTiles(hw) {
         const info = state.data?.info || {};
         const ramMB = hw.memory.reduce((sum, m) => sum + m.size_mb, 0);
@@ -562,52 +555,103 @@
             </div>`).join('');
     }
 
+    // Port drawings, after the real sockets.
+    const SOCKET = {
+        usbc: '<svg viewBox="0 0 40 18"><rect x="3" y="3" width="34" height="12" rx="6" class="shell"/><rect x="9" y="7" width="22" height="4" rx="2" class="tongue"/></svg>',
+        usba: '<svg viewBox="0 0 40 20"><rect x="2" y="2" width="36" height="16" rx="2" class="shell"/><rect x="6" y="8" width="28" height="5" class="tongue blue"/></svg>',
+        usb2: '<svg viewBox="0 0 40 20"><rect x="2" y="2" width="36" height="16" rx="2" class="shell"/><rect x="6" y="8" width="28" height="5" class="tongue"/></svg>',
+        hdmi: '<svg viewBox="0 0 48 20"><path d="M3 3h42v8l-5 6H8l-5-6z" class="shell"/><rect x="9" y="7" width="30" height="4" class="tongue"/></svg>',
+        ac: '<svg viewBox="0 0 56 34"><rect x="2" y="2" width="52" height="30" rx="3" class="shell"/><rect x="14" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="34" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="24" y="22" width="8" height="6" rx="1" class="tongue"/></svg>'
+    };
+
+    const rj45 = (link, speed) => `
+        <svg viewBox="0 0 56 52" class="rj ${link ? 'up' : ''}">
+            <rect x="2" y="2" width="52" height="48" rx="3" class="shell"/>
+            <rect x="9" y="14" width="38" height="28" rx="2" class="tongue"/>
+            <path d="M14 14v8M20 14v8M26 14v8M32 14v8M38 14v8M44 14v8" class="pins"/>
+            <rect x="6" y="5" width="10" height="5" rx="1" class="led link"/>
+            <rect x="40" y="5" width="10" height="5" rx="1" class="led act ${speed >= 10000 ? 'fast' : ''}"/>
+        </svg>`;
+
+    const socket = (kind, label, extra = '') => `
+        <div class="unc-socket ${kind}">
+            ${SOCKET[kind]}
+            <small>${escapeHtml(label)}</small>
+            ${extra}
+        </div>`;
+
     function bayHtml(bay) {
-        const title = t('case.bay', { n: bay.bay });
+        const no = String(bay.bay).padStart(2, '0');
         if (!bay.present) {
-            return `<div class="unc-bay empty"><small>${escapeHtml(title)}</small><span>${escapeHtml(t('case.empty'))}</span></div>`;
+            return `
+                <div class="unc-nbay empty">
+                    <span class="no">${no}</span>
+                    <span class="info empty">${escapeHtml(t('case.empty'))}</span>
+                    <span class="knob"></span>
+                    <span class="bar"></span>
+                </div>`;
         }
-        const status = bay.standby
-            ? `<b class="unc-t standby">${escapeHtml(t('case.standby'))}</b>`
-            : tempBadge(bay.temp, bay.hdd ? 'disk' : 'nvme');
+        const kind = bay.hdd ? 'disk' : 'nvme';
+        const state = bay.standby ? 'standby' : tempClass(bay.temp, kind) || 'ok';
+        const info = bay.standby ? t('case.standby') : (bay.temp != null ? `${bay.temp}°` : '–');
         return `
-            <div class="unc-bay">
-                <small>${escapeHtml(title)}</small>
-                <strong>${escapeHtml(bay.role || bay.device)}</strong>
-                <span class="unc-model">${escapeHtml(bay.model)}</span>
-                <span class="unc-meta">${escapeHtml([fmtSize(bay.size_bytes), t(bay.hdd ? 'case.hdd' : 'case.ssd')].join(' · '))}</span>
-                ${status}
+            <div class="unc-nbay" title="${escapeHtml([bay.role, bay.model].filter(Boolean).join(' · '))}">
+                <span class="no">${no}</span>
+                <span class="info ${state}">${escapeHtml(info)}</span>
+                <span class="role">${escapeHtml(bay.role || bay.device)}</span>
+                <span class="size">${escapeHtml([fmtSize(bay.size_bytes), t(bay.hdd ? 'case.hdd' : 'case.ssd')].join(' · '))}</span>
+                <span class="knob"></span>
+                <span class="bar ${state}"></span>
             </div>`;
     }
 
     function renderFront(hw) {
+        const net = hw.net || [];
+        const lan = net.some(n => n.link);
+        const speeds = net.map(n => `<span>${n.link ? speedText(n.speed_mbit) : '✕'}</span>`).join('');
+
         q('#unc-front').innerHTML = `
-            <div class="unc-bays">${(hw.bays || []).map(bayHtml).join('')}</div>
-            <div class="unc-ports">
-                ${port('usbc', t('case.tb4'))}
-                ${port('usbc', t('case.tb4'))}
-                ${port('usba', t('case.usb_a'))}
-                <div class="unc-power"><span></span><small>${escapeHtml(t('case.power'))}</small></div>
+            <div class="unc-nas">
+                <div class="unc-nas-bays">${(hw.bays || []).map(bayHtml).join('')}</div>
+                <div class="unc-nas-front">
+                    <span class="unc-pled power"></span><span class="lbl">${escapeHtml(t('case.power'))}</span>
+                    <span class="unc-pled lan ${lan ? 'on' : ''}"></span><span class="lbl">LAN</span>
+                    <span class="speeds">${speeds}</span>
+                    <span class="spacer"></span>
+                    <span class="unc-front-ports">
+                        ${socket('usbc', 'TB4')}
+                        ${socket('usbc', 'TB4')}
+                        ${socket('usba', '10G')}
+                    </span>
+                    <b class="brand">UGREEN</b>
+                </div>
             </div>`;
     }
 
     function renderRear(hw) {
         const lan = n => {
             const p = hw.net[n];
-            const label = t('case.lan', { n: n + 1 });
-            if (!p) return port('rj45', label);
-            return port(`rj45 ${p.link ? 'up' : 'down'}`, `${label} · ${p.name}`, p.link ? speedText(p.speed_mbit) : t('case.no_link'));
+            const up = Boolean(p && p.link);
+            const label = `${t('case.lan', { n: n + 1 })}${p ? ` · ${p.name}` : ''}`;
+            return `
+                <div class="unc-socket rj45 ${up ? 'up' : ''}">
+                    ${rj45(up, p ? p.speed_mbit : 0)}
+                    <small>${escapeHtml(label)}</small>
+                    <em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em>
+                </div>`;
         };
 
         q('#unc-rear').innerHTML = `
-            <div class="unc-ports rear">
-                ${lan(0)}
-                ${lan(1)}
-                ${port('hdmi', t('case.hdmi'))}
-                ${port('usba', t('case.usb_a'))}
-                ${port('usb2', t('case.usb2'))}
-                ${port('usb2', t('case.usb2'))}
-                <div class="unc-power ac"><span></span><small>${escapeHtml(t('case.ac'))}</small></div>
+            <div class="unc-nas-rear">
+                <div class="unc-rear-ports">
+                    ${socket('ac', t('case.ac'))}
+                    ${socket('hdmi', t('case.hdmi'))}
+                    ${lan(0)}
+                    ${lan(1)}
+                    ${socket('usba', t('case.usb_a'))}
+                    ${socket('usb2', t('case.usb2'))}
+                    ${socket('usb2', t('case.usb2'))}
+                </div>
             </div>`;
     }
 
