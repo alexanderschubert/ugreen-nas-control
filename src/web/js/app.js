@@ -37,6 +37,7 @@
         gauge: '<path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 13 4-5"/>',
         flame: '<path d="M12 22c4 0 7-3 7-7 0-5-5-7-5-13-3 2-5 5-5 8-1-1-2-2-2-4-1 2-2 4-2 7 0 5 3 9 7 9z"/>',
         max: '<path d="M12 3v12M7 8l5-5 5 5M5 21h14"/>',
+        bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>',
         pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
     };
 
@@ -456,6 +457,24 @@
         q('#unc-stall-notify').checked = settings.stall_notify !== false;
     }
 
+    function renderLeds() {
+        const led = state.data.led || {};
+        const input = q('#unc-led-enabled');
+        const blocker = q('#unc-led-blocker');
+
+        input.checked = Boolean(led.enabled);
+        // Off is always possible; on only without a blocker.
+        input.disabled = !led.enabled && Boolean(led.blocker);
+        q('#unc-led-row').classList.toggle('unc-disabled', input.disabled);
+        q('#unc-led-state').textContent = t(led.enabled ? 'leds.on' : 'leds.off');
+        q('#unc-led-open').hidden = !led.enabled;
+
+        blocker.hidden = !led.blocker;
+        blocker.textContent = led.blocker
+            ? t(`leds.blocker_${led.blocker}`, { model: led.model || '?' })
+            : '';
+    }
+
     function render() {
         renderHead();
         if (!state.data?.ok) return;
@@ -466,6 +485,7 @@
         renderSystem();
         renderCurves();
         renderSafety();
+        renderLeds();
     }
 
     /*
@@ -555,6 +575,12 @@
                 ...values,
                 stall_notify: q('#unc-stall-notify').checked ? '1' : '0'
             }, true), t('safety.saved'));
+        });
+
+        q('#unc-led-enabled').addEventListener('change', event => {
+            const on = event.target.checked;
+
+            run(() => api({ action: 'led', value: on ? 'on' : 'off' }, true), t(on ? 'leds.switched_on' : 'leds.switched_off'));
         });
 
         q('#unc-language').addEventListener('change', async event => {

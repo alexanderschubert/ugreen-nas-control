@@ -43,6 +43,7 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
         <button type="button" class="active" data-nav="overview"><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.overview">Übersicht</span></button>
         <button type="button" data-nav="curves"><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
         <button type="button" data-nav="safety"><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
+        <button type="button" data-nav="leds"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds">LEDs</span></button>
         <button type="button" data-nav="about"><span class="unc-ico" data-unc-icon="info"></span><span data-i18n="nav.about">Über</span></button>
     </nav>
 
@@ -212,6 +213,34 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
     </article>
 </section>
 
+<!-- ================= LEDs ================= -->
+
+<section class="unc-view" data-view="leds">
+    <article class="unc-card">
+        <h2 data-i18n="leds.title">LEDs</h2>
+        <p class="unc-muted" data-i18n="leds.intro">Die Front-LEDs steuert ein eingebauter Teil von UGREEN LED Control. Er ist ausgeschaltet, bis du ihn hier einschaltest.</p>
+
+        <label class="unc-switch-row" id="unc-led-row">
+            <span class="unc-switch">
+                <input type="checkbox" id="unc-led-enabled">
+                <span></span>
+            </span>
+            <span>
+                <strong data-i18n="leds.switch">LED-Steuerung einschalten</strong>
+                <small id="unc-led-state"></small>
+            </span>
+        </label>
+
+        <p class="unc-hint" id="unc-led-blocker" hidden></p>
+
+        <div class="unc-actions" id="unc-led-open" hidden>
+            <a class="unc-btn primary" href="/Settings/UGREENLEDControl"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="leds.open">LED-Einstellungen öffnen</span></a>
+        </div>
+
+        <p class="unc-hint" data-i18n="leds.hint">Beim Ausschalten bleiben die LEDs im letzten Zustand, bis der Strom getrennt wird. Läuft das eigenständige Plugin UGREEN LED Control, lässt sich dieser Teil nicht einschalten, weil beide dieselben LEDs beschreiben würden.</p>
+    </article>
+</section>
+
 <!-- ================= Über ================= -->
 
 <section class="unc-view" data-view="about">
@@ -221,7 +250,7 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
             <dt>Plugin</dt><dd>UGREEN NAS Control <span id="unc-version"></span></dd>
             <dt data-i18n="about.source">Quellcode</dt><dd><a href="https://github.com/alexanderschubert/ugreen-nas-control" target="_blank" rel="noopener">github.com/alexanderschubert/ugreen-nas-control</a></dd>
             <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip ITE IT8613E direkt über seine I/O-Ports an, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
-            <dt data-i18n="about.leds">LEDs</dt><dd data-i18n-html="about.leds_text">Die Front-LEDs steuert das Plugin <a href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">UGREEN LED Control</a>.</dd>
+            <dt data-i18n="about.leds">LEDs</dt><dd data-i18n-html="about.leds_text">Die Front-LEDs steuert ein eingebauter, optionaler Teil, eine Kopie von <a href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">UGREEN LED Control</a>.</dd>
             <dt data-i18n="about.license">Lizenz</dt><dd>MIT</dd>
         </dl>
 

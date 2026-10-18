@@ -1,0 +1,1624 @@
+/*
+ * UGREEN LED Control – everything is scoped to .ulc so Unraid's own
+ * pages keep their look. Unraid styles button/input/select globally,
+ * hence the resets below.
+ */
+
+.ulc {
+    --ulc-bg: #0e1217;
+    --ulc-side: #10151b;
+    --ulc-card: #161c23;
+    --ulc-card-2: #1c232c;
+    --ulc-border: #252e38;
+    --ulc-text: #eef2f6;
+    --ulc-muted: #8b96a3;
+    --ulc-accent: #2f7cf6;
+    --ulc-accent-2: #1f63d1;
+    --ulc-green: #22c55e;
+    --ulc-amber: #f59e0b;
+    --ulc-red: #ef4444;
+    --ulc-radius: 12px;
+
+    color-scheme: dark;
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    min-height: 720px;
+    margin: 0 0 20px;
+    background: var(--ulc-bg);
+    color: var(--ulc-text);
+    border: 1px solid var(--ulc-border);
+    border-radius: 16px;
+    overflow: hidden;
+    font: 14px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    text-align: left;
+}
+
+.ulc *,
+.ulc *::before,
+.ulc *::after {
+    box-sizing: border-box;
+}
+
+.ulc button,
+.ulc select,
+.ulc input {
+    all: unset;
+    box-sizing: border-box;
+    font: inherit;
+    color: inherit;
+}
+
+.ulc button {
+    cursor: pointer;
+}
+
+.ulc button:focus-visible,
+.ulc select:focus-visible,
+.ulc input:focus-visible {
+    outline: 2px solid var(--ulc-accent);
+    outline-offset: 2px;
+}
+
+.ulc h1,
+.ulc h2,
+.ulc p,
+.ulc dl,
+.ulc dd {
+    margin: 0;
+}
+
+.ulc a {
+    color: #7fb0ff;
+}
+
+.ulc code {
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, .08);
+    font-size: 12px;
+}
+
+.ulc svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ulc-ico {
+    display: inline-flex;
+}
+
+.ulc-muted {
+    color: var(--ulc-muted);
+}
+
+.ulc-soon {
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, .14);
+    color: var(--ulc-amber);
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+/* ---------- Sidebar ---------- */
+
+.ulc-side {
+    padding: 22px 14px;
+    background: var(--ulc-side);
+    border-right: 1px solid var(--ulc-border);
+}
+
+.ulc-brand {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 0 6px 22px;
+}
+
+.ulc-brand-icon {
+    flex: none;
+    width: 46px;
+    height: 46px;
+}
+
+.ulc-brand strong {
+    display: block;
+    font-size: 15px;
+}
+
+.ulc-brand small {
+    color: var(--ulc-muted);
+}
+
+.ulc-nav {
+    display: grid;
+    gap: 4px;
+}
+
+.ulc-nav button {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 11px 14px;
+    border-radius: 10px;
+    color: #c9d1da;
+    transition: background .15s, color .15s;
+}
+
+.ulc-nav button:hover {
+    background: rgba(255, 255, 255, .05);
+}
+
+.ulc-nav button.active {
+    background: linear-gradient(180deg, var(--ulc-accent), var(--ulc-accent-2));
+    color: #fff;
+}
+
+/* ---------- Main ---------- */
+
+.ulc-main {
+    min-width: 0;
+    padding: 24px 26px 30px;
+}
+
+.ulc-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.ulc-head h1 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+}
+
+.ulc-head p {
+    margin-top: 6px;
+    color: #b4bec9;
+    font-size: 15px;
+}
+
+.ulc-badge {
+    padding: 2px 12px;
+    border: 1px solid #3b4652;
+    border-radius: 8px;
+    color: var(--ulc-muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ulc-badge.online {
+    border-color: rgba(34, 197, 94, .7);
+    background: rgba(34, 197, 94, .12);
+    color: #4ade80;
+}
+
+.ulc-badge.night {
+    border-color: rgba(167, 139, 250, .6);
+    background: rgba(124, 58, 237, .15);
+    color: #c4b5fd;
+}
+
+.ulc-badge.alert {
+    border-color: rgba(239, 68, 68, .7);
+    background: rgba(239, 68, 68, .15);
+    color: #fca5a5;
+}
+
+.ulc-badge[hidden] {
+    display: none;
+}
+
+.ulc-badge.offline {
+    border-color: rgba(239, 68, 68, .6);
+    background: rgba(239, 68, 68, .1);
+    color: #fca5a5;
+}
+
+.ulc-banner {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 22px 12px 14px;
+    border: 1px solid rgba(34, 197, 94, .45);
+    border-radius: 12px;
+    background: rgba(20, 83, 45, .35);
+}
+
+.ulc-banner[hidden] {
+    display: none;
+}
+
+.ulc-banner-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--ulc-green);
+    color: #04210f;
+}
+
+.ulc-banner-icon svg {
+    stroke-width: 3;
+}
+
+.ulc-banner strong {
+    display: block;
+}
+
+.ulc-banner small {
+    color: #b7e4c7;
+}
+
+.ulc-warning {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border: 1px solid rgba(245, 158, 11, .5);
+    border-radius: var(--ulc-radius);
+    background: rgba(120, 70, 0, .22);
+    color: #fde8c4;
+}
+
+.ulc-warning[hidden] {
+    display: none;
+}
+
+.ulc-warning svg {
+    color: var(--ulc-amber);
+}
+
+.ulc-warning strong {
+    display: block;
+    color: #fff;
+}
+
+/* ---------- Views & grid ---------- */
+
+.ulc-view {
+    display: none;
+}
+
+.ulc-view.active {
+    display: block;
+}
+
+.ulc-view > .ulc-card + .ulc-card {
+    margin-top: 18px;
+}
+
+.ulc-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.ulc-col {
+    display: grid;
+    gap: 18px;
+    min-width: 0;
+}
+
+.ulc-card {
+    padding: 18px 20px 20px;
+    border: 1px solid var(--ulc-border);
+    border-radius: var(--ulc-radius);
+    background: var(--ulc-card);
+}
+
+.ulc-card h2 {
+    margin-bottom: 16px;
+    font-size: 18px;
+    font-weight: 650;
+}
+
+.ulc-card > .ulc-muted {
+    margin: -8px 0 16px;
+}
+
+.ulc-later {
+    opacity: .75;
+}
+
+/* ---------- General settings ---------- */
+
+.ulc-switch-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 18px;
+    cursor: pointer;
+}
+
+.ulc-switch-row strong {
+    display: block;
+    font-weight: 600;
+}
+
+.ulc-switch-row small {
+    color: var(--ulc-muted);
+}
+
+.ulc-disabled {
+    cursor: default;
+    opacity: .6;
+}
+
+.ulc-switch {
+    position: relative;
+    flex: none;
+    width: 52px;
+    height: 30px;
+}
+
+.ulc-switch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: inherit;
+}
+
+.ulc-switch span {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: #39424d;
+    transition: background .2s;
+}
+
+.ulc-switch span::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+    transition: transform .2s;
+}
+
+.ulc-switch input:checked + span {
+    background: var(--ulc-accent);
+}
+
+.ulc-switch input:checked + span::after {
+    transform: translateX(22px);
+}
+
+.ulc-switch input:focus-visible + span {
+    outline: 2px solid var(--ulc-accent);
+    outline-offset: 2px;
+}
+
+.ulc-slider-row {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.ulc-slider-row > div > span {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.ulc-value {
+    min-width: 76px;
+    padding: 7px 12px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 8px;
+    background: var(--ulc-card-2);
+    text-align: center;
+}
+
+.ulc-field-row {
+    display: grid;
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 14px;
+    align-items: center;
+}
+
+.ulc-night-note {
+    margin: -4px 0 14px;
+    font-size: 12px;
+}
+
+.ulc-form[hidden] {
+    display: none;
+}
+
+.ulc-field-row[hidden] {
+    display: none;
+}
+
+.ulc-field-row label {
+    font-weight: 600;
+}
+
+.ulc select {
+    width: 100%;
+    padding: 10px 38px 10px 14px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 8px;
+    background: var(--ulc-card-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b96a3' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center / 16px;
+    cursor: pointer;
+}
+
+.ulc input[type="time"] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 8px;
+    background: var(--ulc-card-2);
+    font-variant-numeric: tabular-nums;
+}
+
+.ulc input[type="time"]:focus-visible {
+    border-color: var(--ulc-accent);
+}
+
+.ulc-form .ulc-inline.disabled {
+    opacity: .45;
+    pointer-events: none;
+}
+
+.ulc select:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+.ulc select option {
+    background: var(--ulc-card-2);
+    color: var(--ulc-text);
+}
+
+/* Range */
+
+.ulc input[type="range"] {
+    width: 100%;
+    height: 22px;
+    background: transparent;
+    cursor: pointer;
+    --fill: 50%;
+}
+
+.ulc input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--ulc-accent) var(--fill), #39424d var(--fill));
+}
+
+.ulc input[type="range"]::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--ulc-accent) var(--fill), #39424d var(--fill));
+}
+
+.ulc input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -6px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: var(--ulc-accent);
+}
+
+.ulc input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: var(--ulc-accent);
+}
+
+.ulc-hint {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-left: 3px solid var(--ulc-accent);
+    border-radius: 6px;
+    background: rgba(47, 124, 246, .1);
+    color: #c3d6f5;
+    font-size: 13px;
+}
+
+.ulc-hint[hidden] {
+    display: none;
+}
+
+/* ---------- Bay mapping ---------- */
+
+.ulc-bays {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
+}
+
+.ulc-bay-card {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 10px;
+    background: var(--ulc-card-2);
+}
+
+.ulc-bay-card strong {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.ulc-bay-card .ulc-led {
+    width: 22px;
+    height: 6px;
+}
+
+.ulc-bay-card small {
+    color: var(--ulc-muted);
+    overflow-wrap: anywhere;
+}
+
+.ulc-bay-card.error {
+    border-color: rgba(239, 68, 68, .6);
+}
+
+.ulc-state {
+    justify-self: start;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, .14);
+    color: #4ade80;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ulc-state.error {
+    background: rgba(239, 68, 68, .15);
+    color: #fca5a5;
+}
+
+/* Longer text than the other states; a pill would turn into a blob. */
+.ulc-state.warning {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255, 140, 0, .15);
+    color: #fdba74;
+    line-height: 1.35;
+}
+
+.ulc-state.empty {
+    background: rgba(255, 255, 255, .06);
+    color: var(--ulc-muted);
+}
+
+/* ---------- Tabs & colour rows ---------- */
+
+.ulc-tabs {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 4px;
+    margin-bottom: 10px;
+    padding: 4px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 10px;
+    background: var(--ulc-card-2);
+}
+
+.ulc-tabs button {
+    padding: 8px 10px;
+    border-radius: 7px;
+    color: #c9d1da;
+    text-align: center;
+}
+
+.ulc-tabs button.active {
+    background: var(--ulc-accent);
+    color: #fff;
+}
+
+.ulc-color-row {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) 168px 38px;
+    gap: 12px;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--ulc-border);
+}
+
+.ulc-color-row:last-child {
+    border-bottom: 0;
+}
+
+.ulc-color-row.ulc-disabled {
+    opacity: .55;
+}
+
+.ulc-color-row small {
+    color: var(--ulc-muted);
+}
+
+.ulc-color-input {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 5px 10px 5px 5px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 8px;
+    background: var(--ulc-card-2);
+}
+
+.ulc-swatch {
+    position: relative;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: var(--c, #fff);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25);
+    overflow: hidden;
+}
+
+.ulc-swatch input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.ulc-color-input input[type="text"] {
+    width: 100%;
+    min-width: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    text-transform: uppercase;
+}
+
+/* Unraid styles focused text inputs with a border of its own */
+.ulc .ulc-color-input input[type="text"]:focus {
+    border: 0;
+    background: none;
+    box-shadow: none;
+    outline: none;
+}
+
+.ulc-color-input:focus-within {
+    border-color: var(--ulc-accent);
+}
+
+.ulc .ulc-icon-btn {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 36px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 8px;
+    background: var(--ulc-card-2);
+    color: #c9d1da;
+}
+
+.ulc .ulc-icon-btn svg {
+    width: 17px;
+    height: 17px;
+}
+
+.ulc .ulc-icon-btn:hover {
+    color: #fff;
+}
+
+.ulc .ulc-icon-btn:disabled {
+    opacity: .4;
+    cursor: default;
+}
+
+/* ---------- Effects ---------- */
+
+.ulc-effects {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+    gap: 8px;
+}
+
+.ulc .ulc-effect {
+    container-type: inline-size;
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+    align-content: start;
+    min-height: 128px;
+    padding: 14px 8px 12px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 10px;
+    background: var(--ulc-card-2);
+    text-align: center;
+    transition: border-color .15s, background .15s;
+}
+
+.ulc .ulc-effect svg {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 4px;
+}
+
+/* Long names ("Temperature") must fit narrow tiles instead of being cut off. */
+.ulc .ulc-effect strong {
+    max-width: 100%;
+    font-size: clamp(11px, 15cqi, 14px);
+    font-weight: 600;
+}
+
+.ulc .ulc-effect small {
+    color: var(--ulc-muted);
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+.ulc .ulc-effect:hover:not(:disabled) {
+    border-color: #3a4757;
+}
+
+.ulc .ulc-effect.active {
+    border: 2px solid var(--ulc-accent);
+    background: rgba(47, 124, 246, .12);
+    color: #9cc2ff;
+}
+
+.ulc .ulc-effect:disabled {
+    cursor: default;
+    opacity: .5;
+}
+
+/* ---------- Effect settings ---------- */
+
+.ulc-form {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 14px 16px;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.ulc-inline {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+
+.ulc-inline .ulc-value {
+    min-width: 124px;
+    white-space: nowrap;
+}
+
+.ulc-palette {
+    display: flex;
+    gap: 6px;
+}
+
+.ulc-palette span {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--c);
+}
+
+/* ---------- Buttons ---------- */
+
+.ulc-actions {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.ulc .ulc-btn {
+    display: inline-flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 20px;
+    border: 1px solid #3a4552;
+    border-radius: 8px;
+    background: var(--ulc-card-2);
+    font-weight: 600;
+}
+
+.ulc .ulc-btn:hover {
+    border-color: #4b5867;
+}
+
+.ulc .ulc-btn.primary {
+    border-color: transparent;
+    background: var(--ulc-accent);
+    color: #fff;
+}
+
+.ulc .ulc-btn.primary:hover {
+    background: #4189fa;
+}
+
+.ulc .ulc-btn.small {
+    gap: 6px;
+    margin-top: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.ulc .ulc-btn.small svg {
+    width: 15px;
+    height: 15px;
+}
+
+.ulc .ulc-btn:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+/* ---------- NAS render ---------- */
+
+.ulc-hero {
+    padding: 22px 26px 18px;
+    border-radius: var(--ulc-radius);
+    background:
+        radial-gradient(ellipse at 50% 100%, rgba(47, 124, 246, .18), transparent 60%),
+        linear-gradient(180deg, #1a2029, #0f1318);
+    border: 1px solid var(--ulc-border);
+}
+
+.ulc-preview {
+    padding: 16px 20px;
+    border-radius: 10px;
+    background: #0f1318;
+}
+
+.ulc-nas {
+    --bays: 6;
+    padding: 10px 10px 8px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #4a5058, #2a2f36 8%, #1b1f24);
+    box-shadow:
+        0 14px 30px rgba(0, 0, 0, .55),
+        inset 0 1px 0 rgba(255, 255, 255, .2);
+}
+
+.ulc-nas-bays {
+    display: grid;
+    grid-template-columns: repeat(var(--bays), minmax(0, 1fr));
+    gap: 7px;
+    padding: 8px;
+    border-radius: 6px;
+    background: #090b0e;
+}
+
+.ulc-bay {
+    container-type: inline-size;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    justify-items: center;
+    gap: 8px;
+    aspect-ratio: 1 / 2.15;
+    padding: 12px 0 10px;
+    border-radius: 5px;
+    background: linear-gradient(180deg, #3a4048, #24292f 55%, #1d2126);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07);
+    color: #c9d0d7;
+}
+
+.ulc-bay-no {
+    font: 600 clamp(12px, 2.1vw, 26px)/1 "DIN Alternate", "Bahnschrift", "Arial Narrow", sans-serif;
+}
+
+/* Temperature or state between the bay number and the knob. */
+.ulc-bay-info {
+    align-self: center;
+    max-width: 92%;
+    padding: 2px 4px;
+    border-radius: 4px;
+    color: #e5e9ee;
+    /* Sized by the bay's own width (container query), so "Standby" fits narrow bays without breaking. */
+    font: 600 clamp(8px, 17cqi, 16px)/1.15 "DIN Alternate", "Bahnschrift", "Arial Narrow", sans-serif;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.ulc-bay-info.standby {
+    color: var(--ulc-muted);
+}
+
+.ulc-bay-info.warning {
+    background: rgba(255, 140, 0, .18);
+    color: #fdba74;
+}
+
+.ulc-bay-info.error {
+    background: rgba(239, 68, 68, .2);
+    color: #fca5a5;
+}
+
+.ulc-bay-knob {
+    align-self: end;
+    width: 32%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid #4b525b;
+    background: #15181c;
+}
+
+.ulc-nas-front {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 9px 12px 3px;
+}
+
+.ulc-nas-front .ulc-led {
+    width: 14px;
+}
+
+.ulc-nas-front .ulc-led-label {
+    color: #6f7882;
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+/* The negotiated link speed right after "LAN". */
+.ulc-nas-front .ulc-link-speed {
+    display: inline-flex;
+    gap: 12px;
+    margin-left: 2px;
+    white-space: nowrap;
+}
+
+.ulc-nas-front .ulc-link-speed > span {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    color: #c9d1da;
+    font-weight: 700;
+}
+
+/* An RJ45 socket; green with link, dimmed with the speed it supports without. */
+.ulc svg.ulc-port-ico {
+    width: 18px;
+    height: 14px;
+    fill: none;
+    stroke: var(--port, #34c759);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ulc-nas-front .ulc-link-speed > .down {
+    color: #6f7882;
+    font-weight: 500;
+}
+
+.ulc .ulc-link-speed > .down svg.ulc-port-ico {
+    stroke: #59616b;
+}
+
+.ulc-nas-front .ulc-link-speed[hidden] {
+    display: none;
+}
+
+.ulc-nas-brand {
+    margin-left: auto;
+    color: #8c949d;
+    font: 700 11px/1 sans-serif;
+    letter-spacing: .12em;
+}
+
+.ulc-nas-large .ulc-nas-front {
+    padding-top: 12px;
+}
+
+/* A single LED: colour, brightness and the hardware effect */
+
+.ulc-led {
+    --c: #fff;
+    --level: 1;
+    --speed: 1.5s;
+    width: 62%;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--c);
+    opacity: calc(.12 + .88 * var(--level));
+    box-shadow: 0 0 calc(10px * var(--level)) var(--c), 0 0 calc(3px * var(--level)) var(--c);
+}
+
+.ulc-led.off {
+    background: #2b3036;
+    box-shadow: none;
+    opacity: 1;
+}
+
+.ulc-led.fx-breath {
+    animation: ulc-breath var(--speed) ease-in-out infinite;
+}
+
+/* Rainbow is painted by software; the preview turns a red LED round the colour wheel. */
+.ulc-led.fx-rainbow {
+    --c: #ff2a2a;
+    background: #ff2a2a;
+    animation: ulc-rainbow var(--rainbow) linear infinite;
+}
+
+@keyframes ulc-rainbow {
+    from { filter: hue-rotate(0deg); }
+    to { filter: hue-rotate(360deg); }
+}
+
+.ulc-led.fx-rainbow.reverse {
+    animation-direction: reverse;
+}
+
+.ulc-led.fx-blink {
+    animation: ulc-blink var(--speed) steps(1, end) infinite;
+}
+
+@keyframes ulc-breath {
+    0%, 100% { opacity: .12; }
+    50% { opacity: calc(.12 + .88 * var(--level)); }
+}
+
+@keyframes ulc-blink {
+    0% { opacity: calc(.12 + .88 * var(--level)); }
+    50% { opacity: .1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ulc-led.fx-breath,
+    .ulc-led.fx-blink,
+    .ulc-led.fx-rainbow {
+        animation: none;
+    }
+}
+
+/* ---------- Per-LED table ---------- */
+
+.ulc-table {
+    display: grid;
+}
+
+.ulc-led-row {
+    display: grid;
+    grid-template-columns: 28px minmax(120px, 1fr) 168px minmax(140px, 220px) 150px;
+    gap: 14px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--ulc-border);
+}
+
+.ulc-led-row:last-child {
+    border-bottom: 0;
+}
+
+.ulc-led-row small {
+    display: block;
+    color: var(--ulc-muted);
+}
+
+.ulc-card > .ulc-hint {
+    margin: -6px 0 14px;
+}
+
+.ulc .ulc-effect-cell select[hidden],
+.ulc-managed[hidden] {
+    display: none;
+}
+
+.ulc-managed {
+    display: block;
+    padding: 9px 12px;
+    border: 1px dashed rgba(47, 124, 246, .5);
+    border-radius: 8px;
+    background: rgba(47, 124, 246, .08);
+    color: #9cc2ff;
+    font-size: 13px;
+    text-align: center;
+    cursor: help;
+}
+
+.ulc-led-row .ulc-led {
+    width: 22px;
+    height: 6px;
+}
+
+/* ---------- About ---------- */
+
+.ulc .ulc-about h2 {
+    margin: 0 0 4px;
+    font-size: 24px;
+}
+
+.ulc-about-head {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 22px;
+}
+
+.ulc-about-icon {
+    flex: none;
+    width: 76px;
+    height: 76px;
+    border-radius: 18px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+}
+
+.ulc-about-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.ulc-about-badges .ulc-badge {
+    padding: 1px 10px;
+    font-size: 12px;
+}
+
+.ulc-about-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.ulc .ulc-link-tile {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 12px;
+    background: var(--ulc-card-2);
+    color: var(--ulc-text);
+    text-decoration: none;
+    transition: border-color .15s, background .15s;
+}
+
+.ulc .ulc-link-tile:hover {
+    border-color: var(--ulc-accent);
+    background: rgba(47, 124, 246, .08);
+}
+
+.ulc .ulc-link-tile svg {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    color: var(--ulc-accent);
+}
+
+.ulc .ulc-link-tile svg.ulc-ico-fill {
+    fill: currentColor;
+    stroke: none;
+}
+
+.ulc-link-tile strong {
+    display: block;
+    font-size: 15px;
+}
+
+.ulc-link-tile small {
+    color: var(--ulc-muted);
+}
+
+/* ---------- Facts ---------- */
+
+.ulc-facts {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 10px 18px;
+}
+
+.ulc-facts dt {
+    color: var(--ulc-muted);
+}
+
+/* ---------- Dashboard tile ---------- */
+
+/* .ulc brings the colour variables; the page frame of the settings page isn't wanted here. */
+.ulc.ulc-dash {
+    display: block;
+    min-height: 0;
+    margin: 4px 0 6px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+}
+
+.ulc-dash .ulc-nas {
+    padding: 7px 7px 5px;
+}
+
+/* Shorter bays than on the settings page, so the tile stays compact. */
+.ulc-dash .ulc-bay {
+    aspect-ratio: 1 / 1.45;
+    padding: 8px 0 7px;
+    gap: 6px;
+}
+
+.ulc-dash .ulc-bay-no {
+    font-size: 15px;
+}
+
+/* Compact (default): slim bays with the number and the LED; a state is only
+ * written out for an error or SMART warning. Temperatures are on Unraid's own
+ * storage tiles. */
+.ulc-dash[data-size="compact"] .ulc-nas {
+    padding: 5px 5px 3px;
+}
+
+.ulc-dash[data-size="compact"] .ulc-nas-bays {
+    gap: 5px;
+    padding: 5px;
+}
+
+.ulc-dash[data-size="compact"] .ulc-bay {
+    grid-template-rows: auto auto auto;
+    aspect-ratio: auto;
+    padding: 7px 0 8px;
+    gap: 5px;
+}
+
+.ulc-dash[data-size="compact"] .ulc-bay-knob {
+    display: none;
+}
+
+.ulc-dash[data-size="compact"] .ulc-bay-info:not(.warning):not(.error) {
+    display: none;
+}
+
+.ulc-dash[data-size="compact"] .ulc-bay-info {
+    font-size: clamp(8px, 15cqi, 12px);
+}
+
+.ulc-dash[data-size="compact"] .ulc-nas-front {
+    padding: 6px 8px 1px;
+}
+
+.ulc-dash[data-size="compact"] .ulc-nas-brand {
+    display: none;
+}
+
+/* Same footprint as the 32 px font icons of Unraid's own tiles. */
+.ulc-dash-icon {
+    width: 32px;
+    height: 32px;
+    margin-right: 8px;
+    vertical-align: top;
+}
+
+.ulc-dash-alert {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* ---------- Toast ---------- */
+
+.ulc-toast {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 1000;
+    max-width: 420px;
+    padding: 12px 16px;
+    border: 1px solid var(--ulc-border);
+    border-radius: 10px;
+    background: #18202a;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity .2s, transform .2s;
+}
+
+.ulc-toast.show {
+    opacity: 1;
+    transform: none;
+}
+
+.ulc-toast.success {
+    border-color: rgba(34, 197, 94, .5);
+    color: #86efac;
+}
+
+.ulc-toast.error {
+    border-color: rgba(239, 68, 68, .5);
+    color: #fca5a5;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1280px) {
+    .ulc-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .ulc {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ulc-side {
+        padding: 14px;
+        border-right: 0;
+        border-bottom: 1px solid var(--ulc-border);
+    }
+
+    .ulc-brand {
+        padding-bottom: 12px;
+    }
+
+    .ulc-nav {
+        display: flex;
+        overflow-x: auto;
+    }
+
+    .ulc-nav button {
+        flex: none;
+    }
+
+    .ulc-main {
+        padding: 18px 16px 24px;
+    }
+
+    .ulc-led-row {
+        grid-template-columns: 28px minmax(0, 1fr);
+    }
+
+    .ulc-led-row > :nth-child(n + 3) {
+        grid-column: 2;
+    }
+}
+
+@media (max-width: 560px) {
+    .ulc-color-row {
+        grid-template-columns: 28px minmax(0, 1fr) 38px;
+    }
+
+    .ulc-color-row .ulc-color-input {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .ulc-form,
+    .ulc-field-row,
+    .ulc-facts {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ulc-actions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* ---------- Light theme ----------
+ * data-theme="light" on .ulc (Settings → System → Appearance). Variables first,
+ * then the rules above that carry a dark-only colour of their own. The case
+ * pictures stay dark: they show the device, not the page.
+ */
+
+.ulc[data-theme="light"] {
+    --ulc-bg: #f4f6f9;
+    --ulc-side: #eaeef3;
+    --ulc-card: #ffffff;
+    --ulc-card-2: #f2f4f8;
+    --ulc-border: #d5dce4;
+    --ulc-text: #1b232c;
+    --ulc-muted: #5b6672;
+    --ulc-accent: #2f7cf6;
+    --ulc-accent-2: #1f63d1;
+    --ulc-green: #16a34a;
+    --ulc-amber: #b45309;
+    --ulc-red: #dc2626;
+
+    color-scheme: light;
+}
+
+.ulc[data-theme="light"] a {
+    color: #1f63d1;
+}
+
+.ulc[data-theme="light"] .ulc-link-tile {
+    color: var(--ulc-text);
+}
+
+.ulc[data-theme="light"] code {
+    background: rgba(0, 0, 0, .06);
+}
+
+.ulc[data-theme="light"] .ulc-nav button {
+    color: #3b4652;
+}
+
+.ulc[data-theme="light"] .ulc-nav button:hover {
+    background: rgba(0, 0, 0, .05);
+}
+
+.ulc[data-theme="light"] .ulc-nav button.active {
+    color: #fff;
+}
+
+.ulc[data-theme="light"] .ulc-head p {
+    color: #46515d;
+}
+
+.ulc[data-theme="light"] .ulc-badge {
+    border-color: #c3cbd5;
+}
+
+.ulc[data-theme="light"] .ulc-badge.online {
+    border-color: rgba(22, 163, 74, .6);
+    background: rgba(34, 197, 94, .12);
+    color: #15803d;
+}
+
+.ulc[data-theme="light"] .ulc-badge.night {
+    border-color: rgba(124, 58, 237, .5);
+    background: rgba(124, 58, 237, .1);
+    color: #6d28d9;
+}
+
+.ulc[data-theme="light"] .ulc-badge.alert,
+.ulc[data-theme="light"] .ulc-badge.offline {
+    border-color: rgba(220, 38, 38, .55);
+    background: rgba(239, 68, 68, .1);
+    color: #b91c1c;
+}
+
+.ulc[data-theme="light"] .ulc-banner {
+    border-color: rgba(22, 163, 74, .45);
+    background: rgba(34, 197, 94, .12);
+}
+
+.ulc[data-theme="light"] .ulc-banner small {
+    color: #166534;
+}
+
+.ulc[data-theme="light"] .ulc-warning {
+    border-color: rgba(217, 119, 6, .5);
+    background: rgba(245, 158, 11, .14);
+    color: #6b3f00;
+}
+
+.ulc[data-theme="light"] .ulc-warning strong {
+    color: #1b232c;
+}
+
+.ulc[data-theme="light"] .ulc-switch span {
+    background: #c3cbd5;
+}
+
+.ulc[data-theme="light"] .ulc-switch input:checked + span {
+    background: var(--ulc-accent);
+}
+
+.ulc[data-theme="light"] input[type="range"]::-webkit-slider-runnable-track {
+    background: linear-gradient(90deg, var(--ulc-accent) var(--fill), #c9d1da var(--fill));
+}
+
+.ulc[data-theme="light"] input[type="range"]::-moz-range-track {
+    background: linear-gradient(90deg, var(--ulc-accent) var(--fill), #c9d1da var(--fill));
+}
+
+.ulc[data-theme="light"] input[type="range"]::-webkit-slider-thumb,
+.ulc[data-theme="light"] input[type="range"]::-moz-range-thumb {
+    border-color: #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .2);
+}
+
+.ulc[data-theme="light"] .ulc-hint {
+    background: rgba(47, 124, 246, .08);
+    color: #1e3a8a;
+}
+
+.ulc[data-theme="light"] .ulc-state {
+    background: rgba(34, 197, 94, .14);
+    color: #15803d;
+}
+
+.ulc[data-theme="light"] .ulc-state.error {
+    background: rgba(239, 68, 68, .12);
+    color: #b91c1c;
+}
+
+.ulc[data-theme="light"] .ulc-state.warning {
+    background: rgba(255, 140, 0, .15);
+    color: #9a3412;
+}
+
+.ulc[data-theme="light"] .ulc-state.empty {
+    background: rgba(0, 0, 0, .05);
+    color: var(--ulc-muted);
+}
+
+.ulc[data-theme="light"] .ulc-tabs button {
+    color: #3b4652;
+}
+
+.ulc[data-theme="light"] .ulc-tabs button.active {
+    color: #fff;
+}
+
+.ulc[data-theme="light"] .ulc-swatch {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2);
+}
+
+.ulc[data-theme="light"] .ulc-icon-btn {
+    color: #3b4652;
+}
+
+.ulc[data-theme="light"] .ulc-icon-btn:hover {
+    color: #000;
+}
+
+.ulc[data-theme="light"] .ulc-effect:hover:not(:disabled) {
+    border-color: #aeb8c4;
+}
+
+.ulc[data-theme="light"] .ulc-effect.active {
+    background: rgba(47, 124, 246, .1);
+    color: #1f63d1;
+}
+
+.ulc[data-theme="light"] .ulc-btn {
+    border-color: #c3cbd5;
+}
+
+.ulc[data-theme="light"] .ulc-btn:hover {
+    border-color: #9aa6b3;
+}
+
+.ulc[data-theme="light"] .ulc-btn.primary {
+    border-color: transparent;
+    color: #fff;
+}
+
+.ulc[data-theme="light"] .ulc-managed {
+    border-color: rgba(47, 124, 246, .5);
+    background: rgba(47, 124, 246, .07);
+    color: #1f63d1;
+}
+
+.ulc[data-theme="light"] .ulc-toast {
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+}
+
+.ulc[data-theme="light"] .ulc-toast.success {
+    border-color: rgba(22, 163, 74, .5);
+    color: #15803d;
+}
+
+.ulc[data-theme="light"] .ulc-toast.error {
+    border-color: rgba(220, 38, 38, .5);
+    color: #b91c1c;
+}

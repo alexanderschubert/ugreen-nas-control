@@ -14,8 +14,9 @@ fan settings of UGOS.
   stops or is removed
 - Dashboard tile, English and German interface
 
-The front LEDs are handled by the separate plugin
-[UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control).
+- **LEDs (optional)**: colour, effects, a status mode for disk activity and SMART warnings, night mode and a
+  dashboard tile – a copy of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control),
+  **off until you switch it on** under *UGREEN NAS Control → LEDs*
 
 ## Supported model
 
@@ -54,6 +55,7 @@ No kernel module, so Unraid updates don't break it.
 | `fan/` | Go tool: chip access, curves, sensors, daemon |
 | `src/backend/ugreen-nas-ctl` | starts and stops the daemon |
 | `src/web/` | settings page, dashboard tile, API |
+| `led/` | copy of UGREEN LED Control: Go tool `i2c/`, backend and web under `src/` |
 | `plugin/ugreen-nas-control.plg` | the Unraid plugin |
 
 Settings are saved in `/boot/config/plugins/ugreen-nas-control/fan.cfg`.
@@ -65,10 +67,26 @@ Settings are saved in `/boot/config/plugins/ugreen-nas-control/fan.cfg`.
 /usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-ctl stop|start|status
 ```
 
+## LEDs
+
+The LED part is a copy of UGREEN LED Control (`led/`, the version is in `led/VERSION`) and talks to the LED
+controller through `/dev/i2c-N`. It stays off until the switch under *UGREEN NAS Control → LEDs* is on, and then
+adds *Settings → UGREEN LED Control* and its dashboard tile. It is only offered on the DXP6800 Pro, and not while
+the standalone plugin *UGREEN LED Control*, the plugin *ugreenleds-driver* or the kernel module `led_ugreen` is
+present, as they would write the same LEDs. If you used the standalone plugin, remove it first and switch the LEDs
+on here; its settings are not carried over.
+
+To take over a new version of the LED plugin:
+
+```
+scripts/sync-led.sh /path/to/ugreen-led-control v0.24.0
+scripts/test-led-ctl.sh
+```
+
 ## Development
 
 The fan tool is built by CI (`Fan tool` workflow). For a test install on the NAS, put the CI artifact
-at `build/ugreen-nas-fan` and run `scripts/install-dev.sh`.
+at `build/ugreen-nas-fan` and run `scripts/install-dev.sh` (the LED tool, `build/ugreen-led-i2c`, is optional).
 
 ## Release
 
