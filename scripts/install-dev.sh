@@ -16,8 +16,15 @@ if [ ! -f "$ROOT/build/ugreen-nas-fan" ]; then
     exit 1
 fi
 
+# The LED part (led/) is installed too; its tool build/ugreen-led-i2c is the CI artifact "ugreen-led-i2c".
+LED_TOOL_NOTE=""
+if [ ! -f "$ROOT/build/ugreen-led-i2c" ]; then
+    LED_TOOL_NOTE="build/ugreen-led-i2c missing: the LED part cannot be switched on in this build."
+fi
+
 # The running daemon belongs to the old files; stopping it restores the BIOS fan values.
 if [ -x "$DEST/backend/ugreen-nas-ctl" ]; then
+    "$DEST/backend/ugreen-nas-ctl" led-stop >/dev/null 2>&1 || true
     "$DEST/backend/ugreen-nas-ctl" stop >/dev/null 2>&1 || true
 fi
 
@@ -33,8 +40,23 @@ cp "$ROOT/src/web/include/lang.php" "$DEST/include/"
 cp "$ROOT/src/web/images/ugreen-nas-control.png" "$DEST/images/"
 cp "$ROOT/src/web/icons/ugreen-nas-control.png" "$DEST/icons/"
 
-chmod 755 "$DEST/backend/ugreen-nas-ctl" "$DEST/backend/ugreen-nas-fan"
-find "$DEST" -type f ! -path "$DEST/backend/*" -exec chmod 644 {} +
+
+LED="$ROOT/led/src"
+mkdir -p "$DEST/led/backend" "$DEST/led/css" "$DEST/led/js" "$DEST/led/include" "$DEST/led/images" "$DEST/event"
+cp "$LED/backend/ugreen-led-ctl" "$DEST/led/backend/"
+[ -f "$ROOT/build/ugreen-led-i2c" ] && cp "$ROOT/build/ugreen-led-i2c" "$DEST/led/backend/"
+cp "$LED/web/api.php" "$DEST/led/"
+cp "$LED/web/UGREENLEDControl.page" "$LED/web/UGREENLEDDashboard.page" "$DEST/"
+cp "$LED/web/css/app.css" "$DEST/led/css/"
+cp "$LED/web/js/app.js" "$LED/web/js/dash.js" "$LED/web/js/i18n.js" "$DEST/led/js/"
+cp "$LED/web/include/lang.php" "$DEST/led/include/"
+cp "$LED/web/images/ugreen-led-control.png" "$DEST/led/images/"
+cp "$LED/web/icons/ugreen-led-control.png" "$DEST/icons/"
+cp "$LED/event/stopping" "$DEST/event/"
+
+chmod 755 "$DEST/backend/ugreen-nas-ctl" "$DEST/backend/ugreen-nas-fan" "$DEST/led/backend/ugreen-led-ctl" "$DEST/event/stopping"
+[ -f "$DEST/led/backend/ugreen-led-i2c" ] && chmod 755 "$DEST/led/backend/ugreen-led-i2c"
+find "$DEST" -type f ! -path "$DEST/backend/*" ! -path "$DEST/led/backend/*" ! -path "$DEST/event/*" -exec chmod 644 {} +
 
 # The copy replaced the .page files, and with them a favorite's Menu label.
 if [ -x /usr/local/emhttp/webGui/scripts/restore_favorites ]; then
@@ -45,4 +67,7 @@ fi
 "$DEST/backend/ugreen-nas-ctl" start
 
 echo
+"$DEST/backend/ugreen-nas-ctl" led-boot || true
+[ -z "$LED_TOOL_NOTE" ] || echo "$LED_TOOL_NOTE"
+
 echo "Installation complete."

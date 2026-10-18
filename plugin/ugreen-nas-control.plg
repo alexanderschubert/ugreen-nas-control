@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.1.2">
+<!ENTITY version   "0.2.0">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,11 @@
 >
 
 <CHANGES>
+
+### 0.2.0
+- New: optional LED control, a copy of UGREEN LED Control 0.23.0 (colours, effects, status mode, night mode, dashboard tile). It is off until you switch it on under Settings → UGREEN NAS Control → LEDs; then Settings → UGREEN LED Control appears
+- The LED part only starts on the DXP6800 Pro and not next to the UGREEN LED Control plugin, the ugreenleds-driver plugin or the led_ugreen kernel module, which write the same LEDs
+- Nothing changes for the fans; the LED part adds a second binary (ugreen-led-i2c) to the release
 
 ### 0.1.2
 - The plugin is now made for the DXP6800 Pro only: on any other model it no longer touches the fan controller (the fan wiring is only known for this model); system info and temperatures still work
@@ -90,6 +95,60 @@
 <URL>&gitURL;/src/web/js/dash.js</URL>
 </FILE>
 
+<!-- LED part: a copy of UGREEN LED Control (scripts/sync-led.sh), off until the switch is on -->
+
+<FILE Name="&srcDIR;/led/backend/ugreen-led-ctl">
+<URL>&gitURL;/led/src/backend/ugreen-led-ctl</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/led/backend/ugreen-led-i2c">
+<URL>&releaseURL;/ugreen-led-i2c</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/led/api.php">
+<URL>&gitURL;/led/src/web/api.php</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/led/css/app.css">
+<URL>&gitURL;/led/src/web/css/app.css</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/led/js/app.js">
+<URL>&gitURL;/led/src/web/js/app.js</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/led/js/dash.js">
+<URL>&gitURL;/led/src/web/js/dash.js</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/led/js/i18n.js">
+<URL>&gitURL;/led/src/web/js/i18n.js</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/led/include/lang.php">
+<URL>&gitURL;/led/src/web/include/lang.php</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/led/images/ugreen-led-control.png">
+<URL>&gitURL;/led/src/web/images/ugreen-led-control.png</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/icons/ugreen-led-control.png">
+<URL>&gitURL;/led/src/web/icons/ugreen-led-control.png</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/UGREENLEDControl.page">
+<URL>&gitURL;/led/src/web/UGREENLEDControl.page</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/UGREENLEDDashboard.page">
+<URL>&gitURL;/led/src/web/UGREENLEDDashboard.page</URL>
+</FILE>
+
+<FILE Name="&srcDIR;/event/stopping">
+<URL>&gitURL;/led/src/event/stopping</URL>
+</FILE>
+
 <!-- ========================================================= -->
 <!-- INSTALL -->
 <!-- ========================================================= -->
@@ -112,8 +171,10 @@ log() {
 log "Installing ${VERSION} on kernel $(uname -r)"
 
 # The daemon of the previous version hands the fans back to the BIOS values first.
+# The LED daemon and an LED effect of the previous version must not keep writing either.
 if [ -x "${PLUGIN_DIR}/backend/ugreen-nas-ctl" ]; then
     "${PLUGIN_DIR}/backend/ugreen-nas-ctl" stop >/dev/null 2>&1
+    "${PLUGIN_DIR}/backend/ugreen-nas-ctl" led-stop >/dev/null 2>&1
 fi
 
 #
@@ -123,7 +184,8 @@ fi
 rm -rf "${PLUGIN_DIR}"
 mkdir -p "${PLUGIN_DIR}"
 cp -r "${SRC_DIR}/." "${PLUGIN_DIR}/"
-chmod 755 "${PLUGIN_DIR}/backend/ugreen-nas-ctl" "${PLUGIN_DIR}/backend/ugreen-nas-fan"
+chmod 755 "${PLUGIN_DIR}/backend/ugreen-nas-ctl" "${PLUGIN_DIR}/backend/ugreen-nas-fan" \
+    "${PLUGIN_DIR}/led/backend/ugreen-led-ctl" "${PLUGIN_DIR}/led/backend/ugreen-led-i2c" "${PLUGIN_DIR}/event/stopping"
 
 # A favorite (the heart on the Settings page) is a label in the Menu line of the
 # .page file, which the copy above has just replaced. Unraid puts it back at
@@ -141,6 +203,15 @@ if "${PLUGIN_DIR}/backend/ugreen-nas-fan" probe >/dev/null 2>&1; then
     "${PLUGIN_DIR}/backend/ugreen-nas-ctl" start 2>&1 | sed 's/^/[UGREEN NAS Control] /'
 else
     log "WARNING: No supported fan controller found; only system info and temperatures are available."
+fi
+
+#
+# LEDs, only if they were switched on (and nothing else writes them): saved settings,
+# status daemon, night mode. This also runs at boot.
+#
+
+if [ -f "${BOOT_DIR}/led.enabled" ]; then
+    "${PLUGIN_DIR}/backend/ugreen-nas-ctl" led-boot 2>&1 | sed 's/^/[UGREEN NAS Control] /'
 fi
 
 #
@@ -180,11 +251,13 @@ log() {
 # Stopping writes the BIOS fan values back.
 if [ -x "${PLUGIN_DIR}/backend/ugreen-nas-ctl" ]; then
     "${PLUGIN_DIR}/backend/ugreen-nas-ctl" stop >/dev/null 2>&1
+    "${PLUGIN_DIR}/backend/ugreen-nas-ctl" led-stop >/dev/null 2>&1
 fi
 
 rm -rf "${PLUGIN_DIR}"
 rm -rf "${BOOT_DIR}"
 rm -f /var/run/ugreen-nas-control.*
+/usr/local/sbin/update_cron
 
 log "Removed, the fans run at the BIOS values again."
 

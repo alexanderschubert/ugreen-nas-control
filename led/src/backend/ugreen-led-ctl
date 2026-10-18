@@ -1,0 +1,1583 @@
+#!/bin/bash
+#
+# UGREEN LED Control
+# Backend: talks to the LED controller through ugreen-led-i2c (no kernel module).
+#
+
+set -u
+
+HERE="$(dirname "$(readlink -f "$0")")"
+LED_TOOL="${UGREEN_LED_I2C:-$HERE/ugreen-led-i2c}"
+CONFIG="${UGREEN_LED_CONFIG:-/boot/config/plugins/ugreen-nas-control/leds.cfg}"
+DISKS_INI="${UGREEN_DISKS_INI:-/var/local/emhttp/disks.ini}"
+VAR_INI="${UGREEN_VAR_INI:-/var/local/emhttp/var.ini}"
+SMART_DIR="${UGREEN_SMART_DIR:-/var/local/emhttp/smart}"
+SYS_BLOCK="${UGREEN_SYS_BLOCK:-/sys/block}"
+SYS_NET="${UGREEN_SYS_NET:-/sys/class/net}"
+PIDFILE="${UGREEN_PIDFILE:-/var/run/ugreen-led-control.pid}"
+SCHEDULE_STATE="${UGREEN_SCHEDULE_STATE:-/var/run/ugreen-led-control.schedule}"
+FX_PIDFILE="${UGREEN_FX_PIDFILE:-/var/run/ugreen-led-control-fx.pid}"
+FX_LOG="${UGREEN_FX_LOG:-/var/run/ugreen-led-control-fx.log}"
+IDENTIFY_PREFIX="${UGREEN_IDENTIFY_PREFIX:-/var/run/ugreen-led-control.identify-}"
+ALERT_STATE="${UGREEN_ALERT_STATE:-/var/run/ugreen-led-control.alert}"
+SHUTDOWN_MARK="${UGREEN_SHUTDOWN_MARK:-/var/run/ugreen-led-control.shutdown}"
+DYNAMIX_CFG="${UGREEN_DYNAMIX_CFG:-/boot/config/plugins/dynamix/dynamix.cfg}"
+
+DEFAULT_DISK_COLOR="255 160 0"
+DEFAULT_NETDEV_COLOR="0 200 83"
+DEFAULT_ERROR_COLOR="255 59 48"
+DEFAULT_SYNC_COLOR="0 120 255"
+DEFAULT_SMART_COLOR="255 140 0"
+DEFAULT_SHUTDOWN_COLOR="255 140 0"
+
+# Network LED by link speed (Mbit/s -> colour); a speed uses the largest step at or below it.
+SPEED_STEPS="10 100 1000 2500 5000 10000"
+default_speed_color() {
+    case "$1" in
+        10) echo "255 59 48" ;;
+        100) echo "255 140 0" ;;
+        1000) echo "255 214 10" ;;
+        2500) echo "0 200 83" ;;
+        5000) echo "0 200 200" ;;
+        *) echo "0 120 255" ;;
+    esac
+}
+
+# Hardware blink while a disk or the network is busy.
+ACTIVITY_ON_MS=100
+ACTIVITY_OFF_MS=100
+
+product_name() {
+    [ -n "${UGREEN_PRODUCT:-}" ] && { echo "$UGREEN_PRODUCT"; return; }
+    cat /sys/class/dmi/id/product_name 2>/dev/null || echo "UGREEN NAS"
+}
+
+# DXP6800 Pro -> 6, DX4600 Pro -> 4, DXP8800 Plus -> 8
+bay_count() {
+    local digit
+    digit="$(product_name | sed -n 's/^DXP\{0,1\}\([2-8]\)[0-9]\{3\}.*/\1/p')"
+    echo "${digit:-8}"
+}
+
+# DXP480T Plus: no controller at 0x3a, only a power LED on a simpler chip (0x26),
+# which the tool sets to static white. Fails on every other model.
+dxp480t_apply() {
+    case "$(product_name)" in
+        DXP480T*) tool dxp480t white ;;
+        *) return 1 ;;
+    esac
+}
+
+# The controller always knows disk1..disk8; only the bays the model has are real.
+supported_leds() {
+    local i
+    printf 'power netdev'
+    for i in $(seq 1 "$(bay_count)"); do
+        printf ' disk%s' "$i"
+    done
+}
+
+usage() {
+    cat <<USAGE
+UGREEN LED Control
+
+Usage:
+  ugreen-led-ctl status
+  ugreen-led-ctl list
+  ugreen-led-ctl get <led>
+  ugreen-led-ctl all
+  ugreen-led-ctl apply        (restore the settings saved by the web UI)
+  ugreen-led-ctl bays         (which disk sits in which bay)
+  ugreen-led-ctl daemon start|stop|restart|status|run
+  ugreen-led-ctl schedule [--force]   (night mode and Unraid alerts; run every minute by cron)
+  ugreen-led-ctl alerts [--force]     (Unraid alerts on the power LED only)
+  ugreen-led-ctl fx start|stop|restart|status   (rainbow/temperature from leds.cfg)
+  ugreen-led-ctl shutdown [--test]               (power LED signals shutdown/reboot; --test shows it for 6 s)
+  ugreen-led-ctl smbus                           (load the SMBus driver, show the adapter or why it is missing)
+  ugreen-led-ctl dxp480t                         (DXP480T Plus only: power LED to static white)
+  ugreen-led-ctl identify <diskN> [seconds]      (blink a bay white, default 30 s)
+  ugreen-led-ctl identify-stop <diskN>
+  ugreen-led-ctl on <led>
+  ugreen-led-ctl off <led>
+  ugreen-led-ctl brightness <led> <0-255>
+  ugreen-led-ctl color <led> <R> <G> <B>
+  ugreen-led-ctl blink <led> <on_ms> <off_ms>
+  ugreen-led-ctl breath <led> <on_ms> <off_ms>
+  ugreen-led-ctl stop <led>
+  ugreen-led-ctl help
+
+Supported LEDs:
+  power
+  netdev
+  disk1 ... diskN (N = number of bays)
+USAGE
+}
+
+valid_led() {
+    case " $(supported_leds) " in
+        *" $1 "*) return 0 ;;
+    esac
+    return 1
+}
+
+require_led() {
+    valid_led "$1" || {
+        echo "ERROR: LED '$1' not found." >&2
+        return 1
+    }
+}
+
+is_byte() {
+    case "$1" in
+        ''|*[!0-9]*) return 1 ;;
+    esac
+    [ "$1" -le 255 ]
+}
+
+tool() {
+    "$LED_TOOL" "$@"
+}
+
+has_smbus() {
+    grep -qs '^SMBus I801 adapter' /sys/bus/i2c/devices/i2c-*/name
+}
+
+# The LED controller sits on the Intel SMBus. Unraid usually loads its driver
+# (i2c_i801) at boot, but not always (GitHub issue #30), so load it here and
+# give udev a moment to register the adapter. i2c-dev makes it /dev/i2c-N.
+ensure_smbus() {
+    local i
+
+    modprobe -q i2c-dev 2>/dev/null
+
+    # Already loaded without an adapter: nothing to wait for (dmesg tells why).
+    grep -q '^i2c_i801 ' /proc/modules 2>/dev/null && { has_smbus; return; }
+    modprobe -q i2c_i801 2>/dev/null || return 1
+
+    for i in $(seq 1 30); do
+        has_smbus && return 0
+        sleep 0.1
+    done
+    return 1
+}
+
+# "<name> <mode> <brightness> <R> <G> <B> <on_ms> <off_ms>"
+led_line() {
+    tool --plain get "$1"
+}
+
+led_mode() {
+    led_line "$1" | cut -d' ' -f2
+}
+
+# ============================================================
+# Reading
+# ============================================================
+
+# What the web UI expects: brightness 0 while off, effect none|blink|breath.
+status_json() {
+    local name="$1"
+    local mode="$2"
+    local brightness="$3"
+    local color="$4 $5 $6"
+    local effect="none"
+
+    case "$mode" in
+        off) brightness=0 ;;
+        blink|breath) effect="$mode" ;;
+    esac
+
+    printf '{\n'
+    printf '  "name": "%s",\n' "$name"
+    printf '  "brightness": "%s",\n' "$brightness"
+    printf '  "max_brightness": "255",\n'
+    printf '  "color": "%s",\n' "$color"
+    printf '  "effect": "%s",\n' "$effect"
+    printf '  "on_ms": "%s",\n' "$7"
+    printf '  "off_ms": "%s"\n' "$8"
+    printf '}\n'
+}
+
+get_status() {
+    local line
+
+    require_led "$1" || return 1
+    line="$(led_line "$1")" || return 1
+
+    # shellcheck disable=SC2086 # the line is eight space-separated fields
+    status_json $line
+}
+
+all_leds() {
+    local first=1
+    local name mode brightness r g b on off
+
+    printf '{\n'
+    while read -r name mode brightness r g b on off; do
+        valid_led "$name" || continue
+        [ "$first" -eq 1 ] || printf ',\n'
+        printf '"%s": ' "$name"
+        status_json "$name" "$mode" "$brightness" "$r" "$g" "$b" "$on" "$off"
+        first=0
+    done < <(tool --plain get all 2>/dev/null)
+    printf '}\n'
+}
+
+list_leds() {
+    local first=1
+    local led
+
+    printf '['
+    # Only when the controller answers; an empty list tells the UI nothing is there.
+    if tool --plain get power >/dev/null 2>&1; then
+        for led in $(supported_leds); do
+            [ "$first" -eq 1 ] || printf ', '
+            printf '"%s"' "$led"
+            first=0
+        done
+    fi
+    printf ']\n'
+}
+
+# ich777's ugreenleds-driver monitor writes the same LEDs.
+foreign_monitor_running() {
+    pgrep -f '^/bin/bash /usr/bin/ugreen-leds' >/dev/null 2>&1
+}
+
+status() {
+    local probe
+    local bus=""
+
+    probe="$(tool probe 2>/dev/null)" && bus="$(printf '%s' "$probe" | sed -n 's/.*"bus": "\/dev\/i2c-\([0-9]*\)".*/\1/p')"
+
+    printf '{\n'
+    printf '  "ok": true,\n'
+    if foreign_monitor_running; then
+        printf '  "foreign_monitor": true,\n'
+    else
+        printf '  "foreign_monitor": false,\n'
+    fi
+    printf '  "model": "%s",\n' "$(product_name)"
+    printf '  "bays": %s,\n' "$(bay_count)"
+    printf '  "kernel": "%s",\n' "$(uname -r)"
+    printf '  "mapping": "%s",\n' "$(mapping_source)"
+    printf '  "mode": "%s",\n' "$(config_value mode | grep -x status || echo manual)"
+    if daemon_running; then
+        printf '  "daemon": true,\n'
+    else
+        printf '  "daemon": false,\n'
+    fi
+    if fx_running; then
+        printf '  "fx": "%s",\n' "$(config_value fx_name)"
+    else
+        printf '  "fx": "",\n'
+    fi
+    printf '  "fx_leds": "%s",\n' "$(config_value fx_leds)"
+    printf '  "identify": %s,\n' "$(identifying_leds)"
+    local sync
+    sync="$(sync_state)"
+    printf '  "sync_action": "%s",\n' "${sync%% *}"
+    printf '  "sync_percent": %s,\n' "$([ -n "$sync" ] && echo "${sync##* }" || echo 0)"
+    printf '  "sync_enabled": %s,\n' "$([ "$(config_value sync_enabled)" = 0 ] && echo false || echo true)"
+    printf '  "sync_color": "%s",\n' "$(config_value sync_color | grep . || echo "$DEFAULT_SYNC_COLOR")"
+    printf '  "standby_mode": "%s",\n' "$(config_value standby_mode | grep . || echo dim)"
+    printf '  "standby_level": %s,\n' "$(config_value standby_level | grep . || echo 30)"
+    printf '  "smart_enabled": %s,\n' "$([ "$(config_value smart_enabled)" = 0 ] && echo false || echo true)"
+    printf '  "smart_color": "%s",\n' "$(config_value smart_color | grep . || echo "$DEFAULT_SMART_COLOR")"
+    printf '  "disk_color_mode": "%s",\n' "$(config_value disk_color_mode | grep . || echo own)"
+    printf '  "netdev_status": "%s",\n' "$(netdev_status)"
+    printf '  "alert_enabled": %s,\n' "$([ "$(config_value alert_enabled)" = 1 ] && echo true || echo false)"
+    printf '  "alert_level": "%s",\n' "$(config_value alert_level | grep . || echo warning)"
+    printf '  "alert_color": "%s",\n' "$(config_value alert_color | grep . || echo "$DEFAULT_ERROR_COLOR")"
+    printf '  "shutdown_blink": %s,\n' "$([ "$(config_value shutdown_blink)" = 1 ] && echo true || echo false)"
+    printf '  "shutdown_color": "%s",\n' "$(config_value shutdown_color | grep . || echo "$DEFAULT_SHUTDOWN_COLOR")"
+    printf '  "shutdown_effect": "%s",\n' "$(config_value shutdown_effect | grep -x 'blink\|breath' || echo blink)"
+    printf '  "alert_count": %s,\n' "$(unread_alerts)"
+    printf '  "alert_active": %s,\n' "$([ "$(cat "$ALERT_STATE" 2>/dev/null)" = alert ] && echo true || echo false)"
+    printf '  "fx_speed": %s,\n' "$(config_value fx_speed | grep . || echo 2)"
+    printf '  "fx_reverse": %s,\n' "$([ "$(config_value fx_reverse)" = 1 ] && echo true || echo false)"
+    printf '  "fx_idle": %s,\n' "$([ "$(config_value fx_idle)" = 1 ] && echo true || echo false)"
+    if is_night; then
+        printf '  "night": true,\n'
+    else
+        printf '  "night": false,\n'
+    fi
+    printf '  "disk_error_color": "%s",\n' "$(config_value disk_error_color | grep . || echo "$DEFAULT_ERROR_COLOR")"
+    printf '  "saved_brightness": %s,\n' "$(saved_brightness_json)"
+    printf '  "network_device": "%s",\n' "$(network_device)"
+    printf '  "netdev_speed": %s,\n' "$(link_speed "$(network_device)")"
+    printf '  "network_ports": %s,\n' "$(network_ports_json)"
+    printf '  "netdev_speed_enabled": %s,\n' "$([ "$(config_value netdev_speed_enabled)" = 1 ] && echo true || echo false)"
+    printf '  "netdev_speed_colors": %s,\n' "$(speed_colors_json)"
+    printf '  "controller": "ugreen-led-i2c",\n'
+    if [ -n "$bus" ]; then
+        printf '  "i2c_bus": %s,\n' "$bus"
+        printf '  "i2c_address": "0x3a",\n'
+    else
+        printf '  "i2c_bus": null,\n'
+        printf '  "i2c_address": null,\n'
+    fi
+    printf '  "leds": '
+    list_leds
+    printf '}\n'
+}
+
+# ============================================================
+# Writing
+# ============================================================
+
+set_color() {
+    local led="$1"
+    local value
+
+    require_led "$led" || return 1
+    for value in "$2" "$3" "$4"; do
+        is_byte "$value" || {
+            echo "ERROR: RGB values must be between 0 and 255." >&2
+            return 1
+        }
+    done
+
+    tool set "$led" color "$2" "$3" "$4"
+}
+
+# Brightness 0 switches the LED off; any other value also switches an off LED on.
+set_brightness() {
+    local led="$1"
+    local value="$2"
+
+    require_led "$led" || return 1
+    is_byte "$value" || {
+        echo "ERROR: Brightness must be between 0 and 255." >&2
+        return 1
+    }
+
+    if [ "$value" -eq 0 ]; then
+        tool set "$led" off
+        return
+    fi
+
+    tool set "$led" brightness "$value" || return 1
+    [ "$(led_mode "$led")" = "off" ] && tool set "$led" on
+    return 0
+}
+
+set_on() {
+    require_led "$1" || return 1
+    tool set "$1" brightness 255 && tool set "$1" on
+}
+
+set_off() {
+    require_led "$1" || return 1
+    tool set "$1" off
+}
+
+set_effect() {
+    local effect="$1"
+    local led="$2"
+
+    require_led "$led" || return 1
+    tool set "$led" "$effect" "$3" "$4"
+}
+
+# Back to a steady light; an LED that is off stays off.
+stop_effect() {
+    local mode
+
+    require_led "$1" || return 1
+    mode="$(led_mode "$1")" || return 1
+
+    case "$mode" in
+        blink|breath) tool set "$1" on ;;
+    esac
+}
+
+# ============================================================
+# Saved settings
+# ============================================================
+
+# Read one value from the settings file without sourcing it: key="value"
+config_value() {
+    sed -n "s/^$1=\"\(.*\)\"\$/\1/p" "$CONFIG" 2>/dev/null | tail -n 1
+}
+
+# Network LED in status mode: activity (blinks with traffic), link (steady,
+# error colour without a connection) or manual (the daemon leaves it alone).
+netdev_status() {
+    config_value netdev_status | grep -x 'activity\|link\|manual' || echo activity
+}
+
+# Saved colour, brightness and effect of one LED.
+apply_led() {
+    local led="$1"
+    local color
+    local brightness
+    local effect
+
+    color="$(config_value "${led}_color")"
+    brightness="$(config_value "${led}_brightness")"
+    effect="$(config_value "${led}_effect")"
+
+    # shellcheck disable=SC2086 # "R G B" is meant to split into three arguments
+    [ -n "$color" ] && set_color "$led" $color
+    [ -n "$brightness" ] && set_brightness "$led" "$brightness"
+
+    # An effect would light an LED that is meant to be off.
+    [ "${brightness:-1}" = "0" ] && return 0
+
+    case "$effect" in
+        blink) set_effect blink "$led" "$(config_value "${led}_on" | grep . || echo 450)" "$(config_value "${led}_off" | grep . || echo 450)" ;;
+        breath) set_effect breath "$led" "$(config_value "${led}_on" | grep . || echo 1200)" "$(config_value "${led}_off" | grep . || echo 900)" ;;
+        none) stop_effect "$led" ;;
+    esac
+}
+
+apply_config() {
+    local led
+
+    if [ ! -f "$CONFIG" ]; then
+        echo "No saved settings ($CONFIG)."
+        return 0
+    fi
+
+    for led in $(supported_leds); do
+        apply_led "$led"
+    done
+
+    echo "Saved settings applied."
+}
+
+saved_color() {
+    config_value "${1}_color" | grep . || echo "$2"
+}
+
+# {"power": 204, ...}: the day brightness of every LED that has one saved;
+# at night the LEDs themselves show the dimmed value.
+saved_brightness_json() {
+    local led
+    local value
+    local out=""
+
+    for led in $(supported_leds); do
+        value="$(config_value "${led}_brightness")"
+        is_byte "$value" 2>/dev/null && out="$out, \"$led\": $value"
+    done
+    printf '{%s}' "${out#, }"
+}
+
+saved_brightness() {
+    config_value "${1}_brightness" | grep . || echo 255
+}
+
+# ============================================================
+# Night mode
+# ============================================================
+
+# night_enabled="1", night_start/night_end "HH:MM" (may span midnight),
+# night_action "dim" (down to night_brightness, 0-255) or "off".
+is_night() {
+    local start
+    local end
+    local now
+
+    [ "$(config_value night_enabled)" = "1" ] || return 1
+
+    start="$(config_value night_start | grep . || echo 22:00)"
+    end="$(config_value night_end | grep . || echo 07:00)"
+    now="${UGREEN_NOW:-$(date +%H%M)}"
+    start="${start/:/}"
+    end="${end/:/}"
+
+    if [ "$((10#$start))" -lt "$((10#$end))" ]; then
+        [ "$((10#$now))" -ge "$((10#$start))" ] && [ "$((10#$now))" -lt "$((10#$end))" ]
+    elif [ "$((10#$start))" -gt "$((10#$end))" ]; then
+        [ "$((10#$now))" -ge "$((10#$start))" ] || [ "$((10#$now))" -lt "$((10#$end))" ]
+    else
+        return 1
+    fi
+}
+
+# Brightness to show: the saved one by day, at most the night level (or 0) by night.
+effective_brightness() {
+    local saved="$1"
+    local night="$2"
+    local level
+
+    if [ "$night" -eq 1 ]; then
+        [ "$(config_value night_action)" = "off" ] && { echo 0; return; }
+        level="$(config_value night_brightness | grep . || echo 20)"
+        [ "$saved" -gt "$level" ] && saved="$level"
+    fi
+
+    echo "$saved"
+}
+
+# Night look for LEDs the daemon doesn't drive: dim or off, effects keep running.
+apply_night() {
+    local led
+    local brightness
+
+    for led in "$@"; do
+        brightness="$(effective_brightness "$(saved_brightness "$led")" 1)"
+        if [ "$brightness" -eq 0 ]; then
+            tool set "$led" off >/dev/null 2>&1
+        else
+            tool set "$led" brightness "$brightness" >/dev/null 2>&1
+        fi
+    done
+}
+
+# Switch between day and night when the state changes (cron runs this every minute).
+schedule_tick() {
+    local force="${1:-}"
+    local wanted="day"
+    local leds
+
+    is_night && wanted="night"
+    [ "$force" != "--force" ] && [ "$(cat "$SCHEDULE_STATE" 2>/dev/null)" = "$wanted" ] && return 1
+    echo "$wanted" > "$SCHEDULE_STATE"
+
+    if daemon_running; then
+        # The daemon picks up day/night itself after a restart; the power LED is ours,
+        # and so is the network LED when it stays manual.
+        daemon_command restart >/dev/null
+        leds="power"
+        [ "$(netdev_status)" = "manual" ] && leds="power netdev"
+    else
+        apply_config >/dev/null
+        leds="$(supported_leds)"
+    fi
+
+    # shellcheck disable=SC2086
+    [ "$wanted" = "night" ] && apply_night $leds
+
+    log "night mode: $wanted"
+}
+
+# ============================================================
+# Unraid alerts on the power LED
+# ============================================================
+
+# alert_enabled="1", alert_level "warning" (warnings and alerts) or "alert",
+# alert_color "R G B". Unraid keeps unread notifications as *.notify files.
+notify_dir() {
+    local dir
+
+    dir="$(awk -F'"' '/^\[/ { section = $0 } section == "[notify]" && /^path=/ { print $2; exit }' "$DYNAMIX_CFG" 2>/dev/null)"
+    echo "${UGREEN_NOTIFY_DIR:-${dir:-/tmp/notifications}}"
+}
+
+unread_alerts() {
+    local level
+    local file
+    local importance
+    local count=0
+
+    level="$(config_value alert_level | grep . || echo warning)"
+
+    for file in "$(notify_dir)"/unread/*.notify; do
+        [ -e "$file" ] || continue
+        importance="$(sed -n 's/^importance="\{0,1\}\([a-z]*\)"\{0,1\}$/\1/p' "$file" | head -n 1)"
+        case "$importance" in
+            alert) count=$((count + 1)) ;;
+            warning) [ "$level" = "warning" ] && count=$((count + 1)) ;;
+        esac
+    done
+
+    echo "$count"
+}
+
+# Power LED back to normal: saved look, night mode, and its effect if any.
+restore_power() {
+    apply_led power >/dev/null 2>&1
+    is_night && apply_night power
+
+    case ",$(config_value fx_leds)," in
+        *,power,*) [ -n "$(config_value fx_name)" ] && ! fx_running && fx_start >/dev/null 2>&1 ;;
+    esac
+    return 0
+}
+
+# The power LED while the NAS shuts down or reboots. emhttp calls event/stopping at the
+# start of every array stop; only runlevel 0 (halt) or 6 (reboot) means the system goes
+# down, a plain array stop leaves the LED alone. "--test" shows it for a few seconds.
+shutdown_signal() {
+    local test="${1:-}"
+    local effect
+    local color
+    local brightness
+    local night=0
+
+    if [ "$test" != "--test" ]; then
+        [ "$(config_value shutdown_blink)" = "1" ] || return 0
+
+        case "$(runlevel 2>/dev/null | awk '{print $2}')" in
+            0|6) ;;
+            *) return 0 ;;
+        esac
+
+        # From here on nothing else writes the power LED (night mode and alert ticks check this).
+        : > "$SHUTDOWN_MARK"
+        fx_stop
+    fi
+
+    effect="$(config_value shutdown_effect | grep -x 'blink\|breath' || echo blink)"
+    color="$(config_value shutdown_color | grep . || echo "$DEFAULT_SHUTDOWN_COLOR")"
+    is_night && night=1
+    brightness="$(effective_brightness "$(saved_brightness power)" "$night")"
+
+    if [ "$brightness" -eq 0 ]; then
+        tool set power off >/dev/null 2>&1
+        return 0
+    fi
+
+    # shellcheck disable=SC2086
+    tool set power color $color >/dev/null 2>&1
+    tool set power brightness "$brightness" >/dev/null 2>&1
+    if [ "$effect" = "breath" ]; then
+        tool set power breath 1200 1200 >/dev/null 2>&1
+    else
+        tool set power blink 500 500 >/dev/null 2>&1
+    fi
+
+    if [ "$test" = "--test" ]; then
+        # Back to the normal look after a few seconds.
+        setsid bash -c 'sleep 6; exec "$1" power-restore' _ "$(readlink -f "$0")" </dev/null >/dev/null 2>&1 &
+        echo "Power LED signals shutdown for 6 s."
+    else
+        log "Shutting down or rebooting: power LED signals it"
+    fi
+}
+
+# While alerts are unread the power LED blinks in the alert colour; it is
+# written every minute, so other writes (mode switch, night mode) can't hide it.
+alert_tick() {
+    local force="${1:-}"
+    local count=0
+    local last
+    local brightness
+    local night=0
+
+    [ "$(config_value alert_enabled)" = "1" ] && count="$(unread_alerts)"
+    last="$(cat "$ALERT_STATE" 2>/dev/null)"
+
+    if [ "$count" -gt 0 ]; then
+        echo "alert" > "$ALERT_STATE"
+
+        # A rainbow/temperature effect on the power LED would paint over it.
+        case ",$(config_value fx_leds)," in
+            *,power,*) fx_running && fx_stop ;;
+        esac
+
+        is_night && night=1
+        brightness="$(effective_brightness "$(saved_brightness power)" "$night")"
+        if [ "$brightness" -eq 0 ]; then
+            tool set power off >/dev/null 2>&1
+        else
+            # shellcheck disable=SC2046
+            tool set power color $(config_value alert_color | grep . || echo "$DEFAULT_ERROR_COLOR") >/dev/null 2>&1
+            tool set power brightness "$brightness" >/dev/null 2>&1
+            tool set power blink 500 500 >/dev/null 2>&1
+        fi
+
+        [ "$last" = "alert" ] || log "Unraid alert: power LED signals $count unread notification(s)"
+    elif [ "$last" = "alert" ] || [ "$force" = "--force" ]; then
+        echo "none" > "$ALERT_STATE"
+        [ "$last" = "alert" ] && restore_power && log "Unraid alerts read: power LED back to normal"
+    fi
+}
+
+# ============================================================
+# Status mode: bays, disk activity/health and network
+# ============================================================
+
+# SATA port of each bay, left to right, after miskcoo/ugreen_leds_controller.
+# Only the DXP6800 differs from ata1..ataN in order.
+bay_ports() {
+    case "$(product_name)" in
+        DXP6800*) echo "ata3 ata4 ata5 ata6 ata1 ata2" ;;
+        *) seq -f 'ata%g' 1 "$(bay_count)" | tr '\n' ' ' ;;
+    esac
+}
+
+# How sure the port table is: tested (here or by miskcoo), reported by users, or guessed.
+mapping_source() {
+    case "$(product_name)" in
+        DXP6800*|DX4600*|DXP8800*) echo tested ;;
+        DX4700*|DXP2800*|DXP4800*) echo reported ;;
+        *) echo guessed ;;
+    esac
+}
+
+disk_serial() {
+    udevadm info -q property -n "/dev/$1" 2>/dev/null | sed -n 's/^ID_SERIAL_SHORT=//p'
+}
+
+# Block device (sdX) in a bay. A saved bay<N>_serial wins over the port table.
+bay_device() {
+    local bay="$1"
+    local serial
+    local port
+    local dev
+
+    serial="$(config_value "bay${bay}_serial")"
+    # shellcheck disable=SC2046
+    set -- $(bay_ports)
+    eval "port=\${$bay:-}"
+
+    for dev in "$SYS_BLOCK"/sd*; do
+        [ -e "$dev" ] || continue
+
+        if [ -n "$serial" ]; then
+            [ "$(disk_serial "${dev##*/}")" = "$serial" ] && { echo "${dev##*/}"; return; }
+        elif [ -n "$port" ]; then
+            case "$(readlink -f "$dev/device")" in
+                */"$port"/*) echo "${dev##*/}"; return ;;
+            esac
+        fi
+    done
+}
+
+# Unraid's view of a device, spread over its whole disks.ini section:
+# "<slot> <status> <spundown 0|1> <temp|-> <errors> <rotational 0|1> <warning|-> <critical|-> <id>",
+# e.g. "disk2 DISK_OK 1 - 0 1 - - ST4000VN006-3CW104_ZW628KBL".
+unraid_disk() {
+    awk -F'"' -v dev="$1" '
+        function dash(value) { return value == "" ? "-" : value }
+        function out() {
+            if (device == dev && name != "") {
+                print name, status, (spundown == "" ? 0 : spundown), (temp ~ /^[0-9]+$/ ? temp : "-"), (errors == "" ? 0 : errors), \
+                    (rotational == "" ? 1 : rotational), (warning ~ /^[0-9]+$/ ? warning : "-"), (critical ~ /^[0-9]+$/ ? critical : "-"), dash(id)
+                found = 1
+                exit
+            }
+        }
+        /^\[/ { out(); name = device = status = spundown = temp = errors = rotational = warning = critical = id = "" }
+        /^rotational=/ { rotational = $2 }
+        /^warning=/ { warning = $2 }
+        /^critical=/ { critical = $2 }
+        /^id=/ { id = $2 }
+        /^name=/ { name = $2 }
+        /^device=/ { device = $2 }
+        /^status=/ { status = $2 }
+        /^spundown=/ { spundown = $2 }
+        /^temp=/ { temp = $2 }
+        /^numErrors=/ { errors = $2 }
+        END { if (!found) out() }
+    ' "$DISKS_INI" 2>/dev/null
+}
+
+# A running parity check/rebuild: "<check|recon|clear> <percent>", nothing when idle.
+sync_state() {
+    awk -F'"' '
+        /^mdResync=/ { resync = $2 }
+        /^mdResyncPos=/ { pos = $2 }
+        /^mdResyncSize=/ { size = $2 }
+        /^mdResyncAction=/ { split($2, words, " "); action = words[1] }
+        END { if (resync != "" && resync != "0") print action, (size > 0 ? int(pos * 100 / size) : 0) }
+    ' "$VAR_INI" 2>/dev/null
+}
+
+# Unraid's temperature limits for a disk: its own warning/critical, or the global
+# hot/max (hotssd/maxssd for SSDs) from dynamix.cfg. Prints "<hot> <max>".
+temp_limits() {
+    local rotational="$1"
+    local warning="$2"
+    local critical="$3"
+    local hot_key="hot"
+    local max_key="max"
+    local hot
+    local max
+
+    [ "$rotational" = "0" ] && { hot_key="hotssd"; max_key="maxssd"; }
+    hot="$(sed -n "s/^$hot_key=\"\([0-9]*\)\"$/\1/p" "$DYNAMIX_CFG" 2>/dev/null | head -n 1)"
+    max="$(sed -n "s/^$max_key=\"\([0-9]*\)\"$/\1/p" "$DYNAMIX_CFG" 2>/dev/null | head -n 1)"
+    [ "$rotational" = "0" ] && { hot="${hot:-60}"; max="${max:-70}"; }
+
+    [ "$warning" != "-" ] && hot="$warning"
+    [ "$critical" != "-" ] && max="$critical"
+
+    echo "${hot:-45} ${max:-55}"
+}
+
+# Colour for a disk temperature: blue at hot-15, green at hot-7, yellow at hot, red at max.
+temp_color() {
+    local temp="$1"
+    local hot="$2"
+    local max="$3"
+    local -a stops
+    local i lo hi t span
+
+    stops=("$((hot - 15)) 0 120 255" "$((hot - 7)) 0 200 83" "$hot 255 200 0" "$max 255 40 40")
+
+    # shellcheck disable=SC2086
+    set -- ${stops[0]}
+    [ "$temp" -le "$1" ] && { echo "$2 $3 $4"; return; }
+
+    for i in 1 2 3; do
+        # shellcheck disable=SC2086
+        set -- ${stops[i - 1]} ${stops[i]}
+        lo="$1"
+        hi="$5"
+        if [ "$temp" -le "$hi" ]; then
+            span=$((hi - lo))
+            [ "$span" -lt 1 ] && span=1
+            t=$((temp - lo))
+            echo "$(( $2 + ($6 - $2) * t / span )) $(( $3 + ($7 - $3) * t / span )) $(( $4 + ($8 - $4) * t / span ))"
+            return
+        fi
+    done
+
+    echo "255 40 40"
+}
+
+# The watched SMART values from Unraid's cached smartctl output, plus Unraid's
+# read/write error count: "5=0 187=0 197=0 198=0 failed=0 errors=0".
+# 188 (Command_Timeout) is left out: Seagate reports raw values like "0 0 0".
+smart_now() {
+    local slot="$1"
+    local errors="$2"
+
+    awk -v errors="$errors" '
+        $1 ~ /^(5|187|197|198)$/ { split($10, raw, "/"); value[$1] = raw[1] + 0; if ($9 != "-") failed = 1 }
+        $1 ~ /^[0-9]+$/ && $9 != "-" && $9 != "" { failed = 1 }
+        END {
+            printf "5=%d 187=%d 197=%d 198=%d failed=%d errors=%d\n", value[5], value[187], value[197], value[198], failed, errors
+        }
+    ' "$SMART_DIR/$slot" 2>/dev/null || echo "5=0 187=0 197=0 198=0 failed=0 errors=$errors"
+}
+
+# Config key for a disk's acknowledged SMART values, from its Unraid id.
+smart_key() {
+    echo "smart_ack_$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_')"
+}
+
+# Values that rose above what was acknowledged ("5=8 errors=2"), empty if none.
+smart_warnings() {
+    local now="$1"
+    local ack="$2"
+    local pair
+    local name
+    local value
+    local acked
+    local out=""
+
+    for pair in $now; do
+        name="${pair%%=*}"
+        value="${pair#*=}"
+        acked="$(printf '%s\n' $ack | sed -n "s/^$name=//p")"
+        [ "$value" -gt "${acked:-0}" ] && out="$out $pair"
+    done
+
+    echo "${out# }"
+}
+
+# Brightness of a spun-down disk: standby_mode normal|dim|off|pulse, standby_level in %.
+# "pulse" keeps the brightness; the bay breathes slowly instead (see daemon_run).
+standby_brightness() {
+    local brightness="$1"
+    local level
+
+    case "$(config_value standby_mode | grep . || echo dim)" in
+        normal|pulse) echo "$brightness" ;;
+        off) echo 0 ;;
+        *)
+            level="$(config_value standby_level | grep . || echo 30)"
+            brightness=$((brightness * level / 100))
+            [ "$brightness" -lt 1 ] && brightness=1
+            echo "$brightness"
+            ;;
+    esac
+}
+
+is_error_status() {
+    case "$1" in
+        DISK_INVALID|DISK_DSBL|DISK_DSBL_NEW|DISK_WRONG|DISK_NP_MISSING) return 0 ;;
+    esac
+    return 1
+}
+
+bays_json() {
+    local bay
+    local dev
+    local serial
+    local slot
+    local disk_status
+    local spundown
+    local temp
+    local errors
+    local limits="45 55"
+    local now=""
+    local key=""
+    local warnings=""
+    local first=1
+
+    printf '['
+    for bay in $(seq 1 "$(bay_count)"); do
+        dev="$(bay_device "$bay")"
+        serial=""
+        slot=""
+        disk_status=""
+        spundown=0
+        temp="-"
+        errors=0
+        limits="45 55"
+        now=""
+        key=""
+        warnings=""
+
+        if [ -n "$dev" ]; then
+            serial="$(disk_serial "$dev")"
+            # shellcheck disable=SC2046
+            set -- $(unraid_disk "$dev")
+            slot="${1:-}"
+            disk_status="${2:-}"
+            spundown="${3:-0}"
+            temp="${4:--}"
+            errors="${5:-0}"
+            limits="$(temp_limits "${6:-1}" "${7:--}" "${8:--}")"
+            if [ -n "$slot" ]; then
+                now="$(smart_now "$slot" "$errors")"
+                key="$(smart_key "${9:--}")"
+                warnings="$(smart_warnings "$now" "$(config_value "$key")")"
+            fi
+        fi
+
+        [ "$first" -eq 1 ] || printf ','
+        printf '{"bay":%s,"led":"disk%s","device":"%s","serial":"%s","slot":"%s","status":"%s","error":%s,"standby":%s,"temp":%s,"errors":%s,"temp_hot":%s,"temp_max":%s,"smart_now":"%s","smart_key":"%s","smart_warnings":"%s"}' \
+            "$bay" "$bay" "$dev" "$serial" "$slot" "$disk_status" \
+            "$(is_error_status "$disk_status" && echo true || echo false)" \
+            "$([ "$spundown" = 1 ] && echo true || echo false)" \
+            "$([ "$temp" = "-" ] && echo null || echo "$temp")" "$errors" \
+            "${limits% *}" "${limits#* }" "$now" "$key" "$warnings"
+        first=0
+    done
+    printf ']\n'
+}
+
+# The interface behind the default route; a bridge is resolved to its uplink (e.g. br0 -> bond0).
+network_device() {
+    local dev
+    local port
+
+    # Unraid adds a second default route over shim-br0 (a macvlan for Docker): not the uplink.
+    dev="$(ip route show default 2>/dev/null | sed -n 's/.* dev \([^ ]*\).*/\1/p' | grep -v '^shim-' | head -n 1)"
+
+    if [ -n "$dev" ] && [ -d "$SYS_NET/$dev/brif" ]; then
+        for port in "$SYS_NET/$dev/brif"/*; do
+            case "${port##*/}" in
+                veth*|vnet*|tap*|docker*|virbr*|\*) ;;
+                *) dev="${port##*/}"; break ;;
+            esac
+        done
+    fi
+
+    echo "$dev"
+}
+
+network_ok() {
+    local dev="$1"
+    local gateway
+
+    [ "$(cat "$SYS_NET/$dev/operstate" 2>/dev/null)" = "up" ] || return 1
+
+    gateway="$(ip route show default 2>/dev/null | sed -n 's/^default via \([^ ]*\).*/\1/p' | head -n 1)"
+    [ -z "$gateway" ] || ping -c 1 -W 2 "$gateway" >/dev/null 2>&1
+}
+
+# Negotiated speed in Mbit/s, 0 when unknown (no link, or the driver doesn't say).
+# A bond, bridge or VLAN reports an aggregate or a made-up value (a bridge with a VM
+# says 10000), which isn't the speed of any cable: it follows its members down to the
+# physical ports and uses the fastest one with a link.
+link_speed() {
+    local dev="$1"
+    local depth="${2:-0}"
+    local speed
+    local best=0
+    local file
+    local member
+    local members=0
+
+    if [ "$depth" -lt 5 ]; then
+        for file in "$SYS_NET/$dev"/lower_*; do
+            [ -e "$file" ] || continue
+            member="${file##*/lower_}"
+            case "$member" in veth*|vnet*|tap*) continue ;; esac
+            members=1
+            speed="$(link_speed "$member" $((depth + 1)))"
+            [ "$speed" -gt "$best" ] && best="$speed"
+        done
+    fi
+    [ "$best" -gt 0 ] && { echo "$best"; return; }
+    [ "$members" = 1 ] && { echo 0; return; }
+
+    speed="$(cat "$SYS_NET/$dev/speed" 2>/dev/null)"
+    case "$speed" in
+        ''|*[!0-9]*) echo 0 ;;
+        *) [ "$speed" -gt 0 ] && echo "$speed" || echo 0 ;;
+    esac
+}
+
+# Highest speed (Mbit/s) a port supports according to ethtool, 0 when unknown.
+port_max_speed() {
+    command -v ethtool >/dev/null 2>&1 || { echo 0; return; }
+
+    ethtool "$1" 2>/dev/null | awk '
+        /Supported link modes:/ { f = 1 }
+        /Supported pause frame use:/ { f = 0 }
+        f { while (match($0, /[0-9]+base/)) { n = substr($0, RSTART, RLENGTH - 4) + 0; if (n > m) m = n; $0 = substr($0, RSTART + RLENGTH) } }
+        END { print m + 0 }'
+}
+
+# The physical network ports (they have a /device link; bonds, bridges and veths don't):
+# [{"name": "eth0", "link": true, "speed": 2500, "max": 10000}, ...]
+network_ports_json() {
+    local dir
+    local name
+    local carrier
+    local speed
+    local out=""
+
+    for dir in "$SYS_NET"/*; do
+        [ -e "$dir/device" ] || continue
+        name="${dir##*/}"
+        case "$name" in
+            lo|veth*|vnet*|tap*|docker*|virbr*|wl*) continue ;;
+        esac
+
+        carrier="$(cat "$dir/carrier" 2>/dev/null)"
+        speed="$(cat "$dir/speed" 2>/dev/null)"
+        case "$speed" in ''|*[!0-9]*) speed=0 ;; esac
+        [ "$carrier" = "1" ] || speed=0
+
+        out="$out, {\"name\": \"$name\", \"link\": $([ "$carrier" = "1" ] && echo true || echo false), \"speed\": $speed, \"max\": $(port_max_speed "$name")}"
+    done
+
+    printf '[%s]' "${out#, }"
+}
+
+# "R G B" for a speed in Mbit/s from the saved colours.
+speed_color() {
+    local speed="$1"
+    local step
+    local use=10
+
+    for step in $SPEED_STEPS; do
+        [ "$speed" -ge "$step" ] && use="$step"
+    done
+
+    config_value "netdev_speed_$use" | grep . || default_speed_color "$use"
+}
+
+speed_colors_json() {
+    local step
+    local out=""
+
+    for step in $SPEED_STEPS; do
+        out="$out, \"$step\": \"$(config_value "netdev_speed_$step" | grep . || default_speed_color "$step")\""
+    done
+    printf '{%s}' "${out#, }"
+}
+
+log() {
+    logger -t ugreen-led-control "$1" 2>/dev/null || echo "$1"
+}
+
+# "steady|R G B|brightness", "breath|R G B|brightness", "pulse|R G B|brightness"
+# (slow breathing of a disk in standby) or "off".
+show_led() {
+    local led="$1"
+    local wanted="$2"
+    local mode="${wanted%%|*}"
+    local rest="${wanted#*|}"
+
+    if [ "$wanted" = "off" ]; then
+        tool set "$led" off >/dev/null 2>&1
+        return
+    fi
+
+    # shellcheck disable=SC2086
+    tool set "$led" color ${rest%|*} >/dev/null 2>&1
+    tool set "$led" brightness "${rest#*|}" >/dev/null 2>&1
+
+    if [ "$mode" = "breath" ]; then
+        tool set "$led" breath 1500 1500 >/dev/null 2>&1
+    elif [ "$mode" = "pulse" ]; then
+        tool set "$led" breath 3000 3000 >/dev/null 2>&1
+    else
+        tool set "$led" on >/dev/null 2>&1
+    fi
+}
+
+daemon_run() {
+    local bays
+    local tick=0
+    local bay
+    local dev
+    local reads
+    local writes
+    local rest
+    local wanted
+    local error_color
+    local net_dev
+    local net_ok=1
+    local net_wanted=""
+    local net_counter=""
+    local net_blinking=0
+    local net_status=activity
+    local net_speed=0
+    local speed_on=0
+    local rx
+    local tx
+    local night=0
+    local brightness
+    local sync
+    local sync_color
+    local smart_on
+    local smart_color
+    local temp_mode
+    local standby_mode
+    local look
+    local -a devices=()
+    local -a applied=()
+    local -a counters=()
+    local -a blinking=()
+
+    bays="$(bay_count)"
+    net_dev="$(network_device)"
+
+    trap 'log "status daemon stopped"; exit 0' TERM INT
+    # Link and speed right away, so the first 5 s don't show the wrong colour.
+    if [ -n "$net_dev" ]; then
+        network_ok "$net_dev" && net_ok=1 || net_ok=0
+        net_speed="$(link_speed "$net_dev")"
+    fi
+
+    log "status daemon started (bays: $bays, network: ${net_dev:-none})"
+
+    while :; do
+        if [ $((tick % 25)) -eq 0 ]; then
+            # Two monitors would overwrite each other forever; leave the LEDs to the other one.
+            if foreign_monitor_running; then
+                log "ugreenleds-driver monitor is running, status daemon exits"
+                rm -f "$PIDFILE"
+                exit 0
+            fi
+
+            error_color="$(config_value disk_error_color | grep . || echo "$DEFAULT_ERROR_COLOR")"
+
+            night=0
+            is_night && night=1
+
+            # Parity check / rebuild: array disks breathe in the sync colour.
+            sync=""
+            [ "$(config_value sync_enabled)" != "0" ] && sync="$(sync_state)"
+            sync_color="$(config_value sync_color | grep . || echo "$DEFAULT_SYNC_COLOR")"
+            smart_on="$(config_value smart_enabled | grep . || echo 1)"
+            smart_color="$(config_value smart_color | grep . || echo "$DEFAULT_SMART_COLOR")"
+            temp_mode="$(config_value disk_color_mode | grep . || echo own)"
+            standby_mode="$(config_value standby_mode | grep . || echo dim)"
+            net_status="$(netdev_status)"
+            speed_on="$(config_value netdev_speed_enabled | grep -x 1 || echo 0)"
+
+            # Every 30 s everything is written again, which also undoes manual writes (Test, effects).
+            # A manual network LED is written once and then left alone (its effect may run).
+            if [ $((tick % 150)) -eq 0 ]; then
+                applied=()
+                [ "$net_wanted" = "manual" ] || net_wanted=""
+            fi
+
+            # Every 5 s: which disk is where, Unraid's disk status, saved colours.
+            for bay in $(seq 1 "$bays"); do
+                dev="$(bay_device "$bay")"
+                devices[bay]="$dev"
+
+                # Being identified: hands off; once it ends, the next round writes it again.
+                if [ -e "${IDENTIFY_PREFIX}disk$bay" ]; then
+                    applied[bay]="identify"
+                    continue
+                fi
+
+                brightness="$(effective_brightness "$(saved_brightness "disk$bay")" "$night")"
+                look="steady"
+                set --
+                if [ -n "$dev" ]; then
+                    # shellcheck disable=SC2046
+                    set -- $(unraid_disk "$dev")
+                    if [ "${3:-0}" = "1" ]; then
+                        brightness="$(standby_brightness "$brightness")"
+                        [ "$standby_mode" = "pulse" ] && look="pulse"
+                    fi
+                fi
+
+                # Error > SMART warning > parity check > temperature or own colour.
+                if [ -z "$dev" ] || [ "$brightness" -eq 0 ]; then
+                    wanted="off"
+                elif is_error_status "${2:-}"; then
+                    wanted="steady|$error_color|$brightness"
+                elif [ "$smart_on" = "1" ] && [ -n "${1:-}" ] \
+                    && [ -n "$(smart_warnings "$(smart_now "$1" "${5:-0}")" "$(config_value "$(smart_key "${9:--}")")")" ]; then
+                    wanted="steady|$smart_color|$brightness"
+                elif [ -n "$sync" ] && [ -n "${1:-}" ]; then
+                    wanted="breath|$sync_color|$brightness"
+                elif [ "$temp_mode" = "temperature" ] && [ "${4:--}" != "-" ]; then
+                    # shellcheck disable=SC2046
+                    wanted="$look|$(temp_color "$4" $(temp_limits "${6:-1}" "${7:--}" "${8:--}"))|$brightness"
+                else
+                    wanted="$look|$(saved_color "disk$bay" "$DEFAULT_DISK_COLOR")|$brightness"
+                fi
+
+                if [ "${applied[bay]:-}" != "$wanted" ]; then
+                    show_led "disk$bay" "$wanted"
+                    applied[bay]="$wanted"
+                    blinking[bay]=0
+                fi
+            done
+
+            if [ "$net_status" = "manual" ]; then
+                # Hand it back to the saved manual look once.
+                if [ "$net_wanted" != "manual" ]; then
+                    [ "$net_blinking" -eq 1 ] && tool set netdev on >/dev/null 2>&1
+                    apply_led netdev >/dev/null 2>&1
+                    [ "$night" -eq 1 ] && apply_night netdev
+                    net_wanted="manual"
+                    net_blinking=0
+                fi
+            elif [ -n "$net_dev" ]; then
+                brightness="$(effective_brightness "$(saved_brightness netdev)" "$night")"
+
+                if [ "$brightness" -eq 0 ]; then
+                    wanted="off"
+                elif [ "$net_ok" -eq 1 ] && [ "$speed_on" = "1" ] && [ "$net_speed" -gt 0 ]; then
+                    wanted="steady|$(speed_color "$net_speed")|$brightness"
+                elif [ "$net_ok" -eq 1 ]; then
+                    wanted="steady|$(saved_color netdev "$DEFAULT_NETDEV_COLOR")|$brightness"
+                else
+                    wanted="steady|$error_color|$brightness"
+                fi
+
+                if [ "$net_wanted" != "$wanted" ]; then
+                    show_led netdev "$wanted"
+                    net_wanted="$wanted"
+                    net_blinking=0
+                fi
+
+                # Switched from activity to link while it was blinking.
+                if [ "$net_status" = "link" ] && [ "$net_blinking" -eq 1 ]; then
+                    tool set netdev on >/dev/null 2>&1
+                    net_blinking=0
+                fi
+            fi
+        fi
+
+        # Every 30 s: link and gateway.
+        if [ $((tick % 150)) -eq 1 ] && [ -n "$net_dev" ]; then
+            if network_ok "$net_dev"; then
+                net_ok=1
+            else
+                net_ok=0
+            fi
+            net_speed="$(link_speed "$net_dev")"
+        fi
+
+        # Every 0.2 s: blink while the read/write counters of a disk move.
+        for bay in $(seq 1 "$bays"); do
+            dev="${devices[bay]:-}"
+            [ -n "$dev" ] || continue
+            # Dark, breathing during a parity check or in standby, or being identified: no activity blink.
+            case "${applied[bay]:-}" in
+                off|breath\|*|pulse\|*|identify) continue ;;
+            esac
+            [ -e "${IDENTIFY_PREFIX}disk$bay" ] && continue
+
+            read -r reads _ _ _ writes rest < "$SYS_BLOCK/$dev/stat" 2>/dev/null || continue
+
+            if [ -n "${counters[bay]:-}" ] && [ "${counters[bay]}" != "$reads $writes" ]; then
+                if [ "${blinking[bay]:-0}" -eq 0 ]; then
+                    tool set "disk$bay" blink "$ACTIVITY_ON_MS" "$ACTIVITY_OFF_MS" >/dev/null 2>&1
+                    blinking[bay]=1
+                fi
+            elif [ "${blinking[bay]:-0}" -eq 1 ]; then
+                tool set "disk$bay" on >/dev/null 2>&1
+                blinking[bay]=0
+            fi
+            counters[bay]="$reads $writes"
+        done
+
+        # The same for network traffic, unless it should only show the link.
+        if [ -n "$net_dev" ] && [ "$net_status" = "activity" ] \
+            && [ "$net_wanted" != "off" ] && [ "$net_wanted" != "manual" ] \
+            && read -r rx < "$SYS_NET/$net_dev/statistics/rx_bytes" 2>/dev/null \
+            && read -r tx < "$SYS_NET/$net_dev/statistics/tx_bytes" 2>/dev/null; then
+
+            if [ -n "$net_counter" ] && [ "$net_counter" != "$rx $tx" ]; then
+                if [ "$net_blinking" -eq 0 ]; then
+                    tool set netdev blink "$ACTIVITY_ON_MS" "$ACTIVITY_OFF_MS" >/dev/null 2>&1
+                    net_blinking=1
+                fi
+            elif [ "$net_blinking" -eq 1 ]; then
+                tool set netdev on >/dev/null 2>&1
+                net_blinking=0
+            fi
+            net_counter="$rx $tx"
+        fi
+
+        sleep 0.2
+        tick=$((tick + 1))
+    done
+}
+
+daemon_running() {
+    [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null
+}
+
+daemon_start() {
+    if daemon_running; then
+        echo "Status daemon is already running."
+        return 0
+    fi
+
+    if foreign_monitor_running; then
+        echo "ERROR: The LED monitor of ugreenleds-driver is running; uninstall that plugin first." >&2
+        return 1
+    fi
+
+    setsid "$(readlink -f "$0")" daemon run </dev/null >/dev/null 2>&1 &
+    echo $! > "$PIDFILE"
+    echo "Status daemon started."
+}
+
+daemon_stop() {
+    if daemon_running; then
+        kill "$(cat "$PIDFILE")" 2>/dev/null
+    fi
+    rm -f "$PIDFILE"
+
+    # Hand the LEDs back to the saved manual settings.
+    apply_config >/dev/null
+
+    echo "Status daemon stopped."
+}
+
+daemon_command() {
+    case "${1:-status}" in
+        start) daemon_start ;;
+        stop) daemon_stop ;;
+        restart) daemon_stop >/dev/null; daemon_start ;;
+        run) daemon_run ;;
+        status)
+            if daemon_running; then
+                echo "running (pid $(cat "$PIDFILE"))"
+            else
+                echo "stopped"
+                return 3
+            fi
+            ;;
+        *) echo "Usage: $0 daemon start|stop|restart|status|run" >&2; return 2 ;;
+    esac
+}
+
+# ============================================================
+# Software effects (rainbow, temperature)
+# ============================================================
+
+# fx_name rainbow|temperature, fx_leds "power,disk1,...", fx_speed 0-4,
+# fx_reverse 0|1, fx_idle 0|1 – run by ugreen-led-i2c until stopped.
+fx_running() {
+    [ -f "$FX_PIDFILE" ] && kill -0 "$(cat "$FX_PIDFILE" 2>/dev/null)" 2>/dev/null
+}
+
+fx_stop() {
+    if fx_running; then
+        kill "$(cat "$FX_PIDFILE")" 2>/dev/null
+    fi
+    rm -f "$FX_PIDFILE"
+}
+
+fx_start() {
+    local name
+    local leds
+    local -a args=()
+
+    name="$(config_value fx_name)"
+    if [ -z "$name" ]; then
+        echo "No effect configured."
+        return 0
+    fi
+
+    fx_stop
+
+    leds="$(config_value fx_leds | grep . || echo power)"
+    args+=(--speed "$(config_value fx_speed | grep . || echo 2)")
+    [ "$(config_value fx_reverse)" = "1" ] && args+=(--reverse)
+    [ "$(config_value fx_idle)" = "1" ] && args+=(--idle-only)
+
+    setsid "$LED_TOOL" "${args[@]}" effect "$name" "$leds" </dev/null >/dev/null 2>"$FX_LOG" &
+    echo $! > "$FX_PIDFILE"
+
+    # A missing temperature sensor ends the process right away.
+    sleep 0.5
+    if ! fx_running; then
+        rm -f "$FX_PIDFILE"
+        echo "ERROR: Effect '$name' did not start: $(head -n 1 "$FX_LOG" 2>/dev/null)" >&2
+        return 1
+    fi
+
+    echo "Effect $name started on $leds."
+}
+
+fx_command() {
+    case "${1:-status}" in
+        start) fx_start ;;
+        stop) fx_stop; echo "Effect stopped." ;;
+        restart) fx_start ;;
+        status)
+            if fx_running; then
+                echo "running: $(config_value fx_name) on $(config_value fx_leds)"
+            else
+                echo "stopped"
+                return 3
+            fi
+            ;;
+        *) echo "Usage: $0 fx start|stop|restart|status" >&2; return 2 ;;
+    esac
+}
+
+# ============================================================
+# Identify a bay
+# ============================================================
+
+# While "<prefix><led>" exists, the bay blinks white and the status daemon
+# leaves it alone. The file holds a token and the LED's state from before.
+identify_start() {
+    local led="$1"
+    local seconds="${2:-30}"
+    local marker="$IDENTIFY_PREFIX$led"
+    local snapshot
+    local token="$RANDOM$RANDOM"
+
+    case "$led" in
+        disk[1-8]) require_led "$led" || return 1 ;;
+        *) echo "ERROR: Only bay LEDs (disk1..diskN) can be identified." >&2; return 1 ;;
+    esac
+    case "$seconds" in
+        ''|*[!0-9]*) echo "ERROR: Seconds must be a number." >&2; return 1 ;;
+    esac
+
+    # Pressed again while blinking: keep the original state, renew the timer.
+    if [ -f "$marker" ]; then
+        snapshot="$(sed -n 2p "$marker")"
+    else
+        snapshot="$(led_line "$led")" || return 1
+    fi
+    printf '%s\n%s\n' "$token" "$snapshot" > "$marker"
+
+    tool set "$led" color 255 255 255 &&
+        tool set "$led" brightness 255 &&
+        tool set "$led" blink 100 100 || return 1
+
+    setsid bash -c 'sleep "$1"; exec "$2" identify-stop "$3" "$4"' _ \
+        "$seconds" "$(readlink -f "$0")" "$led" "$token" </dev/null >/dev/null 2>&1 &
+
+    echo "Identifying $led for $seconds s."
+}
+
+# Without a token it always stops; the timer passes its token, so an older
+# timer doesn't end a renewed identify early.
+identify_stop() {
+    local led="$1"
+    local token="${2:-}"
+    local marker="$IDENTIFY_PREFIX$led"
+    local name mode brightness r g b on off
+
+    [ -f "$marker" ] || return 0
+    [ -z "$token" ] || [ "$(sed -n 1p "$marker")" = "$token" ] || return 0
+
+    read -r name mode brightness r g b on off < <(sed -n 2p "$marker")
+    rm -f "$marker"
+
+    tool set "$led" color "$r" "$g" "$b" >/dev/null 2>&1
+    tool set "$led" brightness "$brightness" >/dev/null 2>&1
+    case "$mode" in
+        off|on) tool set "$led" "$mode" >/dev/null 2>&1 ;;
+        blink|breath) tool set "$led" "$mode" "$on" "$off" >/dev/null 2>&1 ;;
+    esac
+
+    echo "Stopped identifying $led."
+}
+
+identifying_leds() {
+    local marker
+    local first=1
+
+    printf '['
+    for marker in "$IDENTIFY_PREFIX"disk*; do
+        [ -e "$marker" ] || continue
+        [ "$first" -eq 1 ] || printf ', '
+        printf '"%s"' "${marker#"$IDENTIFY_PREFIX"}"
+        first=0
+    done
+    printf ']'
+}
+
+# ============================================================
+# Commands
+# ============================================================
+
+need() {
+    [ "$1" -eq "$2" ] || {
+        echo "Usage: $0 $3" >&2
+        exit 2
+    }
+}
+
+# Every command except help talks to the controller (tests bring their own tool).
+if [ -z "${UGREEN_LED_I2C:-}" ]; then
+    case "${1:-help}" in
+        help|-h|--help) ;;
+        *) has_smbus || ensure_smbus ;;
+    esac
+fi
+
+case "${1:-help}" in
+    dxp480t) dxp480t_apply ;;
+    smbus)
+        if ensure_smbus; then
+            echo "SMBus adapter: $(grep -H '^SMBus I801' /sys/bus/i2c/devices/i2c-*/name)"
+        else
+            echo "ERROR: No SMBus I801 adapter after loading i2c_i801. Kernel messages:" >&2
+            dmesg | grep -iE 'i801|smbus' | tail -n 10 >&2
+            exit 1
+        fi
+        ;;
+    status) status ;;
+    list) list_leds ;;
+    all) all_leds ;;
+    apply) apply_config ;;
+    bays) bays_json ;;
+    daemon) daemon_command "${2:-status}" ;;
+    schedule) [ -e "$SHUTDOWN_MARK" ] || { schedule_tick "${2:-}"; alert_tick; } ;;
+    alerts) [ -e "$SHUTDOWN_MARK" ] || alert_tick "${2:-}" ;;
+    shutdown) shutdown_signal "${2:-}" ;;
+    power-restore) restore_power; alert_tick --force ;;
+    fx) fx_command "${2:-status}" ;;
+    identify) [ $# -ge 2 ] || { echo "Usage: $0 identify <diskN> [seconds]" >&2; exit 2; }; identify_start "$2" "${3:-30}" ;;
+    identify-stop) [ $# -ge 2 ] || { echo "Usage: $0 identify-stop <diskN>" >&2; exit 2; }; identify_stop "$2" "${3:-}" ;;
+
+    get) need $# 2 "get <led>"; get_status "$2" ;;
+    on) need $# 2 "on <led>"; set_on "$2" ;;
+    off) need $# 2 "off <led>"; set_off "$2" ;;
+    stop) need $# 2 "stop <led>"; stop_effect "$2" ;;
+    brightness) need $# 3 "brightness <led> <0-255>"; set_brightness "$2" "$3" ;;
+    color) need $# 5 "color <led> <R> <G> <B>"; set_color "$2" "$3" "$4" "$5" ;;
+    blink) need $# 4 "blink <led> <on_ms> <off_ms>"; set_effect blink "$2" "$3" "$4" ;;
+    breath) need $# 4 "breath <led> <on_ms> <off_ms>"; set_effect breath "$2" "$3" "$4" ;;
+
+    help|--help|-h) usage ;;
+
+    *)
+        echo "ERROR: Unknown command '$1'." >&2
+        usage
+        exit 2
+        ;;
+esac

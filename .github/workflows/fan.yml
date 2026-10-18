@@ -3,9 +3,9 @@ name: Fan tool
 on:
   push:
     branches: [main]
-    paths: [fan/**, .github/workflows/fan.yml]
+    paths: [fan/**, led/**, src/**, scripts/**, .github/workflows/fan.yml]
   pull_request:
-    paths: [fan/**, .github/workflows/fan.yml]
+    paths: [fan/**, led/**, src/**, scripts/**, .github/workflows/fan.yml]
 
 jobs:
   build:
@@ -31,3 +31,39 @@ jobs:
         with:
           name: ugreen-nas-fan
           path: fan/ugreen-nas-fan
+
+  led:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: led/i2c/go.mod
+
+      - name: LED tool (copy of ugreen-led-i2c)
+        working-directory: led/i2c
+        run: |
+          gofmt -l . | tee /dev/stderr | (! read)
+          go vet ./...
+          go test ./...
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -ldflags "-s -w" -o ugreen-led-i2c .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ugreen-led-i2c
+          path: led/i2c/ugreen-led-i2c
+
+      - name: Shell syntax
+        run: |
+          bash -n src/backend/ugreen-nas-ctl
+          bash -n led/src/backend/ugreen-led-ctl
+          bash -n scripts/sync-led.sh
+
+      - name: Switch and conflict rules of the LED part
+        run: bash scripts/test-led-ctl.sh
+
+      - name: PHP syntax
+        run: |
+          sudo apt-get install -y php-cli >/dev/null
+          for f in src/web/api.php src/web/include/lang.php led/src/web/api.php led/src/web/include/lang.php; do php -l "$f"; done
