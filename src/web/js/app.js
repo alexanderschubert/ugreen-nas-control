@@ -38,6 +38,11 @@
         flame: '<path d="M12 22c4 0 7-3 7-7 0-5-5-7-5-13-3 2-5 5-5 8-1-1-2-2-2-4-1 2-2 4-2 7 0 5 3 9 7 9z"/>',
         max: '<path d="M12 3v12M7 8l5-5 5 5M5 21h14"/>',
         box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
+        ram: '<rect x="2" y="6" width="20" height="10" rx="1.5"/><path d="M5 9h3v4H5zM10.5 9h3v4h-3zM16 9h3v4h-3zM6 16v3M10 16v3M14 16v3M18 16v3"/>',
+        m2: '<rect x="2" y="8" width="20" height="8" rx="1.5"/><path d="M6 10.5h4v3H6zM12 10.5h3v3h-3z"/><circle cx="19" cy="12" r="1.2"/>',
+        pcie: '<rect x="3" y="4" width="18" height="11" rx="1.5"/><path d="M7 15v4M10 15v4M13 15v4M16 15v4M3 20h18"/><path d="M7 8h5v3H7z"/>',
+        drives: '<rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/>',
+        net: '<rect x="6" y="3" width="12" height="9" rx="1.5"/><path d="M12 12v4M5 16h14v5H5zM9 18.5h.01M12 18.5h.01M15 18.5h.01"/>',
         bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>',
         pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
     };
@@ -547,8 +552,11 @@
                 hw.net.map(n => `${n.name}${n.link ? '' : ' ✕'}`).join(' · ')]
         ];
 
+        const tileIcon = { cpu: 'chip', ram: 'ram', drives: 'drives', nvme: 'm2', net: 'net' };
+
         q('#unc-case-tiles').innerHTML = tiles.map(([id, title, value, sub]) => `
             <div class="unc-tile ${id}">
+                <span class="unc-tile-ico">${icon(tileIcon[id])}</span>
                 <small>${escapeHtml(title)}</small>
                 <strong>${escapeHtml(value)}</strong>
                 <span>${escapeHtml(sub)}</span>
@@ -658,7 +666,7 @@
     function nvmeHtml(n) {
         return `
             <div class="unc-ssd">
-                <strong>${escapeHtml(n.model || n.id)}</strong>
+                <strong><span class="unc-slot-ico">${icon('m2')}</span>${escapeHtml(n.model || n.id)}</strong>
                 <span>${escapeHtml([n.id, fmtSize(n.size_bytes)].filter(Boolean).join(' · '))}</span>
                 ${tempBadge(n.temp, 'nvme')}
             </div>`;
@@ -668,14 +676,14 @@
         const ramSlots = hw.memory.map((m, i) => {
             const slot = t('case.ram_slot', { n: i + 1 });
             if (!m.size_mb) {
-                return `<div class="unc-slot ram empty"><small>${escapeHtml(slot)}</small><span>${escapeHtml(t('case.empty'))}</span></div>`;
+                return `<div class="unc-slot ram empty"><div class="unc-slot-head"><span class="unc-slot-ico">${icon('ram')}</span><small>${escapeHtml(slot)}</small></div><span>${escapeHtml(t('case.empty'))}</span></div>`;
             }
             const speed = m.configured_mt && m.configured_mt !== m.speed_mt
                 ? t('case.running_at', { speed: m.configured_mt, max: m.speed_mt })
                 : `${m.speed_mt} MT/s`;
             return `
                 <div class="unc-slot ram">
-                    <small>${escapeHtml(slot)}</small>
+                    <div class="unc-slot-head"><span class="unc-slot-ico">${icon('ram')}</span><small>${escapeHtml(slot)}</small></div>
                     <strong>${escapeHtml(`${fmtRam(m.size_mb)} ${m.type}`)}</strong>
                     <span>${escapeHtml(speed)}</span>
                     <span class="unc-model">${escapeHtml([m.manufacturer, m.part_number].filter(Boolean).join(' · '))}</span>
@@ -686,7 +694,7 @@
             const ssd = hw.nvme.find(d => d.slot === `m2-${n}`);
             return `
                 <div class="unc-slot m2 ${ssd ? '' : 'empty'}">
-                    <small>${escapeHtml(t('case.m2_slot', { n }))}</small>
+                    <div class="unc-slot-head"><span class="unc-slot-ico">${icon('m2')}</span><small>${escapeHtml(t('case.m2_slot', { n }))}</small></div>
                     ${ssd ? nvmeHtml(ssd) : `<span>${escapeHtml(t('case.empty'))}</span>`}
                 </div>`;
         };
@@ -694,7 +702,7 @@
         const card = hw.nvme.filter(d => d.slot === 'pcie');
         const pcie = `
             <div class="unc-slot pcie ${card.length ? '' : 'empty'}">
-                <small>${escapeHtml(t('case.pcie_slot'))}</small>
+                <div class="unc-slot-head"><span class="unc-slot-ico">${icon('pcie')}</span><small>${escapeHtml(t('case.pcie_slot'))}</small></div>
                 ${card.length
                     ? `<span class="unc-model">${escapeHtml(t('case.pcie_card', { n: card.length }))}</span>${card.map(nvmeHtml).join('')}`
                     : `<span>${escapeHtml(t('case.free'))}</span>`}
