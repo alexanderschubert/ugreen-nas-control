@@ -129,12 +129,12 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
 
     <article class="unc-card">
         <h2 data-i18n="case.front">Vorderseite</h2>
-        <div class="unc-chassis unc-front" id="unc-front"></div>
+        <div class="unc-stage" id="unc-front"></div>
     </article>
 
     <article class="unc-card">
         <h2 data-i18n="case.rear">Rückseite</h2>
-        <div class="unc-chassis unc-rear" id="unc-rear"></div>
+        <div class="unc-stage" id="unc-rear"></div>
     </article>
 
     <article class="unc-card">
@@ -267,14 +267,39 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
 <!-- ================= Über ================= -->
 
 <section class="unc-view" data-view="about">
-    <article class="unc-card">
-        <h2 data-i18n="about.title">Über</h2>
+    <article class="unc-card unc-about">
+        <div class="unc-about-head">
+            <img class="unc-about-icon" src="/plugins/ugreen-nas-control/images/ugreen-nas-control.png" alt="">
+            <div>
+                <h2>UGREEN NAS Control</h2>
+                <p class="unc-muted" data-i18n="about.tagline">Systeminfo, Temperaturen und Lüftersteuerung für den UGREEN DXP6800 Pro unter Unraid</p>
+                <div class="unc-about-badges">
+                    <span class="unc-badge online">v<span id="unc-version"></span></span>
+                    <span class="unc-badge" data-i18n="about.license_badge">MIT-Lizenz</span>
+                    <span class="unc-badge">DXP6800 Pro</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="unc-about-links">
+            <a class="unc-link-tile" href="https://github.com/alexanderschubert/ugreen-nas-control" target="_blank" rel="noopener">
+                <svg class="unc-ico-fill" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                <span><strong>GitHub</strong><small data-i18n="about.github_hint">Quellcode, Releases und Änderungen</small></span>
+            </a>
+            <a class="unc-link-tile" href="https://github.com/alexanderschubert/ugreen-nas-control/issues" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9a4 4 0 0 1 8 0v6a4 4 0 0 1-8 0z"/><path d="M12 5V3M9 3l1.5 2M15 3l-1.5 2M4 12h4M16 12h4M5 7l3 2M19 7l-3 2M5 19l3-2M19 19l-3-2M8 12h8"/></svg>
+                <span><strong data-i18n="about.issues">Fehler melden</strong><small data-i18n="about.issues_hint">Probleme und Wünsche als Issue</small></span>
+            </a>
+            <a class="unc-link-tile" href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>
+                <span><strong>UGREEN LED Control</strong><small data-i18n="about.led_hint">Das Plugin, aus dem der LED-Teil stammt</small></span>
+            </a>
+        </div>
+
         <dl class="unc-facts">
-            <dt>Plugin</dt><dd>UGREEN NAS Control <span id="unc-version"></span></dd>
-            <dt data-i18n="about.source">Quellcode</dt><dd><a href="https://github.com/alexanderschubert/ugreen-nas-control" target="_blank" rel="noopener">github.com/alexanderschubert/ugreen-nas-control</a></dd>
             <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip ITE IT8613E direkt über seine I/O-Ports an, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
             <dt data-i18n="about.leds">LEDs</dt><dd data-i18n-html="about.leds_text">Die Front-LEDs steuert ein eingebauter, optionaler Teil, eine Kopie von <a href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">UGREEN LED Control</a>.</dd>
-            <dt data-i18n="about.license">Lizenz</dt><dd>MIT</dd>
+            <dt data-i18n="about.thanks">Dank an</dt><dd data-i18n-html="about.thanks_text"><a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a> (Protokoll und Schacht-Zuordnung des LED-Teils) und alle, die auf ihrem Modell getestet haben</dd>
         </dl>
 
         <div class="unc-form unc-lang">
