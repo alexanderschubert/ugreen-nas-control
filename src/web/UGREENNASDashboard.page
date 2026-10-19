@@ -26,7 +26,7 @@ $mytiles['ugreen-nas-control']['column2'] = <<<EOT
 </span>
 </td></tr>
 <tr><td>
-<div class="unc unc-dash" id="unc-dash"><div class="unc-fans" data-fans></div><div class="unc-temps" data-temps></div><div class="unc-bays-box" data-bays hidden></div></div>
+<div class="unc unc-dash" id="unc-dash"><div class="unc-fans" data-fans></div><div class="unc-temps" data-temps></div><div class="unc-bays-box" data-bays hidden></div><div class="unc-bays-box" data-nvme hidden></div></div>
 </td></tr>
 </tbody>
 EOT;
