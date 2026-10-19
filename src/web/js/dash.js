@@ -72,7 +72,7 @@
             bay.id
         ].filter(Boolean);
 
-        return `<span class="unc-chip ${level}"><b>${no}</b><span class="unc-tip">${lines.map(l => `<span>${escapeHtml(l)}</span>`).join('')}</span></span>`;
+        return `<span class="unc-chip ${level}" data-lines="${escapeHtml(JSON.stringify(lines))}"><b>${no}</b></span>`;
     }
 
     function paintBays(root, hw) {
@@ -87,7 +87,19 @@
         box.hidden = false;
         box.innerHTML = `
             <div class="unc-bays-head"><strong>${escapeHtml(t('dash.drives'))}</strong><small class="unc-muted">${escapeHtml(t('dash.bays_used', { n: bays.filter(b => b.present).length, total: bays.length }))}</small></div>
-            <div class="unc-chips">${bays.map(bayChip).join('')}</div>`;
+            <div class="unc-chips">${bays.map(bayChip).join('')}</div>
+            <div class="unc-bay-detail" data-detail><span class="unc-muted">${escapeHtml(t('dash.hover'))}</span></div>`;
+
+        // The details show below the row, inside the tile: a floating tooltip is cut off by the tile's edge.
+        const detail = box.querySelector('[data-detail]');
+        const hint = detail.innerHTML;
+        box.querySelectorAll('.unc-chip').forEach(chip => {
+            chip.addEventListener('mouseenter', () => {
+                const lines = chip.dataset.lines ? JSON.parse(chip.dataset.lines) : [];
+                detail.innerHTML = lines.length ? lines.map(l => `<span>${escapeHtml(l)}</span>`).join('') : hint;
+            });
+            chip.addEventListener('mouseleave', () => { detail.innerHTML = hint; });
+        });
     }
 
     function paintHeader(data) {

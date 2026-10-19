@@ -1053,31 +1053,21 @@
 .unc-chip.standby { border-color: #2f4a3a; background: #1a2620; color: var(--unc-muted); }
 .unc-chip.empty { border: 1px dashed var(--unc-border); background: transparent; color: var(--unc-muted); }
 
-.unc-tip {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    z-index: 20;
-    display: none;
-    min-width: 190px;
-    padding: 8px 10px;
-    border: 1px solid var(--unc-border);
-    border-radius: 8px;
-    background: #0b0e12;
-    box-shadow: 0 8px 22px rgba(0, 0, 0, .5);
-    transform: translateX(-50%);
+.unc-bay-detail {
+    display: grid;
+    align-content: start;
+    min-height: 82px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--unc-border);
     font-size: 12px;
     line-height: 1.5;
-    text-align: left;
-    white-space: normal;
     overflow-wrap: anywhere;
 }
 
-.unc-tip span { display: block; }
-.unc-tip span:first-child { font-weight: 700; }
-.unc-tip span:nth-child(n+3) { color: var(--unc-muted); }
-
-.unc-chip:hover .unc-tip { display: block; }
+.unc-bay-detail span { display: block; }
+.unc-bay-detail span:first-child:not(.unc-muted) { font-weight: 700; }
+.unc-bay-detail span:nth-child(n+3) { color: var(--unc-muted); }
 
 /* ---------- Case: drive list ---------- */
 
