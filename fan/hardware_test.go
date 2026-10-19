@@ -110,7 +110,7 @@ func fakeSys(t *testing.T) {
 	write("class/hwmon/hwmon0/temp1_input", "41850\n")
 	os.MkdirAll(filepath.Join(dir, "devices/x/nvme3"), 0o755)
 	link("devices/x/nvme3", "class/hwmon/hwmon0/device")
-	write("disks.ini", "[\"disk1\"]\nname=\"disk1\"\ndevice=\"sdc\"\ntemp=\"36\"\nspundown=\"0\"\nrotational=\"1\"\n"+
+	write("disks.ini", "[\"disk1\"]\nname=\"disk1\"\ndevice=\"sdc\"\nid=\"ST8000VN004-2M2101_WSD0AAAA\"\ntemp=\"36\"\nspundown=\"0\"\nrotational=\"1\"\n"+
 		"[\"parity\"]\nname=\"parity\"\ndevice=\"sde\"\ntemp=\"*\"\nspundown=\"1\"\nrotational=\"1\"\n")
 	write("dmi/product_name", "DXP6800 Pro\n")
 	write("dmidecode.sh", "#!/bin/sh\ncat <<'EOT'\n"+dmidecodeSample+"EOT\n")
@@ -156,7 +156,7 @@ func TestReadHardware(t *testing.T) {
 			t.Errorf("bay %d: %+v, want %s", i+1, hw.Bays[i], dev)
 		}
 	}
-	if b := hw.Bays[0]; b.Role != "disk1" || b.Temp == nil || *b.Temp != 36 || b.Model != "ST8000VN004-2M21" {
+	if b := hw.Bays[0]; b.ID != "ST8000VN004-2M2101_WSD0AAAA" || b.Role != "disk1" || b.Temp == nil || *b.Temp != 36 || b.Model != "ST8000VN004-2M21" {
 		t.Errorf("bay 1 %+v", b)
 	}
 	if b := hw.Bays[2]; b.Role != "parity" || !b.Standby || b.Temp != nil {

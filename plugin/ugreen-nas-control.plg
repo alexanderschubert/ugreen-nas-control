@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.3.2">
+<!ENTITY version   "0.3.3">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,11 @@
 >
 
 <CHANGES>
+
+### 0.3.3
+- Fix: on Unraid's light theme the temperature rows of the dashboard tile were nearly invisible; they sit on their own dark card now, like the fan cards (GitHub issue #12)
+- Dashboard tile: a row of the six bays like Unraid's Disk Location widget; hovering a bay shows temperature, role, device, size, model and the Unraid disk id (GitHub issue #12)
+- Case tab: new list "Drives" with the full disk id as Unraid shows it (model and serial), so drives of the same model can be told apart; the bay tooltips show it too (GitHub issue #11)
 
 ### 0.3.2
 - Case tab: the front is smaller (as wide as the case picture of UGREEN LED Control), and the tiles and the inside view got icons for processor, memory, drives, NVMe, network, RAM, M.2 and PCIe

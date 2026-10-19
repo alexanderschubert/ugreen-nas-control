@@ -133,6 +133,11 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
     </article>
 
     <article class="unc-card">
+        <h2 data-i18n="case.drives">Laufwerke</h2>
+        <div class="unc-drive-list" id="unc-drive-list"></div>
+    </article>
+
+    <article class="unc-card">
         <h2 data-i18n="case.rear">Rückseite</h2>
         <div class="unc-stage" id="unc-rear"></div>
     </article>

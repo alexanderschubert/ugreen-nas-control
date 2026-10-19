@@ -55,6 +55,41 @@
         root.querySelector('[data-temps]').innerHTML = rows.join('');
     }
 
+    // Drive bays like the Disk Location plugin: one chip per bay, details on hover.
+    const size = bytes => bytes >= 1e12 ? `${Math.round(bytes / 1e11) / 10} TB` : `${Math.round(bytes / 1e9)} GB`;
+
+    function bayChip(bay) {
+        const no = bay.bay;
+        if (!bay.present) return `<span class="unc-chip empty"><b>${no}</b></span>`;
+
+        const [warm, hot] = bay.hdd ? LIMITS.disk : LIMITS.nvme;
+        const level = bay.standby ? 'standby' : bay.temp == null ? 'ok' : bay.temp >= hot ? 'hot' : bay.temp >= warm ? 'warm' : 'ok';
+        const state = bay.standby ? t('case.standby') : bay.temp != null ? `${bay.temp} °C` : '–';
+        const lines = [
+            state,
+            `${bay.role || ''} ${bay.device} · ${size(bay.size_bytes)} ${t(bay.hdd ? 'case.hdd' : 'case.ssd')}`.trim(),
+            bay.model,
+            bay.id
+        ].filter(Boolean);
+
+        return `<span class="unc-chip ${level}"><b>${no}</b><span class="unc-tip">${lines.map(l => `<span>${escapeHtml(l)}</span>`).join('')}</span></span>`;
+    }
+
+    function paintBays(root, hw) {
+        const box = root.querySelector('[data-bays]');
+        const bays = hw?.bays || [];
+
+        if (!bays.length) {
+            box.hidden = true;
+            return;
+        }
+
+        box.hidden = false;
+        box.innerHTML = `
+            <div class="unc-bays-head"><strong>${escapeHtml(t('dash.drives'))}</strong><small class="unc-muted">${escapeHtml(t('dash.bays_used', { n: bays.filter(b => b.present).length, total: bays.length }))}</small></div>
+            <div class="unc-chips">${bays.map(bayChip).join('')}</div>`;
+    }
+
     function paintHeader(data) {
         const line = document.getElementById('unc-dash-state');
         if (!line) return;
@@ -85,6 +120,9 @@
             if (!response.ok || data.ok === false) throw new Error(data.error || `HTTP ${response.status}`);
             paint(root, data);
             paintHeader(data);
+
+            const hw = await fetch(`${API}?action=hardware`, { credentials: 'same-origin' }).then(r => r.json()).catch(() => null);
+            paintBays(root, hw && hw.ok !== false ? hw : null);
         } catch (error) {
             paintHeader(null);
         }

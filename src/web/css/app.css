@@ -1005,10 +1005,114 @@
     font-size: 17px;
 }
 
-.unc-dash .unc-temps {
+/* Unraid's light theme gives the tile a light background: the rows get their own dark card, like the fan cards. */
+.unc-dash .unc-temps,
+.unc-dash .unc-bays-box {
     margin-top: 10px;
-    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--unc-border);
+    border-radius: 10px;
+    background: var(--unc-card);
+    color: var(--unc-text);
 }
+
+.unc-dash .unc-temps { gap: 6px; }
+
+.unc-dash .unc-bays-box[hidden] { display: none; }
+
+.unc-bays-head {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.unc-chips {
+    display: flex;
+    gap: 5px;
+}
+
+.unc-chip {
+    position: relative;
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    height: 38px;
+    place-items: center;
+    border: 1px solid #1f4d31;
+    border-radius: 4px;
+    background: #1d3d2a;
+    cursor: default;
+}
+
+.unc-chip b { font-size: 13px; }
+.unc-chip.ok { border-color: #22c55e; background: #14532d; }
+.unc-chip.warm { border-color: #f59e0b; background: #5a3a07; }
+.unc-chip.hot { border-color: #ef4444; background: #5a1a1a; }
+.unc-chip.standby { border-color: #2f4a3a; background: #1a2620; color: var(--unc-muted); }
+.unc-chip.empty { border: 1px dashed var(--unc-border); background: transparent; color: var(--unc-muted); }
+
+.unc-tip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    z-index: 20;
+    display: none;
+    min-width: 190px;
+    padding: 8px 10px;
+    border: 1px solid var(--unc-border);
+    border-radius: 8px;
+    background: #0b0e12;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, .5);
+    transform: translateX(-50%);
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.unc-tip span { display: block; }
+.unc-tip span:first-child { font-weight: 700; }
+.unc-tip span:nth-child(n+3) { color: var(--unc-muted); }
+
+.unc-chip:hover .unc-tip { display: block; }
+
+/* ---------- Case: drive list ---------- */
+
+.unc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.unc-table th {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--unc-border);
+    color: var(--unc-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.unc-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--unc-border);
+    vertical-align: top;
+}
+
+.unc-table tr:last-child td { border-bottom: 0; }
+
+.unc-table .unc-id {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+    user-select: all;
+}
+
 
 /* ---------- Toast ---------- */
 
