@@ -30,6 +30,7 @@ type Temp struct {
 type Disk struct {
 	Name    string `json:"name"`
 	Device  string `json:"device"`
+	ID      string `json:"id,omitempty"` // Unraid's disk id: model_serial
 	Temp    *int   `json:"temp"`
 	Standby bool   `json:"standby"`
 	HDD     bool   `json:"hdd"`
@@ -154,6 +155,7 @@ func readDisks(path string) []Disk {
 		d := Disk{
 			Name:    cur["name"],
 			Device:  cur["device"],
+			ID:      cur["id"],
 			Standby: cur["spundown"] == "1",
 			HDD:     cur["rotational"] != "0",
 		}

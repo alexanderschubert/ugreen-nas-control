@@ -603,7 +603,7 @@
         const state = bay.standby ? 'standby' : tempClass(bay.temp, kind) || 'ok';
         const info = bay.standby ? t('case.standby') : (bay.temp != null ? `${bay.temp}°` : '–');
         return `
-            <div class="unc-nbay" title="${escapeHtml([bay.role, bay.model].filter(Boolean).join(' · '))}">
+            <div class="unc-nbay" title="${escapeHtml([bay.role, bay.id || bay.model].filter(Boolean).join(' · '))}">
                 <span class="no">${no}</span>
                 <span class="info ${state}">${escapeHtml(info)}</span>
                 <span class="role">${escapeHtml(bay.role || bay.device)}</span>
@@ -634,6 +634,29 @@
                     <b class="brand">UGREEN</b>
                 </div>
             </div>`;
+    }
+
+    function renderDriveList(hw) {
+        const rows = (hw.bays || []).filter(b => b.present).map(b => `
+            <tr>
+                <td>${String(b.bay).padStart(2, '0')}</td>
+                <td>${escapeHtml(b.role || '–')} <small class="unc-muted">${escapeHtml(b.device)}</small></td>
+                <td class="unc-id">${escapeHtml(b.id || b.model || '–')}</td>
+                <td>${escapeHtml([fmtSize(b.size_bytes), t(b.hdd ? 'case.hdd' : 'case.ssd')].join(' · '))}</td>
+                <td>${b.standby ? escapeHtml(t('case.standby')) : tempBadge(b.temp, b.hdd ? 'disk' : 'nvme') || '–'}</td>
+            </tr>`).join('');
+
+        q('#unc-drive-list').innerHTML = rows ? `
+            <table class="unc-table">
+                <thead><tr>
+                    <th>${escapeHtml(t('case.col_bay'))}</th>
+                    <th>${escapeHtml(t('case.col_role'))}</th>
+                    <th>${escapeHtml(t('case.col_disk'))}</th>
+                    <th>${escapeHtml(t('case.col_size'))}</th>
+                    <th>${escapeHtml(t('case.col_temp'))}</th>
+                </tr></thead>
+                <tbody>${rows}</tbody>
+            </table>` : `<p class="unc-muted">${escapeHtml(t('case.empty'))}</p>`;
     }
 
     function renderRear(hw) {
@@ -717,13 +740,14 @@
     function renderCase() {
         if (!state.hw) {
             const text = t(state.hwError ? 'case.error' : 'case.loading');
-            ['#unc-case-tiles', '#unc-front', '#unc-rear', '#unc-inside'].forEach(id => {
+            ['#unc-case-tiles', '#unc-front', '#unc-drive-list', '#unc-rear', '#unc-inside'].forEach(id => {
                 q(id).innerHTML = `<p class="unc-muted">${escapeHtml(text)}</p>`;
             });
             return;
         }
         renderCaseTiles(state.hw);
         renderFront(state.hw);
+        renderDriveList(state.hw);
         renderRear(state.hw);
         renderInside(state.hw);
     }

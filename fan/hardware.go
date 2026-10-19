@@ -51,6 +51,7 @@ type Bay struct {
 	SizeBytes int64  `json:"size_bytes,omitempty"`
 	HDD       bool   `json:"hdd"`
 	Role      string `json:"role,omitempty"` // Unraid's name: parity, disk1, ...
+	ID        string `json:"id,omitempty"`   // Unraid's disk id: model_serial, as on its Main page
 	Temp      *int   `json:"temp"`
 	Standby   bool   `json:"standby"`
 }
@@ -228,7 +229,7 @@ func readBays(s Sensors) []Bay {
 				HDD:       readString(filepath.Join(dev, "queue", "rotational")) != "0",
 			}
 			if d, ok := byDevice[name]; ok {
-				b.Role, b.Temp, b.Standby, b.HDD = d.Name, d.Temp, d.Standby, d.HDD
+				b.Role, b.ID, b.Temp, b.Standby, b.HDD = d.Name, d.ID, d.Temp, d.Standby, d.HDD
 			}
 			bays[i] = b
 		}
