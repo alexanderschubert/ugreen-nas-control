@@ -1065,6 +1065,8 @@
     overflow-wrap: anywhere;
 }
 
+.unc-bays-box[data-nvme] .unc-bay-detail { min-height: 60px; }
+
 .unc-bay-detail span { display: block; }
 .unc-bay-detail span:first-child:not(.unc-muted) { font-weight: 700; }
 .unc-bay-detail span:nth-child(n+3) { color: var(--unc-muted); }

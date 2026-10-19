@@ -75,19 +75,17 @@
         return `<span class="unc-chip ${level}" data-lines="${escapeHtml(JSON.stringify(lines))}"><b>${no}</b></span>`;
     }
 
-    function paintBays(root, hw) {
-        const box = root.querySelector('[data-bays]');
-        const bays = hw?.bays || [];
-
-        if (!bays.length) {
+    // A titled row of chips with a detail area below it (shared by the drive bays and the NVMe SSDs).
+    function paintChips(box, title, subtitle, chips) {
+        if (!chips.length) {
             box.hidden = true;
             return;
         }
 
         box.hidden = false;
         box.innerHTML = `
-            <div class="unc-bays-head"><strong>${escapeHtml(t('dash.drives'))}</strong><small class="unc-muted">${escapeHtml(t('dash.bays_used', { n: bays.filter(b => b.present).length, total: bays.length }))}</small></div>
-            <div class="unc-chips">${bays.map(bayChip).join('')}</div>
+            <div class="unc-bays-head"><strong>${escapeHtml(title)}</strong><small class="unc-muted">${escapeHtml(subtitle)}</small></div>
+            <div class="unc-chips">${chips.join('')}</div>
             <div class="unc-bay-detail" data-detail><span class="unc-muted">${escapeHtml(t('dash.hover'))}</span></div>`;
 
         // The details show below the row, inside the tile: a floating tooltip is cut off by the tile's edge.
@@ -100,6 +98,38 @@
             });
             chip.addEventListener('mouseleave', () => { detail.innerHTML = hint; });
         });
+    }
+
+    function nvmeChip(label, ssd) {
+        if (!ssd) return `<span class="unc-chip empty"><b>${escapeHtml(label)}</b></span>`;
+
+        const [warm, hot] = LIMITS.nvme;
+        const level = ssd.temp == null ? 'ok' : ssd.temp >= hot ? 'hot' : ssd.temp >= warm ? 'warm' : 'ok';
+        const slot = ssd.slot === 'pcie' ? t('case.pcie_slot') : t('case.m2_slot', { n: ssd.slot.replace('m2-', '') });
+        const lines = [
+            ssd.temp != null ? `${ssd.temp} °C` : '–',
+            `${ssd.id} · ${size(ssd.size_bytes)} · ${slot}`,
+            ssd.model
+        ].filter(Boolean);
+
+        return `<span class="unc-chip ${level}" data-lines="${escapeHtml(JSON.stringify(lines))}"><b>${escapeHtml(label)}</b></span>`;
+    }
+
+    function paintDrives(root, hw) {
+        const bays = hw?.bays || [];
+        paintChips(
+            root.querySelector('[data-bays]'),
+            t('dash.drives'),
+            t('dash.bays_used', { n: bays.filter(b => b.present).length, total: bays.length }),
+            bays.map(bayChip)
+        );
+
+        // The two M.2 slots first (empty ones shown), then the SSDs on a card in the PCIe slot.
+        const ssds = hw?.nvme || [];
+        const chips = ssds.length ? [1, 2].map(n => nvmeChip(`M${n}`, ssds.find(d => d.slot === `m2-${n}`))) : [];
+        ssds.filter(d => d.slot === 'pcie').forEach((d, i) => chips.push(nvmeChip(`P${i + 1}`, d)));
+
+        paintChips(root.querySelector('[data-nvme]'), t('dash.nvme_title'), t('tile.nvme_val', { n: ssds.length }), chips);
     }
 
     function paintHeader(data) {
@@ -134,7 +164,7 @@
             paintHeader(data);
 
             const hw = await fetch(`${API}?action=hardware`, { credentials: 'same-origin' }).then(r => r.json()).catch(() => null);
-            paintBays(root, hw && hw.ok !== false ? hw : null);
+            paintDrives(root, hw && hw.ok !== false ? hw : null);
         } catch (error) {
             paintHeader(null);
         }
