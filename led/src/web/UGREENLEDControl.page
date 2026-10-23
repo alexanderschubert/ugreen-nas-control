@@ -296,6 +296,28 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
             </span>
         </label>
 
+        <label class="ulc-switch-row">
+            <span class="ulc-switch">
+                <input type="checkbox" id="ulc-error-enabled">
+                <span></span>
+            </span>
+            <span>
+                <strong data-i18n="display.error">Plattenfehler anzeigen</strong>
+                <small data-i18n="display.error_hint">Ein Schacht mit deaktivierter oder fehlender Platte leuchtet in der Fehlerfarbe. Aus: er behält seine eigene Farbe.</small>
+            </span>
+        </label>
+
+        <label class="ulc-switch-row">
+            <span class="ulc-switch">
+                <input type="checkbox" id="ulc-activity-enabled">
+                <span></span>
+            </span>
+            <span>
+                <strong data-i18n="display.activity">Bei Plattenaktivität blinken</strong>
+                <small data-i18n="display.activity_hint">Die LED eines Schachts blinkt, solange die Platte liest oder schreibt. Aus: sie bleibt ruhig.</small>
+            </span>
+        </label>
+
         <div class="ulc-form">
             <label for="ulc-disk-color-mode" data-i18n="display.color_mode">Farbe der Laufwerks-LEDs</label>
             <select id="ulc-disk-color-mode">

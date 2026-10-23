@@ -443,6 +443,8 @@ if ($method === 'POST') {
             'standby_level' => (string)$standbyLevel,
             'disk_color_mode' => $colorMode,
             'smart_enabled' => ($input['smart_enabled'] ?? '') === '1' ? '1' : '0',
+            'error_enabled' => ($input['error_enabled'] ?? '1') === '0' ? '0' : '1',
+            'activity_enabled' => ($input['activity_enabled'] ?? '1') === '0' ? '0' : '1',
             'smart_color' => implode(' ', $smartRgb)
         ]);
 

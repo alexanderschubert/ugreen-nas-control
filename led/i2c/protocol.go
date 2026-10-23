@@ -67,6 +67,19 @@ func commandPacket(id, command byte, params [4]byte) []byte {
 	return append(packet, byte(sum>>8), byte(sum))
 }
 
+// gtCommandPacket is the GT variant: an SMBus block payload without the ID and
+// with a little-endian checksum over the same bytes.
+func gtCommandPacket(command byte, params [4]byte) []byte {
+	packet := []byte{0xa0, 0x01, 0x00, 0x00, command, params[0], params[1], params[2], params[3]}
+
+	sum := 0
+	for _, b := range packet {
+		sum += int(b)
+	}
+
+	return append(packet, byte(sum), byte(sum>>8))
+}
+
 func clampPeriod(ms int) int {
 	if ms < minPeriod {
 		return minPeriod

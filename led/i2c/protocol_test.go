@@ -17,6 +17,16 @@ func TestCommandPacketMatchesKernelDriver(t *testing.T) {
 	}
 }
 
+func TestGTCommandPacketMatchesKernelDriver(t *testing.T) {
+	// led-ugreen.c (chip 0xc5b2): no ID, cksum = 0xa1 + 0x02 + 255 + 128 = 0x0222, low byte first.
+	got := gtCommandPacket(cmdColor, [4]byte{255, 128, 0, 0})
+	want := []byte{0xa0, 0x01, 0x00, 0x00, 0x02, 0xff, 0x80, 0x00, 0x00, 0x22, 0x02}
+
+	if !bytes.Equal(got, want) {
+		t.Fatalf("packet = % x, want % x", got, want)
+	}
+}
+
 func TestPeriodParams(t *testing.T) {
 	// cycle 2100 = 0x0834, on 1200 = 0x04b0
 	if got, want := periodParams(1200, 900), [4]byte{0x08, 0x34, 0x04, 0xb0}; got != want {

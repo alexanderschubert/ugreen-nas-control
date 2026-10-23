@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.3.5">
+<!ENTITY version   "0.3.6">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,10 @@
 >
 
 <CHANGES>
+
+### 0.3.6
+- New: LED control on the DXP4800 GT (4 bays, ata1 to ata4): the LED controller sits on an AMD DesignWare I2C controller, which the helper drives directly through /dev/mem, no kernel module. The fans stay DXP6800 Pro only
+- LED part updated from UGREEN LED Control v0.23.0 to 4f09327: two new switches (show disk errors, blink on disk activity) and a hint on the colour tables when a bay shows the SMART or error colour. No new files
 
 ### 0.3.5
 - Dashboard tile: a new section "NVMe SSDs" below the drives, with the two M.2 slots (M1, M2) and the SSDs on the PCIe card (P1, P2); hovering one shows temperature, device, size, slot and model

@@ -48,6 +48,9 @@ echo "DXP4800 Plus" > "$T/dmi/product_name"
 check "other model is blocked" "$([ "$(blocker)" = model ] && echo ok)"
 run led-enable >/dev/null 2>&1
 check "other model cannot be enabled" "$([ ! -e "$T/boot/led.enabled" ] && [ ! -e "$T/calls" ] && echo ok)"
+
+echo "DXP4800 GT" > "$T/dmi/product_name"
+check "no blocker on a DXP4800 GT" "$([ -z "$(blocker)" ] && echo ok)"
 echo "DXP6800 Pro" > "$T/dmi/product_name"
 
 touch "$T/boot/ugreen-led-control.plg"

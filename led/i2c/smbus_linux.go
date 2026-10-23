@@ -25,6 +25,7 @@ const (
 
 	smbusByte         = 1
 	smbusByteData     = 2
+	smbusBlockData    = 5
 	smbusI2CBlockData = 8
 	smbusBlockMax     = 32
 
@@ -44,6 +45,8 @@ type bus struct {
 	path string
 	file *os.File
 	lock *os.File
+	dw   *dwI2C // DXP4800 GT without a kernel driver: the controller is driven through /dev/mem
+	gt   bool   // DXP4800 GT: SMBus block writes instead of I2C block writes
 }
 
 func ioctl(fd, request, arg uintptr) error {
@@ -53,25 +56,31 @@ func ioctl(fd, request, arg uintptr) error {
 	return nil
 }
 
-// findBus returns the I801 SMBus adapter the controller sits on, e.g. /dev/i2c-0.
+// findBus returns the I801 SMBus or DesignWare adapter (DXP4800 GT) the controller sits on, e.g. /dev/i2c-0.
 // The adapter is listed under /sys/bus/i2c even before i2c-dev creates /dev/i2c-N.
 func findBus() (string, error) {
 	names, _ := filepath.Glob("/sys/bus/i2c/devices/i2c-*/name")
 
-	for _, name := range names {
-		content, err := os.ReadFile(name)
-		if err != nil || !strings.HasPrefix(string(content), "SMBus I801 adapter") {
-			continue
-		}
+	for _, prefix := range []string{"SMBus I801 adapter", dwAdapter} {
+		for _, name := range names {
+			content, err := os.ReadFile(name)
+			if err != nil || !strings.HasPrefix(string(content), prefix) {
+				continue
+			}
 
-		path := "/dev/" + filepath.Base(filepath.Dir(name))
-		if _, err := os.Stat(path); err != nil {
-			return "", fmt.Errorf("%s is missing; load the i2c-dev module (modprobe i2c-dev)", path)
+			path := "/dev/" + filepath.Base(filepath.Dir(name))
+			if _, err := os.Stat(path); err != nil {
+				return "", fmt.Errorf("%s is missing; load the i2c-dev module (modprobe i2c-dev)", path)
+			}
+			return path, nil
 		}
-		return path, nil
 	}
 
-	return "", errors.New("no SMBus I801 adapter found; load the i2c_i801 module (modprobe i2c_i801) and check dmesg | grep -i i801")
+	if names, _ := dwControllers(); len(names) > 0 {
+		return dwPath, nil
+	}
+
+	return "", errors.New("no SMBus I801 or DesignWare I2C adapter found; load the i2c_i801 module (modprobe i2c_i801) and check dmesg | grep -i -e i801 -e designware")
 }
 
 func openBus(path string, force bool) (*bus, error) {
@@ -98,6 +107,15 @@ func openBusAt(path string, addr uintptr, force bool) (*bus, error) {
 		return nil, err
 	}
 
+	if path == dwPath {
+		dw, err := openDW(uint8(addr))
+		if err != nil {
+			lock.Close()
+			return nil, err
+		}
+		return &bus{path: path, dw: dw, lock: lock, gt: true}, nil
+	}
+
 	file, err := os.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
 		lock.Close()
@@ -118,15 +136,23 @@ func openBusAt(path string, addr uintptr, force bool) (*bus, error) {
 		return nil, err
 	}
 
-	return &bus{path: path, file: file, lock: lock}, nil
+	name, _ := os.ReadFile("/sys/bus/i2c/devices/" + filepath.Base(path) + "/name")
+	return &bus{path: path, file: file, lock: lock, gt: strings.HasPrefix(string(name), dwAdapter)}, nil
 }
 
 func (b *bus) close() {
-	b.file.Close()
+	if b.dw != nil {
+		b.dw.close()
+	} else {
+		b.file.Close()
+	}
 	b.lock.Close()
 }
 
 func (b *bus) smbus(readWrite, command byte, size uint32, data *[smbusBlockMax + 2]byte) error {
+	if b.dw != nil {
+		return b.dw.smbus(readWrite, command, size, data)
+	}
 	args := smbusIoctlData{readWrite: readWrite, command: command, size: size, data: data}
 	err := ioctl(b.file.Fd(), ioctlSMBus, uintptr(unsafe.Pointer(&args)))
 	runtime.KeepAlive(data)
@@ -151,6 +177,14 @@ func (b *bus) writeBlock(command byte, payload []byte) error {
 	return b.smbus(smbusWrite, command, smbusI2CBlockData, &data)
 }
 
+func (b *bus) writeSMBusBlock(command byte, payload []byte) error {
+	var data [smbusBlockMax + 2]byte
+	data[0] = byte(len(payload))
+	copy(data[1:], payload)
+
+	return b.smbus(smbusWrite, command, smbusBlockData, &data)
+}
+
 func (b *bus) readByte(command byte) (byte, error) {
 	var data [smbusBlockMax + 2]byte
 
@@ -164,6 +198,11 @@ func (b *bus) readByte(command byte) (byte, error) {
 // with the same timing and retries as the led-ugreen kernel driver.
 func (b *bus) change(id, command byte, params [4]byte) error {
 	packet := commandPacket(id, command, params)
+	write := b.writeBlock
+	if b.gt {
+		packet = gtCommandPacket(command, params)
+		write = b.writeSMBusBlock
+	}
 	err := errors.New("no attempt made")
 
 	for i := 0; i < retries; i++ {
@@ -173,7 +212,7 @@ func (b *bus) change(id, command byte, params [4]byte) error {
 			time.Sleep(30 * time.Millisecond)
 		}
 
-		if err = b.writeBlock(id, packet); err != nil {
+		if err = write(id, packet); err != nil {
 			continue
 		}
 
@@ -255,6 +294,10 @@ func scanBus(path string) (found, busy []string, err error) {
 	defer lock.Close()
 	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
 		return nil, nil, err
+	}
+
+	if path == dwPath {
+		return scanDW()
 	}
 
 	file, err := os.OpenFile(path, os.O_RDWR, 0)
