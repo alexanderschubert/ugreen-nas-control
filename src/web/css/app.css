@@ -1281,7 +1281,7 @@
 
 .unc-nas-bays {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--bays, 6), minmax(0, 1fr));
     gap: 7px;
     padding: 8px;
     border-radius: 6px;
@@ -1378,6 +1378,7 @@
 
 .unc-nas-front .speeds {
     display: inline-flex;
+    white-space: nowrap;
     gap: 10px;
     color: #c9d1da;
     font-size: 11px;
@@ -1394,6 +1395,7 @@
 }
 
 .unc-pled {
+    flex: none;
     width: 16px;
     height: 6px;
     border-radius: 3px;
@@ -1479,6 +1481,8 @@
     background: linear-gradient(180deg, #11231a, #0d1914);
 }
 
+.unc-board.no-pcie { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
 .unc-board-col {
     display: grid;
     gap: 12px;
@@ -1540,7 +1544,8 @@
 }
 
 @media (max-width: 1100px) {
-    .unc-board { grid-template-columns: minmax(0, 1fr); }
+    .unc-board,
+    .unc-board.no-pcie { grid-template-columns: minmax(0, 1fr); }
 }
 
 
@@ -1632,7 +1637,7 @@
 /* ---------- Case: smaller front, icons ---------- */
 
 .unc-stage { display: grid; justify-items: center; }
-.unc-stage .unc-nas { width: 100%; max-width: 640px; }
+.unc-stage .unc-nas { width: 100%; max-width: min(640px, calc(var(--bays, 6) * 100px + 120px)); }
 
 .unc-tile { position: relative; }
 

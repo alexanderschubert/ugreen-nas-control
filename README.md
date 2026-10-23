@@ -15,9 +15,9 @@ fan settings of UGOS.
 - **System**: model, BIOS, CPU, memory, Unraid and kernel version, uptime
 - **Temperatures**: CPU package and cores, mainboard, the fan controller's own sensors, every NVMe SSD,
   and every disk – read from Unraid, so sleeping disks are never woken up
-- **Case view**: tiles for processor, memory, drives, NVMe and network; front with the six bays (disk, size,
+- **Case view**: tiles for processor, memory, drives, NVMe and network; front with the bays (six on the DXP6800 Pro, four on the DXP4800 GT; disk, size,
   temperature, standby), rear with the LAN ports (link and speed), inside with the RAM slots, the two M.2 slots
-  and the PCIe slot with the SSDs on its card
+  and the PCIe slot with the SSDs on its card (not on the DXP4800 GT)
 - **Fans**: live speed of the CPU fan and both case fans
 - **Fan modes**: BIOS (no control), Quiet, Standard, Performance, Full speed, or your own curves;
   the CPU fan follows the CPU, the case fans the hottest disk or NVMe

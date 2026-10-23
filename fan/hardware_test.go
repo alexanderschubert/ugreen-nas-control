@@ -183,3 +183,33 @@ func TestReadHardwareWithoutDmidecode(t *testing.T) {
 		t.Errorf("%+v", hw)
 	}
 }
+
+func TestLayoutFor(t *testing.T) {
+	if l := layoutFor("DXP6800 Pro"); len(l.bayPorts) != 6 || l.m2Slots["0000:00:06.0"] != 1 {
+		t.Errorf("DXP6800 Pro: %+v", l)
+	}
+	l := layoutFor("DXP4800 GT")
+	if len(l.bayPorts) != 4 || l.bayPorts[3] != 4 || l.m2Slots["0000:00:01.4"] != 1 || l.m2Slots["0000:00:01.6"] != 2 {
+		t.Errorf("DXP4800 GT: %+v", l)
+	}
+	for _, model := range []string{"DXP4800 Plus", "DXP8800 Plus", ""} {
+		if l := layoutFor(model); l.bayPorts != nil || l.m2Slots != nil {
+			t.Errorf("%q: %+v", model, l)
+		}
+	}
+}
+
+func TestReadHardwareDXP4800GT(t *testing.T) {
+	fakeSys(t)
+	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("DXP4800 GT\n"), 0o644)
+	hw := ReadHardware()
+	if hw.Model != "DXP4800 GT" || len(hw.Bays) != 4 {
+		t.Fatalf("%q, %d bays", hw.Model, len(hw.Bays))
+	}
+	// ata1..ata4 in order: sda, sdb, sdc, sdd.
+	for i, dev := range []string{"sda", "sdb", "sdc", "sdd"} {
+		if !hw.Bays[i].Present || hw.Bays[i].Device != dev {
+			t.Errorf("bay %d: %+v, want %s", i+1, hw.Bays[i], dev)
+		}
+	}
+}

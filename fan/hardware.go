@@ -16,13 +16,27 @@ var (
 	dmidecodeBn = envOr("UGREEN_DMIDECODE", "dmidecode")
 )
 
-// The six bays of the DXP6800 Pro, left to right, and the kernel's ata port of each
-// (the same order as UGREEN LED Control uses: ata3..ata6, then ata1, ata2).
-var bayPorts = []int{3, 4, 5, 6, 1, 2}
+// What a model has built in.
+type layout struct {
+	// The kernel's ata port of each bay, left to right (the same order as UGREEN LED
+	// Control uses).
+	bayPorts []int
+	// The PCIe root ports of the M.2 slots; an NVMe behind any other port sits on a
+	// card in the PCIe slot.
+	m2Slots map[string]int
+}
 
-// The two M.2 slots hang on the CPU's PCIe root ports; an NVMe behind any other
-// port sits on a card in the PCIe slot.
-var m2Slots = map[string]int{"0000:00:06.0": 1, "0000:00:06.2": 2}
+// layoutFor knows the DXP6800 Pro (ata3..ata6, then ata1, ata2) and the DXP4800 GT
+// (ata1..ata4). Any other model: no bays, every NVMe on the PCIe slot.
+func layoutFor(model string) layout {
+	switch {
+	case strings.HasPrefix(model, "DXP6800"):
+		return layout{[]int{3, 4, 5, 6, 1, 2}, map[string]int{"0000:00:06.0": 1, "0000:00:06.2": 2}}
+	case strings.HasPrefix(model, "DXP4800 GT"):
+		return layout{[]int{1, 2, 3, 4}, map[string]int{"0000:00:01.4": 1, "0000:00:01.6": 2}}
+	}
+	return layout{}
+}
 
 type DIMM struct {
 	Locator      string `json:"locator"`
@@ -63,6 +77,7 @@ type NetPort struct {
 }
 
 type Hardware struct {
+	Model  string    `json:"model"`
 	Memory []DIMM    `json:"memory"`
 	NVMe   []NVMe    `json:"nvme"`
 	Bays   []Bay     `json:"bays"`
@@ -73,9 +88,11 @@ type Hardware struct {
 // (never the disks themselves) and dmidecode.
 func ReadHardware() Hardware {
 	s := ReadSensors()
-	hw := Hardware{Memory: readMemory(), NVMe: readNVMe(s), Net: readNet()}
-	if ModelSupported(readString(filepath.Join(dmiDir, "product_name"))) {
-		hw.Bays = readBays(s)
+	model := readString(filepath.Join(dmiDir, "product_name"))
+	l := layoutFor(model)
+	hw := Hardware{Model: model, Memory: readMemory(), NVMe: readNVMe(s, l), Net: readNet()}
+	if len(l.bayPorts) > 0 {
+		hw.Bays = readBays(s, l)
 	}
 	return hw
 }
@@ -161,7 +178,7 @@ func sectorBytes(block string) int64 {
 	return n * 512
 }
 
-func readNVMe(s Sensors) []NVMe {
+func readNVMe(s Sensors, l layout) []NVMe {
 	temps := map[string]*int{}
 	for _, t := range s.NVMe {
 		temps[t.Name] = t.Temp
@@ -180,7 +197,7 @@ func readNVMe(s Sensors) []NVMe {
 		if len(chain) > 0 {
 			d.PCI = chain[len(chain)-1]
 			// Behind a bridge the NVMe is the last address, the root port the first.
-			if n, ok := m2Slots[chain[0]]; ok {
+			if n, ok := l.m2Slots[chain[0]]; ok {
 				d.Slot = "m2-" + strconv.Itoa(n)
 			}
 		}
@@ -197,13 +214,13 @@ func nvmeNumber(path string) int {
 
 var ataRe = regexp.MustCompile(`/ata(\d+)/`)
 
-func readBays(s Sensors) []Bay {
+func readBays(s Sensors, l layout) []Bay {
 	byDevice := map[string]Disk{}
 	for _, d := range s.Disks {
 		byDevice[d.Device] = d
 	}
 
-	bays := make([]Bay, len(bayPorts))
+	bays := make([]Bay, len(l.bayPorts))
 	for i := range bays {
 		bays[i].Bay = i + 1
 	}
@@ -215,7 +232,7 @@ func readBays(s Sensors) []Bay {
 			continue
 		}
 		port, _ := strconv.Atoi(m[1])
-		for i, p := range bayPorts {
+		for i, p := range l.bayPorts {
 			if p != port {
 				continue
 			}

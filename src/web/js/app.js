@@ -569,6 +569,7 @@
         usba: '<svg viewBox="0 0 40 20"><rect x="2" y="2" width="36" height="16" rx="2" class="shell"/><rect x="6" y="8" width="28" height="5" class="tongue blue"/></svg>',
         usb2: '<svg viewBox="0 0 40 20"><rect x="2" y="2" width="36" height="16" rx="2" class="shell"/><rect x="6" y="8" width="28" height="5" class="tongue"/></svg>',
         hdmi: '<svg viewBox="0 0 48 20"><path d="M3 3h42v8l-5 6H8l-5-6z" class="shell"/><rect x="9" y="7" width="30" height="4" class="tongue"/></svg>',
+        sd: '<svg viewBox="0 0 40 18"><rect x="3" y="3" width="34" height="12" rx="2" class="shell"/><rect x="8" y="8" width="24" height="2" class="tongue"/></svg>',
         ac: '<svg viewBox="0 0 56 34"><rect x="2" y="2" width="52" height="30" rx="3" class="shell"/><rect x="14" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="34" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="24" y="22" width="8" height="6" rx="1" class="tongue"/></svg>'
     };
 
@@ -580,6 +581,24 @@
             <rect x="6" y="5" width="10" height="5" rx="1" class="led link"/>
             <rect x="40" y="5" width="10" height="5" rx="1" class="led act ${speed >= 10000 ? 'fast' : ''}"/>
         </svg>`;
+
+    // Sockets per model as [drawing, label]; rear labels are i18n keys, a LAN port is ['lan'].
+    // pcie: the model has a PCIe slot. Any model not listed is drawn like the DXP6800 Pro.
+    const CASE_DEFAULT = {
+        front: [['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
+        rear: [['ac', 'case.ac'], ['hdmi', 'case.hdmi'], ['lan'], ['lan'], ['usba', 'case.usb_a'], ['usb2', 'case.usb2'], ['usb2', 'case.usb2']],
+        pcie: true
+    };
+
+    const CASE_MODELS = [
+        [/^DXP4800 GT/, {
+            front: [['sd', 'SD'], ['usbc', '10G'], ['usba', '10G']],
+            rear: CASE_DEFAULT.rear,
+            pcie: false
+        }]
+    ];
+
+    const caseModel = hw => (CASE_MODELS.find(([re]) => re.test(hw.model || '')) || [null, CASE_DEFAULT])[1];
 
     const socket = (kind, label, extra = '') => `
         <div class="unc-socket ${kind}">
@@ -619,18 +638,14 @@
         const speeds = net.map(n => `<span>${n.link ? speedText(n.speed_mbit) : '✕'}</span>`).join('');
 
         q('#unc-front').innerHTML = `
-            <div class="unc-nas">
+            <div class="unc-nas" style="--bays:${(hw.bays || []).length || 6}">
                 <div class="unc-nas-bays">${(hw.bays || []).map(bayHtml).join('')}</div>
                 <div class="unc-nas-front">
                     <span class="unc-pled power"></span><span class="lbl">${escapeHtml(t('case.power'))}</span>
                     <span class="unc-pled lan ${lan ? 'on' : ''}"></span><span class="lbl">LAN</span>
                     <span class="speeds">${speeds}</span>
                     <span class="spacer"></span>
-                    <span class="unc-front-ports">
-                        ${socket('usbc', 'TB4')}
-                        ${socket('usbc', 'TB4')}
-                        ${socket('usba', '10G')}
-                    </span>
+                    <span class="unc-front-ports">${caseModel(hw).front.map(([kind, label]) => socket(kind, label)).join('')}</span>
                     <b class="brand">UGREEN</b>
                 </div>
             </div>`;
@@ -660,6 +675,7 @@
     }
 
     function renderRear(hw) {
+        let lans = 0;
         const lan = n => {
             const p = hw.net[n];
             const up = Boolean(p && p.link);
@@ -675,13 +691,7 @@
         q('#unc-rear').innerHTML = `
             <div class="unc-nas-rear">
                 <div class="unc-rear-ports">
-                    ${socket('ac', t('case.ac'))}
-                    ${socket('hdmi', t('case.hdmi'))}
-                    ${lan(0)}
-                    ${lan(1)}
-                    ${socket('usba', t('case.usb_a'))}
-                    ${socket('usb2', t('case.usb2'))}
-                    ${socket('usb2', t('case.usb2'))}
+                    ${caseModel(hw).rear.map(([kind, label]) => kind === 'lan' ? lan(lans++) : socket(kind, t(label))).join('')}
                 </div>
             </div>`;
     }
@@ -723,6 +733,7 @@
         };
 
         const card = hw.nvme.filter(d => d.slot === 'pcie');
+        const hasPcie = caseModel(hw).pcie || card.length > 0;
         const pcie = `
             <div class="unc-slot pcie ${card.length ? '' : 'empty'}">
                 <div class="unc-slot-head"><span class="unc-slot-ico">${icon('pcie')}</span><small>${escapeHtml(t('case.pcie_slot'))}</small></div>
@@ -731,10 +742,11 @@
                     : `<span>${escapeHtml(t('case.free'))}</span>`}
             </div>`;
 
+        q('#unc-inside').classList.toggle('no-pcie', !hasPcie);
         q('#unc-inside').innerHTML = `
             <div class="unc-board-col">${ramSlots}</div>
             <div class="unc-board-col">${m2(1)}${m2(2)}</div>
-            <div class="unc-board-col">${pcie}</div>`;
+            ${hasPcie ? `<div class="unc-board-col">${pcie}</div>` : ''}`;
     }
 
     function renderCase() {
