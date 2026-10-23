@@ -47,7 +47,7 @@ window.UGREEN_NAS_THEME = <?= json_encode($unc_theme) ?>;
         <button type="button" data-nav="curves"><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
         <button type="button" data-nav="safety"><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
         <button type="button" data-nav="leds"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds">LEDs</span></button>
-        <button type="button" data-nav="system"><span class="unc-ico" data-unc-icon="chip"></span><span data-i18n="nav.system">System</span></button>
+        <button type="button" data-nav="system"><span class="unc-ico" data-unc-icon="gear"></span><span data-i18n="nav.system">System</span></button>
         <button type="button" data-nav="about"><span class="unc-ico" data-unc-icon="info"></span><span data-i18n="nav.about">Über</span></button>
     </nav>
 
