@@ -35,7 +35,7 @@ USAGE
 
 #
 # LEDs: a copy of UGREEN LED Control (led/), off until it is switched on. Only the
-# DXP6800 Pro, and not next to the other LED plugins, which write the same LEDs.
+# DXP6800 Pro and DXP4800 GT, and not next to the other LED plugins, which write the same LEDs.
 #
 
 led_model() {
@@ -45,7 +45,7 @@ led_model() {
 # Why the LEDs cannot be used here: model, standalone, driver, module; empty if nothing is in the way.
 led_blocker() {
     case "$(led_model)" in
-        DXP6800*) ;;
+        DXP6800*|DXP4800*GT*) ;;
         *) echo model; return ;;
     esac
     if [ -e "$PLUGINS_BOOT/ugreen-led-control.plg" ] || [ -d "$PLUGINS_WEB/ugreen-led-control" ]; then

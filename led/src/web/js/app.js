@@ -827,9 +827,15 @@
                 ? t(`led.standby_${state.status.standby_mode || 'dim'}`, { pct: state.status.standby_level ?? 30 })
                 : '';
 
+            // In status mode an error or SMART warning wins over the colour set here.
+            const override = bay && bay.device && statusMode()
+                ? bay.error && state.status.error_enabled !== false ? t('led.error_override')
+                    : bay.smart_warnings && state.status.smart_enabled !== false ? t('led.smart_override') : ''
+                : '';
+
             element.textContent = !bay ? ''
                 : !bay.device ? t('bays.no_disk')
-                    : [bay.slot, `/dev/${bay.device}`, standby].filter(Boolean).join(' · ');
+                    : [bay.slot, `/dev/${bay.device}`, standby, override].filter(Boolean).join(' · ');
         });
     }
 
@@ -908,6 +914,8 @@
         q('#ulc-standby-mode').value = status.standby_mode || 'dim';
         q('#ulc-disk-color-mode').value = status.disk_color_mode || 'own';
         q('#ulc-smart-enabled').checked = status.smart_enabled !== false;
+        q('#ulc-error-enabled').checked = status.error_enabled !== false;
+        q('#ulc-activity-enabled').checked = status.activity_enabled !== false;
 
         const smartColor = q('#ulc-smart-color');
         if (!smartColor.firstElementChild) smartColor.innerHTML = colorInput('#ff8c00');
@@ -1018,6 +1026,8 @@
                 action: 'status_display',
                 disk_color_mode: q('#ulc-disk-color-mode').value,
                 smart_enabled: q('#ulc-smart-enabled').checked ? '1' : '0',
+                error_enabled: q('#ulc-error-enabled').checked ? '1' : '0',
+                activity_enabled: q('#ulc-activity-enabled').checked ? '1' : '0',
                 smart_r: smart.r,
                 smart_g: smart.g,
                 smart_b: smart.b,

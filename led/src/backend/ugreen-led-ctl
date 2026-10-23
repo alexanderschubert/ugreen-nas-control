@@ -138,8 +138,21 @@ tool() {
     "$LED_TOOL" "$@"
 }
 
+# DXP4800 GT: the controller sits on an AMD DesignWare I2C controller (ACPI AMDI0010)
+# that Unraid's kernel has no driver for; the helper drives it through /dev/mem.
+is_gt() {
+    case "$(product_name)" in
+        DXP4800*GT*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 has_smbus() {
-    grep -qs '^SMBus I801 adapter' /sys/bus/i2c/devices/i2c-*/name
+    if is_gt; then
+        grep -qs ' : AMDI0010:' /proc/iomem || grep -qs '^Synopsys DesignWare I2C adapter' /sys/bus/i2c/devices/i2c-*/name
+    else
+        grep -qs '^SMBus I801 adapter' /sys/bus/i2c/devices/i2c-*/name
+    fi
 }
 
 # The LED controller sits on the Intel SMBus. Unraid usually loads its driver
@@ -149,6 +162,9 @@ ensure_smbus() {
     local i
 
     modprobe -q i2c-dev 2>/dev/null
+
+    # The GT needs no driver (see is_gt).
+    is_gt && { has_smbus; return; }
 
     # Already loaded without an adapter: nothing to wait for (dmesg tells why).
     grep -q '^i2c_i801 ' /proc/modules 2>/dev/null && { has_smbus; return; }
@@ -248,7 +264,7 @@ status() {
     local probe
     local bus=""
 
-    probe="$(tool probe 2>/dev/null)" && bus="$(printf '%s' "$probe" | sed -n 's/.*"bus": "\/dev\/i2c-\([0-9]*\)".*/\1/p')"
+    probe="$(tool probe 2>/dev/null)" && bus="$(printf '%s' "$probe" | sed -n -e 's/.*"bus": "\/dev\/i2c-\([0-9]*\)".*/\1/p' -e 's/.*"bus": "\(\/dev\/mem\)".*/"\1"/p')"
 
     printf '{\n'
     printf '  "ok": true,\n'
@@ -283,6 +299,8 @@ status() {
     printf '  "standby_mode": "%s",\n' "$(config_value standby_mode | grep . || echo dim)"
     printf '  "standby_level": %s,\n' "$(config_value standby_level | grep . || echo 30)"
     printf '  "smart_enabled": %s,\n' "$([ "$(config_value smart_enabled)" = 0 ] && echo false || echo true)"
+    printf '  "error_enabled": %s,\n' "$([ "$(config_value error_enabled)" = 0 ] && echo false || echo true)"
+    printf '  "activity_enabled": %s,\n' "$([ "$(config_value activity_enabled)" = 0 ] && echo false || echo true)"
     printf '  "smart_color": "%s",\n' "$(config_value smart_color | grep . || echo "$DEFAULT_SMART_COLOR")"
     printf '  "disk_color_mode": "%s",\n' "$(config_value disk_color_mode | grep . || echo own)"
     printf '  "netdev_status": "%s",\n' "$(netdev_status)"
@@ -704,6 +722,7 @@ bay_ports() {
 mapping_source() {
     case "$(product_name)" in
         DXP6800*|DX4600*|DXP8800*) echo tested ;;
+        DXP4800*GT*) echo tested ;;
         DX4700*|DXP2800*|DXP4800*) echo reported ;;
         *) echo guessed ;;
     esac
@@ -1135,6 +1154,8 @@ daemon_run() {
     local sync_color
     local smart_on
     local smart_color
+    local error_on
+    local activity_on
     local temp_mode
     local standby_mode
     local look
@@ -1174,6 +1195,8 @@ daemon_run() {
             [ "$(config_value sync_enabled)" != "0" ] && sync="$(sync_state)"
             sync_color="$(config_value sync_color | grep . || echo "$DEFAULT_SYNC_COLOR")"
             smart_on="$(config_value smart_enabled | grep . || echo 1)"
+            error_on="$(config_value error_enabled | grep . || echo 1)"
+            activity_on="$(config_value activity_enabled | grep . || echo 1)"
             smart_color="$(config_value smart_color | grep . || echo "$DEFAULT_SMART_COLOR")"
             temp_mode="$(config_value disk_color_mode | grep . || echo own)"
             standby_mode="$(config_value standby_mode | grep . || echo dim)"
@@ -1213,7 +1236,7 @@ daemon_run() {
                 # Error > SMART warning > parity check > temperature or own colour.
                 if [ -z "$dev" ] || [ "$brightness" -eq 0 ]; then
                     wanted="off"
-                elif is_error_status "${2:-}"; then
+                elif [ "$error_on" = "1" ] && is_error_status "${2:-}"; then
                     wanted="steady|$error_color|$brightness"
                 elif [ "$smart_on" = "1" ] && [ -n "${1:-}" ] \
                     && [ -n "$(smart_warnings "$(smart_now "$1" "${5:-0}")" "$(config_value "$(smart_key "${9:--}")")")" ]; then
@@ -1289,6 +1312,15 @@ daemon_run() {
                 off|breath\|*|pulse\|*|identify) continue ;;
             esac
             [ -e "${IDENTIFY_PREFIX}disk$bay" ] && continue
+
+            # Blinking switched off: a blink that is still running ends here.
+            if [ "$activity_on" = "0" ]; then
+                if [ "${blinking[bay]:-0}" -eq 1 ]; then
+                    tool set "disk$bay" on >/dev/null 2>&1
+                    blinking[bay]=0
+                fi
+                continue
+            fi
 
             read -r reads _ _ _ writes rest < "$SYS_BLOCK/$dev/stat" 2>/dev/null || continue
 
@@ -1543,10 +1575,10 @@ case "${1:-help}" in
     dxp480t) dxp480t_apply ;;
     smbus)
         if ensure_smbus; then
-            echo "SMBus adapter: $(grep -H '^SMBus I801' /sys/bus/i2c/devices/i2c-*/name)"
+            echo "SMBus adapter: $(grep -H -e '^SMBus I801' -e '^Synopsys DesignWare' /sys/bus/i2c/devices/i2c-*/name 2>/dev/null || echo 'AMD DesignWare I2C (AMDI0010) via /dev/mem')"
         else
-            echo "ERROR: No SMBus I801 adapter after loading i2c_i801. Kernel messages:" >&2
-            dmesg | grep -iE 'i801|smbus' | tail -n 10 >&2
+            echo "ERROR: No SMBus I801 / DesignWare adapter after loading its driver. Kernel messages:" >&2
+            dmesg | grep -iE 'i801|smbus|designware' | tail -n 10 >&2
             exit 1
         fi
         ;;
