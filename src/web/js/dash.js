@@ -100,12 +100,12 @@
         });
     }
 
-    function nvmeChip(label, ssd) {
+    function nvmeChip(label, ssd, pcie = true) {
         if (!ssd) return `<span class="unc-chip empty"><b>${escapeHtml(label)}</b></span>`;
 
         const [warm, hot] = LIMITS.nvme;
         const level = ssd.temp == null ? 'ok' : ssd.temp >= hot ? 'hot' : ssd.temp >= warm ? 'warm' : 'ok';
-        const slot = ssd.slot === 'pcie' ? t('case.pcie_slot') : t('case.m2_slot', { n: ssd.slot.replace('m2-', '') });
+        const slot = ssd.slot === 'pcie' && pcie ? t('case.pcie_slot') : t('case.m2_slot', { n: ssd.slot === 'pcie' ? '?' : ssd.slot.replace('m2-', '') });
         const lines = [
             ssd.temp != null ? `${ssd.temp} °C` : '–',
             `${ssd.id} · ${size(ssd.size_bytes)} · ${slot}`,
@@ -126,8 +126,10 @@
 
         // The two M.2 slots first (empty ones shown), then the SSDs on a card in the PCIe slot.
         const ssds = hw?.nvme || [];
-        const chips = ssds.length ? [1, 2].map(n => nvmeChip(`M${n}`, ssds.find(d => d.slot === `m2-${n}`))) : [];
-        ssds.filter(d => d.slot === 'pcie').forEach((d, i) => chips.push(nvmeChip(`P${i + 1}`, d)));
+        // The DXP4800 GT has no PCIe slot: an SSD outside its two M.2 ports is not on a card.
+        const pcie = !/^DXP4800 GT/.test(hw?.model || '');
+        const chips = ssds.length ? [1, 2].map(n => nvmeChip(`M${n}`, ssds.find(d => d.slot === `m2-${n}`), pcie)) : [];
+        ssds.filter(d => d.slot === 'pcie').forEach((d, i) => chips.push(nvmeChip(`P${i + 1}`, d, pcie)));
 
         paintChips(root.querySelector('[data-nvme]'), t('dash.nvme_title'), t('tile.nvme_val', { n: ssds.length }), chips);
     }

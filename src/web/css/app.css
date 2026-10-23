@@ -1411,6 +1411,62 @@
     align-items: flex-end;
 }
 
+/* Front strip with power button and one LED per LAN / bay (DXP4800 GT). */
+.unc-pbtn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 20px;
+    border: 2px solid #5a6572;
+    border-radius: 4px;
+    background: #14181d;
+}
+
+.unc-leds { display: inline-flex; gap: 12px; }
+
+.unc-led {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+}
+
+.unc-led .unc-pled.on { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, .6); }
+
+.unc-nas-model {
+    padding: 2px 0 8px;
+    color: #8f99a4;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-align: center;
+}
+
+/* Rear fan behind its dust filter (DXP4800 GT). */
+.unc-rear-fan {
+    display: grid;
+    place-items: center;
+    height: 150px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    background:
+        radial-gradient(circle, rgba(255, 255, 255, .07) 1px, transparent 1.4px) 0 0 / 7px 7px,
+        #090b0e;
+}
+
+.unc-rear-fan svg {
+    width: 126px;
+    height: 126px;
+    fill: none;
+    stroke: #3a424c;
+    stroke-width: .7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.unc-rear-fan svg .ring { stroke-width: 1; }
+
 /* Sockets, front and rear. */
 .unc-socket {
     display: grid;
@@ -1446,6 +1502,10 @@
 }
 
 .unc-socket.rj45.up em { color: var(--unc-green); font-weight: 650; }
+
+.unc-socket.usb2x2 svg { width: 34px; }
+.unc-socket.dc svg { width: 40px; }
+.unc-socket.reset svg { width: 22px; }
 
 .unc-front-ports .unc-socket { min-width: 40px; }
 .unc-front-ports .unc-socket svg { width: 34px; }
