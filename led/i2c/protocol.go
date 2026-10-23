@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -28,29 +29,17 @@ const (
 	maxPeriod = 0x7fff
 )
 
-var ledIDs = map[string]byte{
-	"power":  0,
-	"netdev": 1,
-	"disk1":  2,
-	"disk2":  3,
-	"disk3":  4,
-	"disk4":  5,
-	"disk5":  6,
-	"disk6":  7,
-	"disk7":  8,
-	"disk8":  9,
-}
-
+// A LED's ID is its index here.
 var ledNames = []string{"power", "netdev", "disk1", "disk2", "disk3", "disk4", "disk5", "disk6", "disk7", "disk8"}
 
 var modeNames = []string{"off", "on", "blink", "breath"}
 
 func ledID(name string) (byte, error) {
-	id, ok := ledIDs[name]
-	if !ok {
+	i := slices.Index(ledNames, name)
+	if i < 0 {
 		return 0, fmt.Errorf("unknown LED %q (power, netdev, disk1..disk8)", name)
 	}
-	return id, nil
+	return byte(i), nil
 }
 
 // commandPacket is the block written to register <id>: the ID, a fixed header,
@@ -80,15 +69,7 @@ func gtCommandPacket(command byte, params [4]byte) []byte {
 	return append(packet, byte(sum), byte(sum>>8))
 }
 
-func clampPeriod(ms int) int {
-	if ms < minPeriod {
-		return minPeriod
-	}
-	if ms > maxPeriod {
-		return maxPeriod
-	}
-	return ms
-}
+func clampPeriod(ms int) int { return min(max(ms, minPeriod), maxPeriod) }
 
 // periodParams encodes blink/breath timing as the controller expects it:
 // the whole cycle first, then the "on" part.
@@ -127,10 +108,7 @@ func parseStatus(name string, block []byte) (ledStatus, error) {
 	for _, b := range block[:9] {
 		sum += int(b)
 	}
-	if sum == 0 || sum != int(block[9])<<8|int(block[10]) {
-		return ledStatus{}, errBadStatus
-	}
-	if int(block[0]) >= len(modeNames) {
+	if sum == 0 || sum != int(block[9])<<8|int(block[10]) || int(block[0]) >= len(modeNames) {
 		return ledStatus{}, errBadStatus
 	}
 
@@ -199,7 +177,7 @@ func buildCommand(args []string) (byte, [4]byte, error) {
 
 	switch args[0] {
 	case "color":
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			b, err := parseByte(args[1+i])
 			if err != nil {
 				return 0, params, err

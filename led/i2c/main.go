@@ -45,6 +45,11 @@ func fail(err error) int {
 	return 1
 }
 
+func usageError() int {
+	fmt.Fprint(os.Stderr, usage)
+	return 2
+}
+
 func printJSON(value any) {
 	out, _ := json.MarshalIndent(value, "", "  ")
 	fmt.Println(string(out))
@@ -66,8 +71,7 @@ func run(args []string) int {
 	args = flags.Args()
 
 	if len(args) == 0 || (args[0] != "probe" && args[0] != "scan" && len(args) < 2) {
-		fmt.Fprint(os.Stderr, usage)
-		return 2
+		return usageError()
 	}
 
 	if args[0] == "scan" {
@@ -76,16 +80,14 @@ func run(args []string) int {
 
 	if args[0] == "dxp480t" {
 		if len(args) != 2 || args[1] != "white" {
-			fmt.Fprint(os.Stderr, usage)
-			return 2
+			return usageError()
 		}
 		return runDXP480T(*busPath, *force)
 	}
 
 	if args[0] == "effect" {
 		if len(args) != 3 {
-			fmt.Fprint(os.Stderr, usage)
-			return 2
+			return usageError()
 		}
 		leds, err := parseLeds(args[2])
 		if err != nil {
@@ -123,8 +125,7 @@ func run(args []string) int {
 			}
 		}
 	default:
-		fmt.Fprint(os.Stderr, usage)
-		return 2
+		return usageError()
 	}
 
 	b, err := openBus(*busPath, *force)

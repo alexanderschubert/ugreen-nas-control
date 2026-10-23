@@ -83,6 +83,19 @@ func findBus() (string, error) {
 	return "", errors.New("no SMBus I801 or DesignWare I2C adapter found; load the i2c_i801 module (modprobe i2c_i801) and check dmesg | grep -i -e i801 -e designware")
 }
 
+// acquireLock allows one writer at a time: the web UI and the status daemon share the controller.
+func acquireLock() (*os.File, error) {
+	lock, err := os.OpenFile(lockFile, os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
+		lock.Close()
+		return nil, err
+	}
+	return lock, nil
+}
+
 func openBus(path string, force bool) (*bus, error) {
 	return openBusAt(path, controllerAddr, force)
 }
@@ -97,13 +110,8 @@ func openBusAt(path string, addr uintptr, force bool) (*bus, error) {
 		path = found
 	}
 
-	// One writer at a time: the web UI and the status daemon share the controller.
-	lock, err := os.OpenFile(lockFile, os.O_CREATE|os.O_RDWR, 0o600)
+	lock, err := acquireLock()
 	if err != nil {
-		return nil, err
-	}
-	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
-		lock.Close()
 		return nil, err
 	}
 
@@ -149,14 +157,18 @@ func (b *bus) close() {
 	b.lock.Close()
 }
 
+func smbusIoctl(file *os.File, readWrite, command byte, size uint32, data *[smbusBlockMax + 2]byte) error {
+	args := smbusIoctlData{readWrite: readWrite, command: command, size: size, data: data}
+	err := ioctl(file.Fd(), ioctlSMBus, uintptr(unsafe.Pointer(&args)))
+	runtime.KeepAlive(data)
+	return err
+}
+
 func (b *bus) smbus(readWrite, command byte, size uint32, data *[smbusBlockMax + 2]byte) error {
 	if b.dw != nil {
 		return b.dw.smbus(readWrite, command, size, data)
 	}
-	args := smbusIoctlData{readWrite: readWrite, command: command, size: size, data: data}
-	err := ioctl(b.file.Fd(), ioctlSMBus, uintptr(unsafe.Pointer(&args)))
-	runtime.KeepAlive(data)
-	return err
+	return smbusIoctl(b.file, readWrite, command, size, data)
 }
 
 func (b *bus) readBlock(command byte, length int) ([]byte, error) {
@@ -169,20 +181,12 @@ func (b *bus) readBlock(command byte, length int) ([]byte, error) {
 	return append([]byte(nil), data[1:1+length]...), nil
 }
 
-func (b *bus) writeBlock(command byte, payload []byte) error {
+func (b *bus) writeBlock(command byte, size uint32, payload []byte) error {
 	var data [smbusBlockMax + 2]byte
 	data[0] = byte(len(payload))
 	copy(data[1:], payload)
 
-	return b.smbus(smbusWrite, command, smbusI2CBlockData, &data)
-}
-
-func (b *bus) writeSMBusBlock(command byte, payload []byte) error {
-	var data [smbusBlockMax + 2]byte
-	data[0] = byte(len(payload))
-	copy(data[1:], payload)
-
-	return b.smbus(smbusWrite, command, smbusBlockData, &data)
+	return b.smbus(smbusWrite, command, size, &data)
 }
 
 func (b *bus) readByte(command byte) (byte, error) {
@@ -197,22 +201,16 @@ func (b *bus) readByte(command byte) (byte, error) {
 // change sends one command and waits until the controller confirms it,
 // with the same timing and retries as the led-ugreen kernel driver.
 func (b *bus) change(id, command byte, params [4]byte) error {
-	packet := commandPacket(id, command, params)
-	write := b.writeBlock
+	packet, size := commandPacket(id, command, params), uint32(smbusI2CBlockData)
 	if b.gt {
-		packet = gtCommandPacket(command, params)
-		write = b.writeSMBusBlock
+		packet, size = gtCommandPacket(command, params), smbusBlockData
 	}
 	err := errors.New("no attempt made")
 
-	for i := 0; i < retries; i++ {
-		if i == 0 {
-			time.Sleep(time.Millisecond)
-		} else {
-			time.Sleep(30 * time.Millisecond)
-		}
+	for i := range retries {
+		backoff(i)
 
-		if err = write(id, packet); err != nil {
+		if err = b.writeBlock(id, size, packet); err != nil {
 			continue
 		}
 
@@ -230,18 +228,23 @@ func (b *bus) change(id, command byte, params [4]byte) error {
 	return err
 }
 
+// backoff waits before attempt i: 1 ms, then 30 ms.
+func backoff(i int) {
+	if i == 0 {
+		time.Sleep(time.Millisecond)
+	} else {
+		time.Sleep(30 * time.Millisecond)
+	}
+}
+
 func (b *bus) status(name string) (ledStatus, error) {
 	id, err := ledID(name)
 	if err != nil {
 		return ledStatus{}, err
 	}
 
-	for i := 0; i < retries; i++ {
-		if i == 0 {
-			time.Sleep(time.Millisecond)
-		} else {
-			time.Sleep(30 * time.Millisecond)
-		}
+	for i := range retries {
+		backoff(i)
 
 		var block []byte
 		if block, err = b.readBlock(regStatusBase+id, statusLength); err != nil {
@@ -287,14 +290,11 @@ func scanBuses(path string, all bool) ([]string, error) {
 // returns the ones that answer; busy are addresses a kernel driver already holds.
 // It only reads, nothing is written to any device.
 func scanBus(path string) (found, busy []string, err error) {
-	lock, err := os.OpenFile(lockFile, os.O_CREATE|os.O_RDWR, 0o600)
+	lock, err := acquireLock()
 	if err != nil {
 		return nil, nil, err
 	}
 	defer lock.Close()
-	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
-		return nil, nil, err
-	}
 
 	if path == dwPath {
 		return scanDW()
@@ -316,11 +316,9 @@ func scanBus(path string) (found, busy []string, err error) {
 		}
 
 		var data [smbusBlockMax + 2]byte
-		args := smbusIoctlData{readWrite: smbusRead, command: 0, size: smbusByte, data: &data}
-		if ioctl(file.Fd(), ioctlSMBus, uintptr(unsafe.Pointer(&args))) == nil {
+		if smbusIoctl(file, smbusRead, 0, smbusByte, &data) == nil {
 			found = append(found, name)
 		}
-		runtime.KeepAlive(&data)
 	}
 
 	return found, busy, nil
