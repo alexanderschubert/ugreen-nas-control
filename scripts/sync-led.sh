@@ -4,14 +4,20 @@
 # paths and the plugin name rewritten for this plugin. Nothing else is changed, so
 # a new LED release shows up as a small diff.
 #
-#   scripts/sync-led.sh /path/to/ugreen-led-control [ref]     (ref: tag, default HEAD)
+#   scripts/sync-led.sh /path/to/ugreen-led-control [ref]     (ref: tag or commit, default HEAD)
+#
+# led/VERSION records "<describe> <commit> <repo url>". The URL comes from LED_REPO
+# (default: alexanderschubert/ugreen-led-control); scripts/check-led.sh fetches that
+# commit and fails if led/ differs from a fresh copy. LED_OUT (default led/) moves the
+# output, which is how the check works without touching the checkout.
 #
 set -euo pipefail
 
 SRC="${1:?usage: sync-led.sh <path to the ugreen-led-control checkout> [ref]}"
 REF="${2:-HEAD}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-OUT="${ROOT}/led"
+OUT="${LED_OUT:-${ROOT}/led}"
+REPO="${LED_REPO:-https://github.com/alexanderschubert/ugreen-led-control}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "${TMP}"' EXIT
 
@@ -44,6 +50,10 @@ while IFS= read -r file; do
     rewrite "${file}"
 done < <(find "${OUT}/src" -type f \( -name '*.php' -o -name '*.js' -o -name '*.page' -o -name '*.css' -o -name 'ugreen-led-ctl' -o -name stopping \))
 
+# Fixed modes, so the result does not depend on the source checkout or the umask.
+find "${OUT}" -type f -exec chmod 644 {} +
+chmod 755 "${OUT}/src/backend/ugreen-led-ctl" "${OUT}/src/event/stopping"
+
 # The LED pages exist only while the switch in UGREEN NAS Control is on.
 python3 - "${OUT}/src/web" "${FLAG}" <<'PY'
 import sys
@@ -72,5 +82,5 @@ head, rest = s.split('\n', 1)
 open(p, 'w').write(f'{head}\n[ -f {flag} ] || exit 0\n{rest}')
 PY
 
-echo "$(git -C "${SRC}" describe --tags --always "${REF}") $(git -C "${SRC}" rev-parse "${REF}")" > "${OUT}/VERSION"
-echo "Copied $(cat "${OUT}/VERSION") to led/."
+echo "$(git -C "${SRC}" describe --tags --always "${REF}") $(git -C "${SRC}" rev-parse "${REF}") ${REPO}" > "${OUT}/VERSION"
+echo "Copied $(cat "${OUT}/VERSION") to ${OUT#"${ROOT}/"}/."

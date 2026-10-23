@@ -91,9 +91,14 @@ on here; its settings are not carried over.
 To take over a new version of the LED plugin:
 
 ```
-scripts/sync-led.sh /path/to/ugreen-led-control v0.24.0
+LED_REPO=<url of that repository> scripts/sync-led.sh /path/to/ugreen-led-control v0.24.0
 scripts/test-led-ctl.sh
 ```
+
+`led/` is only ever the output of `scripts/sync-led.sh`, never edited by hand. `led/VERSION` records
+`<describe> <commit> <repo url>` (`LED_REPO`, default `alexanderschubert/ugreen-led-control`).
+`scripts/check-led.sh` fetches that commit, syncs it into a temporary directory and fails with the diff if
+`led/` differs. CI runs it (`led-sync` job) whenever `led/`, `scripts/` or the workflow change.
 
 ## Development
 
