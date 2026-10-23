@@ -586,6 +586,10 @@
         usba: '<svg viewBox="0 0 40 20"><rect x="2" y="2" width="36" height="16" rx="2" class="shell"/><rect x="6" y="8" width="28" height="5" class="tongue blue"/></svg>',
         usb2: '<svg viewBox="0 0 40 20"><rect x="2" y="2" width="36" height="16" rx="2" class="shell"/><rect x="6" y="8" width="28" height="5" class="tongue"/></svg>',
         hdmi: '<svg viewBox="0 0 48 20"><path d="M3 3h42v8l-5 6H8l-5-6z" class="shell"/><rect x="9" y="7" width="30" height="4" class="tongue"/></svg>',
+        sd: '<svg viewBox="0 0 40 18"><rect x="3" y="3" width="34" height="12" rx="2" class="shell"/><rect x="8" y="8" width="24" height="2" class="tongue"/></svg>',
+        usb2x2: '<svg viewBox="0 0 40 36"><rect x="2" y="2" width="36" height="14" rx="2" class="shell"/><rect x="6" y="7" width="28" height="4" class="tongue"/><rect x="2" y="20" width="36" height="14" rx="2" class="shell"/><rect x="6" y="25" width="28" height="4" class="tongue"/></svg>',
+        dc: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" class="shell"/><circle cx="16" cy="16" r="5" class="tongue"/><circle cx="16" cy="16" r="1.6" class="pins"/></svg>',
+        reset: '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" class="shell"/><circle cx="10" cy="10" r="2" class="tongue"/></svg>',
         ac: '<svg viewBox="0 0 56 34"><rect x="2" y="2" width="52" height="30" rx="3" class="shell"/><rect x="14" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="34" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="24" y="22" width="8" height="6" rx="1" class="tongue"/></svg>'
     };
 
@@ -597,6 +601,31 @@
             <rect x="6" y="5" width="10" height="5" rx="1" class="led link"/>
             <rect x="40" y="5" width="10" height="5" rx="1" class="led act ${speed >= 10000 ? 'fast' : ''}"/>
         </svg>`;
+
+    // Sockets per model as [drawing, label]; rear labels are i18n keys, a LAN port is ['lan', index of
+    // the interface] in the order it sits on the panel.
+    // pcie: the model has a PCIe slot. Any model not listed is drawn like the DXP6800 Pro.
+    // strip: front strip with a power button (LED inside) and one LED per LAN / bay, the model name below.
+    // fan: the rear fan behind its dust filter. hint: i18n key of the note below the inside view.
+    const CASE_DEFAULT = {
+        front: [['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
+        rear: [['ac', 'case.ac'], ['hdmi', 'case.hdmi'], ['lan', 0], ['lan', 1], ['usba', 'case.usb_a'], ['usb2', 'case.usb2'], ['usb2', 'case.usb2']],
+        pcie: true,
+        hint: 'case.inside_hint'
+    };
+
+    const CASE_MODELS = [
+        [/^DXP4800 GT/, {
+            front: [['sd', 'SD'], ['usbc', '10G'], ['usba', 'USB3.2']],
+            rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0], ['reset', 'case.reset'], ['dc', 'case.dc']],
+            pcie: false,
+            strip: true,
+            fan: true,
+            hint: 'case.inside_hint_gt'
+        }]
+    ];
+
+    const caseModel = hw => (CASE_MODELS.find(([re]) => re.test(hw.model || '')) || [null, CASE_DEFAULT])[1];
 
     const socket = (kind, label, extra = '') => `
         <div class="unc-socket ${kind}">
@@ -635,21 +664,29 @@
         const lan = net.some(n => n.link);
         const speeds = net.map(n => `<span>${n.link ? speedText(n.speed_mbit) : '✕'}</span>`).join('');
 
-        q('#unc-front').innerHTML = `
-            <div class="unc-nas">
-                <div class="unc-nas-bays">${(hw.bays || []).map(bayHtml).join('')}</div>
+        const model = caseModel(hw);
+        const ports = `<span class="unc-front-ports">${model.front.map(([kind, label]) => socket(kind, label)).join('')}</span>`;
+        const led = (label, on) => `<span class="unc-led"><span class="unc-pled ${on ? 'on' : ''}"></span><span class="lbl">${escapeHtml(label)}</span></span>`;
+        const strip = model.strip ? `
+                <div class="unc-nas-front">
+                    <span class="unc-pbtn"><span class="unc-pled power"></span></span>
+                    <span class="unc-leds">${led('LAN', lan)}${(hw.bays || []).map(b => led(`DISK${b.bay}`, b.present)).join('')}</span>
+                    <span class="spacer"></span>
+                    ${ports}
+                </div>
+                <div class="unc-nas-model">${escapeHtml(hw.model)}</div>` : `
                 <div class="unc-nas-front">
                     <span class="unc-pled power"></span><span class="lbl">${escapeHtml(t('case.power'))}</span>
                     <span class="unc-pled lan ${lan ? 'on' : ''}"></span><span class="lbl">LAN</span>
                     <span class="speeds">${speeds}</span>
                     <span class="spacer"></span>
-                    <span class="unc-front-ports">
-                        ${socket('usbc', 'TB4')}
-                        ${socket('usbc', 'TB4')}
-                        ${socket('usba', '10G')}
-                    </span>
+                    ${ports}
                     <b class="brand">UGREEN</b>
-                </div>
+                </div>`;
+
+        q('#unc-front').innerHTML = `
+            <div class="unc-nas" style="--bays:${(hw.bays || []).length || 6}">
+                <div class="unc-nas-bays">${(hw.bays || []).map(bayHtml).join('')}</div>${strip}
             </div>`;
     }
 
@@ -689,16 +726,12 @@
                 </div>`;
         };
 
+        const model = caseModel(hw);
         q('#unc-rear').innerHTML = `
             <div class="unc-nas-rear">
+                ${model.fan ? `<div class="unc-rear-fan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg></div>` : ''}
                 <div class="unc-rear-ports">
-                    ${socket('ac', t('case.ac'))}
-                    ${socket('hdmi', t('case.hdmi'))}
-                    ${lan(0)}
-                    ${lan(1)}
-                    ${socket('usba', t('case.usb_a'))}
-                    ${socket('usb2', t('case.usb2'))}
-                    ${socket('usb2', t('case.usb2'))}
+                    ${model.rear.map(([kind, label]) => kind === 'lan' ? lan(label) : socket(kind, t(label))).join('')}
                 </div>
             </div>`;
     }
@@ -740,6 +773,8 @@
         };
 
         const card = hw.nvme.filter(d => d.slot === 'pcie');
+        const model = caseModel(hw);
+        const hasPcie = model.pcie;
         const pcie = `
             <div class="unc-slot pcie ${card.length ? '' : 'empty'}">
                 <div class="unc-slot-head"><span class="unc-slot-ico">${icon('pcie')}</span><small>${escapeHtml(t('case.pcie_slot'))}</small></div>
@@ -748,10 +783,14 @@
                     : `<span>${escapeHtml(t('case.free'))}</span>`}
             </div>`;
 
+        q('#unc-inside').classList.toggle('no-pcie', !hasPcie);
+        const hint = q('[data-i18n^="case.inside_hint"]');
+        hint.dataset.i18n = model.hint;
+        hint.textContent = t(model.hint);
         q('#unc-inside').innerHTML = `
             <div class="unc-board-col">${ramSlots}</div>
             <div class="unc-board-col">${m2(1)}${m2(2)}</div>
-            <div class="unc-board-col">${pcie}</div>`;
+            ${hasPcie ? `<div class="unc-board-col">${pcie}</div>` : ''}`;
     }
 
     function renderCase() {
