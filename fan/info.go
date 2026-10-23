@@ -26,22 +26,23 @@ type Info struct {
 }
 
 // ModelSupported tells whether the fan wiring of this tool (see roles and the
-// IT8613E channels) is that of the machine: only the DXP6800 Pro is known.
+// IT8613E and IT5571 channels) is that of the machine: the DXP6800 Pro and the
+// DXP4800 GT are known.
 func ModelSupported(model string) bool {
-	return strings.HasPrefix(model, "DXP6800")
+	return strings.HasPrefix(model, "DXP6800") || isDXP4800GT(model)
 }
 
-// requireSupportedModel keeps every access to the Super-I/O ports to the model
+// requireSupportedModel keeps every access to the fan controller ports to the model
 // the tool was made for; other boards may wire the fan headers differently.
 func requireSupportedModel() error {
-	model := readString(filepath.Join(dmiDir, "product_name"))
+	model := productName()
 	if ModelSupported(model) {
 		return nil
 	}
 	if model == "" {
 		model = "unknown model"
 	}
-	return fmt.Errorf("%s is not supported: UGREEN NAS Control is made for the DXP6800 Pro only", model)
+	return fmt.Errorf("%s is not supported: UGREEN NAS Control is made for the DXP6800 Pro and the DXP4800 GT only", model)
 }
 
 func ReadInfo() Info {

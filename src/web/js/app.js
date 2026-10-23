@@ -221,7 +221,7 @@
         });
 
         q('#unc-banner').hidden = !data.chip;
-        q('#unc-chip').textContent = data.chip ? data.chip.replace('IT8613', 'ITE IT8613E') : '';
+        q('#unc-chip').textContent = data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : '';
 
         q('#unc-chip-error').hidden = !data.chip_error;
         q('#unc-chip-error-text').textContent = data.chip_error || '';
@@ -248,8 +248,8 @@
                 <div>
                     <strong>${escapeHtml(fanName(fan, fans))}</strong>
                     <span class="unc-fan-rpm">${fan.rpm > 0 ? `${fan.rpm} <small>${escapeHtml(t('fan.rpm'))}</small>` : escapeHtml(t('fan.stopped'))}</span>
-                    <span class="unc-meter"><span style="width:${fan.pct}%"></span></span>
-                    <small class="unc-muted">${escapeHtml(t('fan.speed', { pct: fan.pct }))}</small>
+                    <span class="unc-meter"><span style="width:${fan.pct ?? 0}%"></span></span>
+                    <small class="unc-muted">${escapeHtml(fan.pct == null ? t('fan.auto') : t('fan.speed', { pct: fan.pct }))}</small>
                 </div>
             </div>`).join('');
 
@@ -346,7 +346,7 @@
             ['system.unraid', info.unraid],
             ['system.kernel', info.kernel],
             ['system.uptime', info.uptime ? uptime(info.uptime) : ''],
-            ['system.chip', data.chip ? data.chip.replace('IT8613', 'ITE IT8613E') : data.chip_error ? '–' : '']
+            ['system.chip', data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : data.chip_error ? '–' : '']
         ];
 
         q('#unc-system').innerHTML = facts

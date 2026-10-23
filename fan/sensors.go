@@ -68,7 +68,7 @@ func milli(path string) *int {
 	return &t
 }
 
-// ReadSensors collects CPU (coretemp), NVMe (hwmon) and Unraid's disk temperatures.
+// ReadSensors collects CPU (coretemp, or k10temp on AMD), NVMe (hwmon) and Unraid's disk temperatures.
 // Disks are only read from disks.ini, so a spun-down disk is never woken up.
 func ReadSensors() Sensors {
 	var s Sensors
@@ -91,6 +91,24 @@ func ReadSensors() Sensors {
 					continue
 				}
 				s.CPUCores = append(s.CPUCores, Temp{Name: label, Temp: t})
+			}
+		case "k10temp":
+			// AMD: Tdie where the chip has it, else Tctl; Tccd* are the core dies.
+			inputs, _ := filepath.Glob(filepath.Join(dir, "temp*_input"))
+			sort.Slice(inputs, func(i, j int) bool { return tempNumber(inputs[i]) < tempNumber(inputs[j]) })
+			for _, in := range inputs {
+				label := readString(strings.TrimSuffix(in, "_input") + "_label")
+				t := milli(in)
+				switch label {
+				case "Tdie":
+					s.CPU = t
+				case "Tctl":
+					if s.CPU == nil {
+						s.CPU = t
+					}
+				default:
+					s.CPUCores = append(s.CPUCores, Temp{Name: label, Temp: t})
+				}
 			}
 		case "nvme":
 			name := filepath.Base(readLink(filepath.Join(dir, "device")))

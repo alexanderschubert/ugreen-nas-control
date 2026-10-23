@@ -53,21 +53,22 @@ func printJSON(v any) {
 	_ = enc.Encode(v)
 }
 
-// openChip refuses any model but the one the fan wiring is known for.
-func openChip() (*Chip, error) {
+// openChip refuses any model but the ones the fan wiring is known for.
+func openChip() (Fans, error) {
 	if err := requireSupportedModel(); err != nil {
 		return nil, err
 	}
 	return openChipUnchecked()
 }
 
-func openChipUnchecked() (*Chip, error) {
+func openChipUnchecked() (Fans, error) {
 	p, err := openPorts()
 	if err != nil {
 		return nil, err
 	}
-	var chip *Chip
-	err = withLock(func() (err error) { chip, err = Detect(p); return })
+	var chip Fans
+	model := productName()
+	err = withLock(func() (err error) { chip, err = detectFans(p, model); return })
 	if err != nil {
 		p.Close()
 		return nil, err
@@ -79,7 +80,7 @@ type FanStatus struct {
 	ID   string `json:"id"`
 	Role string `json:"role"`
 	RPM  int    `json:"rpm"`
-	Pct  int    `json:"pct"`
+	Pct  *int   `json:"pct"` // null: speed unknown (EC in auto mode)
 	Auto bool   `json:"auto"`
 }
 
@@ -101,7 +102,11 @@ func main() {
 			printJSON(map[string]any{"ok": false, "error": err.Error()})
 			os.Exit(1)
 		}
-		printJSON(map[string]any{"ok": true, "chip": fmt.Sprintf("IT%04X", chip.ID), "revision": chip.Revision, "base": fmt.Sprintf("0x%04x", chip.Base)})
+		out := map[string]any{"ok": true, "chip": chip.Name()}
+		for k, v := range chip.Details() {
+			out[k] = v
+		}
+		printJSON(out)
 
 	case "status":
 		out := map[string]any{"ok": true, "info": ReadInfo(), "sensors": ReadSensors(), "presets": presets}
@@ -112,15 +117,13 @@ func main() {
 			var fans []FanStatus
 			var temps []*int
 			_ = withLock(func() error {
-				for _, ch := range chip.Channels {
-					rpm, _ := chip.RPM(ch)
-					duty, auto, _ := chip.PWM(ch)
-					fans = append(fans, FanStatus{ID: ch.ID, Role: roles[ch.ID], RPM: rpm, Pct: dutyToPercent(duty), Auto: auto})
+				for _, ch := range chip.Outputs() {
+					fans = append(fans, readFanStatus(chip, ch))
 				}
 				temps = chip.Temps()
 				return nil
 			})
-			out["chip"] = fmt.Sprintf("IT%04X", chip.ID)
+			out["chip"] = chip.Name()
 			out["fans"] = fans
 			out["chip_temps"] = temps
 		}
@@ -146,7 +149,7 @@ func main() {
 			fail(err)
 		}
 		var picked []Channel
-		for _, ch := range chip.Channels {
+		for _, ch := range chip.Outputs() {
 			if os.Args[2] == "all" || os.Args[2] == ch.ID || os.Args[2] == roles[ch.ID] {
 				picked = append(picked, ch)
 			}
@@ -159,7 +162,7 @@ func main() {
 				return err
 			}
 			for _, ch := range picked {
-				if err := chip.SetPWM(ch, percentToDuty(pct)); err != nil {
+				if err := chip.SetPWM(ch, percentToDuty(pct, chip.MaxDuty())); err != nil {
 					return err
 				}
 			}
@@ -203,4 +206,17 @@ func main() {
 	default:
 		usage()
 	}
+}
+
+// readFanStatus reports one fan; pct stays nil where the controller does not
+// tell the real output (IT5571 in auto mode keeps the last manual duty).
+func readFanStatus(chip Fans, ch Channel) FanStatus {
+	rpm, _ := chip.RPM(ch)
+	duty, auto, _ := chip.PWM(ch)
+	fs := FanStatus{ID: ch.ID, Role: roles[ch.ID], RPM: rpm, Auto: auto}
+	if !auto || chip.AutoDutyKnown() {
+		p := dutyToPercent(duty, chip.MaxDuty())
+		fs.Pct = &p
+	}
+	return fs
 }

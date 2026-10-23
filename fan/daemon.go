@@ -29,8 +29,8 @@ const (
 	stallTicks = 8
 )
 
-// Role of each fan on the DXP6800 Pro.
-var roles = map[string]string{"fan2": "cpu", "fan3": "case", "fan4": "case"}
+// Role of each fan: fan2 to fan4 on the DXP6800 Pro, fan1 and fan3 on the DXP4800 GT.
+var roles = map[string]string{"fan1": "cpu", "fan2": "cpu", "fan3": "case", "fan4": "case"}
 
 // State is written after every tick for the web page and the dashboard.
 type State struct {
@@ -108,7 +108,7 @@ func Smooth(current, target int) int {
 	return target
 }
 
-func saveBIOS(chip *Chip) (Snapshot, error) {
+func saveBIOS(chip Fans) (Snapshot, error) {
 	if b, err := os.ReadFile(biosPath); err == nil {
 		var s Snapshot
 		if json.Unmarshal(b, &s) == nil && len(s) > 0 {
@@ -123,7 +123,7 @@ func saveBIOS(chip *Chip) (Snapshot, error) {
 	return s, os.WriteFile(biosPath, b, 0o644)
 }
 
-func runDaemon(chip *Chip) error {
+func runDaemon(chip Fans) error {
 	logger, _ := syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "ugreen-nas-control")
 	logf := func(format string, args ...any) {
 		msg := fmt.Sprintf(format, args...)
@@ -147,7 +147,7 @@ func runDaemon(chip *Chip) error {
 	notified := map[string]bool{}
 	lastMode, lastFailsafe := "", ""
 
-	logf("fan control started (IT8613E at 0x%04x)", chip.Base)
+	logf("fan control started (%s)", chip.Describe())
 
 	ticker := time.NewTicker(tick)
 	defer ticker.Stop()
@@ -183,7 +183,7 @@ func runDaemon(chip *Chip) error {
 				lastFailsafe = d.Failsafe
 			}
 
-			for _, ch := range chip.Channels {
+			for _, ch := range chip.Outputs() {
 				target := d.Case
 				if roles[ch.ID] == "cpu" {
 					target = d.CPU
@@ -193,7 +193,7 @@ func runDaemon(chip *Chip) error {
 					cur = -1
 				}
 				next := Smooth(cur, target)
-				if err := chip.SetPWM(ch, percentToDuty(next)); err != nil {
+				if err := chip.SetPWM(ch, percentToDuty(next, chip.MaxDuty())); err != nil {
 					return err
 				}
 				current[ch.ID] = next
@@ -207,7 +207,7 @@ func runDaemon(chip *Chip) error {
 
 		// Stalled fans: driven but no tachometer pulses.
 		_ = withLock(func() error {
-			for _, ch := range chip.Channels {
+			for _, ch := range chip.Outputs() {
 				rpm, err := chip.RPM(ch)
 				if err != nil {
 					continue

@@ -38,7 +38,7 @@
         const cases = fans.filter(f => f.role === 'case');
 
         root.querySelector('[data-fans]').innerHTML = fans.map(fan => `
-            <div class="unc-fan ${fan.rpm === 0 ? 'stopped' : ''}" title="${escapeHtml(t('fan.speed', { pct: fan.pct }))}">
+            <div class="unc-fan ${fan.rpm === 0 ? 'stopped' : ''}" title="${escapeHtml(fan.pct == null ? t('fan.auto') : t('fan.speed', { pct: fan.pct }))}">
                 <span class="unc-fan-icon ${fan.rpm > 0 ? 'spin' : ''}" style="--spin:${Math.max(0.3, 2400 / Math.max(fan.rpm, 1)).toFixed(2)}s">${FAN}</span>
                 <small class="unc-muted">${escapeHtml(fan.role === 'cpu' ? t('fan.cpu') : t('fan.case', { n: cases.indexOf(fan) + 1 }))}</small>
                 <span class="unc-fan-rpm">${fan.rpm > 0 ? `${fan.rpm} <small>${escapeHtml(t('fan.rpm'))}</small>` : escapeHtml(t('fan.stopped'))}</span>

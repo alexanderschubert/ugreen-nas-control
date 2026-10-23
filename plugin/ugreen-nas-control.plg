@@ -26,6 +26,7 @@
 <CHANGES>
 
 ### 0.3.7
+- New: fan control on the DXP4800 GT: the fans hang on the IT5571 embedded controller (ACPI EC ports 0x62/0x66, no kernel module); CPU fan and case fan with rpm, manual speed and the curves, and the fans go back to the controller's own curve when the daemon stops. CPU temperature on AMD CPUs (k10temp)
 - Built with Go 1.27.3; the LED helper is a little simpler inside, and the CI now also runs staticcheck and govulncheck, with no change in behaviour
 
 ### 0.3.6
@@ -223,7 +224,7 @@ if [ -x /usr/local/emhttp/webGui/scripts/restore_favorites ]; then
 fi
 
 #
-# Fan control: the IT8613E is reached through /dev/port, no kernel module.
+# Fan control: the IT8613E (DXP6800 Pro) or the IT5571 EC (DXP4800 GT) is reached through /dev/port, no kernel module.
 # This also runs at boot.
 #
 

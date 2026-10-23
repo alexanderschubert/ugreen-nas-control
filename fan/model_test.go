@@ -11,6 +11,7 @@ func TestModelSupported(t *testing.T) {
 		"DXP6800 Pro":  true,
 		"DXP6800 Plus": true,
 		"DXP4800 Plus": false,
+		"DXP4800 GT":   true,
 		"DXP8800 Plus": false,
 		"DX4600 Pro":   false,
 		"":             false,
@@ -31,7 +32,7 @@ func TestRequireSupportedModel(t *testing.T) {
 	}
 
 	name := filepath.Join(dmiDir, "product_name")
-	for model, ok := range map[string]bool{"DXP6800 Pro\n": true, "DXP4800 Pro\n": false} {
+	for model, ok := range map[string]bool{"DXP6800 Pro\n": true, "DXP4800 GT\n": true, "DXP4800 Pro\n": false} {
 		if err := os.WriteFile(name, []byte(model), 0o644); err != nil {
 			t.Fatal(err)
 		}

@@ -4,12 +4,12 @@
 [![Downloads](https://img.shields.io/github/downloads/alexanderschubert/ugreen-nas-control/latest/total?color=00c853&label=downloads%20(latest))](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
 [![Build](https://img.shields.io/github/actions/workflow/status/alexanderschubert/ugreen-nas-control/fan.yml?branch=main&label=build)](https://github.com/alexanderschubert/ugreen-nas-control/actions/workflows/fan.yml)
 [![Unraid](https://img.shields.io/badge/Unraid-7.0%2B-f15a2c)](https://unraid.net)
-[![Model](https://img.shields.io/badge/model-DXP6800%20Pro%20only-0078ff)](#supported-model)
+[![Model](https://img.shields.io/badge/model-DXP6800%20Pro%20%C2%B7%20DXP4800%20GT-0078ff)](#supported-model)
 [![License: MIT](https://img.shields.io/github/license/alexanderschubert/ugreen-nas-control?color=lightgrey)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/alexanderschubert/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/alexanderschubert/ugreen-nas-control/stargazers)
 [![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
 
-Unraid plugin **for the UGREEN DXP6800 Pro only**: system info, temperatures and fan control, like the
+Unraid plugin **for the UGREEN DXP6800 Pro and DXP4800 GT**: system info, temperatures and fan control, like the
 fan settings of UGOS.
 
 - **System**: model, BIOS, CPU, memory, Unraid and kernel version, uptime
@@ -32,8 +32,14 @@ fan settings of UGOS.
 
 ## Supported model
 
-Made for the **UGREEN DXP6800 Pro** (ITE IT8613E; CPU fan on header 2, case fans on headers 3 and 4),
-the only model it is developed and tested on. On any other model the plugin does not touch the fan
+Made for two models:
+
+- **UGREEN DXP6800 Pro**: ITE IT8613E; CPU fan on header 2, case fans on headers 3 and 4
+- **UGREEN DXP4800 GT**: ITE IT5571 embedded controller; CPU fan (fan1) and case fan (fan3), with rpm,
+  manual speed and the curves; the CPU temperature comes from the AMD sensor (`k10temp`), the mainboard
+  temperature from the controller
+
+On any other model the plugin does not touch the fan
 controller: it refuses to start and the settings page says so. System info and temperatures
 still work, as they only read.
 
@@ -59,6 +65,13 @@ Unraid's kernel has no driver for the IT8613E (the in-tree `it87` doesn't know i
   cycle every 2 seconds after the curves
 - the first start after boot saves the BIOS values to `/var/run/ugreen-nas-control.bios`; stopping the
   daemon (also on update or removal) writes them back
+
+On the DXP4800 GT there is no Super-I/O fan chip. The fans hang on the IT5571 embedded controller, which
+the tool reaches through the standard ACPI EC ports `0x62` (data) and `0x66` (command/status), under the
+same lock, with bounded waits and retries. CPU fan: mode register `0xb0`, duty `0xb1`, tachometer
+`0x34`/`0x35`; case fan: `0xb4`, `0xb5`, `0x38`/`0x39`. Duty runs 0 to 198, the tachometer counter is the
+rpm. Mode 0 is the controller's own curve, 1 is manual: stopping the daemon (also on update or removal) and
+`restore` put the mode back to 0.
 
 No kernel module, so Unraid updates don't break it.
 

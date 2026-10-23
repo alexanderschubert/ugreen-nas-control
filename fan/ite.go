@@ -39,15 +39,6 @@ const (
 	ctrlAuto = 0x80
 )
 
-// Channel is one fan header with its tachometer and PWM output.
-type Channel struct {
-	ID       string // fan2, fan3, ...
-	TachLow  byte
-	TachHigh byte
-	Duty     byte
-	Ctrl     byte
-}
-
 // IT8613E channels as wired on the DXP6800 Pro, where each PWM output was
 // raised on its own to see which fan follows. Headers 1 and 5 are unused.
 var it8613Channels = []Channel{
@@ -199,9 +190,6 @@ func (c *Chip) Temps() []*int {
 	return out
 }
 
-// Saved state of all outputs, written back when the plugin lets go.
-type Snapshot map[string][2]byte // channel id -> {ctrl, duty}
-
 func (c *Chip) Snapshot() (Snapshot, error) {
 	s := Snapshot{}
 	for _, ch := range c.Channels {
@@ -234,16 +222,31 @@ func (c *Chip) Restore(s Snapshot) error {
 	return nil
 }
 
-func percentToDuty(pct int) byte {
+func (c *Chip) Name() string { return fmt.Sprintf("IT%04X", c.ID) }
+
+func (c *Chip) Describe() string { return fmt.Sprintf("IT8613E at 0x%04x", c.Base) }
+
+func (c *Chip) Details() map[string]any {
+	return map[string]any{"revision": c.Revision, "base": fmt.Sprintf("0x%04x", c.Base)}
+}
+
+func (c *Chip) Outputs() []Channel { return c.Channels }
+
+func (c *Chip) MaxDuty() byte { return 255 }
+
+func (c *Chip) AutoDutyKnown() bool { return true }
+
+// percentToDuty and dutyToPercent map 0-100 % onto 0-max, the duty value of 100 %.
+func percentToDuty(pct int, max byte) byte {
 	if pct <= 0 {
 		return 0
 	}
 	if pct >= 100 {
-		return 255
+		return max
 	}
-	return byte((pct*255 + 50) / 100)
+	return byte((pct*int(max) + 50) / 100)
 }
 
-func dutyToPercent(duty byte) int {
-	return (int(duty)*100 + 127) / 255
+func dutyToPercent(duty, max byte) int {
+	return (int(duty)*100 + int(max)/2) / int(max)
 }
