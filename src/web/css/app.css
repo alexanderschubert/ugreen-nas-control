@@ -966,10 +966,6 @@
     margin-bottom: 0;
 }
 
-.unc-lang {
-    margin: 22px 0 0;
-}
-
 /* ---------- Dashboard tile ---------- */
 
 /* .unc brings the colour variables; the page frame of the settings page isn't wanted here. */
@@ -1678,3 +1674,173 @@
 .unc-slot.pcie .unc-slot-head { color: #60a5fa; }
 .unc-slot-head small { color: var(--unc-muted); }
 .unc-ssd .unc-slot-ico { color: #2dd4bf; width: 16px; height: 16px; vertical-align: -3px; margin-right: 6px; }
+
+/* ---------- Light theme ----------
+ * data-theme="light" on .unc (System → Appearance). Variables first, then the
+ * rules above that carry a dark-only colour of their own. The case, board and
+ * port pictures stay dark: they show the device, not the page.
+ */
+
+.unc[data-theme="light"] {
+    --unc-bg: #f4f6f9;
+    --unc-side: #eaeef3;
+    --unc-card: #ffffff;
+    --unc-card-2: #f2f4f8;
+    --unc-border: #d5dce4;
+    --unc-text: #1b232c;
+    --unc-muted: #5b6672;
+    --unc-green: #16a34a;
+    --unc-amber: #b45309;
+    --unc-red: #dc2626;
+
+    color-scheme: light;
+}
+
+.unc[data-theme="light"] a {
+    color: #1f63d1;
+}
+
+.unc[data-theme="light"] code {
+    background: rgba(0, 0, 0, .06);
+}
+
+.unc[data-theme="light"] .unc-nav button {
+    color: #3b4652;
+}
+
+.unc[data-theme="light"] .unc-nav button:hover {
+    background: rgba(0, 0, 0, .05);
+}
+
+.unc[data-theme="light"] .unc-nav button.active {
+    color: #fff;
+}
+
+.unc[data-theme="light"] .unc-head p {
+    color: #46515d;
+}
+
+.unc[data-theme="light"] .unc-badge {
+    border-color: #c3cbd5;
+}
+
+.unc[data-theme="light"] .unc-badge.online {
+    border-color: rgba(22, 163, 74, .6);
+    background: rgba(34, 197, 94, .12);
+    color: #15803d;
+}
+
+.unc[data-theme="light"] .unc-badge.night {
+    border-color: rgba(124, 58, 237, .5);
+    background: rgba(124, 58, 237, .1);
+    color: #6d28d9;
+}
+
+.unc[data-theme="light"] .unc-badge.alert,
+.unc[data-theme="light"] .unc-badge.offline {
+    border-color: rgba(220, 38, 38, .55);
+    background: rgba(239, 68, 68, .1);
+    color: #b91c1c;
+}
+
+.unc[data-theme="light"] .unc-banner {
+    border-color: rgba(22, 163, 74, .45);
+    background: rgba(34, 197, 94, .12);
+}
+
+.unc[data-theme="light"] .unc-banner small {
+    color: #166534;
+}
+
+.unc[data-theme="light"] .unc-warning {
+    border-color: rgba(217, 119, 6, .5);
+    background: rgba(245, 158, 11, .14);
+    color: #6b3f00;
+}
+
+.unc[data-theme="light"] .unc-warning strong {
+    color: #1b232c;
+}
+
+.unc[data-theme="light"] .unc-switch span {
+    background: #c3cbd5;
+}
+
+.unc[data-theme="light"] .unc-switch input:checked + span {
+    background: var(--unc-accent);
+}
+
+.unc[data-theme="light"] input[type="range"]::-webkit-slider-runnable-track {
+    background: linear-gradient(90deg, var(--unc-accent) var(--fill), #c9d1da var(--fill));
+}
+
+.unc[data-theme="light"] input[type="range"]::-moz-range-track {
+    background: linear-gradient(90deg, var(--unc-accent) var(--fill), #c9d1da var(--fill));
+}
+
+.unc[data-theme="light"] input[type="range"]::-webkit-slider-thumb,
+.unc[data-theme="light"] input[type="range"]::-moz-range-thumb {
+    border-color: #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, .2);
+}
+
+.unc[data-theme="light"] .unc-hint {
+    background: rgba(47, 124, 246, .08);
+    color: #1e3a8a;
+}
+
+.unc[data-theme="light"] .unc-meter {
+    background: rgba(0, 0, 0, .08);
+}
+
+.unc[data-theme="light"] .unc-chart .grid {
+    stroke: rgba(0, 0, 0, .1);
+}
+
+.unc[data-theme="light"] .unc-chip {
+    border-color: #86c9a0;
+    background: #d9f0e2;
+}
+
+.unc[data-theme="light"] .unc-chip.ok { border-color: #16a34a; background: #bbf7d0; }
+.unc[data-theme="light"] .unc-chip.warm { border-color: #d97706; background: #fde68a; }
+.unc[data-theme="light"] .unc-chip.hot { border-color: #dc2626; background: #fecaca; }
+.unc[data-theme="light"] .unc-chip.standby { border-color: #b6cdbf; background: #e8efeb; }
+.unc[data-theme="light"] .unc-chip.empty { border: 1px dashed var(--unc-border); background: transparent; }
+
+.unc[data-theme="light"] .unc-effect:hover:not(:disabled) {
+    border-color: #aeb8c4;
+}
+
+.unc[data-theme="light"] .unc-effect.active {
+    background: rgba(47, 124, 246, .1);
+    color: #1f63d1;
+}
+
+.unc[data-theme="light"] .unc-btn {
+    border-color: #c3cbd5;
+}
+
+.unc[data-theme="light"] .unc-btn:hover {
+    border-color: #9aa6b3;
+}
+
+.unc[data-theme="light"] .unc-btn.primary {
+    border-color: transparent;
+    color: #fff;
+}
+
+.unc[data-theme="light"] .unc-toast {
+    background: #fff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+}
+
+.unc[data-theme="light"] .unc-toast.success {
+    border-color: rgba(22, 163, 74, .5);
+    color: #15803d;
+}
+
+.unc[data-theme="light"] .unc-toast.error {
+    border-color: rgba(220, 38, 38, .5);
+    color: #b91c1c;
+}

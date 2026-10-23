@@ -13,6 +13,22 @@
     const t = (key, vars = {}) => String(TEXTS[LANG][key] ?? TEXTS.de[key] ?? key)
         .replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? ''));
 
+    // "auto" follows Unraid: light when the page behind the plugin is light.
+    function resolveTheme(setting) {
+        if (setting === 'light' || setting === 'dark') return setting;
+
+        for (let el = document.body; el; el = el.parentElement) {
+            const match = getComputedStyle(el).backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/);
+            if (match && (match[4] === undefined || Number(match[4]) > 0.5)) {
+                const [r, g, b] = [match[1], match[2], match[3]].map(Number);
+                return (0.299 * r + 0.587 * g + 0.114 * b) > 140 ? 'light' : 'dark';
+            }
+        }
+        return 'dark';
+    }
+
+    root.dataset.theme = resolveTheme(window.UGREEN_NAS_THEME);
+
     const q = selector => root.querySelector(selector);
     const qa = selector => [...root.querySelectorAll(selector)];
 
@@ -32,6 +48,7 @@
         reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
         fan: '<circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/>',
         chip: '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+        gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
         bios: '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3M7 9h4M7 13h10"/>',
         leaf: '<path d="M5 19c0-9 6-14 15-14 0 9-5 15-14 15"/><path d="M5 19 13 11"/>',
         gauge: '<path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 13 4-5"/>',
@@ -858,6 +875,21 @@
             const on = event.target.checked;
 
             run(() => api({ action: 'led', value: on ? 'on' : 'off' }, true), t(on ? 'leds.switched_on' : 'leds.switched_off'));
+        });
+
+        const theme = q('#unc-theme');
+        theme.value = window.UGREEN_NAS_THEME || 'dark';
+
+        theme.addEventListener('change', async () => {
+            root.dataset.theme = resolveTheme(theme.value);
+            window.UGREEN_NAS_THEME = theme.value;
+
+            try {
+                await api({ action: 'theme', value: theme.value }, true);
+                toast(t('theme.saved'));
+            } catch (error) {
+                toast(error.message, 'error');
+            }
         });
 
         q('#unc-language').addEventListener('change', async event => {

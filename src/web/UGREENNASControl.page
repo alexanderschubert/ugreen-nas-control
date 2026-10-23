@@ -10,6 +10,7 @@ $unc_var = is_file('/var/local/emhttp/var.ini')
 
 require_once '/usr/local/emhttp/plugins/ugreen-nas-control/include/lang.php';
 [$unc_lang, $unc_lang_setting] = unc_language();
+$unc_theme = unc_theme();
 
 $unc_version = preg_match(
     '/ENTITY\s+version\s+"([^"]+)"/',
@@ -23,11 +24,12 @@ window.UGREEN_NAS_CSRF_TOKEN = <?= json_encode($unc_var['csrf_token'] ?? '') ?>;
 window.UGREEN_NAS_VERSION = <?= json_encode($unc_version) ?>;
 window.UGREEN_NAS_LANG = <?= json_encode($unc_lang) ?>;
 window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
+window.UGREEN_NAS_THEME = <?= json_encode($unc_theme) ?>;
 </script>
 
 <link rel="stylesheet" href="<?autov('/plugins/ugreen-nas-control/css/app.css')?>">
 
-<div class="unc" id="unc">
+<div class="unc" id="unc" data-theme="<?= $unc_theme === 'light' ? 'light' : 'dark' ?>">
 
 <aside class="unc-side">
 
@@ -45,6 +47,7 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
         <button type="button" data-nav="curves"><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
         <button type="button" data-nav="safety"><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
         <button type="button" data-nav="leds"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds">LEDs</span></button>
+        <button type="button" data-nav="system"><span class="unc-ico" data-unc-icon="gear"></span><span data-i18n="nav.system">System</span></button>
         <button type="button" data-nav="about"><span class="unc-ico" data-unc-icon="info"></span><span data-i18n="nav.about">Über</span></button>
     </nav>
 
@@ -269,6 +272,35 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
     </article>
 </section>
 
+<!-- ================= System ================= -->
+
+<section class="unc-view" data-view="system">
+    <article class="unc-card">
+        <h2 data-i18n="language.title">Sprache</h2>
+        <div class="unc-form">
+            <label for="unc-language" data-i18n="language.label">Sprache der Oberfläche</label>
+            <select id="unc-language">
+                <option value="auto" data-i18n="language.auto">Wie Unraid</option>
+                <option value="de">Deutsch</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+    </article>
+
+    <article class="unc-card">
+        <h2 data-i18n="theme.title">Darstellung</h2>
+        <div class="unc-form">
+            <label for="unc-theme" data-i18n="theme.label">Farbschema</label>
+            <select id="unc-theme">
+                <option value="dark" data-i18n="theme.dark">Dunkel</option>
+                <option value="light" data-i18n="theme.light">Hell</option>
+                <option value="auto" data-i18n="theme.auto">Wie Unraid</option>
+            </select>
+        </div>
+        <p class="unc-hint" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel).</p>
+    </article>
+</section>
+
 <!-- ================= Über ================= -->
 
 <section class="unc-view" data-view="about">
@@ -307,15 +339,6 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
             <dt data-i18n="about.leds">LEDs</dt><dd data-i18n-html="about.leds_text">Die Front-LEDs steuert ein eingebauter, optionaler Teil, eine Kopie von <a href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">UGREEN LED Control</a>.</dd>
             <dt data-i18n="about.thanks">Dank an</dt><dd data-i18n-html="about.thanks_text"><a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a> (Protokoll und Schacht-Zuordnung des LED-Teils) und alle, die auf ihrem Modell getestet haben</dd>
         </dl>
-
-        <div class="unc-form unc-lang">
-            <label for="unc-language" data-i18n="language.label">Sprache der Oberfläche</label>
-            <select id="unc-language">
-                <option value="auto" data-i18n="language.auto">Wie Unraid</option>
-                <option value="de">Deutsch</option>
-                <option value="en">English</option>
-            </select>
-        </div>
     </article>
 </section>
 
