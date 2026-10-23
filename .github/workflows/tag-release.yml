@@ -12,9 +12,17 @@ on:
 permissions:
   contents: write
 
+# One release run at a time; a second push waits instead of racing for the tag.
+concurrency:
+  group: tag-release
+  cancel-in-progress: false
+
 jobs:
   release:
+    # workflow_dispatch can be started on any branch; only main is released.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -48,6 +56,7 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: fan/go.mod
+          cache: false
 
       - name: Build ugreen-nas-fan from the tag
         env:
