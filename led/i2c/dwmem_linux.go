@@ -56,8 +56,6 @@ const (
 	dwCmdRestart = 0x400
 )
 
-var errDWTimeout = errors.New("I2C controller timed out")
-
 // dwMsg is one I2C message: bytes to write, or (read) a buffer to fill.
 type dwMsg struct {
 	read bool
@@ -314,7 +312,7 @@ func (d *dwI2C) xfer(msgs []dwMsg) error {
 		}
 
 		if time.Since(start) > dwTimeout {
-			return errDWTimeout
+			return errors.New("I2C controller timed out")
 		}
 		time.Sleep(20 * time.Microsecond)
 	}

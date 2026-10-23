@@ -7,27 +7,40 @@ on:
   pull_request:
     paths: [fan/**, led/**, src/**, scripts/**, .github/workflows/fan.yml]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: fan-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: fan
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: fan/go.mod
+          cache-dependency-path: fan/go.mod
 
-      - run: gofmt -d . | tee /dev/stderr | (! read)
+      - run: gofmt -d . | tee /dev/stderr | (! read -r)
       - run: go vet ./...
+      - run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
       - run: go test ./...
 
       # Static binary: runs on every Unraid kernel without libraries.
       - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o ugreen-nas-fan .
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ugreen-nas-fan
           path: fan/ugreen-nas-fan
@@ -36,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -45,22 +58,28 @@ jobs:
 
   led:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: led/i2c/go.mod
+          cache-dependency-path: led/i2c/go.mod
 
       - name: LED tool (copy of ugreen-led-i2c)
         working-directory: led/i2c
         run: |
-          gofmt -l . | tee /dev/stderr | (! read)
+          gofmt -l . | tee /dev/stderr | (! read -r)
           go vet ./...
+          go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+          go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
           go test ./...
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -ldflags "-s -w" -o ugreen-led-i2c .
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ugreen-led-i2c
           path: led/i2c/ugreen-led-i2c
