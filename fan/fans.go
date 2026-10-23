@@ -23,6 +23,11 @@ type Fans interface {
 	Restore(Snapshot) error
 }
 
+// BoardTemper is implemented by controllers that read the mainboard temperature.
+type BoardTemper interface {
+	BoardTemp() *int
+}
+
 // Channel is one fan header with its tachometer and PWM output.
 type Channel struct {
 	ID       string // fan2, fan3, ...

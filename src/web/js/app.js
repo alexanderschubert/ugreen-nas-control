@@ -249,7 +249,7 @@
                     <strong>${escapeHtml(fanName(fan, fans))}</strong>
                     <span class="unc-fan-rpm">${fan.rpm > 0 ? `${fan.rpm} <small>${escapeHtml(t('fan.rpm'))}</small>` : escapeHtml(t('fan.stopped'))}</span>
                     <span class="unc-meter"><span style="width:${fan.pct ?? 0}%"></span></span>
-                    <small class="unc-muted">${escapeHtml(fan.pct == null ? t('fan.auto') : t('fan.speed', { pct: fan.pct }))}</small>
+                    <small class="unc-muted">${escapeHtml(fan.error ? t('fan.error') : fan.pct == null ? t('fan.auto') : t('fan.speed', { pct: fan.pct }))}</small>
                 </div>
             </div>`).join('');
 

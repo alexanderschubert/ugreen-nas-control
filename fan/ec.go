@@ -3,8 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 )
+
+// ACPI devices in sysfs; tests point this at a fake tree.
+var acpiDevicesDir = envOr("UGREEN_ACPI_DEVICES", "/sys/bus/acpi/devices")
 
 // The DXP4800 GT has no Super-I/O fan chip. Its fans hang on an ITE IT5571
 // embedded controller, reached through the standard ACPI EC ports (no kernel
@@ -56,6 +61,15 @@ type EC struct {
 
 // DetectEC checks the chip id and that the EC answers at the ACPI EC ports.
 func DetectEC(p Ports) (*EC, error) {
+	// With the kernel's ACPI EC driver bound, both sides would talk to the
+	// controller at once and garble each other's transfers.
+	bound, _ := filepath.Glob(filepath.Join(acpiDevicesDir, "PNP0C09:*", "driver"))
+	for _, d := range bound {
+		if _, err := os.Lstat(d); err == nil {
+			return nil, fmt.Errorf("the kernel's ACPI embedded controller driver is bound (%s); refusing to share the controller with it", filepath.Dir(d))
+		}
+	}
+
 	read := func(reg byte) (byte, error) {
 		if err := p.Out(ecSioIndex, reg); err != nil {
 			return 0, err
@@ -202,27 +216,30 @@ func (c *EC) SetPWM(ch Channel, duty byte) error {
 	if err != nil {
 		return err
 	}
-	if mode != ecModeManual {
-		if err := c.write(ch.Ctrl, ecModeManual); err != nil {
-			return err
-		}
+	// Duty first, then manual mode: the fan never sits at the stale duty.
+	if err := c.write(ch.Duty, duty); err != nil {
+		return err
 	}
-	return c.write(ch.Duty, duty)
+	if mode != ecModeManual {
+		return c.write(ch.Ctrl, ecModeManual)
+	}
+	return nil
 }
 
-// Temperatures in °C: mainboard, then the EC's own CPU reading.
-func (c *EC) Temps() []*int {
-	out := make([]*int, 2)
-	for i, reg := range []byte{ecRegBoardTemp, ecRegCPUTemp} {
-		v, err := c.read(reg)
-		if err != nil || v == 0 || v == 0xff {
-			continue
-		}
-		t := int(v)
-		out[i] = &t
+func (c *EC) temp(reg byte) *int {
+	v, err := c.read(reg)
+	if err != nil || v == 0 || v == 0xff {
+		return nil
 	}
-	return out
+	t := int(v)
+	return &t
 }
+
+// BoardTemp is the mainboard temperature in °C; the GT has no acpitz sensor.
+func (c *EC) BoardTemp() *int { return c.temp(ecRegBoardTemp) }
+
+// Temps in °C: the EC's own CPU reading (the mainboard goes through BoardTemp).
+func (c *EC) Temps() []*int { return []*int{c.temp(ecRegCPUTemp)} }
 
 func (c *EC) Snapshot() (Snapshot, error) {
 	s := Snapshot{}

@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -82,6 +83,7 @@ type FanStatus struct {
 	RPM  int    `json:"rpm"`
 	Pct  *int   `json:"pct"` // null: speed unknown (EC in auto mode)
 	Auto bool   `json:"auto"`
+	Err  string `json:"error,omitempty"` // the controller could not be read
 }
 
 func main() {
@@ -109,7 +111,8 @@ func main() {
 		printJSON(out)
 
 	case "status":
-		out := map[string]any{"ok": true, "info": ReadInfo(), "sensors": ReadSensors(), "presets": presets}
+		sensors := ReadSensors()
+		out := map[string]any{"ok": true, "info": ReadInfo(), "sensors": &sensors, "presets": presets}
 
 		if chip, err := openChip(); err != nil {
 			out["chip_error"] = err.Error()
@@ -121,6 +124,9 @@ func main() {
 					fans = append(fans, readFanStatus(chip, ch))
 				}
 				temps = chip.Temps()
+				if bt, ok := chip.(BoardTemper); ok && sensors.Board == nil {
+					sensors.Board = bt.BoardTemp()
+				}
 				return nil
 			})
 			out["chip"] = chip.Name()
@@ -211,10 +217,13 @@ func main() {
 // readFanStatus reports one fan; pct stays nil where the controller does not
 // tell the real output (IT5571 in auto mode keeps the last manual duty).
 func readFanStatus(chip Fans, ch Channel) FanStatus {
-	rpm, _ := chip.RPM(ch)
-	duty, auto, _ := chip.PWM(ch)
+	rpm, rpmErr := chip.RPM(ch)
+	duty, auto, pwmErr := chip.PWM(ch)
 	fs := FanStatus{ID: ch.ID, Role: roles[ch.ID], RPM: rpm, Auto: auto}
-	if !auto || chip.AutoDutyKnown() {
+	if err := errors.Join(rpmErr, pwmErr); err != nil {
+		fs.Err = err.Error()
+	}
+	if pwmErr == nil && (!auto || chip.AutoDutyKnown()) {
 		p := dutyToPercent(duty, chip.MaxDuty())
 		fs.Pct = &p
 	}

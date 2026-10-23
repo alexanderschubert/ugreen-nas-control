@@ -101,7 +101,9 @@ func ReadSensors() Sensors {
 				t := milli(in)
 				switch label {
 				case "Tdie":
-					s.CPU = t
+					if t != nil {
+						s.CPU = t
+					}
 				case "Tctl":
 					if s.CPU == nil {
 						s.CPU = t

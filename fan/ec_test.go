@@ -119,8 +119,12 @@ func TestECDetectAndRead(t *testing.T) {
 	}
 
 	temps := ec.Temps()
-	if temps[0] == nil || *temps[0] != 41 || temps[1] == nil || *temps[1] != 57 {
+	if len(temps) != 1 || temps[0] == nil || *temps[0] != 57 {
 		t.Errorf("temps = %v", temps)
+	}
+	bt, ok := Fans(ec).(BoardTemper)
+	if !ok || bt.BoardTemp() == nil || *bt.BoardTemp() != 41 {
+		t.Errorf("board temp not read from the controller")
 	}
 }
 

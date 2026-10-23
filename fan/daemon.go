@@ -123,6 +123,39 @@ func saveBIOS(chip Fans) (Snapshot, error) {
 	return s, os.WriteFile(biosPath, b, 0o644)
 }
 
+// Restore attempts on exit; the backoff is a variable so that tests can shorten it.
+const restoreTries = 3
+
+var restoreBackoff = 200 * time.Millisecond
+
+// restoreRetry hands the fans back, trying again after a failure. The caller
+// holds the lock.
+func restoreRetry(chip Fans, bios Snapshot, tries int, backoff time.Duration, logf func(string, ...any)) (err error) {
+	for i := 1; i <= tries; i++ {
+		if err = chip.Restore(bios); err == nil {
+			return nil
+		}
+		logf("restoring the BIOS fan settings failed (attempt %d of %d): %v", i, tries, err)
+		if i < tries {
+			time.Sleep(time.Duration(i) * backoff)
+		}
+	}
+	return err
+}
+
+// release hands the fans back once; current is only cleared when that worked,
+// so a failed restore is retried on the next tick.
+func release(chip Fans, bios Snapshot, current map[string]int) error {
+	if len(current) == 0 {
+		return nil
+	}
+	if err := chip.Restore(bios); err != nil {
+		return err
+	}
+	clear(current)
+	return nil
+}
+
 func runDaemon(chip Fans) error {
 	logger, _ := syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "ugreen-nas-control")
 	logf := func(format string, args ...any) {
@@ -165,11 +198,7 @@ func runDaemon(chip Fans) error {
 		err := withLock(func() error {
 			// "bios": hand the fans back and only watch.
 			if c.Mode == "bios" {
-				if len(current) > 0 {
-					current = map[string]int{}
-					return chip.Restore(bios)
-				}
-				return nil
+				return release(chip, bios, current)
 			}
 
 			d := Decide(c, s)
@@ -240,8 +269,12 @@ func runDaemon(chip Fans) error {
 
 		select {
 		case <-stop:
-			_ = withLock(func() error { return chip.Restore(bios) })
+			err := withLock(func() error { return restoreRetry(chip, bios, restoreTries, restoreBackoff, logf) })
 			_ = os.Remove(statePath)
+			if err != nil {
+				logf("fan control stopped, BIOS fan settings NOT restored: %v", err)
+				return nil
+			}
 			logf("fan control stopped, BIOS fan settings restored")
 			return nil
 		case <-ticker.C:
