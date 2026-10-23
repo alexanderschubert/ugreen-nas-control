@@ -110,9 +110,13 @@ func TestDetectAndRead(t *testing.T) {
 			t.Errorf("%s rpm = %d, want %d", ch.ID, rpm, want[ch.ID])
 		}
 		duty, auto, _ := chip.PWM(ch)
-		if dutyToPercent(duty) != 31 || auto {
+		if dutyToPercent(duty, 255) != 31 || auto {
 			t.Errorf("%s pwm = %d auto=%v", ch.ID, duty, auto)
 		}
+	}
+
+	if !chip.AutoDutyKnown() {
+		t.Error("IT8613 duty must count in auto mode")
 	}
 
 	temps := chip.Temps()
@@ -136,7 +140,7 @@ func TestSetPWMAndRestore(t *testing.T) {
 
 	ch, _ := chip.Channel("fan3")
 	f.hwm[ch.Ctrl] = 0x81 // automatic mode
-	if err := chip.SetPWM(ch, percentToDuty(50)); err != nil {
+	if err := chip.SetPWM(ch, percentToDuty(50, 255)); err != nil {
 		t.Fatal(err)
 	}
 	if f.hwm[ch.Duty] != 128 || f.hwm[ch.Ctrl] != 0x01 {
@@ -153,7 +157,7 @@ func TestSetPWMAndRestore(t *testing.T) {
 
 func TestPercentDuty(t *testing.T) {
 	for pct := 0; pct <= 100; pct++ {
-		if got := dutyToPercent(percentToDuty(pct)); got != pct {
+		if got := dutyToPercent(percentToDuty(pct, 255), 255); got != pct {
 			t.Errorf("%d%% -> %d%%", pct, got)
 		}
 	}

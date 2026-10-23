@@ -277,11 +277,12 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
             <img class="unc-about-icon" src="/plugins/ugreen-nas-control/images/ugreen-nas-control.png" alt="">
             <div>
                 <h2>UGREEN NAS Control</h2>
-                <p class="unc-muted" data-i18n="about.tagline">Systeminfo, Temperaturen und Lüftersteuerung für den UGREEN DXP6800 Pro unter Unraid</p>
+                <p class="unc-muted" data-i18n="about.tagline">Systeminfo, Temperaturen und Lüftersteuerung für den UGREEN DXP6800 Pro und DXP4800 GT unter Unraid</p>
                 <div class="unc-about-badges">
                     <span class="unc-badge online">v<span id="unc-version"></span></span>
                     <span class="unc-badge" data-i18n="about.license_badge">MIT-Lizenz</span>
                     <span class="unc-badge">DXP6800 Pro</span>
+                    <span class="unc-badge">DXP4800 GT</span>
                 </div>
             </div>
         </div>
@@ -302,7 +303,7 @@ window.UGREEN_NAS_LANG_SETTING = <?= json_encode($unc_lang_setting) ?>;
         </div>
 
         <dl class="unc-facts">
-            <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip ITE IT8613E direkt über seine I/O-Ports an, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
+            <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip direkt über I/O-Ports an (ITE IT8613E beim DXP6800 Pro, Embedded Controller IT5571 beim DXP4800 GT), ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
             <dt data-i18n="about.leds">LEDs</dt><dd data-i18n-html="about.leds_text">Die Front-LEDs steuert ein eingebauter, optionaler Teil, eine Kopie von <a href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">UGREEN LED Control</a>.</dd>
             <dt data-i18n="about.thanks">Dank an</dt><dd data-i18n-html="about.thanks_text"><a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a> (Protokoll und Schacht-Zuordnung des LED-Teils) und alle, die auf ihrem Modell getestet haben</dd>
         </dl>

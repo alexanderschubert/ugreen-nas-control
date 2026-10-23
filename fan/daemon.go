@@ -29,8 +29,8 @@ const (
 	stallTicks = 8
 )
 
-// Role of each fan on the DXP6800 Pro.
-var roles = map[string]string{"fan2": "cpu", "fan3": "case", "fan4": "case"}
+// Role of each fan: fan2 to fan4 on the DXP6800 Pro, fan1 and fan3 on the DXP4800 GT.
+var roles = map[string]string{"fan1": "cpu", "fan2": "cpu", "fan3": "case", "fan4": "case"}
 
 // State is written after every tick for the web page and the dashboard.
 type State struct {
@@ -108,7 +108,7 @@ func Smooth(current, target int) int {
 	return target
 }
 
-func saveBIOS(chip *Chip) (Snapshot, error) {
+func saveBIOS(chip Fans) (Snapshot, error) {
 	if b, err := os.ReadFile(biosPath); err == nil {
 		var s Snapshot
 		if json.Unmarshal(b, &s) == nil && len(s) > 0 {
@@ -123,7 +123,40 @@ func saveBIOS(chip *Chip) (Snapshot, error) {
 	return s, os.WriteFile(biosPath, b, 0o644)
 }
 
-func runDaemon(chip *Chip) error {
+// Restore attempts on exit; the backoff is a variable so that tests can shorten it.
+const restoreTries = 3
+
+var restoreBackoff = 200 * time.Millisecond
+
+// restoreRetry hands the fans back, trying again after a failure. The caller
+// holds the lock.
+func restoreRetry(chip Fans, bios Snapshot, tries int, backoff time.Duration, logf func(string, ...any)) (err error) {
+	for i := 1; i <= tries; i++ {
+		if err = chip.Restore(bios); err == nil {
+			return nil
+		}
+		logf("restoring the BIOS fan settings failed (attempt %d of %d): %v", i, tries, err)
+		if i < tries {
+			time.Sleep(time.Duration(i) * backoff)
+		}
+	}
+	return err
+}
+
+// release hands the fans back once; current is only cleared when that worked,
+// so a failed restore is retried on the next tick.
+func release(chip Fans, bios Snapshot, current map[string]int) error {
+	if len(current) == 0 {
+		return nil
+	}
+	if err := chip.Restore(bios); err != nil {
+		return err
+	}
+	clear(current)
+	return nil
+}
+
+func runDaemon(chip Fans) error {
 	logger, _ := syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "ugreen-nas-control")
 	logf := func(format string, args ...any) {
 		msg := fmt.Sprintf(format, args...)
@@ -147,7 +180,7 @@ func runDaemon(chip *Chip) error {
 	notified := map[string]bool{}
 	lastMode, lastFailsafe := "", ""
 
-	logf("fan control started (IT8613E at 0x%04x)", chip.Base)
+	logf("fan control started (%s)", chip.Describe())
 
 	ticker := time.NewTicker(tick)
 	defer ticker.Stop()
@@ -165,11 +198,7 @@ func runDaemon(chip *Chip) error {
 		err := withLock(func() error {
 			// "bios": hand the fans back and only watch.
 			if c.Mode == "bios" {
-				if len(current) > 0 {
-					current = map[string]int{}
-					return chip.Restore(bios)
-				}
-				return nil
+				return release(chip, bios, current)
 			}
 
 			d := Decide(c, s)
@@ -183,7 +212,7 @@ func runDaemon(chip *Chip) error {
 				lastFailsafe = d.Failsafe
 			}
 
-			for _, ch := range chip.Channels {
+			for _, ch := range chip.Outputs() {
 				target := d.Case
 				if roles[ch.ID] == "cpu" {
 					target = d.CPU
@@ -193,7 +222,7 @@ func runDaemon(chip *Chip) error {
 					cur = -1
 				}
 				next := Smooth(cur, target)
-				if err := chip.SetPWM(ch, percentToDuty(next)); err != nil {
+				if err := chip.SetPWM(ch, percentToDuty(next, chip.MaxDuty())); err != nil {
 					return err
 				}
 				current[ch.ID] = next
@@ -207,7 +236,7 @@ func runDaemon(chip *Chip) error {
 
 		// Stalled fans: driven but no tachometer pulses.
 		_ = withLock(func() error {
-			for _, ch := range chip.Channels {
+			for _, ch := range chip.Outputs() {
 				rpm, err := chip.RPM(ch)
 				if err != nil {
 					continue
@@ -240,8 +269,12 @@ func runDaemon(chip *Chip) error {
 
 		select {
 		case <-stop:
-			_ = withLock(func() error { return chip.Restore(bios) })
+			err := withLock(func() error { return restoreRetry(chip, bios, restoreTries, restoreBackoff, logf) })
 			_ = os.Remove(statePath)
+			if err != nil {
+				logf("fan control stopped, BIOS fan settings NOT restored: %v", err)
+				return nil
+			}
 			logf("fan control stopped, BIOS fan settings restored")
 			return nil
 		case <-ticker.C:
