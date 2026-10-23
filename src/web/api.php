@@ -140,7 +140,8 @@ if ($method === 'GET') {
         'disk_crit' => (int)($config['disk_crit'] ?? 55),
         'nvme_offset' => (int)($config['nvme_offset'] ?? 15),
         'stall_notify' => ($config['stall_notify'] ?? '1') !== '0',
-        'ui_lang' => $config['ui_lang'] ?? 'auto'
+        'ui_lang' => $config['ui_lang'] ?? 'auto',
+        'ui_theme' => $config['ui_theme'] ?? 'dark'
     ];
 
     respond($data);
@@ -255,6 +256,26 @@ if ($action === 'lang') {
     }
 
     if (!save_settings(['ui_lang' => $lang])) {
+        respond([
+            'ok' => false,
+            'error' => CONFIG_FILE . ' is not writable'
+        ], 500);
+    }
+
+    respond(['ok' => true]);
+}
+
+if ($action === 'theme') {
+    $theme = (string)($input['value'] ?? '');
+
+    if (!in_array($theme, ['dark', 'light', 'auto'], true)) {
+        respond([
+            'ok' => false,
+            'error' => 'Invalid theme'
+        ], 400);
+    }
+
+    if (!save_settings(['ui_theme' => $theme])) {
         respond([
             'ok' => false,
             'error' => CONFIG_FILE . ' is not writable'
