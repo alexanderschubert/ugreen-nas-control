@@ -45,10 +45,10 @@ blocker() { run led-status | sed -n 's/.*"blocker": "\([^"]*\)".*/\1/p'; }
 
 check "no blocker on a DXP6800 Pro" "$([ -z "$(blocker)" ] && echo ok)"
 
-echo "DXP4800 Plus" > "$T/dmi/product_name"
-check "other model is blocked" "$([ "$(blocker)" = model ] && echo ok)"
+echo "PRIME Z790-P" > "$T/dmi/product_name"
+check "a board that is not a UGREEN is blocked" "$([ "$(blocker)" = model ] && echo ok)"
 run led-enable >/dev/null 2>&1
-check "other model cannot be enabled" "$([ ! -e "$T/boot/led.enabled" ] && [ ! -e "$T/calls" ] && echo ok)"
+check "a board that is not a UGREEN cannot be enabled" "$([ ! -e "$T/boot/led.enabled" ] && [ ! -e "$T/calls" ] && echo ok)"
 
 echo "DXP4800 GT" > "$T/dmi/product_name"
 check "no blocker on a DXP4800 GT" "$([ -z "$(blocker)" ] && echo ok)"
@@ -111,6 +111,27 @@ if [ -d /proc/self ]; then
     wait "$own" 2>/dev/null; rc=$?
     check "led-stop ends a leftover daemon of its own directory" "$([ "$rc" -eq 143 ] && [ ! -e "$T/legacy.pid" ] && echo ok)"
 fi
+
+# Every UGREEN model UGREEN LED Control knew is allowed; confirmed ones are not marked untested.
+for model in "DXP4800 Plus" "DX4600 Pro" "DXP8800 Plus" "DXP4800 GT" "DXP480T Plus"; do
+    echo "$model" > "$T/dmi/product_name"
+    check "$model: LEDs offered, not untested" "$([ -z "$(blocker)" ] && [ "$(run led-status | sed -n 's/.*"untested": \([a-z]*\).*/\1/p')" = false ] && echo ok)"
+done
+echo "DXP9999 Future" > "$T/dmi/product_name"
+check "an unknown DXP model is offered, marked untested" "$([ -z "$(blocker)" ] && [ "$(run led-status | sed -n 's/.*"untested": \([a-z]*\).*/\1/p')" = true ] && echo ok)"
+
+# iDX6011 Pro: the LEDs are offered, marked untested; the DXP6800 Pro is not.
+untested() { run led-status | sed -n 's/.*"untested": \([a-z]*\).*/\1/p'; }
+echo "iDX6011 Pro" > "$T/dmi/product_name"
+check "iDX6011 Pro is no blocked model" "$([ -z "$(blocker)" ] && echo ok)"
+check "iDX6011 Pro is marked untested" "$([ "$(untested)" = true ] && echo ok)"
+rm -f "$T/boot/led.enabled"
+run led-enable >/dev/null 2>&1
+check "iDX6011 Pro can be switched on" "$([ -e "$T/boot/led.enabled" ] && echo ok)"
+run led-disable >/dev/null 2>&1
+echo "DXP6800 Pro" > "$T/dmi/product_name"
+check "DXP6800 Pro is not marked untested" "$([ "$(untested)" = false ] && echo ok)"
+rm -f "$T/boot/led.enabled" "$T/calls"
 
 # Take over the settings of an installed UGREEN LED Control.
 mkdir -p "$T/old"

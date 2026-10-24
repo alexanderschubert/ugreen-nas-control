@@ -42,7 +42,7 @@ func requireSupportedModel() error {
 	if model == "" {
 		model = "unknown model"
 	}
-	return fmt.Errorf("%s is not supported: UGREEN NAS Control is made for the DXP6800 Pro and the DXP4800 GT only", model)
+	return fmt.Errorf("%s has no fan control: it exists for the DXP6800 Pro and the DXP4800 GT only", model)
 }
 
 func ReadInfo() Info {

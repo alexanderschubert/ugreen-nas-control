@@ -2384,3 +2384,24 @@
 
 .unc-import p { margin: 6px 0 10px; }
 .unc-import .unc-hint { margin: 12px 0 0; }
+
+.unc-hint.unc-untested {
+    border-left-color: var(--unc-amber);
+    background: rgba(245, 158, 11, .1);
+}
+
+.unc-nocase {
+    padding: 40px 10px;
+    text-align: center;
+}
+
+/* "hidden" must win over the display of the sidebar buttons (LED pages, fans, case on other models). */
+.unc-nav button[hidden],
+.unc-nav .unc-nav-group[hidden] {
+    display: none;
+}
+
+/* An element with the hidden attribute is hidden, whatever display its class sets. */
+.unc [hidden] {
+    display: none !important;
+}

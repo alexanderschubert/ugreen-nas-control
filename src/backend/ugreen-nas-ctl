@@ -47,7 +47,8 @@ led_model() {
 # Why the LEDs cannot be used here: model, driver, module; empty if nothing is in the way.
 led_blocker() {
     case "$(led_model)" in
-        DXP6800*|DXP4800*GT*) ;;
+        # UGREEN's own models, as UGREEN LED Control knew them: the controller is the same across DX/DXP/iDX.
+        DXP*|DX[0-9]*|iDX*) ;;
         *) echo model; return ;;
     esac
     if [ -e "$PLUGINS_BOOT/ugreenleds-driver.plg" ] || [ -d "$PLUGINS_WEB/ugreenleds-driver" ]; then
@@ -60,6 +61,15 @@ led_blocker() {
 
 led_enabled() {
     [ -f "$LED_FLAG" ]
+}
+
+# Models UGREEN LED Control has verified or had confirmed by users; every other model works after the
+# same protocol but with a guessed bay order (or, like the iDX6011, from reports of other plugins only).
+led_untested() {
+    case "$(led_model)" in
+        DXP6800*|DXP8800*|DXP4800*|DX4600*|DX4700*|DXP2800*|DXP480T*) echo false ;;
+        *) echo true ;;
+    esac
 }
 
 # The installed plugin UGREEN LED Control is no obstacle: both run on their own and use the same
@@ -80,10 +90,10 @@ led_status() {
 
     blocker="$(led_blocker)"
     model="$(led_model)"
-    printf '{"enabled": %s, "supported": %s, "blocker": "%s", "warning": "%s", "import_available": %s, "model": "%s"}\n' \
+    printf '{"enabled": %s, "supported": %s, "blocker": "%s", "warning": "%s", "untested": %s, "import_available": %s, "model": "%s"}\n' \
         "$(led_enabled && echo true || echo false)" \
         "$([ "$blocker" = model ] && echo false || echo true)" \
-        "$blocker" "$(led_warning)" "$(led_import_available && echo true || echo false)" "$(printf '%s' "$model" | tr -d '"\\')"
+        "$blocker" "$(led_warning)" "$(led_untested)" "$(led_import_available && echo true || echo false)" "$(printf '%s' "$model" | tr -d '"\\')"
 }
 
 # Earlier versions kept the daemon's pid in the standalone plugin's files. Such a
