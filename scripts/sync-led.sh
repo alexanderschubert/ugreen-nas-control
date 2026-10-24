@@ -73,7 +73,8 @@ open(p, 'w').write(s)
 p = f"{web}/UGREENLEDDashboard.page"
 s = open(p).read()
 assert 'Cond="' in s.split('---')[0]
-s = s.replace('Cond="', f'Cond="{cond} && ', 1)
+# The LED colours are part of the NAS Control tile now; the tile of the copy stays out of the dashboard.
+s = s.replace('Cond="', 'Cond="false && ', 1)
 s = s.replace('/Settings/UGREENLEDControl', '/Settings/UGREENNASControl')
 open(p, 'w').write(s)
 PY

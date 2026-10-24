@@ -11,6 +11,11 @@ require_once '/usr/local/emhttp/plugins/ugreen-nas-control/include/lang.php';
 [$unc_lang] = unc_language();
 $unc_theme = unc_theme();
 
+// LED colours in the tile, when the built-in LED part is on.
+$unc_led_on = is_file('/boot/config/plugins/ugreen-nas-control/led.enabled')
+    && is_file('/usr/local/emhttp/plugins/ugreen-nas-control/led/api.php');
+$unc_led_api = $unc_led_on ? '/plugins/ugreen-nas-control/led/api.php' : '';
+
 $mytiles['ugreen-nas-control']['column2'] = <<<EOT
 <tbody id="unc-dash-tile" title="UGREEN NAS Control">
 <tr><td>
@@ -27,7 +32,7 @@ $mytiles['ugreen-nas-control']['column2'] = <<<EOT
 </span>
 </td></tr>
 <tr><td>
-<div class="unc unc-dash" id="unc-dash" data-theme="<?= $unc_theme === 'light' ? 'light' : 'dark' ?>"><div class="unc-fans" data-fans></div><div class="unc-temps" data-temps></div><div class="unc-bays-box" data-bays hidden></div><div class="unc-bays-box" data-nvme hidden></div></div>
+<div class="unc unc-dash" id="unc-dash" data-led-api="{$unc_led_api}" data-theme="<?= $unc_theme === 'light' ? 'light' : 'dark' ?>"><div class="unc-fans" data-fans></div><div class="unc-temps" data-temps></div><div class="unc-bays-box" data-bays hidden></div><div class="unc-bays-box" data-nvme hidden></div></div>
 </td></tr>
 </tbody>
 EOT;

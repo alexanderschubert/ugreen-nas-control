@@ -191,6 +191,37 @@
         paintChips(root.querySelector('[data-nvme]'), t('dash.nvme_title'), t('tile.nvme_val', { n: ssds.length }), chips);
     }
 
+    // The colours the LED controller shows right now, one bar per bay below the chips.
+    async function paintLeds(root, hw) {
+        const api = root.dataset.ledApi;
+        const box = root.querySelector('[data-bays]');
+
+        if (!api || !box || box.hidden) return;
+
+        try {
+            const [all, status] = await Promise.all(['all', 'status'].map(action =>
+                fetch(`${api}?action=${action}`, { credentials: 'same-origin' }).then(r => r.json())));
+            if (all.ok === false || !all.leds) return;
+
+            const count = (hw?.bays || []).length || 6;
+            const bars = [];
+            for (let i = 1; i <= count; i++) {
+                const led = all.leds[`disk${i}`] || {};
+                const [r, g, b] = String(led.color || '0 0 0').trim().split(/\s+/).map(Number);
+                const level = Math.max(0, Math.min(1, (Number(led.brightness) || 0) / 255));
+                const on = level > 0 && ![r, g, b].some(Number.isNaN);
+                const colour = on ? `rgba(${r}, ${g}, ${b}, ${(0.3 + 0.7 * level).toFixed(2)})` : '#2c3138';
+                bars.push(`<i style="background:${colour};box-shadow:${on ? `0 0 ${Math.round(4 + 8 * level)}px rgba(${r}, ${g}, ${b}, ${(0.7 * level).toFixed(2)})` : 'none'}"></i>`);
+            }
+
+            const mode = status?.fx ? status.fx : t(status?.mode === 'status' ? 'led.mode_status' : 'led.mode_manual');
+            box.querySelector('[data-detail]')?.insertAdjacentHTML('beforebegin', `
+                <div class="unc-ledline"><div class="unc-bays-head"><strong>${escapeHtml(t('dash.leds'))}</strong><small class="unc-muted">${escapeHtml(mode)}</small></div><div class="unc-ledrow">${bars.join('')}</div></div>`);
+        } catch (error) {
+            // No LED data: the tile simply has no LED row.
+        }
+    }
+
     function paintHeader(data) {
         const line = document.getElementById('unc-dash-state');
         if (!line) return;
@@ -224,6 +255,7 @@
 
             const hw = await fetch(`${API}?action=hardware`, { credentials: 'same-origin' }).then(r => r.json()).catch(() => null);
             paintDrives(root, hw && hw.ok !== false ? hw : null);
+            await paintLeds(root, hw && hw.ok !== false ? hw : null);
         } catch (error) {
             paintHeader(null);
         }

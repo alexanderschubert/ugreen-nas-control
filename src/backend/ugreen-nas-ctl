@@ -42,15 +42,12 @@ led_model() {
     cat "$DMI_DIR/product_name" 2>/dev/null | head -n 1
 }
 
-# Why the LEDs cannot be used here: model, standalone, driver, module; empty if nothing is in the way.
+# Why the LEDs cannot be used here: model, driver, module; empty if nothing is in the way.
 led_blocker() {
     case "$(led_model)" in
         DXP6800*|DXP4800*GT*) ;;
         *) echo model; return ;;
     esac
-    if [ -e "$PLUGINS_BOOT/ugreen-led-control.plg" ] || [ -d "$PLUGINS_WEB/ugreen-led-control" ]; then
-        echo standalone; return
-    fi
     if [ -e "$PLUGINS_BOOT/ugreenleds-driver.plg" ] || [ -d "$PLUGINS_WEB/ugreenleds-driver" ]; then
         echo driver; return
     fi
@@ -63,15 +60,23 @@ led_enabled() {
     [ -f "$LED_FLAG" ]
 }
 
+# The installed plugin UGREEN LED Control is no obstacle: both run on their own and use the same
+# LED tool with a shared bus lock. Only the last one to write wins, which the page points out.
+led_warning() {
+    if [ -e "$PLUGINS_BOOT/ugreen-led-control.plg" ] || [ -d "$PLUGINS_WEB/ugreen-led-control" ]; then
+        echo standalone
+    fi
+}
+
 led_status() {
     local blocker model
 
     blocker="$(led_blocker)"
     model="$(led_model)"
-    printf '{"enabled": %s, "supported": %s, "blocker": "%s", "model": "%s"}\n' \
+    printf '{"enabled": %s, "supported": %s, "blocker": "%s", "warning": "%s", "model": "%s"}\n' \
         "$(led_enabled && echo true || echo false)" \
         "$([ "$blocker" = model ] && echo false || echo true)" \
-        "$blocker" "$(printf '%s' "$model" | tr -d '"\\')"
+        "$blocker" "$(led_warning)" "$(printf '%s' "$model" | tr -d '"\\')"
 }
 
 # Earlier versions kept the daemon's pid in the standalone plugin's files. Such a

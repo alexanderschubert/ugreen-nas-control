@@ -29,4 +29,4 @@ echo json_encode(['ok'=>true,'running'=>true,'chip'=>'IT8613',
  'fans'=>[['id'=>'fan2','role'=>'cpu','rpm'=>1500,'pct'=>40,'auto'=>false],['id'=>'fan3','role'=>'case','rpm'=>900,'pct'=>30,'auto'=>false],['id'=>'fan4','role'=>'case','rpm'=>880,'pct'=>30,'auto'=>false]],
  'chip_temps'=>[38],'daemon'=>['cpu_temp'=>54,'case_temp'=>47,'case_from'=>'disk'],
  'settings'=>['mode'=>'standard','min_pct'=>25,'cpu_crit'=>90,'disk_crit'=>55,'nvme_offset'=>15,'stall_notify'=>true,'ui_lang'=>'auto'],
- 'led'=>['enabled'=>is_file($flag),'supported'=>true,'blocker'=>'','model'=>'DXP6800 Pro']]);
+ 'led'=>['enabled'=>is_file($flag),'supported'=>true,'blocker'=>'','warning'=>is_dir('/usr/local/emhttp/plugins/ugreen-led-control')?'standalone':'','model'=>'DXP6800 Pro']]);
