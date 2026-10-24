@@ -127,6 +127,12 @@ the `Tag release` workflow creates the tag `v<version>` and the release with the
 
 `ca_profile.xml` and `plugins/ugreen-nas-control.xml` are the Community Applications listing (author profile and plugin entry). The `<PluginURL>` in the listing must stay identical to the `pluginURL` of `plugin/ugreen-nas-control.plg`.
 
+## Thanks
+
+- [miskcoo](https://github.com/miskcoo/ugreen_leds_controller): the LED protocol and the bay mapping of the LED part
+- [j3n57h0m45](https://github.com/j3n57h0m45): the **DXP4800 GT** support: fan control through the IT5571 embedded controller, LEDs, the case view, the System view, light case pictures and the CI hardening
+- everyone who tested on their model
+
 ## License
 
 [MIT](LICENSE)

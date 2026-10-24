@@ -646,7 +646,7 @@
     // strip: front strip with a power button (LED inside) and one LED per LAN / bay, the model name below.
     // fan: the rear fan behind its dust filter. hint: i18n key of the note below the inside view.
     const CASE_DEFAULT = {
-        front: [['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
+        front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
         rear: [['ac', 'case.ac'], ['hdmi', 'case.hdmi'], ['lan', 0], ['lan', 1], ['usba', 'case.usb_a'], ['usb2', 'case.usb2'], ['usb2', 'case.usb2']],
         pcie: true,
         hint: 'case.inside_hint'
