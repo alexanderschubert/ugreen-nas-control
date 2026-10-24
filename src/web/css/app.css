@@ -2331,3 +2331,20 @@
 @media (max-width: 1100px) {
     .unc-under .unc-facts { grid-template-columns: auto minmax(0, 1fr); }
 }
+
+/* ---------- Sidebar groups ---------- */
+
+.unc-nav-group {
+    margin: 14px 8px 4px;
+    color: var(--unc-muted);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.unc-nav-group:first-child { margin-top: 4px; }
+
+@media (max-width: 900px) {
+    .unc-nav-group { display: none; }
+}
