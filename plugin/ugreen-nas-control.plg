@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.10.4">
+<!ENTITY version   "0.10.5">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 0.10.5
+- Sidebar: new entry "Alerts &amp; shutdown" under LEDs. The power LED alerts and the colour and effect shown on shutdown and reboot were already in the plugin, but could not be reached
 
 ### 0.10.4
 - The case page shows the inside of the DXP6800 Pro as a drawing of the board: M.2 modules, wide SO-DIMMs, the system slot and the PCIe slot, with live names, sizes, temperatures and roles. Other models keep the cards.
