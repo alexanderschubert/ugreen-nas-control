@@ -627,7 +627,9 @@
     // fan: the rear fan behind its dust filter. hint: i18n key of the note below the inside view.
     const CASE_DEFAULT = {
         front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
-        rear: [['ac', 'case.ac'], ['hdmi', 'case.hdmi'], ['lan', 0], ['lan', 1], ['usba', 'case.usb_a'], ['usb2', 'case.usb2'], ['usb2', 'case.usb2']],
+        // The back of the DXP6800 Pro is drawn after a photo of the device (rear6800Html).
+        rear6800: true,
+        rear: [],
         pcie: true,
         sys: true,
         hint: 'case.inside_hint'
@@ -736,6 +738,65 @@
             </table>` : `<p class="unc-muted">${escapeHtml(t('case.empty'))}</p>`;
     }
 
+    // The same fan as in the GT's rear picture; it turns with the real rpm like the fan tiles.
+    const REAR_FAN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg>';
+
+    // The two case fans: they sit behind the blende and show through the mesh, turning with their rpm.
+    function rearFansHtml(count) {
+        const fans = (state.data?.fans || []).filter(f => f.role === 'case').slice(0, count);
+
+        return Array.from({ length: count }, (_, i) => {
+            const fan = fans[i];
+            const spin = fan ? fanIcon(fan, REAR_FAN_SVG) : `<span class="unc-fan-icon">${REAR_FAN_SVG}</span>`;
+            const rpm = fan ? (fan.rpm > 0 ? `${fan.rpm} ${t('fan.rpm')}` : t('fan.stopped')) : '';
+
+            return `<div class="r-fan">${spin}<small>${escapeHtml([t('fan.case', { n: i + 1 }), rpm].filter(Boolean).join(' · '))}</small></div>`;
+        }).join('');
+    }
+
+    // The back of the DXP6800 Pro after a photo of the device: black body with silver side rims, the big blende
+    // (mesh with the UGREEN lettering, the two fans behind it), the PCIe slot on the left, below it the
+    // sockets (HDMI, USB 3.2, two USB 2.0, two 10GbE, reset), the power inlet with the PSU fan, the Kensington
+    // slot. Positions are in per cent of the picture, so everything scales.
+    function rear6800Html(hw) {
+        const lan = n => {
+            const p = hw.net[n];
+            const up = Boolean(p && p.link);
+
+            return `<div class="r-abs r-lan ${up ? 'up' : ''}" style="left:${n ? 39.9 : 32.7}%;top:82%">
+                ${rj45(up, p ? p.speed_mbit : 0)}<b>LAN 10G</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
+        };
+        const port = (x, y, kind, label, cls = '') => `<div class="r-abs r-${cls || kind}" style="left:${x}%;top:${y}%">${SOCKET[kind]}<b>${label}</b></div>`;
+        const dots = r => `<circle r="${r}" fill="none" stroke="#8a939e" stroke-width="2.7" stroke-linecap="round" stroke-dasharray="0.1 ${(2 * Math.PI * r / Math.round(2 * Math.PI * r / 6.5)).toFixed(2)}"/>`;
+        const screw = (x, y) => `<i class="r-screw" style="left:${x}%;top:${y}%"></i>`;
+
+        return `
+            <div class="unc-rear6800">
+                <div class="r-body"></div>
+                ${screw(3.4, 4.2)}${screw(50.1, 4.2)}${screw(96.5, 4.2)}${screw(3.4, 89.7)}${screw(50.1, 89.7)}${screw(96.5, 89.7)}
+                <div class="r-blende">
+                    <div class="r-fans">${rearFansHtml(2)}</div>
+                    <div class="r-mesh"></div>
+                    <svg class="r-brand" viewBox="0 0 190 40" aria-label="UGREEN"><text x="95" y="31" text-anchor="middle" font-family="Arial Black, Helvetica, Arial, sans-serif" font-size="37" font-weight="900" fill="rgba(255,255,255,.1)" stroke="#e9edf1" stroke-width="1.2" stroke-dasharray="1 2.2">UGREEN</text></svg>
+                </div>
+                <div class="r-pcie"><b>PCIE</b><i></i></div>
+                ${port(11.4, 82.2, 'hdmi', 'HDMI')}
+                ${port(18.3, 82, 'usba', 'USB3.2')}
+                <div class="r-abs r-usb2" style="left:25.4%;top:79.8%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
+                ${lan(0)}${lan(1)}
+                ${port(45.3, 80.9, 'reset', 'RESET')}
+                <div class="r-psu"></div>
+                <div class="r-abs r-inlet" style="left:69.7%;top:81.7%">
+                    <svg viewBox="0 0 56 72" aria-hidden="true"><rect x="2" y="2" width="52" height="68" rx="5" fill="#1d2127" stroke="#9aa3ad" stroke-width="2.600"/><rect x="7" y="7" width="42" height="58" rx="3" fill="#0b0d10" stroke="#59626e" stroke-width="1.400"/><path d="M12 13h32v28a7 7 0 0 1-7 7H19a7 7 0 0 1-7-7z" fill="#171b20" stroke="#9aa3ad" stroke-width="1.600"/><rect x="23.500" y="17" width="9" height="14" rx="1.800" fill="#aeb6bf"/><rect x="13.500" y="30" width="9" height="14" rx="1.800" fill="#aeb6bf" transform="rotate(-22 18 37)"/><rect x="33.500" y="30" width="9" height="14" rx="1.800" fill="#aeb6bf" transform="rotate(22 38 37)"/></svg>
+                </div>
+                <div class="r-abs r-psufan" style="left:82%;top:81.5%">
+                    <svg viewBox="-44 -44 88 88" aria-hidden="true"><title>${escapeHtml(t('case.psu_fan_hint'))}</title><circle r="42" fill="#101317" stroke="#8f99a4" stroke-width="2.600"/><g class="r-psu-blades" style="animation-delay:-${((performance.now() / 1000) % 1.1).toFixed(3)}s" fill="none" stroke="#69747f" stroke-width="1.700" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(-37 -37) scale(3.083)"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.500M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.500-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.500M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.500 4"/></g></g><circle r="40" fill="none" stroke="#2a2f36" stroke-width="1.200"/>${dots(5)}${dots(13)}${dots(21)}${dots(29)}${dots(36)}</svg>
+                </div>
+                <i class="r-kens" style="left:96.4%;top:78.2%"></i>
+                <i class="r-foot" style="left:5.4%"></i><i class="r-foot" style="left:87.2%"></i>
+            </div>`;
+    }
+
     function renderRear(hw, target = '#unc-rear') {
         const lan = n => {
             const p = hw.net[n];
@@ -750,6 +811,12 @@
         };
 
         const model = caseModel(hw);
+
+        if (model.rear6800) {
+            q(target).innerHTML = rear6800Html(hw);
+            return;
+        }
+
         q(target).innerHTML = `
             <div class="unc-nas-rear">
                 ${model.fan ? `<div class="unc-rear-fan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg></div>` : ''}

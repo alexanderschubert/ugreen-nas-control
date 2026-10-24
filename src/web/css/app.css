@@ -2433,3 +2433,215 @@
 .unc-case-intro {
     margin: 0 0 14px;
 }
+
+/* ---------- Rear of the DXP6800 Pro, after a photo of the device ---------- */
+
+.unc-rear6800 {
+    position: relative;
+    container-type: inline-size;
+    width: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    aspect-ratio: 835 / 455;
+    font-size: clamp(6px, 1.25cqi, 11px);
+    color: #aeb6bf;
+}
+
+.unc-rear6800 .r-body {
+    position: absolute;
+    inset: 0 0 5% 0;
+    border-radius: 2.2cqi;
+    background: linear-gradient(180deg, #1a1e23, #13161a);
+    box-shadow:
+        inset 1.1cqi 0 0 #b9c0c9,
+        inset -1.1cqi 0 0 #b9c0c9,
+        0 14px 30px rgba(0, 0, 0, .45);
+}
+
+.unc-rear6800 .r-screw {
+    position: absolute;
+    width: 1.5cqi;
+    height: 1.5cqi;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #2c3138, #07090b 70%);
+    transform: translate(-50%, -50%);
+}
+
+.unc-rear6800 .r-foot {
+    position: absolute;
+    top: 94.6%;
+    width: 7.8cqi;
+    height: 4.6%;
+    border-radius: 0 0 1.2cqi 1.2cqi;
+    background: #0d0f12;
+}
+
+/* The blende: a recessed frame, a fine diagonal mesh, the two fans behind it. */
+.unc-rear6800 .r-blende {
+    position: absolute;
+    left: 10.8%;
+    top: 5.7%;
+    width: 78.1%;
+    height: 63.1%;
+    padding: 2.4%;
+    border-radius: 2.6cqi;
+    background: #0c0e11;
+    box-shadow: inset 0 0 0 .5cqi #1d2229, inset 0 .4cqi 1cqi rgba(0, 0, 0, .8);
+}
+
+.unc-rear6800 .r-fans {
+    position: absolute;
+    inset: 4%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    place-items: center;
+}
+
+.unc-rear6800 .r-fan {
+    position: relative;
+    display: grid;
+    place-items: center;
+}
+
+.unc-rear6800 .r-fan .unc-fan-icon {
+    width: 19cqi;
+    height: 19cqi;
+    color: #2d343d;
+}
+
+.unc-rear6800 .r-fan .unc-fan-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: .8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.unc-rear6800 .r-fan .unc-fan-icon svg .ring { stroke-width: 1.1; }
+
+.unc-rear6800 .r-fan small {
+    position: absolute;
+    bottom: -2.4cqi;
+    color: #4b545f;
+    white-space: nowrap;
+}
+
+.unc-rear6800 .r-mesh {
+    position: absolute;
+    inset: 2.4%;
+    border-radius: 1.8cqi;
+    background:
+        repeating-linear-gradient(135deg, transparent 0 3px, rgba(5, 6, 8, .82) 3px 5px),
+        repeating-linear-gradient(45deg, rgba(5, 6, 8, .5) 0 2px, transparent 2px 4px),
+        rgba(14, 16, 19, .55);
+}
+
+.unc-rear6800 .r-brand {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30%;
+    transform: translate(-50%, -50%);
+}
+
+/* The PCIe slot cover on the left edge. */
+.unc-rear6800 .r-pcie {
+    position: absolute;
+    left: 2.2%;
+    top: 43.1%;
+    width: 6.5%;
+    height: 37.8%;
+}
+
+.unc-rear6800 .r-pcie b {
+    display: block;
+    padding: 1.1cqi 0;
+    border-radius: .8cqi;
+    background: #2a2f36;
+    color: #c9d1da;
+    font-weight: 600;
+    text-align: center;
+}
+
+.unc-rear6800 .r-pcie i {
+    display: block;
+    width: 54%;
+    height: calc(100% - 4.4cqi);
+    margin: 1cqi 0 0 8%;
+    border-radius: .6cqi;
+    background: #07090b;
+    box-shadow: inset 0 0 0 .3cqi #2a2f36;
+}
+
+/* Sockets: centred on their spot, the lettering of the device right under them. */
+.unc-rear6800 .r-abs {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .35cqi;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.unc-rear6800 .r-abs b { font-weight: 500; font-size: .86em; color: #aeb6bf; }
+.unc-rear6800 .r-abs em { font-style: normal; font-size: .82em; color: #6f7882; }
+.unc-rear6800 .r-lan.up em { color: #4ade80; font-weight: 700; }
+
+.unc-rear6800 .r-abs svg { height: auto; }
+.unc-rear6800 svg .shell { fill: #0b0e12; stroke: #8f99a4; stroke-width: 2; }
+.unc-rear6800 svg .tongue { fill: #2a313a; }
+.unc-rear6800 svg .tongue.blue { fill: #2f7cf6; }
+.unc-rear6800 svg .pins { stroke: #8a6b1d; stroke-width: 1.4; }
+.unc-rear6800 svg .led { fill: #2c3138; }
+.unc-rear6800 .r-lan.up svg .shell { stroke: #22c55e; }
+.unc-rear6800 .r-lan.up svg .led.link { fill: #22c55e; }
+.unc-rear6800 .r-lan.up svg .led.act { fill: #f59e0b; }
+
+.unc-rear6800 .r-hdmi svg { width: 6.2cqi; }
+.unc-rear6800 .r-usba svg { width: 4.8cqi; }
+.unc-rear6800 .r-usb2 svg { width: 4.8cqi; }
+.unc-rear6800 .r-usb2 b { margin-top: -.2cqi; }
+.unc-rear6800 .r-lan svg { width: 5.6cqi; }
+.unc-rear6800 .r-reset svg { width: 1.9cqi; }
+.unc-rear6800 .r-reset svg .shell { fill: #07090b; }
+
+/* The recessed box with the power inlet and the PSU fan. */
+.unc-rear6800 .r-psu {
+    position: absolute;
+    left: 65%;
+    top: 71.6%;
+    width: 23.6%;
+    height: 20.2%;
+    border-radius: 1cqi;
+    background: #0e1114;
+    box-shadow: inset 0 0 0 .4cqi #343b44;
+}
+
+.unc-rear6800 .r-inlet svg { width: 7cqi; }
+.unc-rear6800 .r-psufan svg { width: 11cqi; }
+
+.unc-rear6800 .r-kens {
+    position: absolute;
+    width: 1.2cqi;
+    height: 2.6cqi;
+    border-radius: .6cqi;
+    background: #05060a;
+    box-shadow: 0 0 0 .3cqi #3a424c;
+    transform: translate(-50%, -50%);
+}
+
+/* The fan of the power supply has no tachometer: its blades turn at a steady pace behind the grille. */
+.unc-rear6800 .r-psu-blades {
+    animation: unc-psu-spin 1.1s linear infinite;
+}
+
+@keyframes unc-psu-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .unc-rear6800 .r-psu-blades { animation: none; }
+}
