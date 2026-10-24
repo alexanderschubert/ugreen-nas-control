@@ -2348,3 +2348,26 @@
 @media (max-width: 900px) {
     .unc-nav-group { display: none; }
 }
+
+/* ---------- LEDs live in the cockpit ---------- */
+
+.unc-ledrow {
+    display: flex;
+    gap: 5px;
+    margin: 10px 0 8px;
+}
+
+.unc-ledrow i {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+}
+
+.unc-cc .unc-btn.small {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.unc-ledline { margin-top: 10px; }
+.unc-ledline .unc-bays-head { margin-bottom: 6px; }
+.unc-ledline .unc-ledrow { margin: 0; }

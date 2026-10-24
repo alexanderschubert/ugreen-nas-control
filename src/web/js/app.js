@@ -100,7 +100,10 @@
         hw: null,
         hwError: false,
         view: 'overview',
-        hero: 'front'
+        hero: 'front',
+        leds: null,
+        ledMode: null,
+        ledSchedule: null
     };
 
     /*
@@ -538,10 +541,10 @@
         // The LED pages come with the page itself: they are there once it has been loaded with the switch on.
         qa('[data-led-only]').forEach(button => { button.hidden = !(led.enabled && window.UNC_LED); });
 
-        blocker.hidden = !led.blocker;
-        blocker.textContent = led.blocker
-            ? t(`leds.blocker_${led.blocker}`, { model: led.model || '?' })
-            : '';
+        // A blocker keeps the part off; a warning (the plugin UGREEN LED Control is installed too) only tells.
+        const note = led.blocker ? `leds.blocker_${led.blocker}` : led.warning ? `leds.warn_${led.warning}` : '';
+        blocker.hidden = !note;
+        blocker.textContent = note ? t(note, { model: led.model || '?' }) : '';
     }
 
     function render() {
@@ -734,6 +737,7 @@
             <div class="unc-nas" style="--bays:${(hw.bays || []).length || 6}">
                 <div class="unc-nas-bays">${(hw.bays || []).map(bayHtml).join('')}</div>${strip}
             </div>`;
+        applyLeds(q(target));
     }
 
     function renderDriveList(hw) {
@@ -872,6 +876,102 @@
         renderInside(state.hw);
     }
 
+    /*
+     * ---------------------------------------------------------
+     * LEDs live: the colours the LED controller shows right now, drawn into the case pictures
+     * ---------------------------------------------------------
+     */
+
+    const LED_API = '/plugins/ugreen-nas-control/led/api.php';
+
+    async function ledGet(action) {
+        const response = await fetch(`${LED_API}?action=${action}`, { credentials: 'same-origin' });
+        const data = await response.json();
+
+        if (!response.ok || data.ok === false) throw new Error(data.error || `HTTP ${response.status}`);
+        return data;
+    }
+
+    // The LED pages ship with the page: only then (and with the switch on) there is anything to read.
+    const ledsOn = () => Boolean(window.UNC_LED && state.data?.led?.enabled);
+
+    async function loadLeds() {
+        if (!ledsOn()) {
+            state.leds = null;
+            return;
+        }
+
+        try {
+            const [all, status] = await Promise.all([ledGet('all'), ledGet('status')]);
+            state.leds = all.leds || {};
+            state.ledMode = { mode: status.mode, fx: status.fx };
+            if (!state.ledSchedule) state.ledSchedule = await ledGet('schedule');
+        } catch (error) {
+            state.leds = null;
+        }
+    }
+
+    // "255 140 0" + brightness 0-255 -> a colour and a glow; off or dark gives neither.
+    function ledLook(led) {
+        const [r, g, b] = String(led?.color || '0 0 0').trim().split(/\s+/).map(Number);
+        const level = Math.max(0, Math.min(1, (Number(led?.brightness) || 0) / 255));
+
+        if (!led || level === 0 || [r, g, b].some(Number.isNaN)) return { on: false };
+        // Keep very low levels visible, else a dimmed LED looks like a dead one.
+        const a = (0.3 + 0.7 * level).toFixed(2);
+
+        return { on: true, color: `rgba(${r}, ${g}, ${b}, ${a})`, glow: `0 0 ${Math.round(4 + 8 * level)}px rgba(${r}, ${g}, ${b}, ${(0.7 * level).toFixed(2)})` };
+    }
+
+    function paintLed(element, led) {
+        if (!element) return;
+
+        const look = ledLook(led);
+        element.style.background = look.on ? look.color : '#2c3138';
+        element.style.boxShadow = look.on ? look.glow : 'none';
+    }
+
+    function applyLeds(container) {
+        if (!container || !state.leds) return;
+
+        container.querySelectorAll('.unc-nbay').forEach((bay, i) => paintLed(bay.querySelector('.bar'), state.leds[`disk${i + 1}`]));
+        paintLed(container.querySelector('.unc-pled.power'), state.leds.power);
+        paintLed(container.querySelector('.unc-pled.lan'), state.leds.netdev);
+    }
+
+    function ledModeText() {
+        const m = state.ledMode;
+        if (!m) return '';
+        if (m.fx) return t(`led.fx_${m.fx}`) !== `led.fx_${m.fx}` ? t(`led.fx_${m.fx}`) : m.fx;
+        return t(m.mode === 'status' ? 'led.mode_status' : 'led.mode_manual');
+    }
+
+    function renderLedCard() {
+        const card = q('#unc-cc-led-card');
+        const on = ledsOn() && state.leds;
+
+        card.hidden = !on;
+        if (!on) return;
+
+        const dots = Object.keys(state.leds)
+            .filter(name => name.startsWith('disk'))
+            .sort((a, b) => Number(a.slice(4)) - Number(b.slice(4)))
+            .slice(0, (state.hw?.bays || []).length || 6)
+            .map(name => {
+                const look = ledLook(state.leds[name]);
+                return `<i style="background:${look.on ? look.color : '#2c3138'};box-shadow:${look.on ? look.glow : 'none'}"></i>`;
+            })
+            .join('');
+        const brightness = Math.round((Number(state.leds.power?.brightness) || 0) / 2.55);
+        const sched = state.ledSchedule?.enabled ? t('led.night', { start: state.ledSchedule.start, end: state.ledSchedule.end }) : '';
+
+        q('#unc-cc-led').innerHTML = `
+            <div class="unc-ccrow"><span class="unc-muted">${escapeHtml(t('led.mode'))}</span><b>${escapeHtml(ledModeText())}</b></div>
+            <div class="unc-ccrow"><span class="unc-muted">${escapeHtml(t('led.brightness'))}</span><b>${brightness} %</b></div>
+            ${sched ? `<div class="unc-ccrow"><span class="unc-muted">${escapeHtml(sched)}</span></div>` : ''}
+            <div class="unc-ledrow">${dots}</div>`;
+    }
+
     async function loadHardware() {
         try {
             state.hw = await api({ action: 'hardware' });
@@ -928,7 +1028,9 @@
             [t('fans.title'), fans.length ? fans.map(f => f.rpm).join(' / ') + ` ${t('fan.rpm')}` : ''],
             [t('dash.disk'), hottest >= 0 ? deg(hottest) : ''],
             [t('system.uptime'), data.info?.uptime ? uptime(data.info.uptime) : '']
-        ].filter(([, value]) => value);
+        ];
+        if (ledsOn() && state.ledMode) items.splice(1, 0, [t('led.title'), ledModeText()]);
+        items.splice(0, items.length, ...items.filter(([, value]) => value));
 
         q('#unc-hero-foot').innerHTML = items
             .map(([label, value]) => `<span class="unc-pill"><small>${escapeHtml(label)}</small><b>${escapeHtml(value)}</b></span>`)
@@ -937,6 +1039,7 @@
 
     function renderCockpitCards() {
         renderHeroFoot();
+        renderLedCard();
         const data = state.data || {};
         const info = data.info || {};
         const hw = state.hw;
@@ -1016,6 +1119,7 @@
         qa('[data-nav]').forEach(button => {
             button.addEventListener('click', () => showView(button.dataset.nav));
         });
+
 
         q('#unc-hero-tabs').addEventListener('click', event => {
             const button = event.target.closest('[data-hero]');
@@ -1131,11 +1235,23 @@
         q('#unc-language').value = window.UGREEN_NAS_LANG_SETTING || 'auto';
 
         await load();
-        loadHardware();
+        loadHardware().then(loadLeds).then(() => {
+            applyLeds(q('#unc-hero'));
+            applyLeds(q('#unc-front'));
+            renderLedCard();
+            renderHeroFoot();
+        });
 
         setInterval(() => {
             if (!document.hidden && !state.busy) load();
-            if (!document.hidden && (state.view === 'case' || state.view === 'overview') && !state.busy) loadHardware();
+            if (!document.hidden && (state.view === 'case' || state.view === 'overview') && !state.busy) {
+                loadHardware().then(loadLeds).then(() => {
+                    applyLeds(q('#unc-hero'));
+                    applyLeds(q('#unc-front'));
+                    renderLedCard();
+                    renderHeroFoot();
+                });
+            }
         }, 3000);
     }
 

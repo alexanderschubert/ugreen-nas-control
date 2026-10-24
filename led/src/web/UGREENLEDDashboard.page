@@ -1,6 +1,6 @@
 Menu="Dashboard:0"
 Icon="ugreen-led-control.png"
-Cond="is_file('/boot/config/plugins/ugreen-nas-control/led.enabled') && version_compare(parse_ini_file('/etc/unraid-version')['version'], '6.12.0', '>=')"
+Cond="false && version_compare(parse_ini_file('/etc/unraid-version')['version'], '6.12.0', '>=')"
 ---
 <?php
 // Dashboard tile: Unraid's dashboard (6.12+) shows every $mytiles entry as a

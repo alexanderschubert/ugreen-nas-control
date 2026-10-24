@@ -95,11 +95,14 @@ Settings are saved in `/boot/config/plugins/ugreen-nas-control/fan.cfg`.
 ## LEDs
 
 The LED part is a copy of UGREEN LED Control (`led/`, the version is in `led/VERSION`) and talks to the LED
-controller through `/dev/i2c-N` (on the DXP4800 GT through `/dev/mem`, no kernel module). It stays off until the switch under *UGREEN NAS Control → LEDs* is on, and then
-adds *Settings → UGREEN LED Control* and its dashboard tile. It is only offered on the DXP6800 Pro and the DXP4800 GT, and not while
-the standalone plugin *UGREEN LED Control*, the plugin *ugreenleds-driver* or the kernel module `led_ugreen` is
-present, as they would write the same LEDs. If you used the standalone plugin, remove it first and switch the LEDs
-on here; its settings are not carried over.
+controller through `/dev/i2c-N` (on the DXP4800 GT through `/dev/mem`, no kernel module). It succeeds the standalone plugin
+*UGREEN LED Control* for these two models and runs on its own: it stays off until the switch under
+*UGREEN NAS Control → LEDs* is on; then the group **LEDs** of the sidebar shows General & preview, Colours, Effects,
+Drive status and Schedules, the cockpit and the dashboard tile show the colours of the LEDs live. It is only offered on
+the DXP6800 Pro and the DXP4800 GT, and not while the plugin *ugreenleds-driver* or the kernel module `led_ugreen` holds the
+controller. If the standalone plugin *UGREEN LED Control* is installed too, both still run (the runtime files have their own
+names), but they write the same LEDs and the last write wins: the page says so. Use one of them, best this one, and switch
+LED control off in the other or remove it. Importing its settings is planned.
 
 To take over a new version of the LED plugin:
 

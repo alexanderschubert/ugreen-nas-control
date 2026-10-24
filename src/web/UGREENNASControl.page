@@ -163,6 +163,11 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
                 <div class="unc-fans" id="unc-fans"></div>
                 <p class="unc-muted unc-follow" id="unc-follow"></p>
             </article>
+            <article class="unc-card unc-cc led" id="unc-cc-led-card" hidden>
+                <h3><i></i><span data-i18n="led.title">LEDs</span></h3>
+                <div id="unc-cc-led"></div>
+                <button type="button" class="unc-btn small" data-nav="led:overview"><span data-i18n="led.open">LED-Einstellungen</span></button>
+            </article>
             <article class="unc-card unc-cc tmp">
                 <h3><i></i><span data-i18n="temps.title">Temperaturen</span></h3>
                 <div class="unc-temps" id="unc-temps"></div>
@@ -321,6 +326,7 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
         </label>
 
         <p class="unc-hint" id="unc-led-blocker" hidden></p>
+
 
         <div class="unc-actions" id="unc-led-open" hidden>
             <button type="button" class="unc-btn primary" data-nav="led:overview"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="leds.open">LED-Einstellungen öffnen</span></button>

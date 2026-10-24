@@ -54,11 +54,16 @@ echo "DXP4800 GT" > "$T/dmi/product_name"
 check "no blocker on a DXP4800 GT" "$([ -z "$(blocker)" ] && echo ok)"
 echo "DXP6800 Pro" > "$T/dmi/product_name"
 
+warning() { run led-status | sed -n 's/.*"warning": "\([^"]*\)".*/\1/p'; }
+
+check "no warning without the standalone plugin" "$([ -z "$(warning)" ] && echo ok)"
 touch "$T/boot/ugreen-led-control.plg"
-check "standalone plugin blocks" "$([ "$(blocker)" = standalone ] && echo ok)"
+check "standalone plugin is a warning" "$([ "$(warning)" = standalone ] && echo ok)"
+check "standalone plugin is no blocker" "$([ -z "$(blocker)" ] && echo ok)"
 run led-enable >/dev/null 2>&1
-check "standalone plugin: not enabled" "$([ ! -e "$T/boot/led.enabled" ] && echo ok)"
-rm "$T/boot/ugreen-led-control.plg"
+check "standalone plugin: still enabled" "$([ -e "$T/boot/led.enabled" ] && echo ok)"
+run led-disable >/dev/null 2>&1
+rm "$T/boot/ugreen-led-control.plg" "$T/calls"
 
 mkdir "$T/web/ugreenleds-driver"
 check "driver plugin blocks" "$([ "$(blocker)" = driver ] && echo ok)"
@@ -76,11 +81,11 @@ check "enable creates the flag" "$([ -e "$T/boot/led.enabled" ] && echo ok)"
 check "enable applies the settings" "$(grep -q '^ctl apply' "$T/calls" && echo ok)"
 check "enable writes the night mode cron" "$(grep -q 'schedule' "$T/boot/x.cron" && echo ok)"
 
-touch "$T/boot/ugreen-led-control.plg"
+touch "$T/boot/ugreenleds-driver.plg"
 : > "$T/calls"
 run led-boot >/dev/null 2>&1
 check "conflict after enabling: boot starts nothing" "$([ ! -s "$T/calls" ] && echo ok)"
-rm "$T/boot/ugreen-led-control.plg"
+rm "$T/boot/ugreenleds-driver.plg"
 
 run led-disable >/dev/null 2>&1
 check "disable removes flag and cron" "$([ ! -e "$T/boot/led.enabled" ] && [ ! -e "$T/boot/x.cron" ] && echo ok)"
