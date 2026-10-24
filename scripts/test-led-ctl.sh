@@ -33,6 +33,7 @@ run() {
     UGREEN_DMI="$T/dmi" UGREEN_PLUGINS_BOOT="$T/boot" UGREEN_PLUGINS_WEB="$T/web" \
     UGREEN_PROC_MODULES="$T/modules" UGREEN_LED_DIR="$T/led" UGREEN_LED_FLAG="$T/boot/led.enabled" \
     UGREEN_LED_CRON="$T/boot/x.cron" UGREEN_LED_CFG="$T/boot/leds.cfg" UGREEN_UPDATE_CRON="$T/update_cron" \
+    UGREEN_LED_LEGACY_PIDS="$T/legacy.pid" \
     UGREEN_NAS_FAN=/bin/true bash "$CTL" "$@"
 }
 
@@ -84,6 +85,27 @@ rm "$T/boot/ugreen-led-control.plg"
 run led-disable >/dev/null 2>&1
 check "disable removes flag and cron" "$([ ! -e "$T/boot/led.enabled" ] && [ ! -e "$T/boot/x.cron" ] && echo ok)"
 check "disable stops daemon and effect" "$(grep -q '^ctl daemon stop' "$T/calls" && grep -q '^ctl fx stop' "$T/calls" && echo ok)"
+
+# led-stop leaves a foreign process (the standalone plugin's daemon) alone, but ends a
+# leftover daemon of this plugin's own led/ directory that still uses the old shared pidfile.
+# Needs /proc to read command lines.
+if [ -d /proc/self ]; then
+    printf '#!/bin/bash\nsleep 30\ntrue\n' > "$T/led/fake-daemon"
+    chmod +x "$T/led/fake-daemon"
+
+    sleep 30 & foreign=$!
+    echo "$foreign" > "$T/legacy.pid"
+    run led-stop >/dev/null 2>&1
+    check "led-stop keeps a foreign daemon" "$(kill -0 "$foreign" 2>/dev/null && [ -e "$T/legacy.pid" ] && echo ok)"
+    kill "$foreign"; wait "$foreign" 2>/dev/null
+
+    "$T/led/fake-daemon" & own=$!
+    sleep 0.3
+    echo "$own" > "$T/legacy.pid"
+    run led-stop >/dev/null 2>&1
+    wait "$own" 2>/dev/null; rc=$?
+    check "led-stop ends a leftover daemon of its own directory" "$([ "$rc" -eq 143 ] && [ ! -e "$T/legacy.pid" ] && echo ok)"
+fi
 
 echo
 [ "$fails" -eq 0 ] && echo "All checks passed." || { echo "$fails failed."; exit 1; }

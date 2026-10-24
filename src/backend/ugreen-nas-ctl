@@ -74,7 +74,25 @@ led_status() {
         "$blocker" "$(printf '%s' "$model" | tr -d '"\\')"
 }
 
+# Earlier versions kept the daemon's pid in the standalone plugin's files. Such a
+# process is ours only if it runs from our own led/ directory; the standalone plugin's is left alone.
+led_stop_legacy() {
+    local pidfile pid
+
+    for pidfile in ${UGREEN_LED_LEGACY_PIDS:-/var/run/ugreen-led-control.pid /var/run/ugreen-led-control-fx.pid}; do
+        pid="$(cat "$pidfile" 2>/dev/null)"
+        [ -n "$pid" ] || continue
+        if tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -qF "$LED_DIR/"; then
+            kill "$pid" 2>/dev/null
+            rm -f "$pidfile"
+        fi
+    done
+}
+
+# Only this plugin's own LED daemon and effect (their pidfiles are named after this plugin);
+# nothing happens when they are not running.
 led_stop() {
+    led_stop_legacy
     if [ -x "$LED_CTL" ]; then
         "$LED_CTL" fx stop >/dev/null 2>&1
         "$LED_CTL" daemon stop >/dev/null 2>&1

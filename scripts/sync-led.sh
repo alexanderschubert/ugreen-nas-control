@@ -36,12 +36,15 @@ rm -f "${OUT}/i2c/ugreen-led-i2c"
 
 # Plugin name and paths. The LED files live in <plugin>/led/, the pages and the
 # event hook (which Unraid only finds in the plugin's top directory) are copied
-# there by the .plg.
+# there by the .plg. The runtime files (pidfiles, state, locks) get their own names, else
+# this copy and a standalone ugreen-led-control share them and stop each other's daemon.
+# The I2C bus lock (ugreen-led-i2c.lock) stays shared on purpose.
 rewrite() {
     sed -i.orig \
         -e 's#/boot/config/plugins/ugreen-led-control\.plg#/boot/config/plugins/ugreen-nas-control.plg#g' \
         -e 's#/boot/config/plugins/ugreen-led-control/#/boot/config/plugins/ugreen-nas-control/#g' \
         -e 's#plugins/ugreen-led-control/#plugins/ugreen-nas-control/led/#g' \
+        -e 's#/var/run/ugreen-led-control#/var/run/ugreen-nas-control.led#g' \
         "$1"
     rm -f "$1.orig"
 }

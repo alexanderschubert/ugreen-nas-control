@@ -144,3 +144,43 @@ func TestDXP480TWhite(t *testing.T) {
 		}
 	}
 }
+
+func TestIdxCommandPacket(t *testing.T) {
+	// Frames of the iDX6011 plugins (omgapuppy), written as i2cset ... s: header, command,
+	// four parameters, then the checksum high byte first.
+	cases := []struct {
+		command byte
+		params  [4]byte
+		want    []byte
+	}{
+		{0x04, [4]byte{}, []byte{0xa0, 0x01, 0x00, 0x00, 0x04, 0, 0, 0, 0, 0x00, 0xa5}},
+		{0x01, [4]byte{0xff}, []byte{0xa0, 0x01, 0x00, 0x00, 0x01, 0xff, 0, 0, 0, 0x01, 0xa1}},
+		{0x02, [4]byte{0xff, 0xff, 0xff}, []byte{0xa0, 0x01, 0x00, 0x00, 0x02, 0xff, 0xff, 0xff, 0, 0x03, 0xa0}},
+		{0x03, [4]byte{0xff}, []byte{0xa0, 0x01, 0x00, 0x00, 0x03, 0xff, 0, 0, 0, 0x01, 0xa3}},
+	}
+
+	for _, c := range cases {
+		if got := idxCommandPacket(c.command, c.params); !bytes.Equal(got, c.want) {
+			t.Errorf("command %x: got % x, want % x", c.command, got, c.want)
+		}
+	}
+}
+
+func TestIdxProLedIDs(t *testing.T) {
+	saved := layout
+	defer func() { layout = saved }()
+
+	want := map[string]byte{"power": 0, "netdev": 1, "disk1": 3, "disk6": 8}
+
+	layout = "idx-pro"
+	for name, id := range want {
+		if got, err := ledID(name); err != nil || got != id {
+			t.Errorf("idx-pro %s: got %d %v, want %d", name, got, err, id)
+		}
+	}
+
+	layout = "idx"
+	if got, _ := ledID("disk1"); got != 2 {
+		t.Errorf("idx disk1: got %d, want 2", got)
+	}
+}

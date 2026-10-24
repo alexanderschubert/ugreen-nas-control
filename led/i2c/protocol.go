@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -34,10 +35,40 @@ var ledNames = []string{"power", "netdev", "disk1", "disk2", "disk3", "disk4", "
 
 var modeNames = []string{"off", "on", "blink", "breath"}
 
+// layout names a LED controller family that differs from the DX/DXP one: "idx-pro"
+// (UGREEN iDX6011 Pro: two LAN LEDs, so disk1 is register 3) and "idx" (the same
+// frames, disk1 is register 2). Both write SMBus blocks without the LED ID in the
+// payload and with a big-endian checksum, as the vendor driver does (after klein0r's
+// work on miskcoo/ugreen_leds_controller#93). It comes from the model name, or from
+// UGREEN_LAYOUT to try it by hand; empty is the DX/DXP protocol.
+var layout = detectLayout()
+
+func detectLayout() string {
+	if v := os.Getenv("UGREEN_LAYOUT"); v != "" {
+		return v
+	}
+
+	product, _ := os.ReadFile("/sys/class/dmi/id/product_name")
+	name := strings.TrimSpace(string(product))
+
+	switch {
+	case strings.HasPrefix(name, "iDX6011 Pro"):
+		return "idx-pro"
+	case strings.HasPrefix(name, "iDX6011"):
+		return "idx"
+	}
+	return ""
+}
+
+func idxFrames() bool { return layout == "idx" || layout == "idx-pro" }
+
 func ledID(name string) (byte, error) {
 	i := slices.Index(ledNames, name)
 	if i < 0 {
 		return 0, fmt.Errorf("unknown LED %q (power, netdev, disk1..disk8)", name)
+	}
+	if layout == "idx-pro" && i >= 2 {
+		i++ // the second LAN LED sits in between
 	}
 	return byte(i), nil
 }
@@ -67,6 +98,19 @@ func gtCommandPacket(command byte, params [4]byte) []byte {
 	}
 
 	return append(packet, byte(sum), byte(sum>>8))
+}
+
+// idxCommandPacket is the iDX6011 variant: an SMBus block payload without the ID and
+// with the checksum (0xa1 + command + parameters) high byte first.
+func idxCommandPacket(command byte, params [4]byte) []byte {
+	packet := []byte{0xa0, 0x01, 0x00, 0x00, command, params[0], params[1], params[2], params[3]}
+
+	sum := 0
+	for _, b := range packet {
+		sum += int(b)
+	}
+
+	return append(packet, byte(sum>>8), byte(sum))
 }
 
 func clampPeriod(ms int) int { return min(max(ms, minPeriod), maxPeriod) }
