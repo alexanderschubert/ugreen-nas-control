@@ -2006,3 +2006,257 @@
 
 .unc[data-theme="light"] .unc-ssd { background: #dfe4e9; }
 .unc[data-theme="light"] .unc-ssd .unc-slot-ico { color: #0f766e; }
+
+/* ---------- Overview: cockpit ---------- */
+
+.unc-cockpit {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr) 248px;
+    gap: 16px;
+    align-items: stretch;
+}
+
+/* The cards share the column's height, so no column ends with a gap. */
+.unc-ccol {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+}
+
+.unc-ccol > .unc-cc { flex: 1 1 auto; }
+
+.unc-card.unc-cc {
+    padding: 14px 16px;
+}
+
+.unc-cc h3 {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 0 0 10px;
+    color: var(--unc-muted);
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+.unc-cc h3 i {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--unc-accent);
+}
+
+.unc-cc.ram h3 i { background: #a855f7; }
+.unc-cc.net h3 i { background: var(--unc-green); }
+.unc-cc.fan h3 i { background: #60a5fa; }
+.unc-cc.tmp h3 i { background: var(--unc-amber); }
+.unc-cc.ssd h3 i { background: #14b8a6; }
+
+.unc-big {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.unc-big small {
+    margin-left: 4px;
+    color: var(--unc-muted);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.unc-sub {
+    margin: 2px 0;
+    color: var(--unc-muted);
+    font-size: 12px;
+}
+
+.unc-cc .unc-meter { margin: 8px 0 6px; }
+.unc-cc .unc-meter > span { background: var(--unc-green); }
+.unc-cc .unc-meter.warm > span { background: var(--unc-amber); }
+.unc-cc .unc-meter.hot > span { background: var(--unc-red); }
+.unc-cc .unc-meter.net > span { background: var(--unc-green); }
+
+.unc-ccrow {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 6px 0;
+    font-size: 13px;
+}
+
+.unc-ccrow > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.unc-ccrow b { font-weight: 600; white-space: nowrap; }
+.unc-ccrow b.up { color: var(--unc-green); }
+.unc-ccrow .unc-t { margin-top: 0; }
+
+.unc-dimms {
+    display: flex;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.unc-dimms span {
+    flex: 1;
+    padding: 4px 0;
+    border: 1px solid #6b3fb3;
+    border-radius: 4px;
+    background: rgba(168, 85, 247, .16);
+    font-size: 11px;
+    text-align: center;
+}
+
+.unc-dimms span.empty {
+    border: 1px dashed var(--unc-border);
+    background: transparent;
+    color: var(--unc-muted);
+}
+
+/* In the narrow side column the fans are small tiles side by side. */
+.unc-cc .unc-fans { grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 6px; }
+.unc-cc .unc-fan { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 4px; padding: 10px 4px; text-align: center; }
+.unc-cc .unc-fan > div { justify-items: center; width: 100%; }
+.unc-cc .unc-fan strong { font-size: 11px; line-height: 1.2; }
+.unc-cc .unc-fan small { font-size: 10px; }
+.unc-cc .unc-fan-rpm { font-size: 15px; }
+.unc-cc .unc-fan-rpm small { display: block; }
+.unc-cc .unc-fan .unc-meter { width: 100%; }
+.unc-cc .unc-follow { margin: 8px 0 0; font-size: 12px; }
+.unc-cc .unc-temp { grid-template-columns: minmax(0, 1fr) 54px; gap: 6px 10px; }
+.unc-cc .unc-temp .unc-meter { grid-column: 1 / -1; grid-row: 2; }
+
+/* The middle: the detected model, big. */
+.unc-hero-stage {
+    display: flex;
+    flex-direction: column;
+    padding: 20px 22px 16px;
+}
+
+.unc-hero-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.unc-hero-head b {
+    font-size: 26px;
+    letter-spacing: .02em;
+}
+
+.unc-hero-head span {
+    color: var(--unc-muted);
+    font-size: 13px;
+}
+
+.unc-hero {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    justify-content: center;
+    perspective: 1400px;
+    min-height: 220px;
+    padding: 4px 0;
+}
+
+.unc-hero > * { width: 100%; }
+
+/* The front stands a little turned, like a product picture; rear and inside are flat. */
+.unc-hero-stage .unc-nas { max-width: calc(var(--bays, 6) * 105px + 120px); }
+
+.unc-hero.front .unc-nas {
+    transform: rotateX(7deg) rotateY(-9deg) scale(1.04);
+    transform-origin: 50% 60%;
+    margin: 0 auto;
+    box-shadow: 28px 34px 46px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+
+.unc[data-theme="light"] .unc-hero.front .unc-nas {
+    box-shadow: 24px 30px 40px rgba(20, 30, 45, .22), inset 0 1px 0 #fff;
+}
+
+.unc-hero .unc-board { grid-template-columns: minmax(0, 1fr); }
+.unc-hero .unc-nas-rear { margin: 0 auto; }
+
+.unc-hero-tabs {
+    display: flex;
+    gap: 6px;
+    margin-top: 16px;
+}
+
+.unc .unc-hero-tabs button {
+    padding: 6px 14px;
+    border: 1px solid var(--unc-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--unc-muted);
+    font: 600 13px inherit;
+    cursor: pointer;
+}
+
+.unc .unc-hero-tabs button.active {
+    border-color: var(--unc-accent);
+    background: var(--unc-accent);
+    color: #fff;
+}
+
+.unc-under {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+    align-items: stretch;
+}
+
+@media (max-width: 1500px) {
+    .unc-cockpit { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .unc-hero-stage { grid-column: 1 / -1; grid-row: 1; }
+}
+
+@media (max-width: 1100px) {
+    .unc-under { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) {
+    .unc-cockpit { grid-template-columns: minmax(0, 1fr); }
+}
+
+.unc-hero-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.unc-pill {
+    display: grid;
+    gap: 1px;
+    padding: 7px 12px;
+    border: 1px solid var(--unc-border);
+    border-radius: 10px;
+    background: var(--unc-card);
+}
+
+.unc-pill small {
+    color: var(--unc-muted);
+    font-size: 10px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.unc-pill b {
+    font-size: 13px;
+    font-weight: 650;
+}

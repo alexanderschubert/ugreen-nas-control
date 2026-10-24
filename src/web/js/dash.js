@@ -143,7 +143,7 @@
 
         const [warm, hot] = LIMITS.nvme;
         const level = ssd.temp == null ? 'ok' : ssd.temp >= hot ? 'hot' : ssd.temp >= warm ? 'warm' : 'ok';
-        const slot = ssd.slot === 'pcie' && pcie ? t('case.pcie_slot') : t('case.m2_slot', { n: ssd.slot === 'pcie' ? '?' : ssd.slot.replace('m2-', '') });
+        const slot = ssd.slot === 'system' ? t('case.sys_slot') : ssd.slot === 'pcie' && pcie ? t('case.pcie_slot') : t('case.m2_slot', { n: ssd.slot === 'pcie' ? '?' : ssd.slot.replace('m2-', '') });
         const lines = [
             ssd.temp != null ? `${ssd.temp} °C` : '–',
             `${ssd.id} · ${size(ssd.size_bytes)} · ${slot}`,
@@ -167,6 +167,8 @@
         // The DXP4800 GT has no PCIe slot: an SSD outside its two M.2 ports is not on a card.
         const pcie = !/^DXP4800 GT/.test(hw?.model || '');
         const chips = ssds.length ? [1, 2].map(n => nvmeChip(`M${n}`, ssds.find(d => d.slot === `m2-${n}`), pcie)) : [];
+        // The DXP6800 Pro has an internal M.2 slot for the UGOS module as well.
+        if (ssds.length && pcie) chips.push(nvmeChip('S', ssds.find(d => d.slot === 'system'), pcie));
         ssds.filter(d => d.slot === 'pcie').forEach((d, i) => chips.push(nvmeChip(`P${i + 1}`, d, pcie)));
 
         paintChips(root.querySelector('[data-nvme]'), t('dash.nvme_title'), t('tile.nvme_val', { n: ssds.length }), chips);

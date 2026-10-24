@@ -97,7 +97,8 @@
         busy: false,
         hw: null,
         hwError: false,
-        view: 'overview'
+        view: 'overview',
+        hero: 'front'
     };
 
     /*
@@ -550,6 +551,8 @@
         renderCurves();
         renderSafety();
         renderLeds();
+        renderHero();
+        renderCockpitCards();
     }
 
     /*
@@ -649,6 +652,7 @@
         front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
         rear: [['ac', 'case.ac'], ['hdmi', 'case.hdmi'], ['lan', 0], ['lan', 1], ['usba', 'case.usb_a'], ['usb2', 'case.usb2'], ['usb2', 'case.usb2']],
         pcie: true,
+        sys: true,
         hint: 'case.inside_hint'
     };
 
@@ -697,7 +701,7 @@
             </div>`;
     }
 
-    function renderFront(hw) {
+    function renderFront(hw, target = '#unc-front') {
         const net = hw.net || [];
         const lan = net.some(n => n.link);
         const speeds = net.map(n => `<span>${n.link ? speedText(n.speed_mbit) : '✕'}</span>`).join('');
@@ -722,7 +726,7 @@
                     <b class="brand">UGREEN</b>
                 </div>`;
 
-        q('#unc-front').innerHTML = `
+        q(target).innerHTML = `
             <div class="unc-nas" style="--bays:${(hw.bays || []).length || 6}">
                 <div class="unc-nas-bays">${(hw.bays || []).map(bayHtml).join('')}</div>${strip}
             </div>`;
@@ -751,7 +755,7 @@
             </table>` : `<p class="unc-muted">${escapeHtml(t('case.empty'))}</p>`;
     }
 
-    function renderRear(hw) {
+    function renderRear(hw, target = '#unc-rear') {
         const lan = n => {
             const p = hw.net[n];
             const up = Boolean(p && p.link);
@@ -765,7 +769,7 @@
         };
 
         const model = caseModel(hw);
-        q('#unc-rear').innerHTML = `
+        q(target).innerHTML = `
             <div class="unc-nas-rear">
                 ${model.fan ? `<div class="unc-rear-fan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg></div>` : ''}
                 <div class="unc-rear-ports">
@@ -783,7 +787,7 @@
             </div>`;
     }
 
-    function renderInside(hw) {
+    function renderInside(hw, target = '#unc-inside') {
         const ramSlots = hw.memory.map((m, i) => {
             const slot = t('case.ram_slot', { n: i + 1 });
             if (!m.size_mb) {
@@ -810,6 +814,15 @@
                 </div>`;
         };
 
+        const sysSlot = () => {
+            const ssd = hw.nvme.find(d => d.slot === 'system');
+            return `
+                <div class="unc-slot m2 ${ssd ? '' : 'empty'}">
+                    <div class="unc-slot-head"><span class="unc-slot-ico">${icon('m2')}</span><small>${escapeHtml(t('case.sys_slot'))}</small></div>
+                    ${ssd ? nvmeHtml(ssd) : `<span>${escapeHtml(t('case.empty'))}</span>`}
+                </div>`;
+        };
+
         const card = hw.nvme.filter(d => d.slot === 'pcie');
         const model = caseModel(hw);
         const hasPcie = model.pcie;
@@ -825,9 +838,9 @@
         const hint = q('[data-i18n^="case.inside_hint"]');
         hint.dataset.i18n = model.hint;
         hint.textContent = t(model.hint);
-        q('#unc-inside').innerHTML = `
+        q(target).innerHTML = `
             <div class="unc-board-col">${ramSlots}</div>
-            <div class="unc-board-col">${m2(1)}${m2(2)}</div>
+            <div class="unc-board-col">${m2(1)}${m2(2)}${model.sys ? sysSlot() : ''}</div>
             ${hasPcie ? `<div class="unc-board-col">${pcie}</div>` : ''}`;
     }
 
@@ -855,6 +868,99 @@
             state.hwError = true;
         }
         renderCase();
+        if (state.data?.ok) {
+            renderHero();
+            renderCockpitCards();
+        }
+    }
+
+    /*
+     * ---------------------------------------------------------
+     * Overview (cockpit): the detected model in the middle, everything detected around it
+     * ---------------------------------------------------------
+     */
+
+    // "12th Gen Intel(R) Core(TM) i5-1235U @ 2.50GHz" -> "Core i5-1235U"
+    const shortCpu = name => String(name || '').replace(/\(R\)|\(TM\)|CPU|@.*$|^\d+th Gen\s+Intel\s*/gi, '').replace(/\s+/g, ' ').trim();
+
+    const ccRow = (label, value) => `<div class="unc-ccrow"><span class="unc-muted">${escapeHtml(label)}</span><b>${escapeHtml(value)}</b></div>`;
+
+    function renderHero() {
+        const hw = state.hw;
+        const info = state.data?.info || {};
+        const stage = q('#unc-hero');
+
+        q('#unc-hero-model').textContent = hw?.model || info.model || 'UGREEN NAS';
+        q('#unc-hero-sub').textContent = [info.bios ? `BIOS ${info.bios}` : '', info.unraid ? `Unraid ${info.unraid}` : ''].filter(Boolean).join(' · ');
+        qa('#unc-hero-tabs [data-hero]').forEach(b => b.classList.toggle('active', b.dataset.hero === state.hero));
+
+        if (!hw) {
+            stage.className = 'unc-hero';
+            stage.innerHTML = `<p class="unc-muted">${escapeHtml(t(state.hwError ? 'case.error' : 'case.loading'))}</p>`;
+            return;
+        }
+
+        stage.className = `unc-hero ${state.hero}`;
+        if (state.hero === 'rear') renderRear(hw, '#unc-hero');
+        else if (state.hero === 'inside') renderInside(hw, '#unc-hero');
+        else renderFront(hw, '#unc-hero');
+    }
+
+    function renderHeroFoot() {
+        const data = state.data || {};
+        const fans = data.fans || [];
+        const hottest = Math.max(-1, ...(data.sensors?.disks || []).filter(d => d.temp != null).map(d => d.temp));
+        const items = [
+            [t('mode.title'), t(`mode.${data.settings?.mode || 'standard'}`)],
+            [t('fans.title'), fans.length ? fans.map(f => f.rpm).join(' / ') + ` ${t('fan.rpm')}` : ''],
+            [t('dash.disk'), hottest >= 0 ? deg(hottest) : ''],
+            [t('system.uptime'), data.info?.uptime ? uptime(data.info.uptime) : '']
+        ].filter(([, value]) => value);
+
+        q('#unc-hero-foot').innerHTML = items
+            .map(([label, value]) => `<span class="unc-pill"><small>${escapeHtml(label)}</small><b>${escapeHtml(value)}</b></span>`)
+            .join('');
+    }
+
+    function renderCockpitCards() {
+        renderHeroFoot();
+        const data = state.data || {};
+        const info = data.info || {};
+        const hw = state.hw;
+        const s = data.sensors || {};
+
+        const board = s.board;
+        const chipTemp = (data.chip_temps || []).find(v => v != null);
+        q('#unc-cc-cpu').innerHTML = `
+            <div class="unc-big">${s.cpu != null ? s.cpu : '–'}<small>°C</small></div>
+            <div class="unc-sub">${escapeHtml([shortCpu(info.cpu), info.threads ? t('cc.threads', { n: info.threads }) : ''].filter(Boolean).join(' · '))}</div>
+            <div class="unc-meter ${tempClass(s.cpu, 'cpu')}"><span style="width:${s.cpu == null ? 0 : Math.min(100, s.cpu)}%"></span></div>
+            ${board != null ? ccRow(t('cc.board'), `${board} °C`) : ''}
+            ${chipTemp != null ? ccRow(t('cc.chip'), `${chipTemp} °C`) : ''}`;
+
+        const modules = hw?.memory || [];
+        const filled = modules.filter(m => m.size_mb > 0);
+        const ramMB = filled.reduce((sum, m) => sum + m.size_mb, 0) || (info.memory_kb ? info.memory_kb / 1024 : 0);
+        q('#unc-cc-ram').innerHTML = ramMB ? `
+            <div class="unc-big">${Math.round(ramMB / 1024)}<small>GB ${escapeHtml(filled[0]?.type || '')}</small></div>
+            ${modules.length ? `<div class="unc-dimms">${modules.map(m => `<span class="${m.size_mb ? '' : 'empty'}">${m.size_mb ? fmtRam(m.size_mb) : '–'}</span>`).join('')}</div>` : ''}
+            ${filled[0] ? ccRow(t('cc.clock'), `${filled[0].configured_mt || filled[0].speed_mt} MT/s`) : ''}
+            ${filled[0] ? `<div class="unc-sub">${escapeHtml([filled[0].manufacturer, filled[0].part_number].filter(Boolean).join(' · '))}</div>` : ''}
+            ${modules.length ? `<div class="unc-sub">${escapeHtml(t('cc.slots', { n: filled.length, total: modules.length }))}</div>` : ''}`
+            : `<p class="unc-muted">${escapeHtml(t('cc.none'))}</p>`;
+
+        const net = hw?.net || [];
+        q('#unc-cc-net').innerHTML = net.length ? net.map((n, i) => `
+            <div class="unc-ccrow"><span>${escapeHtml(t('case.lan', { n: i + 1 }))} <small class="unc-muted">${escapeHtml(n.name)}</small></span>
+                <b class="${n.link ? 'up' : 'unc-muted'}">${escapeHtml(n.link ? speedText(n.speed_mbit) : t('cc.no_link'))}</b></div>
+            <div class="unc-meter net"><span style="width:${n.link ? Math.min(100, Math.round(n.speed_mbit / 100)) : 0}%"></span></div>`).join('')
+            : `<p class="unc-muted">${escapeHtml(t('cc.none'))}</p>`;
+
+        const ssds = hw?.nvme || [];
+        q('#unc-cc-nvme').innerHTML = ssds.length ? ssds.map(n => {
+            const slot = n.slot === 'pcie' ? 'PCIe' : n.slot === 'system' ? t('cc.system') : `M.2-${n.slot.replace('m2-', '')}`;
+            return `<div class="unc-ccrow"><span title="${escapeHtml(n.model)}">${escapeHtml(slot)} · ${escapeHtml(n.model || n.id)}</span>${tempBadge(n.temp, 'nvme') || '<b>–</b>'}</div>`;
+        }).join('') : `<p class="unc-muted">${escapeHtml(t('cc.none'))}</p>`;
     }
 
     /*
@@ -880,7 +986,7 @@
 
     function showView(view) {
         state.view = view;
-        if (view === 'case') loadHardware();
+        if (view === 'case' || view === 'overview') loadHardware();
         qa('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === view));
         qa('.unc-view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
     }
@@ -892,6 +998,14 @@
 
         qa('[data-nav]').forEach(button => {
             button.addEventListener('click', () => showView(button.dataset.nav));
+        });
+
+        q('#unc-hero-tabs').addEventListener('click', event => {
+            const button = event.target.closest('[data-hero]');
+            if (!button) return;
+
+            state.hero = button.dataset.hero;
+            renderHero();
         });
 
         q('#unc-modes').addEventListener('click', event => {
@@ -996,10 +1110,11 @@
         q('#unc-language').value = window.UGREEN_NAS_LANG_SETTING || 'auto';
 
         await load();
+        loadHardware();
 
         setInterval(() => {
             if (!document.hidden && !state.busy) load();
-            if (!document.hidden && state.view === 'case' && !state.busy) loadHardware();
+            if (!document.hidden && (state.view === 'case' || state.view === 'overview') && !state.busy) loadHardware();
         }, 3000);
     }
 

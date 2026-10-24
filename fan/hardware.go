@@ -21,19 +21,27 @@ type layout struct {
 	// The kernel's ata port of each bay, left to right (the same order as UGREEN LED
 	// Control uses).
 	bayPorts []int
-	// The PCIe root ports of the M.2 slots; an NVMe behind any other port sits on a
-	// card in the PCIe slot.
-	m2Slots map[string]int
+	// The slot behind each PCIe root port: "m2-1", "m2-2", "system" (the internal M.2 of
+	// the UGOS module) or "pcie" (a card in the PCIe slot). An NVMe behind any other
+	// port counts as "pcie".
+	slots map[string]string
 }
 
 // layoutFor knows the DXP6800 Pro (ata3..ata6, then ata1, ata2) and the DXP4800 GT
 // (ata1..ata4). Any other model: no bays, every NVMe on the PCIe slot.
+//
+// DXP6800 Pro, from an Unraid box with four NVMe: the CPU's root port 00:06.0 is M.2 slot 1
+// (x4, PCIe 4.0), 00:06.2 the PCIe slot (a card with one SSD, negotiated x1), and the
+// chipset's 00:1c.0 the second M.2 slot (x2 negotiated) and 00:1c.2 the internal system
+// slot (x1), the one of the UGOS module. Confirmed by the author for the SSD in the system slot.
 func layoutFor(model string) layout {
 	switch {
 	case strings.HasPrefix(model, "DXP6800"):
-		return layout{[]int{3, 4, 5, 6, 1, 2}, map[string]int{"0000:00:06.0": 1, "0000:00:06.2": 2}}
+		return layout{[]int{3, 4, 5, 6, 1, 2}, map[string]string{
+			"0000:00:06.0": "m2-1", "0000:00:1c.0": "m2-2", "0000:00:1c.2": "system", "0000:00:06.2": "pcie",
+		}}
 	case strings.HasPrefix(model, "DXP4800 GT"):
-		return layout{[]int{1, 2, 3, 4}, map[string]int{"0000:00:01.4": 1, "0000:00:01.6": 2}}
+		return layout{[]int{1, 2, 3, 4}, map[string]string{"0000:00:01.4": "m2-1", "0000:00:01.6": "m2-2"}}
 	}
 	return layout{}
 }
@@ -52,7 +60,7 @@ type NVMe struct {
 	ID        string `json:"id"`
 	Model     string `json:"model"`
 	SizeBytes int64  `json:"size_bytes"`
-	Slot      string `json:"slot"` // "m2-1", "m2-2" or "pcie"
+	Slot      string `json:"slot"` // "m2-1", "m2-2", "system" or "pcie"
 	PCI       string `json:"pci"`
 	Temp      *int   `json:"temp"`
 }
@@ -197,8 +205,8 @@ func readNVMe(s Sensors, l layout) []NVMe {
 		if len(chain) > 0 {
 			d.PCI = chain[len(chain)-1]
 			// Behind a bridge the NVMe is the last address, the root port the first.
-			if n, ok := l.m2Slots[chain[0]]; ok {
-				d.Slot = "m2-" + strconv.Itoa(n)
+			if slot, ok := l.slots[chain[0]]; ok {
+				d.Slot = slot
 			}
 		}
 		d.SizeBytes = sectorBytes(id + "n1")

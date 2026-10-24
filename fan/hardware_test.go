@@ -134,7 +134,7 @@ func TestReadHardware(t *testing.T) {
 	for _, n := range hw.NVMe {
 		slots[n.ID] = n.Slot
 	}
-	want := map[string]string{"nvme0": "m2-2", "nvme1": "pcie", "nvme2": "pcie", "nvme3": "m2-1"}
+	want := map[string]string{"nvme0": "pcie", "nvme1": "system", "nvme2": "m2-2", "nvme3": "m2-1"}
 	for id, slot := range want {
 		if slots[id] != slot {
 			t.Errorf("%s in %q, want %q", id, slots[id], slot)
@@ -185,15 +185,15 @@ func TestReadHardwareWithoutDmidecode(t *testing.T) {
 }
 
 func TestLayoutFor(t *testing.T) {
-	if l := layoutFor("DXP6800 Pro"); len(l.bayPorts) != 6 || l.m2Slots["0000:00:06.0"] != 1 {
+	if l := layoutFor("DXP6800 Pro"); len(l.bayPorts) != 6 || l.slots["0000:00:06.0"] != "m2-1" || l.slots["0000:00:1c.2"] != "system" || l.slots["0000:00:06.2"] != "pcie" {
 		t.Errorf("DXP6800 Pro: %+v", l)
 	}
 	l := layoutFor("DXP4800 GT")
-	if len(l.bayPorts) != 4 || l.bayPorts[3] != 4 || l.m2Slots["0000:00:01.4"] != 1 || l.m2Slots["0000:00:01.6"] != 2 {
+	if len(l.bayPorts) != 4 || l.bayPorts[3] != 4 || l.slots["0000:00:01.4"] != "m2-1" || l.slots["0000:00:01.6"] != "m2-2" {
 		t.Errorf("DXP4800 GT: %+v", l)
 	}
 	for _, model := range []string{"DXP4800 Plus", "DXP8800 Plus", ""} {
-		if l := layoutFor(model); l.bayPorts != nil || l.m2Slots != nil {
+		if l := layoutFor(model); l.bayPorts != nil || l.slots != nil {
 			t.Errorf("%q: %+v", model, l)
 		}
 	}
