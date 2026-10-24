@@ -4,13 +4,15 @@
 [![Downloads](https://img.shields.io/github/downloads/alexanderschubert/ugreen-nas-control/latest/total?color=00c853&label=downloads%20(latest))](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
 [![Build](https://img.shields.io/github/actions/workflow/status/alexanderschubert/ugreen-nas-control/fan.yml?branch=main&label=build)](https://github.com/alexanderschubert/ugreen-nas-control/actions/workflows/fan.yml)
 [![Unraid](https://img.shields.io/badge/Unraid-7.0%2B-f15a2c)](https://unraid.net)
-[![Model](https://img.shields.io/badge/model-DXP6800%20Pro%20%C2%B7%20DXP4800%20GT-0078ff)](#supported-model)
+[![Models](https://img.shields.io/badge/fans%20%C2%B7%20case-DXP6800%20Pro%20%C2%B7%20DXP4800%20GT-0078ff)](#supported-models)
+[![LEDs](https://img.shields.io/badge/LEDs-all%20UGREEN%20DX%2FDXP-0078ff)](#supported-models)
 [![License: MIT](https://img.shields.io/github/license/alexanderschubert/ugreen-nas-control?color=lightgrey)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/alexanderschubert/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/alexanderschubert/ugreen-nas-control/stargazers)
 [![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
 
-Unraid plugin **for the UGREEN DXP6800 Pro and DXP4800 GT**: system info, temperatures and fan control, like the
-fan settings of UGOS.
+Unraid plugin for UGREEN DX/DXP NAS: **LED control on every model UGREEN LED Control knew**, and, for the
+**DXP6800 Pro and DXP4800 GT**, fan control and a case view as well, like the fan settings of UGOS. It succeeds
+UGREEN LED Control.
 
 - **System**: model, BIOS, CPU, memory, Unraid and kernel version, uptime
 - **Temperatures**: CPU package and cores, mainboard, the fan controller's own sensors, every NVMe SSD,
@@ -30,18 +32,37 @@ fan settings of UGOS.
   dashboard tile – a copy of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control),
   **off until you switch it on** under *UGREEN NAS Control → LEDs*
 
-## Supported model
+## Supported models
 
-Made for two models:
+**Fans and case view** exist for two models, the only ones with known wiring:
 
 - **UGREEN DXP6800 Pro**: ITE IT8613E; CPU fan on header 2, case fans on headers 3 and 4
 - **UGREEN DXP4800 GT**: ITE IT5571 embedded controller; CPU fan (fan1) and case fan (fan3), with rpm,
   manual speed and the curves; the CPU temperature comes from the AMD sensor (`k10temp`), the mainboard
   temperature from the controller
 
-On any other model the plugin does not touch the fan
-controller: it refuses to start and the settings page says so. System info and temperatures
-still work, as they only read.
+On any other model the plugin does not touch the fan controller (the fan group and the case view are not shown).
+System info and temperatures still work, as they only read.
+
+**LEDs** work on every UGREEN DX, DXP and iDX model that UGREEN LED Control knew; the controller is the same across
+them. The bays are matched to the disks by SATA port, after
+[miskcoo/ugreen_leds_controller](https://github.com/miskcoo/ugreen_leds_controller):
+
+| Model | Bays → SATA ports | Status |
+| --- | --- | --- |
+| DXP6800 Pro | ata3, ata4, ata5, ata6, ata1, ata2 | verified |
+| DXP8800 Plus | ata1 … ata8 | verified by miskcoo, confirmed by users |
+| DXP4800 / Plus / Pro | ata1 … ata4 | confirmed by users |
+| DXP4800 GT | ata1 … ata4 | confirmed (LED controller through `/dev/mem`) |
+| DX4600 Pro | ata1 … ata4 | verified by miskcoo |
+| DX4700, DXP2800 | ata1 … ataN | reported by users |
+| DXP480T Plus | – | power LED only, confirmed by a user |
+| iDX6011, iDX6011 Pro | bays 1–4 ASMedia, 5–6 chipset | **untested** (frames and LED numbers from reports of other plugins) |
+| other UGREEN models | ata1 … ataN | **untested**, bay order guessed |
+
+For a model marked untested the LEDs page says so; check with *Identify* that the right bay blinks and report
+problems in the [issues](https://github.com/alexanderschubert/ugreen-nas-control/issues). Not supported: the DXP2800 V1.2 and
+the other GT models, which miskcoo lists as experimental.
 
 ## Install
 

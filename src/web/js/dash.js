@@ -179,6 +179,12 @@
             bays.map(bayChip)
         );
 
+        // Slots and cards are only known for the two supported models.
+        if (!/^(DXP6800|DXP4800.*GT)/.test(hw?.model || '')) {
+            paintChips(root.querySelector('[data-nvme]'), '', '', []);
+            return;
+        }
+
         // The two M.2 slots first (empty ones shown), then the SSDs on a card in the PCIe slot.
         const ssds = hw?.nvme || [];
         // The DXP4800 GT has no PCIe slot: an SSD outside its two M.2 ports is not on a card.
@@ -196,7 +202,13 @@
         const api = root.dataset.ledApi;
         const box = root.querySelector('[data-bays]');
 
-        if (!api || !box || box.hidden) return;
+        if (!api || !box) return;
+
+        // Models without known bays still get the LED row, in the box of the drives.
+        if (box.hidden) {
+            box.hidden = false;
+            box.innerHTML = '<div data-detail hidden></div>';
+        }
 
         try {
             const [all, status] = await Promise.all(['all', 'status'].map(action =>

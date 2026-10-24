@@ -542,6 +542,11 @@
         // The LED pages come with the page itself: they are there once it has been loaded with the switch on.
         qa('[data-led-only]').forEach(button => { button.hidden = !(led.enabled && window.UNC_LED); });
 
+        q('#unc-led-limited').hidden = caseKnown();
+        q('#unc-led-limited').textContent = caseKnown() ? '' : t('leds.limited', { model: led.model || '?' });
+        q('#unc-led-untested').hidden = !led.untested;
+        q('#unc-led-untested').textContent = led.untested ? t('leds.untested', { model: led.model || '?' }) : '';
+
         // A blocker keeps the part off; a warning (the plugin UGREEN LED Control is installed too) only tells.
         const note = led.blocker ? `leds.blocker_${led.blocker}` : led.warning ? `leds.warn_${led.warning}` : '';
         blocker.hidden = !note;
@@ -561,6 +566,9 @@
         renderLeds();
         renderHero();
         renderCockpitCards();
+        // Fan control and the case pictures exist for the two models whose wiring is known.
+        qa('[data-nav="case"], [data-fan-only]').forEach(el => { el.hidden = !caseKnown(); });
+        q('#unc-hero-tabs').hidden = !caseKnown();
     }
 
     /*
@@ -674,6 +682,9 @@
             hint: 'case.inside_hint_gt'
         }]
     ];
+
+    // The case pictures exist for these two models only; elsewhere the pages stay out of the way.
+    const caseKnown = () => /^(DXP6800|DXP4800.*GT)/.test(state.hw?.model || state.data?.info?.model || '');
 
     const caseModel = hw => (CASE_MODELS.find(([re]) => re.test(hw.model || '')) || [null, CASE_DEFAULT])[1];
 
@@ -1011,6 +1022,12 @@
         if (!hw) {
             stage.className = 'unc-hero';
             stage.innerHTML = `<p class="unc-muted">${escapeHtml(t(state.hwError ? 'case.error' : 'case.loading'))}</p>`;
+            return;
+        }
+
+        if (!caseKnown()) {
+            stage.className = 'unc-hero';
+            stage.innerHTML = `<p class="unc-muted unc-nocase">${escapeHtml(t('case.unknown', { model: hw.model || info.model || '?' }))}</p>`;
             return;
         }
 

@@ -67,9 +67,9 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
         <div class="unc-nav-group" data-i18n="nav.group_cockpit">Cockpit</div>
         <button type="button" class="active" data-nav="overview"><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.overview">Übersicht</span></button>
         <button type="button" data-nav="case"><span class="unc-ico" data-unc-icon="box"></span><span data-i18n="nav.case">Gehäuse</span></button>
-        <div class="unc-nav-group" data-i18n="nav.group_fans">Lüfter</div>
-        <button type="button" data-nav="curves"><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
-        <button type="button" data-nav="safety"><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
+        <div class="unc-nav-group" data-fan-only data-i18n="nav.group_fans">Lüfter</div>
+        <button type="button" data-nav="curves" data-fan-only><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
+        <button type="button" data-nav="safety" data-fan-only><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
         <div class="unc-nav-group" data-i18n="nav.group_leds">LEDs</div>
         <button type="button" data-nav="leds"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds_switch">LED-Steuerung</span></button>
         <button type="button" data-nav="led:overview" data-led-only hidden><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.led_overview">Allgemein &amp; Vorschau</span></button>
@@ -325,6 +325,8 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
             </span>
         </label>
 
+        <p class="unc-hint" id="unc-led-limited" hidden></p>
+        <p class="unc-hint unc-untested" id="unc-led-untested" hidden></p>
         <p class="unc-hint" id="unc-led-blocker" hidden></p>
 
 
