@@ -2408,15 +2408,26 @@
     display: none !important;
 }
 
-/* The front strip stays inside the case when the model on the overview gets narrower. */
+/* The front strip keeps its order (LEDs left, ports right, lettering at the end) in the narrower model of the
+   overview: nothing wraps or moves, everything in it scales with the width of the case. */
+.unc-hero-stage .unc-nas { container-type: inline-size; }
+
 .unc-hero-stage .unc-nas-front {
-    flex-wrap: wrap;
-    row-gap: 6px;
+    flex-wrap: nowrap;
+    gap: 2.2cqi;
+    padding: 2cqi 2.4cqi .6cqi;
+    font-size: clamp(5px, 1.6cqi, 9px);
 }
 
-.unc-hero-stage .unc-nas-front .brand {
-    display: none;
-}
+.unc-hero-stage .unc-nas-front .speeds { gap: 1.8cqi; font-size: clamp(6px, 2cqi, 11px); }
+.unc-hero-stage .unc-nas-front .brand { margin-left: .8cqi; font-size: clamp(7px, 2.4cqi, 13px); }
+.unc-hero-stage .unc-leds { gap: 1.8cqi; }
+.unc-hero-stage .unc-front-ports { gap: 2.4cqi; }
+.unc-hero-stage .unc-front-ports .unc-socket { min-width: 0; gap: 3px; }
+.unc-hero-stage .unc-front-ports .unc-socket svg { width: clamp(15px, 6.4cqi, 34px); }
+.unc-hero-stage .unc-front-ports .unc-socket small { font-size: clamp(5px, 1.5cqi, 10px); }
+.unc-hero-stage .unc-pled { width: clamp(9px, 3cqi, 16px); }
+.unc-hero-stage .unc-nas-model { font-size: clamp(7px, 2.4cqi, 12px); }
 
 .unc-case-intro {
     margin: 0 0 14px;
