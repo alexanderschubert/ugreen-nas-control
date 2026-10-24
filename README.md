@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/icon.svg" alt="" width="112"></p>
+
 # UGREEN NAS Control
 
 [![Release](https://img.shields.io/github/v/release/alexanderschubert/ugreen-nas-control?color=0078ff&label=release)](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
