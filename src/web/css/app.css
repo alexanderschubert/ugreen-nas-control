@@ -2312,7 +2312,8 @@
     gap: 6px;
 }
 
-.unc-under .unc-effect { padding: 8px 4px; gap: 3px; }
+/* Icon and name sit in the middle of the tile, both ways (the description is the tooltip). */
+.unc-under .unc-effect { min-height: 74px; padding: 10px 6px; gap: 6px; align-content: center; align-items: center; }
 .unc-under .unc-effect small { display: none; }
 .unc-under .unc-effect svg { width: 20px; height: 20px; }
 .unc-under .unc-effects + .unc-hint { margin-top: 10px; padding: 8px 10px; font-size: 12px; }
