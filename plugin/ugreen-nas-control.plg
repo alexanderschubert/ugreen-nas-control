@@ -26,7 +26,7 @@
 <CHANGES>
 
 ### 0.10.1
-- Case page, rear of the DXP6800 Pro, closer to the original: the magnetic dust filter (the UGREEN blende) with a fine mesh and the two case fans behind it, turning with their real rpm (with name and rpm under them), and below it the sockets in the order of the device in one row: PCIe slot, HDMI, USB, the two 10GbE ports, reset, power inlet, PSU fan and Kensington lock. Dark and light
+- Case page, rear of the DXP6800 Pro, redrawn after a photo of the device: black body with silver side rims and screws, the big recessed blende with the fine mesh and the dotted UGREEN lettering and the two case fans behind it (faint, turning with their real rpm, rpm under them), the PCIe slot cover on the left, below the sockets as on the device (HDMI, USB 3.2, two USB 2.0, the two 10GbE ports with the live link, reset), the recessed box with the power inlet and the PSU fan, the Kensington slot and the feet. Everything is placed in per cent of the picture and scales with it
 
 ### 0.10.0
 - Overview: the fans got room: the three fan tiles are big now, with large turning icons and the rpm, and the model in the middle is a little narrower; the strip under the bays keeps the order of the original (LEDs, ports, lettering) in one line and only scales with the case
