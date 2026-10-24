@@ -2645,3 +2645,23 @@
 @media (prefers-reduced-motion: reduce) {
     .unc-rear6800 .r-psu-blades { animation: none; }
 }
+
+/* The inside of the DXP6800 Pro is one drawing: no grid, no frame of the card layout. */
+.unc-board.board-svg {
+    display: block;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+}
+
+.unc .unc-board-svg {
+    display: block;
+    stroke: none;
+    width: 100%;
+    max-width: 900px;
+    height: auto;
+    margin: 0 auto;
+}
+
+.unc .unc-board-svg text { font-family: inherit; }
