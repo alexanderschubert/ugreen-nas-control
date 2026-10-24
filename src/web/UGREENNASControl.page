@@ -17,7 +17,8 @@ $unc_led_dir = '/usr/local/emhttp/plugins/ugreen-nas-control/led';
 $unc_led_on = is_file('/boot/config/plugins/ugreen-nas-control/led.enabled') && is_file("{$unc_led_dir}/include/views.php");
 if ($unc_led_on) {
     require_once "{$unc_led_dir}/include/lang.php";
-    [$ulc_lang, $ulc_lang_setting] = ulc_language();
+    // Language and colour scheme are NAS Control's (Appearance & About); the LED pages follow them.
+    [$ulc_lang, $ulc_lang_setting] = [$unc_lang, $unc_lang_setting];
     $ulc_dash_size = ulc_dash_size();
 }
 
