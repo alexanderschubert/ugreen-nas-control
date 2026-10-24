@@ -328,6 +328,13 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
         <p class="unc-hint" id="unc-led-blocker" hidden></p>
 
 
+        <div class="unc-import" id="unc-led-import" hidden>
+            <strong data-i18n="leds.import_title">Einstellungen von UGREEN LED Control übernehmen</strong>
+            <p class="unc-muted" data-i18n="leds.import_text">Die Einstellungen des Plugins UGREEN LED Control wurden gefunden (Farben, Effekte, Statusmodus, Nachtmodus). Du kannst sie hier übernehmen; die jetzigen Einstellungen dieses Teils werden vorher als leds.cfg.bak gesichert.</p>
+            <button type="button" class="unc-btn" id="unc-led-import-btn"><span class="unc-ico" data-unc-icon="reset"></span><span data-i18n="leds.import_btn">Einstellungen übernehmen</span></button>
+            <p class="unc-hint" data-i18n="leds.import_after">Danach kannst du UGREEN LED Control unter Plugins deinstallieren: dieses Plugin löst es ab.</p>
+        </div>
+
         <div class="unc-actions" id="unc-led-open" hidden>
             <button type="button" class="unc-btn primary" data-nav="led:overview"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="leds.open">LED-Einstellungen öffnen</span></button>
         </div>
@@ -396,7 +403,7 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 
         <dl class="unc-facts">
             <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip direkt über I/O-Ports an (ITE IT8613E beim DXP6800 Pro, Embedded Controller IT5571 beim DXP4800 GT), ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
-            <dt data-i18n="about.leds">LEDs</dt><dd data-i18n-html="about.leds_text">Die Front-LEDs steuert ein eingebauter, optionaler Teil, eine Kopie von <a href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">UGREEN LED Control</a>.</dd>
+            <dt data-i18n="about.leds">LEDs</dt><dd data-i18n-html="about.leds_text">Die Front-LEDs steuert ein eingebauter, optionaler Teil, der <a href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">UGREEN LED Control</a> für den DXP6800 Pro und DXP4800 GT ablöst.</dd>
             <dt data-i18n="about.thanks">Dank an</dt><dd data-i18n-html="about.thanks_text"><a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a> (Protokoll und Schacht-Zuordnung des LED-Teils), <a href="https://github.com/j3n57h0m45" target="_blank" rel="noopener">j3n57h0m45</a> (Entwicklung für den DXP4800 GT: Lüfter über den IT5571, LEDs, Gehäuse- und System-Ansicht) und alle, die auf ihrem Modell getestet haben</dd>
         </dl>
     </article>

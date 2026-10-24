@@ -16,6 +16,7 @@ LED_I2C="${UGREEN_LED_I2C:-$LED_DIR/ugreen-led-i2c}"
 LED_FLAG="${UGREEN_LED_FLAG:-/boot/config/plugins/ugreen-nas-control/led.enabled}"
 LED_CRON="${UGREEN_LED_CRON:-/boot/config/plugins/ugreen-nas-control/ugreen-nas-control.cron}"
 LED_CFG="${UGREEN_LED_CFG:-/boot/config/plugins/ugreen-nas-control/leds.cfg}"
+LED_IMPORT_SRC="${UGREEN_LED_IMPORT_SRC:-/boot/config/plugins/ugreen-led-control/leds.cfg}"
 DMI_DIR="${UGREEN_DMI:-/sys/class/dmi/id}"
 PLUGINS_BOOT="${UGREEN_PLUGINS_BOOT:-/boot/config/plugins}"
 PLUGINS_WEB="${UGREEN_PLUGINS_WEB:-/usr/local/emhttp/plugins}"
@@ -29,6 +30,7 @@ Usage:
                                              where it only watches)
   ugreen-nas-ctl led-status                  LED part as JSON: enabled, supported, conflict
   ugreen-nas-ctl led-enable|led-disable      switch the LED part on or off
+  ugreen-nas-ctl led-import                  take over the settings of UGREEN LED Control
   ugreen-nas-ctl led-boot                    bring the LEDs up (install, boot), if enabled
 USAGE
 }
@@ -68,15 +70,20 @@ led_warning() {
     fi
 }
 
+# The settings of an installed UGREEN LED Control that this plugin does not have yet (or has differently).
+led_import_available() {
+    [ -s "$LED_IMPORT_SRC" ] && ! cmp -s "$LED_IMPORT_SRC" "$LED_CFG"
+}
+
 led_status() {
     local blocker model
 
     blocker="$(led_blocker)"
     model="$(led_model)"
-    printf '{"enabled": %s, "supported": %s, "blocker": "%s", "warning": "%s", "model": "%s"}\n' \
+    printf '{"enabled": %s, "supported": %s, "blocker": "%s", "warning": "%s", "import_available": %s, "model": "%s"}\n' \
         "$(led_enabled && echo true || echo false)" \
         "$([ "$blocker" = model ] && echo false || echo true)" \
-        "$blocker" "$(led_warning)" "$(printf '%s' "$model" | tr -d '"\\')"
+        "$blocker" "$(led_warning)" "$(led_import_available && echo true || echo false)" "$(printf '%s' "$model" | tr -d '"\\')"
 }
 
 # Earlier versions kept the daemon's pid in the standalone plugin's files. Such a
@@ -157,7 +164,31 @@ led_enable() {
 
     mkdir -p "$(dirname "$LED_FLAG")"
     : > "$LED_FLAG"
+
+    # First use with an installed UGREEN LED Control: start with its settings instead of the defaults.
+    if [ ! -e "$LED_CFG" ] && [ -s "$LED_IMPORT_SRC" ]; then
+        cp "$LED_IMPORT_SRC" "$LED_CFG"
+        echo "Took over the settings of UGREEN LED Control."
+    fi
     led_boot
+}
+
+# Take over the settings of UGREEN LED Control (colours, effects, status mode, night mode, ...).
+# What this plugin had is kept as leds.cfg.bak.
+led_import() {
+    if [ ! -s "$LED_IMPORT_SRC" ]; then
+        echo "ERROR: No settings of UGREEN LED Control found." >&2
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$LED_CFG")"
+    [ -e "$LED_CFG" ] && cp "$LED_CFG" "$LED_CFG.bak"
+    cp "$LED_IMPORT_SRC" "$LED_CFG"
+
+    # Put the new settings on the LEDs, if this part is running.
+    led_enabled && led_boot
+    echo "Took over the settings of UGREEN LED Control."
+    return 0
 }
 
 led_disable() {
@@ -230,6 +261,7 @@ case "${1:-}" in
         ;;
     led-status) led_status ;;
     led-enable) led_enable ;;
+    led-import) led_import ;;
     led-disable) led_disable ;;
     led-boot) led_boot ;;
     led-stop) led_stop ;;
