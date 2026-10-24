@@ -27,6 +27,7 @@
 
 ### 0.4.2
 - Dashboard tile, cockpit and inside view: every NVMe SSD shows what it is used for in Unraid: the boot SSD (the one /boot is mounted from) with the Unraid mark, a cache or pool member with a stack icon, an array disk with a drive icon; the tooltip names the role
+- The case on the overview is shown straight, front on, not turned
 - The overview is more compact: tighter spacing, the fan mode as one row of buttons (the description is the tooltip), the system facts in two columns, and the three-column cockpit now depends on the width of the content area, so it also holds on 13-inch screens
 
 ### 0.4.1

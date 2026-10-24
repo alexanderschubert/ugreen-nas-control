@@ -2173,19 +2173,8 @@
 
 .unc-hero > * { width: 100%; }
 
-/* The front stands a little turned, like a product picture; rear and inside are flat. */
-.unc-hero-stage .unc-nas { max-width: calc(var(--bays, 6) * 105px + 120px); }
-
-.unc-hero.front .unc-nas {
-    transform: rotateX(7deg) rotateY(-9deg) scale(1.04);
-    transform-origin: 50% 60%;
-    margin: 0 auto;
-    box-shadow: 28px 34px 46px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .28);
-}
-
-.unc[data-theme="light"] .unc-hero.front .unc-nas {
-    box-shadow: 24px 30px 40px rgba(20, 30, 45, .22), inset 0 1px 0 #fff;
-}
+/* The case is shown straight, front on. */
+.unc-hero-stage .unc-nas { max-width: calc(var(--bays, 6) * 105px + 120px); margin: 0 auto; }
 
 .unc-hero .unc-board { grid-template-columns: minmax(0, 1fr); }
 .unc-hero .unc-nas-rear { margin: 0 auto; }
