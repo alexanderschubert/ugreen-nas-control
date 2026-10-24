@@ -244,6 +244,10 @@ window.UNC_I18N = {
         'theme.auto': 'Wie Unraid',
         'theme.hint': '„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel).',
         'theme.saved': 'Darstellung gespeichert',
+        'theme.dash': 'Dashboard-Kachel',
+        'theme.dash_compact': 'Kompakt',
+        'theme.dash_full': 'Mit Temperaturen',
+        'theme.dash_saved': 'Dashboard-Kachel gespeichert',
 
         'common.save': 'Speichern',
         'dash.settings': 'Einstellungen öffnen',
@@ -493,6 +497,10 @@ window.UNC_I18N = {
         'theme.auto': 'Same as Unraid',
         'theme.hint': '“Same as Unraid” follows the colour scheme of your Unraid interface (light or dark).',
         'theme.saved': 'Appearance saved',
+        'theme.dash': 'Dashboard tile',
+        'theme.dash_compact': 'Compact',
+        'theme.dash_full': 'With temperatures',
+        'theme.dash_saved': 'Dashboard tile saved',
 
         'common.save': 'Save',
         'dash.settings': 'Open settings',

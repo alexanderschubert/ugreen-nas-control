@@ -1382,6 +1382,20 @@
             }
         });
 
+        // The size of the dashboard tile is saved by the LED backend (it is the LED tile's setting).
+        const dashSize = q('#unc-dash-size');
+        dashSize.value = window.UGREEN_LED_DASH_SIZE === 'full' ? 'full' : 'compact';
+        dashSize.addEventListener('change', () => run(async () => {
+            const response = await fetch(LED_API, {
+                method: 'POST',
+                credentials: 'same-origin',
+                body: new URLSearchParams({ action: 'dash_size', value: dashSize.value, csrf_token: window.UGREEN_LED_CSRF_TOKEN || '' })
+            });
+            const data = await response.json();
+
+            if (!response.ok || data.ok === false) throw new Error(data.error || `HTTP ${response.status}`);
+        }, t('theme.dash_saved')));
+
         q('#unc-language').addEventListener('change', async event => {
             try {
                 await api({ action: 'lang', value: event.target.value }, true);
