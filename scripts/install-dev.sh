@@ -39,6 +39,7 @@ cp "$ROOT/src/web/js/app.js" "$ROOT/src/web/js/i18n.js" "$ROOT/src/web/js/dash.j
 cp "$ROOT/src/web/include/lang.php" "$DEST/include/"
 cp "$ROOT/src/web/images/ugreen-nas-control.png" "$DEST/images/"
 cp "$ROOT/src/web/icons/ugreen-nas-control.png" "$DEST/icons/"
+cp "$ROOT/src/README.md" "$DEST/"
 
 
 LED="$ROOT/led/src"
