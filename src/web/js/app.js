@@ -767,7 +767,7 @@
                 ${rj45(up, p ? p.speed_mbit : 0)}<b>LAN 10G</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
         };
         const port = (x, y, kind, label, cls = '') => `<div class="r-abs r-${cls || kind}" style="left:${x}%;top:${y}%">${SOCKET[kind]}<b>${label}</b></div>`;
-        const dots = r => `<circle r="${r}" fill="none" stroke="#a3acb6" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="0.1 ${(2 * Math.PI * r / Math.round(2 * Math.PI * r / 6.5)).toFixed(2)}"/>`;
+        const dots = r => `<circle r="${r}" fill="none" stroke="#8a939e" stroke-width="2.7" stroke-linecap="round" stroke-dasharray="0.1 ${(2 * Math.PI * r / Math.round(2 * Math.PI * r / 6.5)).toFixed(2)}"/>`;
         const screw = (x, y) => `<i class="r-screw" style="left:${x}%;top:${y}%"></i>`;
 
         return `
@@ -790,7 +790,7 @@
                     <svg viewBox="0 0 56 72" aria-hidden="true"><rect x="2" y="2" width="52" height="68" rx="5" fill="#1d2127" stroke="#9aa3ad" stroke-width="2.600"/><rect x="7" y="7" width="42" height="58" rx="3" fill="#0b0d10" stroke="#59626e" stroke-width="1.400"/><path d="M12 13h32v28a7 7 0 0 1-7 7H19a7 7 0 0 1-7-7z" fill="#171b20" stroke="#9aa3ad" stroke-width="1.600"/><rect x="23.500" y="17" width="9" height="14" rx="1.800" fill="#aeb6bf"/><rect x="13.500" y="30" width="9" height="14" rx="1.800" fill="#aeb6bf" transform="rotate(-22 18 37)"/><rect x="33.500" y="30" width="9" height="14" rx="1.800" fill="#aeb6bf" transform="rotate(22 38 37)"/></svg>
                 </div>
                 <div class="r-abs r-psufan" style="left:82%;top:81.5%">
-                    <svg viewBox="-44 -44 88 88" aria-hidden="true"><circle r="42" fill="#101317" stroke="#8f99a4" stroke-width="2.600"/><circle r="40" fill="none" stroke="#2a2f36" stroke-width="1.200"/>${dots(5)}${dots(13)}${dots(21)}${dots(29)}${dots(36)}</svg>
+                    <svg viewBox="-44 -44 88 88" aria-hidden="true"><title>${escapeHtml(t('case.psu_fan_hint'))}</title><circle r="42" fill="#101317" stroke="#8f99a4" stroke-width="2.600"/><g class="r-psu-blades" style="animation-delay:-${((performance.now() / 1000) % 1.1).toFixed(3)}s" fill="none" stroke="#69747f" stroke-width="1.700" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(-37 -37) scale(3.083)"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.500M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.500-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.500M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.500 4"/></g></g><circle r="40" fill="none" stroke="#2a2f36" stroke-width="1.200"/>${dots(5)}${dots(13)}${dots(21)}${dots(29)}${dots(36)}</svg>
                 </div>
                 <i class="r-kens" style="left:96.4%;top:78.2%"></i>
                 <i class="r-foot" style="left:5.4%"></i><i class="r-foot" style="left:87.2%"></i>

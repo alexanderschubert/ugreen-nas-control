@@ -2632,3 +2632,16 @@
     box-shadow: 0 0 0 .3cqi #3a424c;
     transform: translate(-50%, -50%);
 }
+
+/* The fan of the power supply has no tachometer: its blades turn at a steady pace behind the grille. */
+.unc-rear6800 .r-psu-blades {
+    animation: unc-psu-spin 1.1s linear infinite;
+}
+
+@keyframes unc-psu-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .unc-rear6800 .r-psu-blades { animation: none; }
+}

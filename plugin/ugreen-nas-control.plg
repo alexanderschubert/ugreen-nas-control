@@ -26,7 +26,7 @@
 <CHANGES>
 
 ### 0.10.1
-- Case page, rear of the DXP6800 Pro, redrawn after a photo of the device: black body with silver side rims and screws, the big recessed blende with the fine mesh and the dotted UGREEN lettering and the two case fans behind it (faint, turning with their real rpm, rpm under them), the PCIe slot cover on the left, below the sockets as on the device (HDMI, USB 3.2, two USB 2.0, the two 10GbE ports with the live link, reset), the recessed box at the bottom right with the IEC power inlet (three pins) and the round PSU fan grille with its rings of holes, the Kensington slot and the feet. Everything is placed in per cent of the picture and scales with it
+- Case page, rear of the DXP6800 Pro, redrawn after a photo of the device: black body with silver side rims and screws, the big recessed blende with the fine mesh and the dotted UGREEN lettering and the two case fans behind it (faint, turning with their real rpm, rpm under them), the PCIe slot cover on the left, below the sockets as on the device (HDMI, USB 3.2, two USB 2.0, the two 10GbE ports with the live link, reset), the recessed box at the bottom right with the IEC power inlet (three pins) and the round PSU fan grille with its rings of holes and blades turning behind it (the power supply has no speed sensor, so it turns at a steady pace; not with reduced motion), the Kensington slot and the feet. Everything is placed in per cent of the picture and scales with it
 
 ### 0.10.0
 - Overview: the fans got room: the three fan tiles are big now, with large turning icons and the rpm, and the model in the middle is a little narrower; the strip under the bays keeps the order of the original (LEDs, ports, lettering) in one line and only scales with the case
