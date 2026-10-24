@@ -42,13 +42,16 @@ window.UGREEN_NAS_THEME = <?= json_encode($unc_theme) ?>;
     </div>
 
     <nav class="unc-nav">
+        <div class="unc-nav-group" data-i18n="nav.group_cockpit">Cockpit</div>
         <button type="button" class="active" data-nav="overview"><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.overview">Übersicht</span></button>
         <button type="button" data-nav="case"><span class="unc-ico" data-unc-icon="box"></span><span data-i18n="nav.case">Gehäuse</span></button>
+        <div class="unc-nav-group" data-i18n="nav.group_fans">Lüfter</div>
         <button type="button" data-nav="curves"><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
         <button type="button" data-nav="safety"><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
-        <button type="button" data-nav="leds"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds">LEDs</span></button>
-        <button type="button" data-nav="system"><span class="unc-ico" data-unc-icon="gear"></span><span data-i18n="nav.system">System</span></button>
-        <button type="button" data-nav="about"><span class="unc-ico" data-unc-icon="info"></span><span data-i18n="nav.about">Über</span></button>
+        <div class="unc-nav-group" data-i18n="nav.group_leds">LEDs</div>
+        <button type="button" data-nav="leds"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds_switch">LED-Steuerung</span></button>
+        <div class="unc-nav-group" data-i18n="nav.group_system">System</div>
+        <button type="button" data-nav="system"><span class="unc-ico" data-unc-icon="gear"></span><span data-i18n="nav.system">Darstellung &amp; Info</span></button>
     </nav>
 
 </aside>
@@ -327,11 +330,7 @@ window.UGREEN_NAS_THEME = <?= json_encode($unc_theme) ?>;
         </div>
         <p class="unc-hint" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel).</p>
     </article>
-</section>
 
-<!-- ================= Über ================= -->
-
-<section class="unc-view" data-view="about">
     <article class="unc-card unc-about">
         <div class="unc-about-head">
             <img class="unc-about-icon" src="/plugins/ugreen-nas-control/images/ugreen-nas-control.png" alt="">
