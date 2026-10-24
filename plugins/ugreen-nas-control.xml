@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<Plugin>
+  <Name>UGREEN NAS Control</Name>
+  <PluginURL>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugin/ugreen-nas-control.plg</PluginURL>
+  <TemplateURL>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugins/ugreen-nas-control.xml</TemplateURL>
+  <PluginAuthor>Alexander Schubert</PluginAuthor>
+  <Overview>System info, temperatures and fan control for the UGREEN DXP6800 Pro and DXP4800 GT, like the fan settings of UGOS. Shows model, BIOS, CPU, memory and uptime, the CPU, mainboard, NVMe and disk temperatures (read from Unraid, so sleeping disks are never woken up), and a case view with the bays, LAN ports, RAM, M.2 and PCIe slots. Fan modes: BIOS, Quiet, Standard, Performance, Full speed or your own curves; the CPU fan follows the CPU, the case fans the hottest disk or NVMe. Safety: minimum speed, all fans at 100 % when something gets too hot or a temperature can't be read, a notification when a fan stops, and the BIOS values back when the plugin stops. No kernel module. Includes the LED control of UGREEN LED Control, which steps aside while the standalone plugin, ugreenleds-driver or led_ugreen is installed.</Overview>
+  <Category>Tools:Utilities</Category>
+  <Project>https://github.com/alexanderschubert/ugreen-nas-control</Project>
+  <Support>https://github.com/alexanderschubert/ugreen-nas-control/issues</Support>
+  <ReadMe>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/README.md</ReadMe>
+  <Icon>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/src/web/images/ugreen-nas-control.png</Icon>
+  <License>MIT</License>
+</Plugin>

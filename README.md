@@ -123,6 +123,10 @@ at `build/ugreen-nas-fan` and run `scripts/install-dev.sh` (the LED tool, `build
 Raise `version` and add the changes in `plugin/ugreen-nas-control.plg`. After the merge to `main`
 the `Tag release` workflow creates the tag `v<version>` and the release with the binary.
 
+## Community Applications
+
+`ca_profile.xml` and `plugins/ugreen-nas-control.xml` are the Community Applications listing (author profile and plugin entry). The `<PluginURL>` in the listing must stay identical to the `pluginURL` of `plugin/ugreen-nas-control.plg`.
+
 ## License
 
 [MIT](LICENSE)
