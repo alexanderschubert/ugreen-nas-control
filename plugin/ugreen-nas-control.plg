@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.9.0">
+<!ENTITY version   "0.9.1">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 0.9.1
+- New icon: a NAS as a small cube with a coloured LED under each of four bays and a white fan in the lid (Plugins page, Settings menu, dashboard tile, sidebar, About page)
 
 ### 0.9.0
 - LED control on every model UGREEN LED Control already knew: DXP6800 Pro, DXP8800 Plus, DXP4800 (Plus, Pro, GT), DX4600 Pro, DX4700, DXP2800, DXP480T Plus and the iDX6011 (Pro), and other UGREEN DX/DXP/iDX models with a guessed bay order. Models whose bay order or LED numbers nobody has confirmed (iDX6011 Pro, others) are marked "untested" on the LED page

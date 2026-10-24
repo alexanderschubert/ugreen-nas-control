@@ -1,18 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- UGREEN NAS Control: a case fan, blades cool blue to warm orange like a fan curve -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64 64">
+  <!-- UGREEN NAS Control: a NAS as a small cube, four bays with a coloured LED each in front, a white fan in the lid -->
+  <defs>
+    <path id="blade" d="M1.500 -3C2.500-11 9.500-15 14.500-10.500 13-4.500 8.500-1 4 0.500Z"/>
+    <g id="fan">
+      <use xlink:href="#blade" href="#blade"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(51.43)"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(102.86)"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(154.29)"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(205.71)"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(257.14)"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(308.57)"/>
+    </g>
+  </defs>
   <rect width="64" height="64" rx="14" fill="#1b222b"/>
-  <rect x="9" y="9" width="46" height="46" rx="8" fill="#c9ced4"/>
-  <circle cx="32" cy="32" r="20" fill="#2a3139"/>
-  <circle cx="13.5" cy="13.5" r="1.6" fill="#8b949e"/>
-  <circle cx="50.5" cy="13.5" r="1.6" fill="#8b949e"/>
-  <circle cx="13.5" cy="50.5" r="1.6" fill="#8b949e"/>
-  <circle cx="50.5" cy="50.5" r="1.6" fill="#8b949e"/>
-  <g>
-    <path d="M32 32C29 26 28 18 34 14.5C39.5 12 44 16.5 41 22.5C39 26 35.5 29.5 32 32Z" fill="#0a84ff"/>
-    <path d="M32 32C29 26 28 18 34 14.5C39.5 12 44 16.5 41 22.5C39 26 35.5 29.5 32 32Z" fill="#34c759" transform="rotate(90 32 32)"/>
-    <path d="M32 32C29 26 28 18 34 14.5C39.5 12 44 16.5 41 22.5C39 26 35.5 29.5 32 32Z" fill="#ffd60a" transform="rotate(180 32 32)"/>
-    <path d="M32 32C29 26 28 18 34 14.5C39.5 12 44 16.5 41 22.5C39 26 35.5 29.5 32 32Z" fill="#ff9500" transform="rotate(270 32 32)"/>
+  <polygon points="32,8 56,21 32,34 8,21" fill="#d3d8de"/>
+  <polygon points="8,21 32,34 32,58 8,45" fill="#161a20"/>
+  <polygon points="32,34 56,21 56,45 32,58" fill="#aab1ba"/>
+  <g transform="matrix(.74 .4 -.74 .4 32 21)">
+    <circle r="8.600" fill="#2a323d"/>
+    <g transform="scale(.56)" fill="#e9edf1"><use xlink:href="#fan" href="#fan"/><circle r="3.800"/></g>
   </g>
-  <circle cx="32" cy="32" r="5" fill="#c9ced4"/>
-  <circle cx="32" cy="32" r="2" fill="#1b222b"/>
+  <g transform="matrix(1 .543 0 1 8 21)">
+    <g fill="#343c46">
+      <rect x="2" y="2.500" width="4.200" height="19" rx="1"/>
+      <rect x="7.200" y="2.500" width="4.200" height="19" rx="1"/>
+      <rect x="12.400" y="2.500" width="4.200" height="19" rx="1"/>
+      <rect x="17.600" y="2.500" width="4.200" height="19" rx="1"/>
+    </g>
+    <rect x="2.500" y="17.500" width="3.200" height="1.700" rx=".8" fill="#ff3b30"/>
+    <rect x="7.700" y="17.500" width="3.200" height="1.700" rx=".8" fill="#ffd60a"/>
+    <rect x="12.900" y="17.500" width="3.200" height="1.700" rx=".8" fill="#34c759"/>
+    <rect x="18.100" y="17.500" width="3.200" height="1.700" rx=".8" fill="#0a84ff"/>
+  </g>
 </svg>

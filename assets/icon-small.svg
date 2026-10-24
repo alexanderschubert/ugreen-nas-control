@@ -1,13 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Small variant (tab icon, 18 px): no screws, bigger blades -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64 64">
+  <!-- The same cube for the 18 px tab icon: fewer, bolder parts -->
+  <defs>
+    <path id="blade" d="M1.500 -3C2.500-11 9.500-15 14.500-10.500 13-4.500 8.500-1 4 0.500Z"/>
+    <g id="fan">
+      <use xlink:href="#blade" href="#blade"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(72)"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(144)"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(216)"/>
+      <use xlink:href="#blade" href="#blade" transform="rotate(288)"/>
+    </g>
+  </defs>
   <rect width="64" height="64" rx="14" fill="#1b222b"/>
-  <circle cx="32" cy="32" r="26" fill="#c9ced4"/>
-  <circle cx="32" cy="32" r="22" fill="#2a3139"/>
-  <g transform="translate(32 32) scale(1.15) translate(-32 -32)">
-    <path d="M32 32C29 26 28 18 34 14.5C39.5 12 44 16.5 41 22.5C39 26 35.5 29.5 32 32Z" fill="#0a84ff"/>
-    <path d="M32 32C29 26 28 18 34 14.5C39.5 12 44 16.5 41 22.5C39 26 35.5 29.5 32 32Z" fill="#34c759" transform="rotate(90 32 32)"/>
-    <path d="M32 32C29 26 28 18 34 14.5C39.5 12 44 16.5 41 22.5C39 26 35.5 29.5 32 32Z" fill="#ffd60a" transform="rotate(180 32 32)"/>
-    <path d="M32 32C29 26 28 18 34 14.5C39.5 12 44 16.5 41 22.5C39 26 35.5 29.5 32 32Z" fill="#ff9500" transform="rotate(270 32 32)"/>
+  <polygon points="32,7 58,21 32,35 6,21" fill="#e3e7ec"/>
+  <polygon points="6,21 32,35 32,59 6,45" fill="#12161b"/>
+  <polygon points="32,35 58,21 58,45 32,59" fill="#aab1ba"/>
+  <g transform="matrix(.8 .43 -.8 .43 32 21)">
+    <circle r="9" fill="#2a323d"/>
+    <g transform="scale(.62)" fill="#fff"><use xlink:href="#fan" href="#fan"/><circle r="4"/></g>
   </g>
-  <circle cx="32" cy="32" r="5" fill="#c9ced4"/>
+  <g transform="matrix(1 .577 0 1 6 21)">
+    <rect x="3" y="14" width="5" height="4.500" rx="1.500" fill="#ff3b30"/>
+    <rect x="9.500" y="14" width="5" height="4.500" rx="1.500" fill="#ffd60a"/>
+    <rect x="16" y="14" width="5" height="4.500" rx="1.500" fill="#34c759"/>
+    <rect x="22.500" y="14" width="5" height="4.500" rx="1.500" fill="#0a84ff"/>
+  </g>
 </svg>
