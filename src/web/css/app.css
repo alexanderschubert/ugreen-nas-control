@@ -742,6 +742,7 @@
     min-width: 0;
 }
 
+/* Turned by script (fanIcon in app.js / dash.js) so the angle survives rpm changes. */
 .unc-fan-icon {
     display: inline-flex;
     color: var(--unc-accent);
@@ -751,23 +752,6 @@
     width: 40px;
     height: 40px;
     stroke-width: 1.5;
-}
-
-/* Turns faster with more rpm (--spin is one turn); still when the fan stands. */
-.unc-fan-icon.spin svg {
-    animation: unc-spin var(--spin, 2s) linear infinite;
-}
-
-@keyframes unc-spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .unc-fan-icon.spin svg {
-        animation: none;
-    }
 }
 
 .unc-fan-rpm {
