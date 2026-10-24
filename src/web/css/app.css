@@ -2590,6 +2590,7 @@
 .unc-rear6800 .r-abs em { font-style: normal; font-size: .82em; color: #6f7882; }
 .unc-rear6800 .r-lan.up em { color: #4ade80; font-weight: 700; }
 
+.unc-rear6800 .r-abs svg { height: auto; }
 .unc-rear6800 svg .shell { fill: #0b0e12; stroke: #8f99a4; stroke-width: 2; }
 .unc-rear6800 svg .tongue { fill: #2a313a; }
 .unc-rear6800 svg .tongue.blue { fill: #2f7cf6; }
@@ -2615,12 +2616,12 @@
     width: 23.6%;
     height: 20.2%;
     border-radius: 1cqi;
-    background: #101317;
-    box-shadow: inset 0 0 0 .3cqi #2a2f36;
+    background: #0e1114;
+    box-shadow: inset 0 0 0 .4cqi #343b44;
 }
 
-.unc-rear6800 .r-inlet svg { width: 6.6cqi; }
-.unc-rear6800 .r-psufan svg { width: 10.2cqi; }
+.unc-rear6800 .r-inlet svg { width: 7cqi; }
+.unc-rear6800 .r-psufan svg { width: 11cqi; }
 
 .unc-rear6800 .r-kens {
     position: absolute;

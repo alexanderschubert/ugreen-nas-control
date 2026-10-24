@@ -767,7 +767,7 @@
                 ${rj45(up, p ? p.speed_mbit : 0)}<b>LAN 10G</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
         };
         const port = (x, y, kind, label, cls = '') => `<div class="r-abs r-${cls || kind}" style="left:${x}%;top:${y}%">${SOCKET[kind]}<b>${label}</b></div>`;
-        const dots = r => `<circle r="${r}" fill="none" stroke="#59626e" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.1 ${(2 * Math.PI * r / Math.round(2 * Math.PI * r / 6.5)).toFixed(2)}"/>`;
+        const dots = r => `<circle r="${r}" fill="none" stroke="#a3acb6" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="0.1 ${(2 * Math.PI * r / Math.round(2 * Math.PI * r / 6.5)).toFixed(2)}"/>`;
         const screw = (x, y) => `<i class="r-screw" style="left:${x}%;top:${y}%"></i>`;
 
         return `
@@ -787,10 +787,10 @@
                 ${port(45.3, 80.9, 'reset', 'RESET')}
                 <div class="r-psu"></div>
                 <div class="r-abs r-inlet" style="left:69.7%;top:81.7%">
-                    <svg viewBox="0 0 56 72" aria-hidden="true"><rect x="2" y="2" width="52" height="68" rx="4" fill="#0b0d10" stroke="#59626e" stroke-width="2"/><path d="M9 12h38v34a6 6 0 0 1-6 6H15a6 6 0 0 1-6-6z" fill="#1b1f24" stroke="#59626e"/><rect x="24" y="17" width="8" height="12" rx="1.500" fill="#59626e"/><rect x="14" y="31" width="8" height="12" rx="1.500" fill="#59626e" transform="rotate(-20 18 37)"/><rect x="34" y="31" width="8" height="12" rx="1.500" fill="#59626e" transform="rotate(20 38 37)"/></svg>
+                    <svg viewBox="0 0 56 72" aria-hidden="true"><rect x="2" y="2" width="52" height="68" rx="5" fill="#1d2127" stroke="#9aa3ad" stroke-width="2.600"/><rect x="7" y="7" width="42" height="58" rx="3" fill="#0b0d10" stroke="#59626e" stroke-width="1.400"/><path d="M12 13h32v28a7 7 0 0 1-7 7H19a7 7 0 0 1-7-7z" fill="#171b20" stroke="#9aa3ad" stroke-width="1.600"/><rect x="23.500" y="17" width="9" height="14" rx="1.800" fill="#aeb6bf"/><rect x="13.500" y="30" width="9" height="14" rx="1.800" fill="#aeb6bf" transform="rotate(-22 18 37)"/><rect x="33.500" y="30" width="9" height="14" rx="1.800" fill="#aeb6bf" transform="rotate(22 38 37)"/></svg>
                 </div>
                 <div class="r-abs r-psufan" style="left:82%;top:81.5%">
-                    <svg viewBox="-44 -44 88 88" aria-hidden="true"><circle r="42" fill="#0b0d10" stroke="#59626e" stroke-width="2"/>${dots(10)}${dots(20)}${dots(30)}${dots(38)}</svg>
+                    <svg viewBox="-44 -44 88 88" aria-hidden="true"><circle r="42" fill="#101317" stroke="#8f99a4" stroke-width="2.600"/><circle r="40" fill="none" stroke="#2a2f36" stroke-width="1.200"/>${dots(5)}${dots(13)}${dots(21)}${dots(29)}${dots(36)}</svg>
                 </div>
                 <i class="r-kens" style="left:96.4%;top:78.2%"></i>
                 <i class="r-foot" style="left:5.4%"></i><i class="r-foot" style="left:87.2%"></i>
