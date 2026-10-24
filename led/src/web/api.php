@@ -45,7 +45,7 @@ function run_backend(array $args): array
 const CONFIG_FILE = '/boot/config/plugins/ugreen-nas-control/leds.cfg';
 
 // "day" or "night", written by `ugreen-led-ctl schedule`.
-const SCHEDULE_STATE = '/var/run/ugreen-led-control.schedule';
+const SCHEDULE_STATE = '/var/run/ugreen-nas-control.led.schedule';
 
 // What a backend command changes in the saved settings of one LED.
 function config_changes(array $args): array
@@ -77,7 +77,7 @@ function read_settings(): array
 
 // Requests arrive in parallel (two sliders moved one after the other), so the
 // read-modify-write of the settings file runs under a lock.
-const CONFIG_LOCK = '/var/run/ugreen-led-control.cfg.lock';
+const CONFIG_LOCK = '/var/run/ugreen-nas-control.led.cfg.lock';
 
 function save_settings(array $changes): bool
 {
