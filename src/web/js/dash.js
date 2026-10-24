@@ -121,11 +121,19 @@
         m2: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="8" width="20" height="8" rx="1.500"/><path d="M6 10.500h4v3H6zM12 10.500h3v3h-3z"/><circle cx="19" cy="12" r="1.200"/></svg>'
     };
 
+    function ssdRoleText(role) {
+        if (role === 'cache') return t('nvme.role_cache');
+        if (/^parity\d?$/.test(role)) return t('nvme.role_parity');
+
+        const array = role.match(/^disk(\d+)$/);
+        return array ? t('nvme.role_array', { n: array[1] }) : t('nvme.role', { name: role });
+    }
+
     function ssdUse(ssd) {
         if (ssd.boot) return { icon: UNRAID, text: t('nvme.boot') };
         if (!ssd.role) return { icon: GLYPH.m2, text: '' };
         const array = /^(parity\d?|disk\d+)$/.test(ssd.role);
-        return { icon: array ? GLYPH.drive : GLYPH.pool, text: t('nvme.role', { name: ssd.role }) };
+        return { icon: array ? GLYPH.drive : GLYPH.pool, text: ssdRoleText(ssd.role) };
     }
 
     // A titled row of chips with a detail area below it (shared by the drive bays and the NVMe SSDs).

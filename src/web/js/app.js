@@ -829,9 +829,19 @@
     // The boot SSD carries the Unraid mark; a pool or array member names its Unraid role.
     const UNRAID_MARK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="unc-mark"><rect width="24" height="24" rx="6" fill="#f15a2c"/><path d="M7.5 6.5v6.2a4.5 4.5 0 0 0 9 0V6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
 
+    // What the SSD is for in Unraid, in words that fit an SSD (Unraid calls array members "disk1", which reads like a hard disk).
+    function ssdRoleText(role) {
+        if (!role) return '';
+        if (role === 'cache') return t('nvme.role_cache');
+        if (/^parity\d?$/.test(role)) return t('nvme.role_parity');
+
+        const array = role.match(/^disk(\d+)$/);
+        return array ? t('nvme.role_array', { n: array[1] }) : t('nvme.role', { name: role });
+    }
+
     function ssdUseText(n) {
         if (n.boot) return t('nvme.boot');
-        return n.role ? t('nvme.role', { name: n.role }) : '';
+        return ssdRoleText(n.role);
     }
 
     function nvmeHtml(n) {
