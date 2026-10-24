@@ -630,6 +630,8 @@
         // The back of the DXP6800 Pro is drawn after a photo of the device (rear6800Html).
         rear6800: true,
         rear: [],
+        // The inside of the DXP6800 Pro is drawn after a photo of the board (inside6800Html).
+        inside6800: true,
         pcie: true,
         sys: true,
         hint: 'case.inside_hint'
@@ -854,7 +856,121 @@
             </div>`;
     }
 
+    // The board of the DXP6800 Pro seen from above, after a photo of the device: the ribbed cover plate with the lettering,
+    // the two SO-DIMM sockets, the M.2 slots (left upright, top across), the system slot bottom right and the
+    // PCIe slot at the bottom. Real-looking modules; labels, sizes, temperatures and roles come from the system.
+    const goldFingers = (x, y, w, h, n, notchAt) => {
+        const step = w / n;
+        let out = '';
+
+        for (let i = 0; i < n; i++) {
+            if (notchAt != null && i >= notchAt && i < notchAt + 2) continue;
+            out += `<rect x="${(x + i * step).toFixed(2)}" y="${y}" width="${(step * .62).toFixed(2)}" height="${h}" fill="#d9b44a"/>`;
+        }
+        return out;
+    };
+
+    const tempColour = temp => ({ ok: '#22c55e', warm: '#f59e0b', hot: '#ef4444' })[tempClass(temp, 'nvme')] || '#8b96a3';
+
+    // An M.2 SSD in its own coordinates (0,0)-(L,H): gold contacts left, controller and NAND chips, the label, the screw hole.
+    function nvmeModule(L, H, ssd) {
+        const name = String(ssd.model || ssd.id).replace(/ SSD/, '').replace(/\s+/g, ' ').trim();
+        const size = fmtSize(ssd.size_bytes);
+        const fs = Math.min(H * .2, (L * .4) / (Math.max(name.length, 1) * .58)).toFixed(1);
+        const mark = ssd.boot
+            ? `<rect x="${(L * .9 - 14).toFixed(1)}" y="${(H * .14).toFixed(1)}" width="14" height="14" rx="4" fill="#f15a2c"/><path d="M${(L * .9 - 10.5).toFixed(1)} ${(H * .14 + 3.5).toFixed(1)}v4.500a3.500 3.500 0 0 0 7 0V${(H * .14 + 3.5).toFixed(1)}" fill="none" stroke="#fff" stroke-width="1.800" stroke-linecap="round"/>`
+            : '';
+
+        return `<rect width="${L}" height="${H}" rx="3" fill="#17394f" stroke="#2c6a8f" stroke-width="1.200"/>
+            ${goldFingers(1, H * .12, L * .085, H * .76, 9, 4)}
+            <rect x="${L * .095}" y="${H * .12}" width="2" height="${H * .76}" fill="#0f2535"/>
+            <rect x="${L * .14}" y="${H * .26}" width="${L * .12}" height="${H * .48}" rx="1.500" fill="#2a2f36" stroke="#4a5460" stroke-width=".8"/>
+            <rect x="${L * .28}" y="${H * .12}" width="${L * .11}" height="${H * .76}" rx="1.500" fill="#20252b" stroke="#3a424c" stroke-width=".8"/>
+            <rect x="${L * .4}" y="${H * .16}" width="${L * .44}" height="${H * .68}" rx="2" fill="#f1f3f5"/>
+            <text x="${L * .42}" y="${H * .42}" fill="#14181d" font-size="${fs}" font-weight="800">${escapeHtml(name)}</text>
+            <text x="${L * .42}" y="${H * .68}" fill="#4a5460" font-size="${(H * .15).toFixed(1)}">${escapeHtml(size)}</text>
+            <circle cx="${L - 5}" cy="${H / 2}" r="${H * .17}" fill="#0b0d0f" stroke="#c9ced4" stroke-width="1.600"/>${mark}`;
+    }
+
+    // A SO-DIMM: green board, four chips, the label, gold contacts along the bottom, the latch notches.
+    function ramModule(L, H, mod) {
+        const speed = mod.configured_mt || mod.speed_mt;
+
+        return `<rect width="${L}" height="${H}" rx="3" fill="#1f6a43" stroke="#2f9a63" stroke-width="1.200"/>
+            ${goldFingers(1, H * .86, L - 2, H * .12, 64, 26)}
+            <circle cx="0" cy="${H * .42}" r="${H * .1}" fill="#0b0d0f"/><circle cx="${L}" cy="${H * .42}" r="${H * .1}" fill="#0b0d0f"/>
+            ${[0, 1, 2, 3].map(i => `<rect x="${L * .06 + i * L * .225}" y="${H * .12}" width="${L * .17}" height="${H * .46}" rx="1.500" fill="#14171a" stroke="#2b3036" stroke-width=".8"/>`).join('')}
+            <rect x="${L * .2}" y="${H * .3}" width="${L * .6}" height="${H * .3}" rx="2" fill="#f1f3f5"/>
+            <text x="${L * .22}" y="${H * .43}" fill="#14181d" font-size="${Math.max(8, H * .15).toFixed(1)}" font-weight="800">${escapeHtml(`${fmtRam(mod.size_mb)} ${mod.type}${speed ? ` · ${speed}` : ''}`)}</text>
+            <text x="${L * .22}" y="${H * .55}" fill="#4a5460" font-size="${Math.max(6, H * .11).toFixed(1)}">${escapeHtml(mod.manufacturer || '')}</text>`;
+    }
+
+    // A module in a box of w x h: upright with its contacts at the bottom, or lying.
+    const place = (x, y, L, upright, inner) => upright
+        ? `<g transform="translate(${x} ${y + L}) rotate(-90)">${inner}</g>`
+        : `<g transform="translate(${x} ${y})">${inner}</g>`;
+
+    const tempBadge6800 = (x, y, temp) => temp == null ? '' : `<rect x="${x}" y="${y}" width="46" height="16" rx="8" fill="${tempColour(temp)}"/><text x="${x + 23}" y="${y + 11.5}" fill="#0b0e12" font-size="10.5" font-weight="800" text-anchor="middle">${temp} °C</text>`;
+    const boardText = (x, y, text) => `<text x="${x}" y="${y}" fill="#8b96a3" font-size="11.5">${escapeHtml(text)}</text>`;
+
+    function inside6800Html(hw) {
+        const ssd = slot => hw.nvme.find(d => d.slot === slot);
+        const ramSocket = (x, mod, n) => {
+            const socket = `<rect x="${x}" y="150" width="104" height="236" rx="5" fill="#0b0d0f" stroke="#3a424c" stroke-width="2"/><rect x="${x + 49}" y="360" width="6" height="18" rx="2" fill="#1b1f24"/><rect x="${x - 9}" y="178" width="9" height="34" rx="2" fill="#aeb6bf"/><rect x="${x + 104}" y="178" width="9" height="34" rx="2" fill="#aeb6bf"/>`;
+            return socket + (mod && mod.size_mb
+                ? place(x + 4, 154, 228, true, ramModule(228, 96, mod))
+                : `<g transform="rotate(-90 ${x + 52} 268)"><text x="${x + 52}" y="272" fill="#6f7882" font-size="12" text-anchor="middle">${escapeHtml(t('in.ram_empty', { n }))}</text></g>`);
+        };
+        // An M.2 slot: the module (or the dashed outline of the empty slot) and, next to it, temperature, name and role.
+        const m2 = (x, y, upright, drive, label, bx, by) => {
+            if (!drive) {
+                return `${place(x, y, 262, upright, '<rect width="262" height="74" rx="3" fill="none" stroke="#3a424c" stroke-width="2" stroke-dasharray="6 5"/>')}${boardText(bx, by + 11, t('in.slot_empty', { label }))}`;
+            }
+            const role = drive.boot ? t('nvme.boot') : ssdRoleText(drive.role);
+
+            return `${place(x, y, 262, upright, nvmeModule(262, 74, drive))}${tempBadge6800(bx, by, drive.temp)}${boardText(bx + 54, by + 11, label)}${role ? boardText(bx + 54, by + 24, role) : ''}`;
+        };
+
+        const card = ssd('pcie');
+        const memory = hw.memory || [];
+
+        return `
+            <svg class="unc-board-svg" viewBox="0 0 1000 640" role="img" aria-label="${escapeHtml(t('case.inside'))}">
+                <defs>
+                    <pattern id="unc-ribs" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#4b4f54"/><rect width="8" height="3.5" fill="#3a3d41"/></pattern>
+                    <linearGradient id="unc-pcb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c1f22"/><stop offset="1" stop-color="#101214"/></linearGradient>
+                </defs>
+                <rect x="10" y="10" width="980" height="620" rx="16" fill="url(#unc-pcb)" stroke="#2a2f35" stroke-width="3"/>
+                <rect x="940" y="30" width="38" height="580" rx="8" fill="#a8afb8"/><rect x="948" y="60" width="22" height="34" rx="4" fill="#5d646d"/><rect x="948" y="520" width="22" height="34" rx="4" fill="#5d646d"/>
+                <path d="M50 70h620l120 90v320H50z" fill="url(#unc-ribs)" stroke="#2a2d31" stroke-width="2"/>
+                <g transform="rotate(-90 300 290)"><text x="300" y="304" fill="#17191b" font-size="64" font-weight="900" text-anchor="middle" letter-spacing="6">UGREEN</text></g>
+                <circle cx="400" cy="140" r="9" fill="#b87333"/><circle cx="720" cy="430" r="9" fill="#b87333"/><circle cx="240" cy="470" r="9" fill="#b87333"/>
+                ${m2(86, 96, true, ssd('m2-1'), t('in.m2', { n: 1 }), 172, 104)}
+                ${m2(340, 22, false, ssd('m2-2'), t('in.m2', { n: 2 }), 612, 40)}
+                ${boardText(452, 140, t('in.dimm', { type: memory.find(m => m.type)?.type || 'DDR5' }))}
+                ${ramSocket(452, memory[1], 2)}
+                ${ramSocket(578, memory[0], 1)}
+                ${m2(560, 522, false, ssd('system'), t('in.system'), 560, 484)}
+                <rect x="60" y="604" width="390" height="24" rx="6" fill="#0b0d0f" stroke="#3a424c" stroke-width="2"/>
+                <text x="255" y="620" fill="#6f7882" font-size="12" text-anchor="middle">${escapeHtml(t('case.pcie_slot'))}${card ? '' : ` · ${escapeHtml(t('case.free'))}`}</text>
+                ${card ? `${tempBadge6800(76, 478, card.temp)}${boardText(130, 489, t('in.pcie_card'))}${boardText(130, 502, card.boot ? t('nvme.boot') : ssdRoleText(card.role))}
+                    <rect x="76" y="512" width="330" height="86" rx="4" fill="#142a2a" stroke="#2f9a63" stroke-width="1.500"/>${goldFingers(100, 590, 260, 8, 38, null)}<rect x="62" y="522" width="14" height="66" rx="3" fill="#aeb6bf"/>${place(98, 520, 252, false, nvmeModule(252, 64, card))}` : ''}
+            </svg>`;
+    }
+
     function renderInside(hw, target = '#unc-inside') {
+        if (caseModel(hw).inside6800) {
+            const hint = q('[data-i18n^="case.inside_hint"]');
+
+            q(target).classList.add('board-svg');
+            q(target).classList.remove('no-pcie');
+            hint.dataset.i18n = caseModel(hw).hint;
+            hint.textContent = t(caseModel(hw).hint);
+            q(target).innerHTML = inside6800Html(hw);
+            return;
+        }
+
+        q(target).classList.remove('board-svg');
         const ramSlots = hw.memory.map((m, i) => {
             const slot = t('case.ram_slot', { n: i + 1 });
             if (!m.size_mb) {
