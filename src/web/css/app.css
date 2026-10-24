@@ -2433,3 +2433,103 @@
 .unc-case-intro {
     margin: 0 0 14px;
 }
+
+/* ---------- Rear of the DXP6800 Pro: the blende with the two fans, the socket row ---------- */
+
+.unc-blende {
+    position: relative;
+    margin-bottom: 12px;
+    padding: 10px 10px 26px;
+    border: 1px solid #3a4452;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #262d36, #161b21);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+
+/* the dust filter: a fine mesh in front of the fans */
+.unc-rear-fans {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    height: 160px;
+    padding: 8px;
+    border-radius: 6px;
+    background:
+        radial-gradient(circle, rgba(255, 255, 255, .08) 1px, transparent 1.4px) 0 0 / 7px 7px,
+        #090b0e;
+}
+
+.unc-bfan {
+    position: relative;
+    display: grid;
+    place-items: center;
+}
+
+.unc-bfan .unc-fan-icon {
+    width: 124px;
+    height: 124px;
+    color: #4a5460;
+}
+
+.unc-bfan .unc-fan-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: .8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.unc-bfan .unc-fan-icon svg .ring { stroke-width: 1.1; }
+
+.unc-bfan small {
+    position: absolute;
+    right: 0;
+    bottom: -2px;
+    left: 0;
+    color: #6f7882;
+    font-size: 10px;
+    text-align: center;
+}
+
+.unc-blende-brand {
+    position: absolute;
+    right: 18px;
+    bottom: 7px;
+    color: #8f99a4;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .22em;
+}
+
+.unc-socket.pciebr svg { width: 24px; }
+.unc-socket.psufan svg { width: 34px; }
+.unc-socket.kensington svg { width: 30px; }
+
+.unc[data-theme="light"] .unc-blende {
+    border-color: #b7bfc8;
+    background: linear-gradient(180deg, #f0f3f6, #d8dde3);
+    box-shadow: inset 0 1px 0 #fff;
+}
+
+.unc[data-theme="light"] .unc-rear-fans {
+    background:
+        radial-gradient(circle, rgba(0, 0, 0, .14) 1px, transparent 1.4px) 0 0 / 7px 7px,
+        #aeb6bf;
+}
+
+.unc[data-theme="light"] .unc-bfan .unc-fan-icon { color: #7b8692; }
+.unc[data-theme="light"] .unc-bfan small { color: #4a5460; }
+.unc[data-theme="light"] .unc-blende-brand { color: #5b6672; }
+
+/* Eleven sockets in one row, as on the back of the DXP6800 Pro. */
+.unc-nas-rear.with-blende .unc-rear-ports {
+    flex-wrap: nowrap;
+    gap: 12px;
+    padding: 16px 14px;
+}
+
+.unc-nas-rear.with-blende .unc-socket { min-width: 0; flex: 0 1 auto; }
+.unc-nas-rear.with-blende .unc-socket small { font-size: 9px; }
+.unc-nas-rear.with-blende .unc-socket svg { max-width: 100%; }

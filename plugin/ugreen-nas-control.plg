@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.10.0">
+<!ENTITY version   "0.10.1">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 0.10.1
+- Case page, rear of the DXP6800 Pro, closer to the original: the magnetic dust filter (the UGREEN blende) with a fine mesh and the two case fans behind it, turning with their real rpm (with name and rpm under them), and below it the sockets in the order of the device in one row: PCIe slot, HDMI, USB, the two 10GbE ports, reset, power inlet, PSU fan and Kensington lock. Dark and light
 
 ### 0.10.0
 - Overview: the fans got room: the three fan tiles are big now, with large turning icons and the rpm, and the model in the middle is a little narrower; the strip under the bays keeps the order of the original (LEDs, ports, lettering) in one line and only scales with the case

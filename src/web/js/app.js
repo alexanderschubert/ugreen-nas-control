@@ -607,6 +607,9 @@
         sd: '<svg viewBox="0 0 40 18"><rect x="3" y="3" width="34" height="12" rx="2" class="shell"/><rect x="8" y="8" width="24" height="2" class="tongue"/></svg>',
         usb2x2: '<svg viewBox="0 0 40 36"><rect x="2" y="2" width="36" height="14" rx="2" class="shell"/><rect x="6" y="7" width="28" height="4" class="tongue"/><rect x="2" y="20" width="36" height="14" rx="2" class="shell"/><rect x="6" y="25" width="28" height="4" class="tongue"/></svg>',
         dc: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" class="shell"/><circle cx="16" cy="16" r="5" class="tongue"/><circle cx="16" cy="16" r="1.6" class="pins"/></svg>',
+        pciebr: '<svg viewBox="0 0 24 56"><rect x="3" y="2" width="18" height="52" rx="2" class="shell"/><rect x="8.500" y="9" width="7" height="38" rx="1" class="tongue"/><circle cx="12" cy="5.500" r="1.300" class="pins"/></svg>',
+        psufan: '<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" class="shell"/><circle cx="16" cy="16" r="8" class="tongue"/><circle cx="16" cy="16" r="2" class="shell"/></svg>',
+        kensington: '<svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="6" rx="3" class="shell"/><circle cx="7.500" cy="12" r="1.200" class="tongue"/></svg>',
         reset: '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" class="shell"/><circle cx="10" cy="10" r="2" class="tongue"/></svg>',
         ac: '<svg viewBox="0 0 56 34"><rect x="2" y="2" width="52" height="30" rx="3" class="shell"/><rect x="14" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="34" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="24" y="22" width="8" height="6" rx="1" class="tongue"/></svg>'
     };
@@ -627,7 +630,10 @@
     // fan: the rear fan behind its dust filter. hint: i18n key of the note below the inside view.
     const CASE_DEFAULT = {
         front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
-        rear: [['ac', 'case.ac'], ['hdmi', 'case.hdmi'], ['lan', 0], ['lan', 1], ['usba', 'case.usb_a'], ['usb2', 'case.usb2'], ['usb2', 'case.usb2']],
+        // The back of the DXP6800 Pro: two fans behind the magnetic dust filter (the blende), below it the row of
+        // sockets from the left: PCIe slot, HDMI, USB, the two 10GbE ports, reset, power inlet, PSU fan, Kensington lock.
+        rearFans: 2,
+        rear: [['pciebr', 'case.pcie_slot'], ['hdmi', 'case.hdmi'], ['usba', 'case.usb_a'], ['usb2', 'case.usb2'], ['usb2', 'case.usb2'], ['lan', 0], ['lan', 1], ['reset', 'case.reset'], ['ac', 'case.ac'], ['psufan', 'case.psu_fan'], ['kensington', 'case.kensington']],
         pcie: true,
         sys: true,
         hint: 'case.inside_hint'
@@ -736,6 +742,22 @@
             </table>` : `<p class="unc-muted">${escapeHtml(t('case.empty'))}</p>`;
     }
 
+    // The same fan as in the GT's rear picture; it turns with the real rpm like the fan tiles.
+    const REAR_FAN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg>';
+
+    // The blende (magnetic dust filter) of the DXP6800 Pro with the two case fans behind it.
+    function rearFansHtml(count) {
+        const fans = (state.data?.fans || []).filter(f => f.role === 'case').slice(0, count);
+
+        return Array.from({ length: count }, (_, i) => {
+            const fan = fans[i];
+            const spin = fan ? fanIcon(fan, REAR_FAN_SVG) : `<span class="unc-fan-icon">${REAR_FAN_SVG}</span>`;
+            const rpm = fan ? (fan.rpm > 0 ? `${fan.rpm} ${t('fan.rpm')}` : t('fan.stopped')) : '';
+
+            return `<div class="unc-bfan">${spin}<small>${escapeHtml([t('fan.case', { n: i + 1 }), rpm].filter(Boolean).join(' · '))}</small></div>`;
+        }).join('');
+    }
+
     function renderRear(hw, target = '#unc-rear') {
         const lan = n => {
             const p = hw.net[n];
@@ -751,7 +773,8 @@
 
         const model = caseModel(hw);
         q(target).innerHTML = `
-            <div class="unc-nas-rear">
+            <div class="unc-nas-rear ${model.rearFans ? 'with-blende' : ''}">
+                ${model.rearFans ? `<div class="unc-blende"><div class="unc-rear-fans">${rearFansHtml(model.rearFans)}</div><b class="unc-blende-brand">UGREEN</b></div>` : ''}
                 ${model.fan ? `<div class="unc-rear-fan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg></div>` : ''}
                 <div class="unc-rear-ports">
                     ${model.rear.map(([kind, label]) => kind === 'lan' ? lan(label) : socket(kind, t(label))).join('')}
