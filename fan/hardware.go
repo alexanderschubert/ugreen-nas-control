@@ -32,8 +32,8 @@ type layout struct {
 //
 // DXP6800 Pro, from an Unraid box with four NVMe: the CPU's root port 00:06.0 is M.2 slot 1
 // (x4, PCIe 4.0), 00:06.2 the PCIe slot (a card with one SSD, negotiated x1), and the
-// chipset's 00:1c.0 / 00:1c.2 the second M.2 slot and the internal system slot. Which of
-// the two chipset ports is which is a guess after the link width (x2 and x1).
+// chipset's 00:1c.0 the second M.2 slot (x2 negotiated) and 00:1c.2 the internal system
+// slot (x1), the one of the UGOS module. Confirmed by the author for the SSD in the system slot.
 func layoutFor(model string) layout {
 	switch {
 	case strings.HasPrefix(model, "DXP6800"):
