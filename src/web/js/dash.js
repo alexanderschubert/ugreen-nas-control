@@ -18,6 +18,44 @@
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     })[c]);
 
+    // Fan icons turn by script, not by CSS animation: a CSS duration change or a re-render
+    // would restart the angle. The angle lives per fan id; only the speed follows the rpm.
+    const fanSpin = new Map();
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let fanLast = 0;
+    let fanFrame = 0;
+
+    function fanTick(now) {
+        const dt = Math.min(0.1, (now - fanLast) / 1000);
+        let moving = false;
+
+        fanLast = now;
+        fanSpin.forEach(fan => {
+            if (fan.rpm > 0) {
+                fan.angle = (fan.angle + dt * 360 / Math.max(0.3, 2400 / fan.rpm)) % 360;
+                moving = true;
+            }
+        });
+        document.querySelectorAll('.unc-fan-icon[data-fan]').forEach(el => {
+            el.style.transform = `rotate(${fanSpin.get(el.dataset.fan)?.angle || 0}deg)`;
+        });
+        fanFrame = moving ? requestAnimationFrame(fanTick) : 0;
+    }
+
+    // Icon markup for a fan; keeps its current angle and sets the new speed.
+    function fanIcon(fan, svg) {
+        const state = fanSpin.get(fan.id) || { angle: 0, rpm: 0 };
+
+        state.rpm = reduceMotion.matches ? 0 : fan.rpm;
+        fanSpin.set(fan.id, state);
+
+        if (state.rpm > 0 && !fanFrame) {
+            fanLast = performance.now();
+            fanFrame = requestAnimationFrame(fanTick);
+        }
+        return `<span class="unc-fan-icon" data-fan="${escapeHtml(fan.id)}" style="transform:rotate(${state.angle}deg)">${svg}</span>`;
+    }
+
     const hottest = list => list.reduce((max, v) => v != null && (max == null || v > max) ? v : max, null);
 
     function tempRow(label, value, kind) {
@@ -39,7 +77,7 @@
 
         root.querySelector('[data-fans]').innerHTML = fans.map(fan => `
             <div class="unc-fan ${fan.rpm === 0 ? 'stopped' : ''}" title="${escapeHtml(fan.error ? t('fan.error') : fan.pct == null ? t('fan.auto') : t('fan.speed', { pct: fan.pct }))}">
-                <span class="unc-fan-icon ${fan.rpm > 0 ? 'spin' : ''}" style="--spin:${Math.max(0.3, 2400 / Math.max(fan.rpm, 1)).toFixed(2)}s">${FAN}</span>
+                ${fanIcon(fan, FAN)}
                 <small class="unc-muted">${escapeHtml(fan.role === 'cpu' ? t('fan.cpu') : t('fan.case', { n: cases.indexOf(fan) + 1 }))}</small>
                 <span class="unc-fan-rpm">${fan.rpm > 0 ? `${fan.rpm} <small>${escapeHtml(t('fan.rpm'))}</small>` : escapeHtml(t('fan.stopped'))}</span>
             </div>`).join('');
