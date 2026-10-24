@@ -538,6 +538,7 @@
         q('#unc-led-row').classList.toggle('unc-disabled', input.disabled);
         q('#unc-led-state').textContent = t(led.enabled ? 'leds.on' : 'leds.off');
         q('#unc-led-open').hidden = !led.enabled;
+        q('#unc-led-import').hidden = !led.import_available;
         // The LED pages come with the page itself: they are there once it has been loaded with the switch on.
         qa('[data-led-only]').forEach(button => { button.hidden = !(led.enabled && window.UNC_LED); });
 
@@ -1181,6 +1182,14 @@
                 ...values,
                 stall_notify: q('#unc-stall-notify').checked ? '1' : '0'
             }, true), t('safety.saved'));
+        });
+
+        q('#unc-led-import-btn').addEventListener('click', () => {
+            run(async () => {
+                await api({ action: 'led_import' }, true);
+                // The LED pages read their settings when they load.
+                location.reload();
+            }, t('leds.imported'));
         });
 
         q('#unc-led-enabled').addEventListener('change', event => {

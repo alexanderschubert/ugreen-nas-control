@@ -32,7 +32,7 @@ chmod +x "$T"/led/* "$T/update_cron"
 run() {
     UGREEN_DMI="$T/dmi" UGREEN_PLUGINS_BOOT="$T/boot" UGREEN_PLUGINS_WEB="$T/web" \
     UGREEN_PROC_MODULES="$T/modules" UGREEN_LED_DIR="$T/led" UGREEN_LED_FLAG="$T/boot/led.enabled" \
-    UGREEN_LED_CRON="$T/boot/x.cron" UGREEN_LED_CFG="$T/boot/leds.cfg" UGREEN_UPDATE_CRON="$T/update_cron" \
+    UGREEN_LED_IMPORT_SRC="$T/old/leds.cfg" UGREEN_LED_CRON="$T/boot/x.cron" UGREEN_LED_CFG="$T/boot/leds.cfg" UGREEN_UPDATE_CRON="$T/update_cron" \
     UGREEN_LED_LEGACY_PIDS="$T/legacy.pid" \
     UGREEN_NAS_FAN=/bin/true bash "$CTL" "$@"
 }
@@ -111,6 +111,30 @@ if [ -d /proc/self ]; then
     wait "$own" 2>/dev/null; rc=$?
     check "led-stop ends a leftover daemon of its own directory" "$([ "$rc" -eq 143 ] && [ ! -e "$T/legacy.pid" ] && echo ok)"
 fi
+
+# Take over the settings of an installed UGREEN LED Control.
+mkdir -p "$T/old"
+import_flag() { run led-status | sed -n 's/.*"import_available": \([a-z]*\).*/\1/p'; }
+rm -f "$T/boot/leds.cfg" "$T/boot/leds.cfg.bak" "$T/boot/led.enabled" "$T/calls"
+
+check "no import without the old settings" "$([ "$(import_flag)" = false ] && echo ok)"
+printf 'brightness="128"\nmode="status"\n' > "$T/old/leds.cfg"
+check "import offered with the old settings" "$([ "$(import_flag)" = true ] && echo ok)"
+
+run led-enable >/dev/null 2>&1
+check "first enable takes the old settings over" "$(cmp -s "$T/old/leds.cfg" "$T/boot/leds.cfg" && echo ok)"
+check "no import left to offer afterwards" "$([ "$(import_flag)" = false ] && echo ok)"
+
+printf 'brightness="10"\n' > "$T/boot/leds.cfg"
+check "changed settings are offered again" "$([ "$(import_flag)" = true ] && echo ok)"
+run led-import >/dev/null 2>&1
+check "import replaces the settings" "$(cmp -s "$T/old/leds.cfg" "$T/boot/leds.cfg" && echo ok)"
+check "import keeps a backup of the settings it replaced" "$(grep -q 'brightness="10"' "$T/boot/leds.cfg.bak" && echo ok)"
+check "import applies them while running" "$(grep -q '^ctl apply' "$T/calls" && echo ok)"
+rm "$T/old/leds.cfg"
+before="$(cat "$T/boot/leds.cfg")"
+run led-import >/dev/null 2>&1; rc=$?
+check "import without the old settings fails and changes nothing" "$([ "$rc" -ne 0 ] && [ "$(cat "$T/boot/leds.cfg")" = "$before" ] && echo ok)"
 
 echo
 [ "$fails" -eq 0 ] && echo "All checks passed." || { echo "$fails failed."; exit 1; }

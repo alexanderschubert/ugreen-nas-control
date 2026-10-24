@@ -102,7 +102,7 @@ Drive status and Schedules, the cockpit and the dashboard tile show the colours 
 the DXP6800 Pro and the DXP4800 GT, and not while the plugin *ugreenleds-driver* or the kernel module `led_ugreen` holds the
 controller. If the standalone plugin *UGREEN LED Control* is installed too, both still run (the runtime files have their own
 names), but they write the same LEDs and the last write wins: the page says so. Use one of them, best this one, and switch
-LED control off in the other or remove it. Importing its settings is planned.
+LED control off in the other or remove it. **Take over its settings:** if the settings of the standalone plugin are found, the LEDs page offers *Take over the settings* (colours, effects, status mode, night mode; what this part had is kept as `leds.cfg.bak`), and the first time you switch LED control on without own settings they are taken over by themselves. Afterwards uninstall UGREEN LED Control under Plugins.
 
 To take over a new version of the LED plugin:
 

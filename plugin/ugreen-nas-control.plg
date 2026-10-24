@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.7.0">
+<!ENTITY version   "0.8.0">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -25,16 +25,20 @@
 
 <CHANGES>
 
+### 0.8.0
+- Take over the settings of UGREEN LED Control: if that plugin's settings are found, the page LEDs → LED control offers "Take over the settings" (colours, effects, status mode, night mode; what this plugin had is kept as leds.cfg.bak), and switching LED control on for the first time without own settings takes them over by itself. Afterwards UGREEN LED Control can be uninstalled under Plugins: this plugin succeeds it for the DXP6800 Pro and the DXP4800 GT (the About page says so)
+- Tidied up: the unused pages of the LED copy (its settings page, its dashboard tile and their script and icon) are no longer installed
+
 ### 0.7.0
 - LEDs live: the cockpit draws the colours the LEDs show right now into the case picture (the bar of each bay, the power and the LAN LED) and has an LED card (mode, brightness, night mode, one dot per bay); the dashboard tile gets a row "LEDs on the device" with the same colours and shows the LED mode
 - This plugin now succeeds UGREEN LED Control for the DXP6800 Pro and the DXP4800 GT: the LED pages of the copy are gone from the menu and from the dashboard, and the plugin runs on its own: an installed UGREEN LED Control no longer keeps the LED part off, the page only warns that both write the same LEDs (the last write wins). ugreenleds-driver and the led_ugreen module still keep it off
 
 ### 0.6.0
-- The LED pages are part of UGREEN NAS Control now: with the switch under LEDs on, the sidebar lists General & preview, Colours, Effects, Drive status and Schedules (brightness, colours per LED, effects, the status mode for disks and the network, night mode and alerts), in the same window and with the same colour scheme (dark or light). The separate Settings page "UGREEN LED Control" is gone from the menu; the LED dashboard tile stays for now and opens this page
+- The LED pages are part of UGREEN NAS Control now: with the switch under LEDs on, the sidebar lists General &amp; preview, Colours, Effects, Drive status and Schedules (brightness, colours per LED, effects, the status mode for disks and the network, night mode and alerts), in the same window and with the same colour scheme (dark or light). The separate Settings page "UGREEN LED Control" is gone from the menu; the LED dashboard tile stays for now and opens this page
 - Turning the switch on or off loads the page again, as the LED pages come with it
 
 ### 0.5.0
-- The sidebar is grouped: Cockpit (Overview, Case), Fans (Fan curves, Safety), LEDs (LED control) and System. "System" and "About" are one page now ("Appearance & About": language, colour scheme, version, links, thanks). First step towards one plugin for fans and LEDs, the LED pages follow
+- The sidebar is grouped: Cockpit (Overview, Case), Fans (Fan curves, Safety), LEDs (LED control) and System. "System" and "About" are one page now ("Appearance &amp; About": language, colour scheme, version, links, thanks). First step towards one plugin for fans and LEDs, the LED pages follow
 
 ### 0.4.2
 - Dashboard tile, cockpit and inside view: every NVMe SSD shows what it is used for in Unraid: the boot SSD (the one /boot is mounted from) with the Unraid mark, a cache or pool member with a stack icon, an array disk with a drive icon; the tooltip names the role
@@ -178,10 +182,6 @@
 <URL>&gitURL;/led/src/web/js/app.js</URL>
 </FILE>
 
-<FILE Name="&srcDIR;/led/js/dash.js">
-<URL>&gitURL;/led/src/web/js/dash.js</URL>
-</FILE>
-
 <FILE Name="&srcDIR;/led/js/i18n.js">
 <URL>&gitURL;/led/src/web/js/i18n.js</URL>
 </FILE>
@@ -200,18 +200,6 @@
 
 <FILE Name="&srcDIR;/led/images/ugreen-led-control.png">
 <URL>&gitURL;/led/src/web/images/ugreen-led-control.png</URL>
-</FILE>
-
-<FILE Name="&srcDIR;/icons/ugreen-led-control.png">
-<URL>&gitURL;/led/src/web/icons/ugreen-led-control.png</URL>
-</FILE>
-
-<FILE Name="&srcDIR;/UGREENLEDControl.page">
-<URL>&gitURL;/led/src/web/UGREENLEDControl.page</URL>
-</FILE>
-
-<FILE Name="&srcDIR;/UGREENLEDDashboard.page">
-<URL>&gitURL;/led/src/web/UGREENLEDDashboard.page</URL>
 </FILE>
 
 <FILE Name="&srcDIR;/event/stopping">

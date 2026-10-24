@@ -285,6 +285,20 @@ if ($action === 'theme') {
     respond(['ok' => true]);
 }
 
+// Take over the settings of an installed UGREEN LED Control (the old ones are kept as leds.cfg.bak).
+if ($action === 'led_import') {
+    $result = run(CTL, ['led-import']);
+
+    if ($result['code'] !== 0) {
+        respond([
+            'ok' => false,
+            'error' => $result['output']
+        ], 409);
+    }
+
+    respond(['ok' => true]);
+}
+
 // The LED part (a copy of UGREEN LED Control) is off until this switch turns it on.
 if ($action === 'led') {
     $value = (string)($input['value'] ?? '');

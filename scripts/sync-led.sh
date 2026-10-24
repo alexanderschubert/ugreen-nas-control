@@ -25,8 +25,8 @@ FLAG="/boot/config/plugins/ugreen-nas-control/led.enabled"
 
 git -C "${SRC}" archive "${REF}" i2c src/backend/ugreen-led-ctl src/event/stopping \
     src/web/UGREENLEDControl.page src/web/UGREENLEDDashboard.page src/web/api.php \
-    src/web/js/app.js src/web/js/dash.js src/web/js/i18n.js src/web/css/app.css \
-    src/web/include/lang.php src/web/icons/ugreen-led-control.png \
+    src/web/js/app.js src/web/js/i18n.js src/web/css/app.css \
+    src/web/include/lang.php \
     src/web/images/ugreen-led-control.png | tar -x -C "${TMP}"
 
 rm -rf "${OUT}"
@@ -57,28 +57,6 @@ done < <(find "${OUT}/src" -type f \( -name '*.php' -o -name '*.js' -o -name '*.
 find "${OUT}" -type f -exec chmod 644 {} +
 chmod 755 "${OUT}/src/backend/ugreen-led-ctl" "${OUT}/src/event/stopping"
 
-# The LED pages exist only while the switch in UGREEN NAS Control is on.
-python3 - "${OUT}/src/web" "${FLAG}" <<'PY'
-import sys
-web, flag = sys.argv[1:]
-cond = f"is_file('{flag}')"
-
-p = f"{web}/UGREENLEDControl.page"
-s = open(p).read()
-assert 'Cond=' not in s.split('---')[0]
-# The LED pages are part of the NAS Control page now; the standalone page stays out of the menu.
-s = s.replace('Markdown="false"', 'Cond="false"\nMarkdown="false"', 1)
-open(p, 'w').write(s)
-
-p = f"{web}/UGREENLEDDashboard.page"
-s = open(p).read()
-assert 'Cond="' in s.split('---')[0]
-# The LED colours are part of the NAS Control tile now; the tile of the copy stays out of the dashboard.
-s = s.replace('Cond="', 'Cond="false && ', 1)
-s = s.replace('/Settings/UGREENLEDControl', '/Settings/UGREENNASControl')
-open(p, 'w').write(s)
-PY
-
 # The LED views also run inside the NAS Control page: the markup of <main> becomes an include,
 # and the script hands its view switch to the page's own sidebar.
 python3 - "${OUT}/src/web" <<'PY'
@@ -94,6 +72,9 @@ assert s.endswith("})();")
 s = s[: -len("})();")] + "\n    window.ULC = { show: showView };\n})();\n"
 open(p, "w").write(s)
 PY
+
+# The settings page and the dashboard tile of the copy are not used: this plugin has its own.
+rm -f "${OUT}/src/web/UGREENLEDControl.page" "${OUT}/src/web/UGREENLEDDashboard.page"
 
 # The event hook runs at every array stop; with the LEDs switched off it must do nothing.
 python3 - "${OUT}/src/event/stopping" "${FLAG}" <<'PY'

@@ -2371,3 +2371,16 @@
 .unc-ledline { margin-top: 10px; }
 .unc-ledline .unc-bays-head { margin-bottom: 6px; }
 .unc-ledline .unc-ledrow { margin: 0; }
+
+/* ---------- Take over the settings of UGREEN LED Control ---------- */
+
+.unc-import {
+    margin: 14px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--unc-border);
+    border-radius: 10px;
+    background: var(--unc-card-2);
+}
+
+.unc-import p { margin: 6px 0 10px; }
+.unc-import .unc-hint { margin: 12px 0 0; }
