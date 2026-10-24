@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.10.2">
+<!ENTITY version   "0.10.3">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 0.10.3
+- SSD roles in words that fit an SSD: "Cache SSD", "Pool SSD “name”", "Array SSD (disk 1)" and "Parity SSD" instead of "Unraid: disk1", which read like a hard disk (dashboard tile, overview card and inside view)
 
 ### 0.10.2
 - A short description is shown under the plugin's name on the Plugins page (the plugin now ships a README.md in its folder)
