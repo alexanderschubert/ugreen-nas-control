@@ -197,41 +197,51 @@
         paintChips(root.querySelector('[data-nvme]'), t('dash.nvme_title'), t('tile.nvme_val', { n: ssds.length }), chips);
     }
 
-    // The colours the LED controller shows right now, one bar per bay below the chips.
-    async function paintLeds(root, hw) {
+    // What the LED controller shows right now: { leds, status }, or null without the LED part.
+    async function fetchLeds(root) {
         const api = root.dataset.ledApi;
+        if (!api) return null;
+
+        try {
+            const [all, status] = await Promise.all(['all', 'status'].map(action =>
+                fetch(`${api}?action=${action}`, { credentials: 'same-origin' }).then(r => r.json())));
+            return all.ok === false || !all.leds ? null : { leds: all.leds, status };
+        } catch (error) {
+            return null;
+        }
+    }
+
+    // One bar per bay in the colour the LED shows, with the mode next to the title.
+    function ledLineHtml(led, hw) {
+        if (!led) return '';
+
+        const count = (hw?.bays || []).length || 6;
+        const bars = [];
+        for (let i = 1; i <= count; i++) {
+            const one = led.leds[`disk${i}`] || {};
+            const [r, g, b] = String(one.color || '0 0 0').trim().split(/\s+/).map(Number);
+            const level = Math.max(0, Math.min(1, (Number(one.brightness) || 0) / 255));
+            const on = level > 0 && ![r, g, b].some(Number.isNaN);
+            const colour = on ? `rgba(${r}, ${g}, ${b}, ${(0.3 + 0.7 * level).toFixed(2)})` : '#2c3138';
+            bars.push(`<i style="background:${colour};box-shadow:${on ? `0 0 ${Math.round(4 + 8 * level)}px rgba(${r}, ${g}, ${b}, ${(0.7 * level).toFixed(2)})` : 'none'}"></i>`);
+        }
+
+        const mode = led.status?.fx ? led.status.fx : t(led.status?.mode === 'status' ? 'led.mode_status' : 'led.mode_manual');
+        return `<div class="unc-ledline"><div class="unc-bays-head"><strong>${escapeHtml(t('dash.leds'))}</strong><small class="unc-muted">${escapeHtml(mode)}</small></div><div class="unc-ledrow">${bars.join('')}</div></div>`;
+    }
+
+    // The LED row goes in the box of the drives, also for models without known bays.
+    function paintLeds(root, hw, led) {
         const box = root.querySelector('[data-bays]');
+        const html = ledLineHtml(led, hw);
 
-        if (!api || !box) return;
-
-        // Models without known bays still get the LED row, in the box of the drives.
+        if (!box || !html) return;
         if (box.hidden) {
             box.hidden = false;
             box.innerHTML = '<div data-detail hidden></div>';
         }
 
-        try {
-            const [all, status] = await Promise.all(['all', 'status'].map(action =>
-                fetch(`${api}?action=${action}`, { credentials: 'same-origin' }).then(r => r.json())));
-            if (all.ok === false || !all.leds) return;
-
-            const count = (hw?.bays || []).length || 6;
-            const bars = [];
-            for (let i = 1; i <= count; i++) {
-                const led = all.leds[`disk${i}`] || {};
-                const [r, g, b] = String(led.color || '0 0 0').trim().split(/\s+/).map(Number);
-                const level = Math.max(0, Math.min(1, (Number(led.brightness) || 0) / 255));
-                const on = level > 0 && ![r, g, b].some(Number.isNaN);
-                const colour = on ? `rgba(${r}, ${g}, ${b}, ${(0.3 + 0.7 * level).toFixed(2)})` : '#2c3138';
-                bars.push(`<i style="background:${colour};box-shadow:${on ? `0 0 ${Math.round(4 + 8 * level)}px rgba(${r}, ${g}, ${b}, ${(0.7 * level).toFixed(2)})` : 'none'}"></i>`);
-            }
-
-            const mode = status?.fx ? status.fx : t(status?.mode === 'status' ? 'led.mode_status' : 'led.mode_manual');
-            box.querySelector('[data-detail]')?.insertAdjacentHTML('beforebegin', `
-                <div class="unc-ledline"><div class="unc-bays-head"><strong>${escapeHtml(t('dash.leds'))}</strong><small class="unc-muted">${escapeHtml(mode)}</small></div><div class="unc-ledrow">${bars.join('')}</div></div>`);
-        } catch (error) {
-            // No LED data: the tile simply has no LED row.
-        }
+        box.querySelector('[data-detail]')?.insertAdjacentHTML('beforebegin', html);
     }
 
     function paintHeader(data) {
@@ -265,9 +275,21 @@
             paint(root, data);
             paintHeader(data);
 
-            const hw = await fetch(`${API}?action=hardware`, { credentials: 'same-origin' }).then(r => r.json()).catch(() => null);
-            paintDrives(root, hw && hw.ok !== false ? hw : null);
-            await paintLeds(root, hw && hw.ok !== false ? hw : null);
+            // Drives and LEDs are read together and drawn in one go: drawing the drives first and adding the
+            // LED row after its own request made the row vanish for a moment on every refresh.
+            const [raw, led] = await Promise.all([
+                fetch(`${API}?action=hardware`, { credentials: 'same-origin' }).then(r => r.json()).catch(() => null),
+                fetchLeds(root)
+            ]);
+            const hw = raw && raw.ok !== false ? raw : null;
+
+            // Nothing changed: leave the rows alone (a hovered bay keeps its details).
+            const key = JSON.stringify([hw, led]);
+            if (key === root.dataset.key) return;
+            root.dataset.key = key;
+
+            paintDrives(root, hw);
+            paintLeds(root, hw, led);
         } catch (error) {
             paintHeader(null);
         }

@@ -150,11 +150,6 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
             <div class="unc-hero-head"><b id="unc-hero-model">UGREEN NAS</b><span id="unc-hero-sub"></span></div>
             <div class="unc-hero" id="unc-hero"></div>
             <div class="unc-hero-foot" id="unc-hero-foot"></div>
-            <div class="unc-hero-tabs" id="unc-hero-tabs">
-                <button type="button" class="active" data-hero="front" data-i18n="hero.front">Vorne</button>
-                <button type="button" data-hero="rear" data-i18n="hero.rear">Hinten</button>
-                <button type="button" data-hero="inside" data-i18n="hero.inside">Innen</button>
-            </div>
         </div>
 
         <div class="unc-ccol">
@@ -191,12 +186,7 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 <!-- ================= Gehäuse ================= -->
 
 <section class="unc-view" data-view="case">
-    <div class="unc-tiles" id="unc-case-tiles"></div>
-
-    <article class="unc-card">
-        <h2 data-i18n="case.front">Vorderseite</h2>
-        <div class="unc-stage" id="unc-front"></div>
-    </article>
+    <p class="unc-muted unc-case-intro" data-i18n="case.intro">Die Vorderseite mit den Schächten, die Temperaturen und die LEDs stehen auf der Übersicht. Hier sind die Laufwerke im Einzelnen, die Rückseite und der Innenraum.</p>
 
     <article class="unc-card">
         <h2 data-i18n="case.drives">Laufwerke</h2>

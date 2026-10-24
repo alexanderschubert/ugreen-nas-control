@@ -2011,7 +2011,8 @@
 
 .unc-cockpit {
     display: grid;
-    grid-template-columns: 248px minmax(0, 1fr) 248px;
+    /* The model in the middle is a little narrower, the fans on the right get room. */
+    grid-template-columns: 248px minmax(0, 1fr) minmax(0, 1.05fr);
     gap: 16px;
     align-items: stretch;
 }
@@ -2122,13 +2123,14 @@
     color: var(--unc-muted);
 }
 
-/* In the narrow side column the fans are small tiles side by side. */
-.unc-cc .unc-fans { grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 6px; }
-.unc-cc .unc-fan { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 4px; padding: 10px 4px; text-align: center; }
+/* The fans: tiles side by side, big enough to see them turn. */
+.unc-cc .unc-fans { grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 10px; }
+.unc-cc .unc-fan { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 6px; padding: 14px 8px 12px; text-align: center; }
 .unc-cc .unc-fan > div { justify-items: center; width: 100%; }
-.unc-cc .unc-fan strong { font-size: 11px; line-height: 1.2; }
-.unc-cc .unc-fan small { font-size: 10px; }
-.unc-cc .unc-fan-rpm { font-size: 15px; }
+.unc-cc .unc-fan-icon svg { width: 40px; height: 40px; }
+.unc-cc .unc-fan strong { font-size: 13px; line-height: 1.2; }
+.unc-cc .unc-fan small { font-size: 11px; }
+.unc-cc .unc-fan-rpm { font-size: 22px; }
 .unc-cc .unc-fan-rpm small { display: block; }
 .unc-cc .unc-fan .unc-meter { width: 100%; }
 .unc-cc .unc-follow { margin: 8px 0 0; font-size: 12px; }
@@ -2404,4 +2406,18 @@
 /* An element with the hidden attribute is hidden, whatever display its class sets. */
 .unc [hidden] {
     display: none !important;
+}
+
+/* The front strip stays inside the case when the model on the overview gets narrower. */
+.unc-hero-stage .unc-nas-front {
+    flex-wrap: wrap;
+    row-gap: 6px;
+}
+
+.unc-hero-stage .unc-nas-front .brand {
+    display: none;
+}
+
+.unc-case-intro {
+    margin: 0 0 14px;
 }

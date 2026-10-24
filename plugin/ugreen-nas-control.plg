@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.9.1">
+<!ENTITY version   "0.10.0">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,12 @@
 >
 
 <CHANGES>
+
+### 0.10.0
+- Overview: the fans got room: the three fan tiles are big now, with large turning icons and the rpm, and the model in the middle is a little narrower (its strip stays inside the case)
+- Overview and Case no longer repeat each other: the overview shows the front with the bays, the temperatures, the fans and the LEDs; the Case page has the drives in detail, the rear and the inside. The tiles and the front picture on the Case page, and the tabs on the model picture, are gone
+- Fix: in the dashboard tile the row "LEDs on the device" vanished for a moment on every refresh (it was added only after the drives had been drawn). Drives and LEDs are read together and drawn once, and only when something changed
+- The overview reads the LED controller at most every few seconds, as the LED pages poll it themselves
 
 ### 0.9.1
 - New icon: a NAS as a small cube with a coloured LED under each of four bays and a white fan in the lid (Plugins page, Settings menu, dashboard tile, sidebar, About page)

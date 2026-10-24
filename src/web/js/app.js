@@ -100,7 +100,6 @@
         hw: null,
         hwError: false,
         view: 'overview',
-        hero: 'front',
         leds: null,
         ledMode: null,
         ledSchedule: null
@@ -568,7 +567,6 @@
         renderCockpitCards();
         // Fan control and the case pictures exist for the two models whose wiring is known.
         qa('[data-nav="case"], [data-fan-only]').forEach(el => { el.hidden = !caseKnown(); });
-        q('#unc-hero-tabs').hidden = !caseKnown();
     }
 
     /*
@@ -598,43 +596,6 @@
     function speedText(mbit) {
         if (mbit >= 1000) return `${mbit / 1000} Gbit/s`;
         return `${mbit} Mbit/s`;
-    }
-
-    function renderCaseTiles(hw) {
-        const info = state.data?.info || {};
-        const ramMB = hw.memory.reduce((sum, m) => sum + m.size_mb, 0);
-        const modules = hw.memory.filter(m => m.size_mb > 0);
-        const bays = hw.bays || [];
-        const filled = bays.filter(b => b.present);
-        const driveBytes = filled.reduce((sum, b) => sum + b.size_bytes, 0);
-        const hottestBay = Math.max(-1, ...filled.map(b => b.temp ?? -1));
-        const nvmeBytes = hw.nvme.reduce((sum, n) => sum + n.size_bytes, 0);
-        const hottestNvme = Math.max(-1, ...hw.nvme.map(n => n.temp ?? -1));
-        const links = hw.net.filter(n => n.link);
-        const cpuTemp = state.data?.sensors?.cpu;
-
-        const tiles = [
-            ['cpu', t('tile.cpu'), (info.cpu || '').replace(/\(R\)|\(TM\)|CPU|^\d+th Gen\s+Intel\s*/gi, '').replace(/\s+/g, ' ').trim() || '–',
-                [info.threads ? t('system.threads', { n: info.threads }) : '', cpuTemp != null ? deg(cpuTemp) : ''].filter(Boolean).join(' · ')],
-            ['ram', t('tile.ram'), ramMB ? `${fmtRam(ramMB)} ${modules[0]?.type || ''}`.trim() : '–',
-                modules.length ? t('tile.ram_sub', { n: modules.length, size: fmtRam(modules[0].size_mb), speed: modules[0].configured_mt || modules[0].speed_mt }) : ''],
-            ['drives', t('tile.drives'), bays.length ? t('tile.drives_val', { n: filled.length, total: bays.length }) : '–',
-                [fmtSize(driveBytes), hottestBay >= 0 ? t('tile.hottest', { t: deg(hottestBay) }) : ''].filter(Boolean).join(' · ')],
-            ['nvme', t('tile.nvme'), t('tile.nvme_val', { n: hw.nvme.length }),
-                [fmtSize(nvmeBytes), hottestNvme >= 0 ? t('tile.hottest', { t: deg(hottestNvme) }) : ''].filter(Boolean).join(' · ')],
-            ['net', t('tile.net'), links.length ? links.map(n => speedText(n.speed_mbit)).join(' · ') : t('tile.net_none'),
-                hw.net.map(n => `${n.name}${n.link ? '' : ' ✕'}`).join(' · ')]
-        ];
-
-        const tileIcon = { cpu: 'chip', ram: 'ram', drives: 'drives', nvme: 'm2', net: 'net' };
-
-        q('#unc-case-tiles').innerHTML = tiles.map(([id, title, value, sub]) => `
-            <div class="unc-tile ${id}">
-                <span class="unc-tile-ico">${icon(tileIcon[id])}</span>
-                <small>${escapeHtml(title)}</small>
-                <strong>${escapeHtml(value)}</strong>
-                <span>${escapeHtml(sub)}</span>
-            </div>`).join('');
     }
 
     // Port drawings, after the real sockets.
@@ -876,13 +837,11 @@
     function renderCase() {
         if (!state.hw) {
             const text = t(state.hwError ? 'case.error' : 'case.loading');
-            ['#unc-case-tiles', '#unc-front', '#unc-drive-list', '#unc-rear', '#unc-inside'].forEach(id => {
+            ['#unc-drive-list', '#unc-rear', '#unc-inside'].forEach(id => {
                 q(id).innerHTML = `<p class="unc-muted">${escapeHtml(text)}</p>`;
             });
             return;
         }
-        renderCaseTiles(state.hw);
-        renderFront(state.hw);
         renderDriveList(state.hw);
         renderRear(state.hw);
         renderInside(state.hw);
@@ -912,6 +871,10 @@
             state.leds = null;
             return;
         }
+
+        // The LED pages poll the controller themselves; keep our own reads to one every few seconds.
+        if (state.leds && Date.now() - (state.ledAt || 0) < 5500) return;
+        state.ledAt = Date.now();
 
         try {
             const [all, status] = await Promise.all([ledGet('all'), ledGet('status')]);
@@ -1017,7 +980,6 @@
 
         q('#unc-hero-model').textContent = hw?.model || info.model || 'UGREEN NAS';
         q('#unc-hero-sub').textContent = [info.bios ? `BIOS ${info.bios}` : '', info.unraid ? `Unraid ${info.unraid}` : ''].filter(Boolean).join(' · ');
-        qa('#unc-hero-tabs [data-hero]').forEach(b => b.classList.toggle('active', b.dataset.hero === state.hero));
 
         if (!hw) {
             stage.className = 'unc-hero';
@@ -1031,10 +993,9 @@
             return;
         }
 
-        stage.className = `unc-hero ${state.hero}`;
-        if (state.hero === 'rear') renderRear(hw, '#unc-hero');
-        else if (state.hero === 'inside') renderInside(hw, '#unc-hero');
-        else renderFront(hw, '#unc-hero');
+        // The overview shows the front; the rear and the inside are on the Case page.
+        stage.className = 'unc-hero front';
+        renderFront(hw, '#unc-hero');
     }
 
     function renderHeroFoot() {
@@ -1139,13 +1100,6 @@
         });
 
 
-        q('#unc-hero-tabs').addEventListener('click', event => {
-            const button = event.target.closest('[data-hero]');
-            if (!button) return;
-
-            state.hero = button.dataset.hero;
-            renderHero();
-        });
 
         q('#unc-modes').addEventListener('click', event => {
             const button = event.target.closest('[data-mode]');
@@ -1263,7 +1217,6 @@
         await load();
         loadHardware().then(loadLeds).then(() => {
             applyLeds(q('#unc-hero'));
-            applyLeds(q('#unc-front'));
             renderLedCard();
             renderHeroFoot();
         });
@@ -1273,7 +1226,6 @@
             if (!document.hidden && (state.view === 'case' || state.view === 'overview') && !state.busy) {
                 loadHardware().then(loadLeds).then(() => {
                     applyLeds(q('#unc-hero'));
-                    applyLeds(q('#unc-front'));
                     renderLedCard();
                     renderHeroFoot();
                 });
