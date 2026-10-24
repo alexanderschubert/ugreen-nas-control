@@ -204,6 +204,8 @@ func (b *bus) change(id, command byte, params [4]byte) error {
 	packet, size := commandPacket(id, command, params), uint32(smbusI2CBlockData)
 	if b.gt {
 		packet, size = gtCommandPacket(command, params), smbusBlockData
+	} else if idxFrames() {
+		packet, size = idxCommandPacket(command, params), smbusBlockData
 	}
 	err := errors.New("no attempt made")
 

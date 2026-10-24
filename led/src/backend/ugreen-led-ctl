@@ -14,6 +14,8 @@ VAR_INI="${UGREEN_VAR_INI:-/var/local/emhttp/var.ini}"
 SMART_DIR="${UGREEN_SMART_DIR:-/var/local/emhttp/smart}"
 SYS_BLOCK="${UGREEN_SYS_BLOCK:-/sys/block}"
 SYS_NET="${UGREEN_SYS_NET:-/sys/class/net}"
+SYS_ATA="${UGREEN_SYS_ATA:-/sys/class/ata_port}"
+SYS_PCI="${UGREEN_SYS_PCI:-/sys/bus/pci/devices}"
 PIDFILE="${UGREEN_PIDFILE:-/var/run/ugreen-nas-control.led.pid}"
 SCHEDULE_STATE="${UGREEN_SCHEDULE_STATE:-/var/run/ugreen-nas-control.led.schedule}"
 FX_PIDFILE="${UGREEN_FX_PIDFILE:-/var/run/ugreen-nas-control.led-fx.pid}"
@@ -55,6 +57,11 @@ product_name() {
 # DXP6800 Pro -> 6, DX4600 Pro -> 4, DXP8800 Plus -> 8
 bay_count() {
     local digit
+
+    case "$(product_name)" in
+        iDX601[12]*) echo 6; return ;;
+    esac
+
     digit="$(product_name | sed -n 's/^DXP\{0,1\}\([2-8]\)[0-9]\{3\}.*/\1/p')"
     echo "${digit:-8}"
 }
@@ -711,7 +718,39 @@ alert_tick() {
 
 # SATA port of each bay, left to right, after miskcoo/ugreen_leds_controller.
 # Only the DXP6800 differs from ata1..ataN in order.
+# iDX6011 (Pro): bays 1-4 sit on the ASMedia SATA controller (PCI vendor 0x1b21), bays 5-6
+# on the Intel PCH (0x8086), each in port order. Empty if either isn't found.
+idx_bay_ports() {
+    local vendor
+    local port
+    local pci
+    local out=""
+    local n=0
+
+    for vendor in 0x1b21 0x8086; do
+        for port in $(ls "$SYS_ATA" 2>/dev/null | sed -n 's/^ata\([0-9][0-9]*\)$/\1/p' | sort -n); do
+            pci="$(readlink -f "$SYS_ATA/ata$port" 2>/dev/null | grep -oE '[0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-9]' | tail -n 1)"
+            [ -n "$pci" ] && [ "$(cat "$SYS_PCI/$pci/vendor" 2>/dev/null)" = "$vendor" ] || continue
+            out="$out ata$port"
+            n=$((n + 1))
+        done
+    done
+
+    [ "$n" -eq 6 ] && echo "${out# }"
+}
+
 bay_ports() {
+    local ports
+
+    case "$(product_name)" in
+        iDX601[12]*)
+            ports="$(idx_bay_ports)"
+            [ -n "$ports" ] && { echo "$ports"; return; }
+            seq -f 'ata%g' 1 6 | tr '\n' ' '
+            return
+            ;;
+    esac
+
     case "$(product_name)" in
         DXP6800*) echo "ata3 ata4 ata5 ata6 ata1 ata2" ;;
         *) seq -f 'ata%g' 1 "$(bay_count)" | tr '\n' ' ' ;;

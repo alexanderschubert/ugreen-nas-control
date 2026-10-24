@@ -439,6 +439,12 @@
     grid-template-columns: 130px minmax(0, 1fr);
     gap: 14px;
     align-items: center;
+    margin-bottom: 12px;
+}
+
+/* Colour and time fields stop at the width of the selects instead of spanning a wide card. */
+.ulc-field-row .ulc-color-input {
+    max-width: 520px;
 }
 
 .ulc-night-note {
@@ -460,6 +466,8 @@
 
 .ulc select {
     width: 100%;
+    /* A select as wide as a whole card (1500 px+) makes Chrome draw its list without the texts. */
+    max-width: 520px;
     padding: 10px 38px 10px 14px;
     border: 1px solid var(--ulc-border);
     border-radius: 8px;
@@ -469,6 +477,7 @@
 
 .ulc input[type="time"] {
     width: 100%;
+    max-width: 520px;
     padding: 9px 12px;
     border: 1px solid var(--ulc-border);
     border-radius: 8px;
@@ -1423,7 +1432,7 @@
 /* ---------- Light theme ----------
  * data-theme="light" on .ulc (Settings → System → Appearance). Variables first,
  * then the rules above that carry a dark-only colour of their own. The case
- * pictures stay dark: they show the device, not the page.
+ * pictures get a silver variant at the end of this section.
  */
 
 .ulc[data-theme="light"] {
@@ -1621,4 +1630,100 @@
 .ulc[data-theme="light"] .ulc-toast.error {
     border-color: rgba(220, 38, 38, .5);
     color: #b91c1c;
+}
+
+/* Case pictures: brushed silver aluminium. LED and status colours stay as they
+ * are; only the warning/error text gets a darker variant to read on silver. */
+
+.ulc[data-theme="light"] .ulc-hero {
+    background:
+        radial-gradient(ellipse at 50% 100%, rgba(47, 124, 246, .10), transparent 60%),
+        linear-gradient(180deg, #eef2f6, #dfe5ec);
+}
+
+.ulc[data-theme="light"] .ulc-preview {
+    background: linear-gradient(180deg, #eef2f6, #dfe5ec);
+}
+
+.ulc[data-theme="light"] .ulc-nas {
+    background: linear-gradient(180deg, #f6f8fa, #e1e6eb 8%, #d2d8de);
+    box-shadow:
+        0 14px 30px rgba(20, 30, 45, .18),
+        inset 0 1px 0 #fff;
+}
+
+.ulc[data-theme="light"] .ulc-nas-bays {
+    background: #aeb6bf;
+}
+
+.ulc[data-theme="light"] .ulc-bay {
+    background: linear-gradient(180deg, #f0f3f6, #e0e5ea 55%, #d5dbe1);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08);
+    color: #26303a;
+}
+
+.ulc[data-theme="light"] .ulc-bay-info {
+    color: #26303a;
+}
+
+.ulc[data-theme="light"] .ulc-bay-info.standby {
+    color: #5b6672;
+}
+
+.ulc[data-theme="light"] .ulc-bay-info.warning {
+    background: rgba(154, 74, 0, .14);
+    color: #9a4a00;
+}
+
+.ulc[data-theme="light"] .ulc-bay-info.error {
+    background: rgba(185, 28, 28, .12);
+    color: #b91c1c;
+}
+
+.ulc[data-theme="light"] .ulc-bay-knob {
+    border-color: #8f99a4;
+    background: #f8f9fb;
+}
+
+.ulc[data-theme="light"] .ulc-nas-front .ulc-led-label {
+    color: #26303a;
+}
+
+.ulc[data-theme="light"] .ulc-nas-front .ulc-link-speed > span {
+    color: #166534;
+}
+
+.ulc[data-theme="light"] .ulc-nas-front .ulc-link-speed > .down {
+    color: #5b6672;
+}
+
+.ulc[data-theme="light"] .ulc-nas-brand {
+    color: #5b6672;
+}
+
+/* The socket stays a dark shell; the link colour moves to the contacts. */
+.ulc[data-theme="light"] svg.ulc-port-ico rect {
+    fill: #3a424b;
+    stroke: #8f99a4;
+}
+
+.ulc[data-theme="light"] svg.ulc-port-ico path {
+    stroke: var(--port, #34c759);
+}
+
+.ulc[data-theme="light"] svg.ulc-port-ico path:first-of-type {
+    stroke: #59626c;
+}
+
+.ulc[data-theme="light"] .ulc-link-speed > .down svg.ulc-port-ico path:last-of-type {
+    stroke: #8f99a4;
+}
+
+.ulc[data-theme="light"] .ulc-led.off {
+    background: #aeb6bf;
+}
+
+/* A white LED would vanish on silver. */
+.ulc[data-theme="light"] .ulc-led[style*="--c: #fff" i]:not(.off) {
+    outline: 1px solid #5b6672;
 }
