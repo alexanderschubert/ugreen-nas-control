@@ -652,6 +652,7 @@
         front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
         rear: [['ac', 'case.ac'], ['hdmi', 'case.hdmi'], ['lan', 0], ['lan', 1], ['usba', 'case.usb_a'], ['usb2', 'case.usb2'], ['usb2', 'case.usb2']],
         pcie: true,
+        sys: true,
         hint: 'case.inside_hint'
     };
 
@@ -813,6 +814,15 @@
                 </div>`;
         };
 
+        const sysSlot = () => {
+            const ssd = hw.nvme.find(d => d.slot === 'system');
+            return `
+                <div class="unc-slot m2 ${ssd ? '' : 'empty'}">
+                    <div class="unc-slot-head"><span class="unc-slot-ico">${icon('m2')}</span><small>${escapeHtml(t('case.sys_slot'))}</small></div>
+                    ${ssd ? nvmeHtml(ssd) : `<span>${escapeHtml(t('case.empty'))}</span>`}
+                </div>`;
+        };
+
         const card = hw.nvme.filter(d => d.slot === 'pcie');
         const model = caseModel(hw);
         const hasPcie = model.pcie;
@@ -830,7 +840,7 @@
         hint.textContent = t(model.hint);
         q(target).innerHTML = `
             <div class="unc-board-col">${ramSlots}</div>
-            <div class="unc-board-col">${m2(1)}${m2(2)}</div>
+            <div class="unc-board-col">${m2(1)}${m2(2)}${model.sys ? sysSlot() : ''}</div>
             ${hasPcie ? `<div class="unc-board-col">${pcie}</div>` : ''}`;
     }
 
@@ -948,7 +958,7 @@
 
         const ssds = hw?.nvme || [];
         q('#unc-cc-nvme').innerHTML = ssds.length ? ssds.map(n => {
-            const slot = n.slot === 'pcie' ? 'PCIe' : `M.2-${n.slot.replace('m2-', '')}`;
+            const slot = n.slot === 'pcie' ? 'PCIe' : n.slot === 'system' ? t('cc.system') : `M.2-${n.slot.replace('m2-', '')}`;
             return `<div class="unc-ccrow"><span title="${escapeHtml(n.model)}">${escapeHtml(slot)} · ${escapeHtml(n.model || n.id)}</span>${tempBadge(n.temp, 'nvme') || '<b>–</b>'}</div>`;
         }).join('') : `<p class="unc-muted">${escapeHtml(t('cc.none'))}</p>`;
     }

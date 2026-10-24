@@ -27,6 +27,7 @@
 
 ### 0.4.1
 - New overview as a cockpit: the detected model in the middle (the case drawn big and slightly turned, with a tab each for the front, the rear and the inside), around it everything that was detected: processor, memory with its modules, network with link speed on the left; fans, temperatures and NVMe SSDs on the right; below the fan mode and the system facts. Dark and light theme, DXP6800 Pro and DXP4800 GT
+- Fix: the NVMe slots of the DXP6800 Pro: M.2 slot 1 and the PCIe slot hang on the CPU, M.2 slot 2 and the internal system slot (the UGOS module) on the chipset; the PCIe slot no longer counts every other SSD as a card (the system slot shows in the inside view, the cockpit and the dashboard tile as "S")
 
 ### 0.4.0
 - Case view: the front of the DXP6800 Pro now shows the SD card slot next to the two Thunderbolt 4 ports and the USB-A port
