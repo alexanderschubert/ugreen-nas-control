@@ -2220,7 +2220,10 @@
     align-items: stretch;
 }
 
-@media (max-width: 1500px) {
+/* Judged by the width of the content area, not of the window: the sidebar and Unraid's own frame take a share. */
+.unc-main { container: uncmain / inline-size; }
+
+@container uncmain (max-width: 1000px) {
     .unc-cockpit { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
     .unc-hero-stage { grid-column: 1 / -1; grid-row: 1; }
 }
@@ -2229,7 +2232,7 @@
     .unc-under { grid-template-columns: minmax(0, 1fr); }
 }
 
-@media (max-width: 700px) {
+@container uncmain (max-width: 640px) {
     .unc-cockpit { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -2259,4 +2262,83 @@
 .unc-pill b {
     font-size: 13px;
     font-weight: 650;
+}
+
+/* ---------- SSD use: the Unraid mark, pool and drive glyphs ---------- */
+
+.unc-mark { display: block; width: 100%; height: 100%; }
+
+.unc-use {
+    color: var(--unc-muted);
+    font-size: 11px;
+}
+
+.unc-use.boot { color: #f15a2c; font-weight: 650; }
+
+.unc-chip.ico {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    justify-content: center;
+}
+
+.unc-chip.ico svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.unc-chip.ico svg.unc-mark { stroke: none; }
+.unc-chip.ico b { font-size: 10px; line-height: 1; }
+.unc-chip.ico.empty { color: var(--unc-muted); }
+
+/* ---------- Overview: more compact ---------- */
+
+.unc-view[data-view="overview"] .unc-card { padding: 14px 16px; }
+.unc-view[data-view="overview"] .unc-card h2 { margin-bottom: 10px; font-size: 15px; }
+
+.unc-cockpit { gap: 12px; }
+.unc-ccol { gap: 10px; }
+.unc-card.unc-cc { padding: 11px 14px; }
+.unc-cc h3 { margin-bottom: 7px; }
+.unc-big { font-size: 26px; }
+.unc-hero-stage { padding: 14px 18px 12px; }
+.unc-hero-head { margin-bottom: 8px; }
+.unc-hero-head b { font-size: 22px; }
+.unc-hero { min-height: 180px; }
+.unc-hero-foot { margin-top: 12px; }
+.unc-hero-tabs { margin-top: 12px; }
+
+/* The fan mode as one row of buttons (the description is the tooltip), the facts in two columns. */
+.unc-under { gap: 12px; margin-top: 12px; }
+
+.unc-under .unc-effects {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.unc-under .unc-effect { padding: 8px 4px; gap: 3px; }
+.unc-under .unc-effect small { display: none; }
+.unc-under .unc-effect svg { width: 20px; height: 20px; }
+.unc-under .unc-effects + .unc-hint { margin-top: 10px; padding: 8px 10px; font-size: 12px; }
+
+.unc-under .unc-facts {
+    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 6px 16px;
+    font-size: 13px;
+}
+
+.unc-under .unc-facts dd { overflow-wrap: anywhere; }
+
+.unc-main { padding: 18px 22px 22px; }
+.unc-head { margin-bottom: 14px; }
+.unc-head h1 { font-size: 24px; }
+.unc-head p { margin-top: 3px; font-size: 14px; }
+
+@media (max-width: 1100px) {
+    .unc-under .unc-facts { grid-template-columns: auto minmax(0, 1fr); }
 }

@@ -110,16 +110,21 @@ func fakeSys(t *testing.T) {
 	write("class/hwmon/hwmon0/temp1_input", "41850\n")
 	os.MkdirAll(filepath.Join(dir, "devices/x/nvme3"), 0o755)
 	link("devices/x/nvme3", "class/hwmon/hwmon0/device")
+	// the Samsung (nvme3) is Unraid's cache, /boot is on the system slot SSD (nvme1)
 	write("disks.ini", "[\"disk1\"]\nname=\"disk1\"\ndevice=\"sdc\"\nid=\"ST8000VN004-2M2101_WSD0AAAA\"\ntemp=\"36\"\nspundown=\"0\"\nrotational=\"1\"\n"+
-		"[\"parity\"]\nname=\"parity\"\ndevice=\"sde\"\ntemp=\"*\"\nspundown=\"1\"\nrotational=\"1\"\n")
+		"[\"parity\"]\nname=\"parity\"\ndevice=\"sde\"\ntemp=\"*\"\nspundown=\"1\"\nrotational=\"1\"\n"+
+		"[\"cache\"]\nname=\"cache\"\ndevice=\"nvme3n1\"\n")
+	write("mounts", "/dev/nvme1n1p1 /boot vfat rw 0 0\n/dev/md1 /mnt/disk1 xfs rw 0 0\n")
 	write("dmi/product_name", "DXP6800 Pro\n")
 	write("dmidecode.sh", "#!/bin/sh\ncat <<'EOT'\n"+dmidecodeSample+"EOT\n")
 	os.Chmod(filepath.Join(dir, "dmidecode.sh"), 0o755)
 
-	oldSys, oldHwmon, oldINI, oldDMI, oldBin := sysDir, hwmonDir, disksINI, dmiDir, dmidecodeBn
-	t.Cleanup(func() { sysDir, hwmonDir, disksINI, dmiDir, dmidecodeBn = oldSys, oldHwmon, oldINI, oldDMI, oldBin })
+	oldSys, oldHwmon, oldINI, oldDMI, oldBin, oldMounts := sysDir, hwmonDir, disksINI, dmiDir, dmidecodeBn, mountsFile
+	t.Cleanup(func() {
+		sysDir, hwmonDir, disksINI, dmiDir, dmidecodeBn, mountsFile = oldSys, oldHwmon, oldINI, oldDMI, oldBin, oldMounts
+	})
 	sysDir, hwmonDir, disksINI = dir, filepath.Join(dir, "class/hwmon"), filepath.Join(dir, "disks.ini")
-	dmiDir, dmidecodeBn = filepath.Join(dir, "dmi"), filepath.Join(dir, "dmidecode.sh")
+	dmiDir, dmidecodeBn, mountsFile = filepath.Join(dir, "dmi"), filepath.Join(dir, "dmidecode.sh"), filepath.Join(dir, "mounts")
 }
 
 func TestReadHardware(t *testing.T) {
@@ -139,6 +144,14 @@ func TestReadHardware(t *testing.T) {
 		if slots[id] != slot {
 			t.Errorf("%s in %q, want %q", id, slots[id], slot)
 		}
+	}
+	roles := map[string]string{}
+	boots := map[string]bool{}
+	for _, n := range hw.NVMe {
+		roles[n.ID], boots[n.ID] = n.Role, n.Boot
+	}
+	if roles["nvme3"] != "cache" || !boots["nvme1"] || boots["nvme3"] || boots["nvme0"] || roles["nvme0"] != "" {
+		t.Errorf("roles %v boot %v", roles, boots)
 	}
 	if hw.NVMe[0].Model != "CT500P310SSD8" || hw.NVMe[0].SizeBytes != 3907029168*512 {
 		t.Errorf("nvme0 %+v", hw.NVMe[0])

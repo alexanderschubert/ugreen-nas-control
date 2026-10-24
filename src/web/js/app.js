@@ -328,7 +328,7 @@
         const mode = state.data?.settings?.mode || 'standard';
 
         q('#unc-modes').innerHTML = MODES.map(m => `
-            <button type="button" class="unc-effect ${m.id === mode ? 'active' : ''}" data-mode="${m.id}" ${state.data?.chip ? '' : 'disabled'}>
+            <button type="button" class="unc-effect ${m.id === mode ? 'active' : ''}" data-mode="${m.id}" title="${escapeHtml(t(`mode.${m.id}_sub`))}" ${state.data?.chip ? '' : 'disabled'}>
                 ${icon(m.icon)}
                 <strong>${escapeHtml(t(`mode.${m.id}`))}</strong>
                 <small>${escapeHtml(t(`mode.${m.id}_sub`))}</small>
@@ -778,10 +778,19 @@
             </div>`;
     }
 
+    // The boot SSD carries the Unraid mark; a pool or array member names its Unraid role.
+    const UNRAID_MARK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="unc-mark"><rect width="24" height="24" rx="6" fill="#f15a2c"/><path d="M7.5 6.5v6.2a4.5 4.5 0 0 0 9 0V6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
+
+    function ssdUseText(n) {
+        if (n.boot) return t('nvme.boot');
+        return n.role ? t('nvme.role', { name: n.role }) : '';
+    }
+
     function nvmeHtml(n) {
         return `
             <div class="unc-ssd">
-                <strong><span class="unc-slot-ico">${icon('m2')}</span>${escapeHtml(n.model || n.id)}</strong>
+                <strong><span class="unc-slot-ico">${n.boot ? UNRAID_MARK : icon('m2')}</span>${escapeHtml(n.model || n.id)}</strong>
+                ${ssdUseText(n) ? `<span class="unc-use ${n.boot ? 'boot' : ''}">${escapeHtml(ssdUseText(n))}</span>` : ''}
                 <span>${escapeHtml([n.id, fmtSize(n.size_bytes)].filter(Boolean).join(' · '))}</span>
                 ${tempBadge(n.temp, 'nvme')}
             </div>`;
@@ -959,7 +968,7 @@
         const ssds = hw?.nvme || [];
         q('#unc-cc-nvme').innerHTML = ssds.length ? ssds.map(n => {
             const slot = n.slot === 'pcie' ? 'PCIe' : n.slot === 'system' ? t('cc.system') : `M.2-${n.slot.replace('m2-', '')}`;
-            return `<div class="unc-ccrow"><span title="${escapeHtml(n.model)}">${escapeHtml(slot)} · ${escapeHtml(n.model || n.id)}</span>${tempBadge(n.temp, 'nvme') || '<b>–</b>'}</div>`;
+            return `<div class="unc-ccrow"><span title="${escapeHtml([n.model, ssdUseText(n)].filter(Boolean).join(' · '))}"><span class="unc-slot-ico">${n.boot ? UNRAID_MARK : icon('m2')}</span>${escapeHtml(slot)} · ${escapeHtml(n.model || n.id)}</span>${tempBadge(n.temp, 'nvme') || '<b>–</b>'}</div>`;
         }).join('') : `<p class="unc-muted">${escapeHtml(t('cc.none'))}</p>`;
     }
 
