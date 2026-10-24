@@ -1743,7 +1743,7 @@
 /* ---------- Light theme ----------
  * data-theme="light" on .unc (System → Appearance). Variables first, then the
  * rules above that carry a dark-only colour of their own. The case, board and
- * port pictures stay dark: they show the device, not the page.
+ * port pictures turn silver, with dark recesses for bays, ports and fan.
  */
 
 .unc[data-theme="light"] {
@@ -1909,3 +1909,116 @@
     border-color: rgba(220, 38, 38, .5);
     color: #b91c1c;
 }
+
+/* Case pictures in light mode: brushed silver aluminium, darkness only in the recesses (bays, port areas, fan). */
+.unc[data-theme="light"] .unc-stage {
+    background:
+        radial-gradient(ellipse at 50% 100%, rgba(47, 124, 246, .10), transparent 60%),
+        linear-gradient(180deg, #eef2f6, #dfe5ec);
+}
+
+.unc[data-theme="light"] .unc-nas {
+    background: linear-gradient(180deg, #f6f8fa, #e1e6eb 8%, #d2d8de);
+    box-shadow: 0 14px 30px rgba(20, 30, 45, .18), inset 0 1px 0 #fff;
+}
+
+.unc[data-theme="light"] .unc-nas-rear {
+    background:
+        repeating-linear-gradient(90deg, rgba(0, 0, 0, .02) 0 2px, transparent 2px 6px),
+        linear-gradient(180deg, #f6f8fa, #e1e6eb 8%, #d2d8de);
+    box-shadow: 0 14px 30px rgba(20, 30, 45, .18), inset 0 1px 0 #fff;
+}
+
+.unc[data-theme="light"] .unc-nas-bays,
+.unc[data-theme="light"] .unc-rear-ports {
+    background: #aeb6bf;
+}
+
+.unc[data-theme="light"] .unc-nbay {
+    background: linear-gradient(180deg, #f0f3f6, #e0e5ea 55%, #d5dbe1);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08);
+    color: #26303a;
+}
+
+.unc[data-theme="light"] .unc-nbay .info.ok { color: #26303a; }
+.unc[data-theme="light"] .unc-nbay .info.warm { color: #9a4a00; }
+.unc[data-theme="light"] .unc-nbay .info.hot { color: #b91c1c; }
+.unc[data-theme="light"] .unc-nbay .size { color: #5b6672; }
+.unc[data-theme="light"] .unc-nbay .role { color: #26303a; }
+
+.unc[data-theme="light"] .unc-nbay .knob {
+    border-color: #8f99a4;
+    background: #f8f9fb;
+}
+
+.unc[data-theme="light"] .unc-nbay .bar { background: #aeb6bf; }
+.unc[data-theme="light"] .unc-nbay .bar.ok { background: #22c55e; }
+.unc[data-theme="light"] .unc-nbay .bar.warm { background: #f59e0b; }
+.unc[data-theme="light"] .unc-nbay .bar.hot { background: #ef4444; }
+.unc[data-theme="light"] .unc-nbay .bar.standby { background: #1f4d31; }
+
+.unc[data-theme="light"] .unc-nas-front { color: #5b6672; }
+.unc[data-theme="light"] .unc-nas-front .speeds { color: #26303a; }
+.unc[data-theme="light"] .unc-nas-front .brand,
+.unc[data-theme="light"] .unc-nas-model { color: #5b6672; }
+
+/* The white power LED needs a dark seat on silver. */
+.unc[data-theme="light"] .unc-pled { background: #aeb6bf; }
+.unc[data-theme="light"] .unc-pled.power { background: #e9edf1; box-shadow: 0 0 0 1px #5b6672; }
+.unc[data-theme="light"] .unc-pled.lan.on,
+.unc[data-theme="light"] .unc-led .unc-pled.on { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, .6); }
+
+.unc[data-theme="light"] .unc-pbtn {
+    border-color: #8f99a4;
+    background: #3a424b;
+}
+
+.unc[data-theme="light"] .unc-pbtn .unc-pled.power { box-shadow: 0 0 6px rgba(255, 255, 255, .5); }
+
+.unc[data-theme="light"] .unc-rear-fan {
+    background:
+        radial-gradient(circle, rgba(0, 0, 0, .14) 1px, transparent 1.4px) 0 0 / 7px 7px,
+        #aeb6bf;
+}
+
+.unc[data-theme="light"] .unc-rear-fan svg { stroke: #8f99a4; }
+
+.unc[data-theme="light"] .unc-socket { color: #26303a; }
+.unc[data-theme="light"] .unc-socket svg .shell { fill: #3a424b; stroke: #8f99a4; }
+.unc[data-theme="light"] .unc-socket svg .tongue { fill: #59626c; }
+.unc[data-theme="light"] .unc-socket svg .tongue.blue { fill: #2f7cf6; }
+.unc[data-theme="light"] .unc-socket svg .pins { stroke: #8a6b1d; }
+.unc[data-theme="light"] .unc-socket svg .led { fill: #59626c; }
+.unc[data-theme="light"] .unc-socket.rj45.up svg .shell { stroke: #22c55e; }
+.unc[data-theme="light"] .unc-socket.rj45.up svg .led.link { fill: #22c55e; }
+.unc[data-theme="light"] .unc-socket.rj45.up svg .led.act { fill: #f59e0b; }
+.unc[data-theme="light"] .unc-socket.rj45.up svg .led.act.fast { fill: #22c55e; }
+.unc[data-theme="light"] .unc-socket em { color: #26303a; }
+.unc[data-theme="light"] .unc-socket.rj45.up em { color: #166534; }
+
+.unc[data-theme="light"] .unc-board {
+    border-color: #aeb6bf;
+    background: #c6cdd4;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .10);
+}
+
+.unc[data-theme="light"] .unc-slot {
+    border-color: #8f99a4;
+    background: #eef1f4;
+}
+
+.unc[data-theme="light"] .unc-slot.empty {
+    border-color: #aeb6bf;
+    background: #d9dee3;
+}
+
+.unc[data-theme="light"] .unc-slot.ram { border-left-color: #a855f7; }
+.unc[data-theme="light"] .unc-slot.m2 { border-left-color: #14b8a6; }
+.unc[data-theme="light"] .unc-slot.pcie { border-left-color: var(--unc-accent); }
+
+.unc[data-theme="light"] .unc-slot.ram .unc-slot-head { color: #7e22ce; }
+.unc[data-theme="light"] .unc-slot.m2 .unc-slot-head { color: #0f766e; }
+.unc[data-theme="light"] .unc-slot.pcie .unc-slot-head { color: #1d4ed8; }
+
+.unc[data-theme="light"] .unc-ssd { background: #dfe4e9; }
+.unc[data-theme="light"] .unc-ssd .unc-slot-ico { color: #0f766e; }
