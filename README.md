@@ -115,6 +115,8 @@ scripts/test-led-ctl.sh
 
 ## Development
 
+`scripts/harness/run.sh` starts a fake Unraid in Docker around the real plugin files: the real LED backend and `api.php` run against a stand-in for the LED chip, the NAS Control page is rendered with a fixed mock of the fan API (no hardware is touched). `run.sh sync` copies the repo files again after an edit.
+
 The fan tool is built by CI (`Fan tool` workflow). For a test install on the NAS, put the CI artifact
 at `build/ugreen-nas-fan` and run `scripts/install-dev.sh` (the LED tool, `build/ugreen-led-i2c`, is optional).
 

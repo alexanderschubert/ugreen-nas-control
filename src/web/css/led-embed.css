@@ -1,0 +1,28 @@
+/*
+ * The LED pages (a copy of UGREEN LED Control) inside the NAS Control page: their own
+ * stylesheet is loaded as it is; this one only takes away the frame the standalone page had
+ * (sidebar, header, border), so the pages sit in the content area like the others.
+ */
+
+.ulc.ulc-embedded {
+    display: block;
+    min-height: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    overflow: visible;
+}
+
+.ulc-embedded .ulc-main {
+    padding: 0;
+}
+
+/* The page title and the connection badges of the standalone page; NAS Control has its own. */
+.ulc-embedded .ulc-head {
+    display: none;
+}
+
+.ulc-embedded .ulc-view {
+    margin: 0;
+}

@@ -1,7 +1,7 @@
 Menu="Utilities"
 Title="UGREEN LED Control"
 Icon="ugreen-led-control.png"
-Cond="is_file('/boot/config/plugins/ugreen-nas-control/led.enabled')"
+Cond="false"
 Markdown="false"
 ---
 <?php
