@@ -361,6 +361,12 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
                 <option value="light" data-i18n="theme.light">Hell</option>
                 <option value="auto" data-i18n="theme.auto">Wie Unraid</option>
             </select>
+
+            <label for="unc-dash-size" data-i18n="theme.dash" data-led-only hidden>Dashboard-Kachel</label>
+            <select id="unc-dash-size" data-led-only hidden>
+                <option value="compact" data-i18n="theme.dash_compact">Kompakt</option>
+                <option value="full" data-i18n="theme.dash_full">Mit Temperaturen</option>
+            </select>
         </div>
         <p class="unc-hint" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel).</p>
     </article>

@@ -27,10 +27,8 @@
     margin: 0;
 }
 
-/* Language and colour scheme are set once, under Appearance & About; the LED pages follow them. */
+/* Language and colour scheme are set once, under Appearance & About (with the size of the dashboard tile); the LED pages follow them. */
 .ulc-embedded .ulc-card:has(#ulc-language),
-.ulc-embedded label[for="ulc-theme"],
-.ulc-embedded #ulc-theme,
-.ulc-embedded [data-i18n="theme.hint"] {
+.ulc-embedded .ulc-card:has(#ulc-theme) {
     display: none;
 }
