@@ -14,6 +14,7 @@ import (
 var (
 	sysDir      = envOr("UGREEN_SYS", "/sys")
 	dmidecodeBn = envOr("UGREEN_DMIDECODE", "dmidecode")
+	mountsFile  = envOr("UGREEN_MOUNTS", "/proc/mounts")
 )
 
 // What a model has built in.
@@ -63,6 +64,8 @@ type NVMe struct {
 	Slot      string `json:"slot"` // "m2-1", "m2-2", "system" or "pcie"
 	PCI       string `json:"pci"`
 	Temp      *int   `json:"temp"`
+	Role      string `json:"role,omitempty"` // Unraid's name for it: cache, a pool, disk1, ...
+	Boot      bool   `json:"boot"`           // /boot (Unraid's flash) is on this SSD
 }
 
 type Bay struct {
@@ -186,11 +189,69 @@ func sectorBytes(block string) int64 {
 	return n * 512
 }
 
+var (
+	bootRe    = regexp.MustCompile(`^/dev/(nvme\d+)n\d+(?:p\d+)?$`)
+	nvmeDevRe = regexp.MustCompile(`^(nvme\d+)n\d+`)
+)
+
+// bootNVMe names the NVMe controller /boot is mounted from ("" if /boot is on something else).
+func bootNVMe() string {
+	b, err := os.ReadFile(mountsFile)
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		f := strings.Fields(line)
+		if len(f) >= 2 && f[1] == "/boot" {
+			if m := bootRe.FindStringSubmatch(f[0]); m != nil {
+				return m[1]
+			}
+		}
+	}
+	return ""
+}
+
+// nvmeRoles maps an NVMe controller (nvme0) to its name in Unraid's disks.ini ("cache", "disk1",
+// "flash", ...), taken from the section whose device is nvme0n1.
+func nvmeRoles(path string) map[string]string {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+
+	roles := map[string]string{}
+	var cur map[string]string
+	flush := func() {
+		if cur == nil {
+			return
+		}
+		if m := nvmeDevRe.FindStringSubmatch(cur["device"]); m != nil && cur["name"] != "" {
+			roles[m[1]] = cur["name"]
+		}
+	}
+
+	for _, line := range strings.Split(string(b), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "[") {
+			flush()
+			cur = map[string]string{}
+			continue
+		}
+		if key, value, ok := strings.Cut(line, "="); ok && cur != nil {
+			cur[key] = strings.Trim(value, `"`)
+		}
+	}
+	flush()
+
+	return roles
+}
+
 func readNVMe(s Sensors, l layout) []NVMe {
 	temps := map[string]*int{}
 	for _, t := range s.NVMe {
 		temps[t.Name] = t.Temp
 	}
+	roles, boot := nvmeRoles(disksINI), bootNVMe()
 
 	paths, _ := filepath.Glob(filepath.Join(sysDir, "class", "nvme", "nvme*"))
 	sort.Slice(paths, func(i, j int) bool { return nvmeNumber(paths[i]) < nvmeNumber(paths[j]) })
@@ -210,6 +271,8 @@ func readNVMe(s Sensors, l layout) []NVMe {
 			}
 		}
 		d.SizeBytes = sectorBytes(id + "n1")
+		d.Role = roles[id]
+		d.Boot = id == boot || d.Role == "flash"
 		list = append(list, d)
 	}
 	return list

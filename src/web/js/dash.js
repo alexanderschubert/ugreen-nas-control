@@ -113,6 +113,21 @@
         return `<span class="unc-chip ${level}" data-lines="${escapeHtml(JSON.stringify(lines))}"><b>${no}</b></span>`;
     }
 
+    // What an SSD is for in Unraid: the boot SSD gets the Unraid mark, pool and cache members a stack, array disks a drive.
+    const UNRAID = '<svg viewBox="0 0 24 24" aria-hidden="true" class="unc-mark"><rect width="24" height="24" rx="6" fill="#f15a2c"/><path d="M7.5 6.5v6.2a4.5 4.5 0 0 0 9 0V6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>';
+    const GLYPH = {
+        pool: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.300 8-3V6M4 12v6c0 1.700 3.600 3 8 3s8-1.300 8-3v-6"/></svg>',
+        drive: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h.01M11 15h6"/></svg>',
+        m2: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="8" width="20" height="8" rx="1.500"/><path d="M6 10.500h4v3H6zM12 10.500h3v3h-3z"/><circle cx="19" cy="12" r="1.200"/></svg>'
+    };
+
+    function ssdUse(ssd) {
+        if (ssd.boot) return { icon: UNRAID, text: t('nvme.boot') };
+        if (!ssd.role) return { icon: GLYPH.m2, text: '' };
+        const array = /^(parity\d?|disk\d+)$/.test(ssd.role);
+        return { icon: array ? GLYPH.drive : GLYPH.pool, text: t('nvme.role', { name: ssd.role }) };
+    }
+
     // A titled row of chips with a detail area below it (shared by the drive bays and the NVMe SSDs).
     function paintChips(box, title, subtitle, chips) {
         if (!chips.length) {
@@ -139,18 +154,20 @@
     }
 
     function nvmeChip(label, ssd, pcie = true) {
-        if (!ssd) return `<span class="unc-chip empty"><b>${escapeHtml(label)}</b></span>`;
+        if (!ssd) return `<span class="unc-chip empty ico"><b>${escapeHtml(label)}</b></span>`;
 
+        const use = ssdUse(ssd);
         const [warm, hot] = LIMITS.nvme;
         const level = ssd.temp == null ? 'ok' : ssd.temp >= hot ? 'hot' : ssd.temp >= warm ? 'warm' : 'ok';
         const slot = ssd.slot === 'system' ? t('case.sys_slot') : ssd.slot === 'pcie' && pcie ? t('case.pcie_slot') : t('case.m2_slot', { n: ssd.slot === 'pcie' ? '?' : ssd.slot.replace('m2-', '') });
         const lines = [
             ssd.temp != null ? `${ssd.temp} °C` : '–',
+            use.text,
             `${ssd.id} · ${size(ssd.size_bytes)} · ${slot}`,
             ssd.model
         ].filter(Boolean);
 
-        return `<span class="unc-chip ${level}" data-lines="${escapeHtml(JSON.stringify(lines))}"><b>${escapeHtml(label)}</b></span>`;
+        return `<span class="unc-chip ${level} ico" data-lines="${escapeHtml(JSON.stringify(lines))}">${use.icon}<b>${escapeHtml(label)}</b></span>`;
     }
 
     function paintDrives(root, hw) {
