@@ -66,14 +66,32 @@ cond = f"is_file('{flag}')"
 p = f"{web}/UGREENLEDControl.page"
 s = open(p).read()
 assert 'Cond=' not in s.split('---')[0]
-s = s.replace('Markdown="false"', f'Cond="{cond}"\nMarkdown="false"', 1)
+# The LED pages are part of the NAS Control page now; the standalone page stays out of the menu.
+s = s.replace('Markdown="false"', 'Cond="false"\nMarkdown="false"', 1)
 open(p, 'w').write(s)
 
 p = f"{web}/UGREENLEDDashboard.page"
 s = open(p).read()
 assert 'Cond="' in s.split('---')[0]
 s = s.replace('Cond="', f'Cond="{cond} && ', 1)
+s = s.replace('/Settings/UGREENLEDControl', '/Settings/UGREENNASControl')
 open(p, 'w').write(s)
+PY
+
+# The LED views also run inside the NAS Control page: the markup of <main> becomes an include,
+# and the script hands its view switch to the page's own sidebar.
+python3 - "${OUT}/src/web" <<'PY'
+import re, sys
+web = sys.argv[1]
+page = open(f"{web}/UGREENLEDControl.page").read()
+main = re.search(r'<main class="ulc-main">(.*?)</main>', page, re.S).group(1)
+open(f"{web}/include/views.php", "w").write(main.strip() + "\n")
+
+p = f"{web}/js/app.js"
+s = open(p).read().rstrip()
+assert s.endswith("})();")
+s = s[: -len("})();")] + "\n    window.ULC = { show: showView };\n})();\n"
+open(p, "w").write(s)
 PY
 
 # The event hook runs at every array stop; with the LEDs switched off it must do nothing.

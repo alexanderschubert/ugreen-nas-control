@@ -54,6 +54,8 @@
         gauge: '<path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 13 4-5"/>',
         flame: '<path d="M12 22c4 0 7-3 7-7 0-5-5-7-5-13-3 2-5 5-5 8-1-1-2-2-2-4-1 2-2 4-2 7 0 5 3 9 7 9z"/>',
         max: '<path d="M12 3v12M7 8l5-5 5 5M5 21h14"/>',
+        sparkles: '<path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/>',
+        clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
         box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
         ram: '<rect x="2" y="6" width="20" height="10" rx="1.5"/><path d="M5 9h3v4H5zM10.5 9h3v4h-3zM16 9h3v4h-3zM6 16v3M10 16v3M14 16v3M18 16v3"/>',
         m2: '<rect x="2" y="8" width="20" height="8" rx="1.5"/><path d="M6 10.5h4v3H6zM12 10.5h3v3h-3z"/><circle cx="19" cy="12" r="1.2"/>',
@@ -533,6 +535,8 @@
         q('#unc-led-row').classList.toggle('unc-disabled', input.disabled);
         q('#unc-led-state').textContent = t(led.enabled ? 'leds.on' : 'leds.off');
         q('#unc-led-open').hidden = !led.enabled;
+        // The LED pages come with the page itself: they are there once it has been loaded with the switch on.
+        qa('[data-led-only]').forEach(button => { button.hidden = !(led.enabled && window.UNC_LED); });
 
         blocker.hidden = !led.blocker;
         blocker.textContent = led.blocker
@@ -993,10 +997,14 @@
      * ---------------------------------------------------------
      */
 
-    function showView(view) {
+    function showView(nav) {
+        // "led:colours": the LED pages are one view of ours, each of their pages an entry of the sidebar.
+        const [view, sub] = nav.split(':');
+
         state.view = view;
+        if (view === 'led') window.ULC?.show(sub);
         if (view === 'case' || view === 'overview') loadHardware();
-        qa('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === view));
+        qa('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === nav));
         qa('.unc-view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
     }
 
@@ -1074,7 +1082,11 @@
         q('#unc-led-enabled').addEventListener('change', event => {
             const on = event.target.checked;
 
-            run(() => api({ action: 'led', value: on ? 'on' : 'off' }, true), t(on ? 'leds.switched_on' : 'leds.switched_off'));
+            run(async () => {
+                await api({ action: 'led', value: on ? 'on' : 'off' }, true);
+                // The LED pages are part of the page, so it loads again with or without them.
+                location.reload();
+            }, t(on ? 'leds.switched_on' : 'leds.switched_off'));
         });
 
         const theme = q('#unc-theme');

@@ -24,7 +24,7 @@ $mytiles['ugreen-led-control']['column2'] = <<<EOT
 </span>
 <span class="tile-header-right">
 <span class="tile-header-right-controls">
-<a href="/Settings/UGREENLEDControl" id="ulc-dash-settings"><i class="fa fa-fw fa-cog control"></i></a>
+<a href="/Settings/UGREENNASControl" id="ulc-dash-settings"><i class="fa fa-fw fa-cog control"></i></a>
 </span>
 </span>
 </span>

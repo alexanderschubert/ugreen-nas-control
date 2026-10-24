@@ -1657,4 +1657,6 @@
     } else {
         init();
     }
+
+    window.ULC = { show: showView };
 })();
