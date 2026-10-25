@@ -1060,6 +1060,24 @@
     // The LED pages ship with the page: only then (and with the switch on) there is anything to read.
     const ledsOn = () => Boolean(window.UNC_LED && state.data?.led?.enabled);
 
+    // What the LED controller reports, under Appearance & About (the LED pages' own copy of it is hidden).
+    function renderLedFacts(status, leds) {
+        const found = Object.keys(leds || {});
+        const facts = [
+            ['ledfacts.mapping', status.mapping ? t(`ledfacts.mapping_${status.mapping}`) : ''],
+            ['ledfacts.control', status.controller ? `${status.controller} (${t('ledfacts.no_kernel_module')})` : ''],
+            ['ledfacts.controller', status.i2c_address ? t('ledfacts.controller_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_off')],
+            ['ledfacts.leds', found.length ? found.join(', ') : t('ledfacts.none')],
+            ['ledfacts.monitor', status.foreign_monitor ? t('ledfacts.monitor_on') : t('ledfacts.monitor_off')],
+            ['ledfacts.saved', status.settings_saved ? t('ledfacts.saved_yes') : t('ledfacts.saved_no')]
+        ];
+
+        q('#unc-led-facts').innerHTML = facts
+            .filter(([, value]) => value)
+            .map(([key, value]) => `<dt>${escapeHtml(t(key))}</dt><dd>${escapeHtml(value)}</dd>`)
+            .join('');
+    }
+
     async function loadLeds() {
         if (!ledsOn()) {
             state.leds = null;
@@ -1074,6 +1092,7 @@
             const [all, status] = await Promise.all([ledGet('all'), ledGet('status')]);
             state.leds = all.leds || {};
             state.ledMode = { mode: status.mode, fx: status.fx };
+            renderLedFacts(status, state.leds);
             if (!state.ledSchedule) state.ledSchedule = await ledGet('schedule');
         } catch (error) {
             state.leds = null;
