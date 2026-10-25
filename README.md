@@ -10,6 +10,7 @@
 [![LEDs](https://img.shields.io/badge/LEDs-all%20UGREEN%20DX%2FDXP-0078ff)](#supported-models)
 [![License: MIT](https://img.shields.io/github/license/alexanderschubert/ugreen-nas-control?color=lightgrey)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/alexanderschubert/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/alexanderschubert/ugreen-nas-control/stargazers)
+[![Unraid forum](https://img.shields.io/badge/support-Unraid%20forum-f15a2c)](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/)
 [![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
 
 Unraid plugin for UGREEN DX/DXP NAS: **LED control on every model UGREEN LED Control knew**, and, for the
@@ -157,6 +158,15 @@ The plugin downloads its files from that tag and the binaries from the release. 
 ## Languages
 
 The interface is available in German, English and Spanish (`src/web/js/i18n.js`, the LED pages in `led/src/web/js/i18n.js`). The Spanish texts of the LED part are ivolution's work from UGREEN LED Control; the Spanish texts of the rest were translated with Claude's help and would like a native speaker's review. To improve a language, translate only the values, keep `{placeholders}` and HTML tags as they are, and open a pull request or an issue. Missing texts show in English.
+
+## Support
+
+Questions and problems: the [support thread in the Unraid forum](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/). Bug reports and feature requests are also welcome as [GitHub issues](https://github.com/alexanderschubert/ugreen-nas-control/issues). Please include your NAS model, the Unraid and plugin versions and the output of:
+
+```
+/usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-fan status
+/usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-ctl status
+```
 
 ## Community Applications
 
