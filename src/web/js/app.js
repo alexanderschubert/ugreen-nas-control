@@ -722,27 +722,51 @@
         applyLeds(q(target));
     }
 
-    function renderDriveList(hw) {
-        const rows = (hw.bays || []).filter(b => b.present).map(b => `
-            <tr>
-                <td>${String(b.bay).padStart(2, '0')}</td>
-                <td>${escapeHtml(b.role || '–')} <small class="unc-muted">${escapeHtml(b.device)}</small></td>
-                <td class="unc-id">${escapeHtml(b.id || b.model || '–')}</td>
-                <td>${escapeHtml([fmtSize(b.size_bytes), t(b.hdd ? 'case.hdd' : 'case.ssd')].join(' · '))}</td>
-                <td>${b.standby ? escapeHtml(t('case.standby')) : tempBadge(b.temp, b.hdd ? 'disk' : 'nvme') || '–'}</td>
-            </tr>`).join('');
+    // A drive drawn as what it is: a 3.5" hard disk with its platter, or a slim SSD board.
+    const DRIVE_HDD_SVG = '<svg viewBox="0 0 72 48" aria-hidden="true"><rect x="2" y="2" width="68" height="44" rx="6" class="d-body"/><circle cx="26" cy="24" r="15" class="d-plat"/><circle cx="26" cy="24" r="4" class="d-hub"/><path d="M26 24 52 9" class="d-arm"/><rect x="50" y="30" width="16" height="11" rx="2" class="d-label"/></svg>';
+    const DRIVE_SSD_SVG = '<svg viewBox="0 0 72 48" aria-hidden="true"><rect x="2" y="8" width="68" height="32" rx="5" class="d-ssd"/><rect x="9" y="15" width="14" height="18" rx="2" class="d-chip"/><rect x="27" y="15" width="14" height="18" rx="2" class="d-chip"/><rect x="45" y="15" width="18" height="18" rx="2" class="d-label"/></svg>';
 
-        q('#unc-drive-list').innerHTML = rows ? `
-            <table class="unc-table">
-                <thead><tr>
-                    <th>${escapeHtml(t('case.col_bay'))}</th>
-                    <th>${escapeHtml(t('case.col_role'))}</th>
-                    <th>${escapeHtml(t('case.col_disk'))}</th>
-                    <th>${escapeHtml(t('case.col_size'))}</th>
-                    <th>${escapeHtml(t('case.col_temp'))}</th>
-                </tr></thead>
-                <tbody>${rows}</tbody>
-            </table>` : `<p class="unc-muted">${escapeHtml(t('case.empty'))}</p>`;
+    // "disk1" -> "Array disk 1" and so on; a name Unraid gave a pool stays as it is.
+    function driveRoleText(role) {
+        const disk = /^disk(\d+)$/.exec(role || '');
+
+        if (disk) return t('drv.role_array', { n: disk[1] });
+        if (role === 'parity' || role === 'parity2') return t('drv.role_parity');
+        if (role === 'cache') return t('drv.role_cache');
+        return role || '';
+    }
+
+    function driveCard(bay) {
+        const temp = bay.standby
+            ? `<span class="unc-muted">${escapeHtml(t('case.standby'))}</span>`
+            : tempBadge(bay.temp, bay.hdd ? 'disk' : 'nvme') || '<span class="unc-muted">–</span>';
+        const meter = !bay.standby && bay.temp != null
+            ? `<div class="unc-meter ${tempClass(bay.temp, bay.hdd ? 'disk' : 'nvme')}"><span style="width:${Math.min(100, bay.temp)}%"></span></div>`
+            : '<div class="unc-meter"><span style="width:0"></span></div>';
+        const kind = /^parity/.test(bay.role || '') ? 'parity' : /^disk\d/.test(bay.role || '') ? 'array' : 'pool';
+
+        return `
+            <div class="unc-dcard">
+                <div class="d-top"><b class="d-bay">${String(bay.bay).padStart(2, '0')}</b><span class="d-role ${kind}">${escapeHtml(driveRoleText(bay.role) || '–')}</span></div>
+                <div class="d-main">
+                    <div class="d-pic ${bay.hdd ? 'hdd' : 'ssd'}">${bay.hdd ? DRIVE_HDD_SVG : DRIVE_SSD_SVG}</div>
+                    <div class="d-info">
+                        <strong>${escapeHtml(bay.model || bay.id || '–')}</strong>
+                        <span>${escapeHtml([fmtSize(bay.size_bytes), t(bay.hdd ? 'case.hdd' : 'case.ssd')].filter(Boolean).join(' · '))}</span>
+                        <small class="unc-muted unc-id">${escapeHtml([bay.device, bay.id && bay.id !== bay.model ? bay.id : ''].filter(Boolean).join(' · '))}</small>
+                    </div>
+                </div>
+                <div class="d-temp">${meter}<span>${temp}</span></div>
+            </div>`;
+    }
+
+    function renderDriveList(hw) {
+        const bays = hw.bays || [];
+
+        q('#unc-drive-list').innerHTML = bays.some(b => b.present) ? `
+            <div class="unc-dcards">${bays.map(b => b.present ? driveCard(b) : `
+                <div class="unc-dcard empty"><div class="d-top"><b class="d-bay">${String(b.bay).padStart(2, '0')}</b><span class="d-role">${escapeHtml(t('case.empty_bay'))}</span></div></div>`).join('')}
+            </div>` : `<p class="unc-muted">${escapeHtml(t('case.empty'))}</p>`;
     }
 
     // The same fan as in the GT's rear picture; it turns with the real rpm like the fan tiles.
@@ -916,20 +940,20 @@
         : `<g transform="translate(${x} ${y})">${inner}</g>`;
 
     const tempBadge6800 = (x, y, temp) => temp == null ? '' : `<rect x="${x}" y="${y}" width="46" height="16" rx="8" fill="${tempColour(temp)}"/><text x="${x + 23}" y="${y + 11.5}" fill="#0b0e12" font-size="10.5" font-weight="800" text-anchor="middle">${temp} °C</text>`;
-    const boardText = (x, y, text) => `<text x="${x}" y="${y}" fill="#8b96a3" font-size="11.5">${escapeHtml(text)}</text>`;
+    const boardText = (x, y, text) => `<text x="${x}" y="${y}" style="fill:var(--bd-text)" font-size="11.5">${escapeHtml(text)}</text>`;
 
     function inside6800Html(hw) {
         const ssd = slot => hw.nvme.find(d => d.slot === slot);
         const ramSocket = (x, mod, n) => {
-            const socket = `<rect x="${x}" y="150" width="104" height="236" rx="5" fill="#0b0d0f" stroke="#3a424c" stroke-width="2"/><rect x="${x + 49}" y="360" width="6" height="18" rx="2" fill="#1b1f24"/><rect x="${x - 9}" y="178" width="9" height="34" rx="2" fill="#aeb6bf"/><rect x="${x + 104}" y="178" width="9" height="34" rx="2" fill="#aeb6bf"/>`;
+            const socket = `<rect x="${x}" y="150" width="104" height="236" rx="5" style="fill:var(--bd-sock);stroke:var(--bd-sockedge)" stroke-width="2"/><rect x="${x + 49}" y="360" width="6" height="18" rx="2" style="fill:var(--bd-sock2)"/><rect x="${x - 9}" y="178" width="9" height="34" rx="2" fill="#aeb6bf"/><rect x="${x + 104}" y="178" width="9" height="34" rx="2" fill="#aeb6bf"/>`;
             return socket + (mod && mod.size_mb
                 ? place(x + 4, 154, 228, true, ramModule(228, 96, mod))
-                : `<g transform="rotate(-90 ${x + 52} 268)"><text x="${x + 52}" y="272" fill="#6f7882" font-size="12" text-anchor="middle">${escapeHtml(t('in.ram_empty', { n }))}</text></g>`);
+                : `<g transform="rotate(-90 ${x + 52} 268)"><text x="${x + 52}" y="272" style="fill:var(--bd-text2)" font-size="12" text-anchor="middle">${escapeHtml(t('in.ram_empty', { n }))}</text></g>`);
         };
         // An M.2 slot: the module (or the dashed outline of the empty slot) and, next to it, temperature, name and role.
         const m2 = (x, y, upright, drive, label, bx, by) => {
             if (!drive) {
-                return `${place(x, y, 262, upright, '<rect width="262" height="74" rx="3" fill="none" stroke="#3a424c" stroke-width="2" stroke-dasharray="6 5"/>')}${boardText(bx, by + 11, t('in.slot_empty', { label }))}`;
+                return `${place(x, y, 262, upright, '<rect width="262" height="74" rx="3" fill="none" style="stroke:var(--bd-sockedge)" stroke-width="2" stroke-dasharray="6 5"/>')}${boardText(bx, by + 11, t('in.slot_empty', { label }))}`;
             }
             const role = drive.boot ? t('nvme.boot') : ssdRoleText(drive.role);
 
@@ -942,13 +966,13 @@
         return `
             <svg class="unc-board-svg" viewBox="0 0 1000 640" role="img" aria-label="${escapeHtml(t('case.inside'))}">
                 <defs>
-                    <pattern id="unc-ribs" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#4b4f54"/><rect width="8" height="3.5" fill="#3a3d41"/></pattern>
-                    <linearGradient id="unc-pcb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c1f22"/><stop offset="1" stop-color="#101214"/></linearGradient>
+                    <pattern id="unc-ribs" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" style="fill:var(--bd-ribA)"/><rect width="8" height="3.5" style="fill:var(--bd-ribB)"/></pattern>
+                    <linearGradient id="unc-pcb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--bd-g1)"/><stop offset="1" style="stop-color:var(--bd-g2)"/></linearGradient>
                 </defs>
-                <rect x="10" y="10" width="980" height="620" rx="16" fill="url(#unc-pcb)" stroke="#2a2f35" stroke-width="3"/>
+                <rect x="10" y="10" width="980" height="620" rx="16" fill="url(#unc-pcb)" style="stroke:var(--bd-edge)" stroke-width="3"/>
                 <rect x="940" y="30" width="38" height="580" rx="8" fill="#a8afb8"/><rect x="948" y="60" width="22" height="34" rx="4" fill="#5d646d"/><rect x="948" y="520" width="22" height="34" rx="4" fill="#5d646d"/>
-                <path d="M50 70h620l120 90v320H50z" fill="url(#unc-ribs)" stroke="#2a2d31" stroke-width="2"/>
-                <g transform="rotate(-90 300 290)"><text x="300" y="304" fill="#17191b" font-size="64" font-weight="900" text-anchor="middle" letter-spacing="6">UGREEN</text></g>
+                <path d="M50 70h620l120 90v320H50z" fill="url(#unc-ribs)" style="stroke:var(--bd-plate)" stroke-width="2"/>
+                <g transform="rotate(-90 300 290)"><text x="300" y="304" style="fill:var(--bd-ink)" font-size="64" font-weight="900" text-anchor="middle" letter-spacing="6">UGREEN</text></g>
                 <circle cx="400" cy="140" r="9" fill="#b87333"/><circle cx="720" cy="430" r="9" fill="#b87333"/><circle cx="240" cy="470" r="9" fill="#b87333"/>
                 ${m2(86, 96, true, ssd('m2-1'), t('in.m2', { n: 1 }), 172, 104)}
                 ${m2(340, 22, false, ssd('m2-2'), t('in.m2', { n: 2 }), 612, 40)}
@@ -956,8 +980,8 @@
                 ${ramSocket(452, memory[1], 2)}
                 ${ramSocket(578, memory[0], 1)}
                 ${m2(560, 522, false, ssd('system'), t('in.system'), 560, 484)}
-                <rect x="60" y="604" width="390" height="24" rx="6" fill="#0b0d0f" stroke="#3a424c" stroke-width="2"/>
-                <text x="255" y="620" fill="#6f7882" font-size="12" text-anchor="middle">${escapeHtml(t('case.pcie_slot'))}${card ? '' : ` · ${escapeHtml(t('case.free'))}`}</text>
+                <rect x="60" y="604" width="390" height="24" rx="6" style="fill:var(--bd-sock);stroke:var(--bd-sockedge)" stroke-width="2"/>
+                <text x="255" y="620" style="fill:var(--bd-text2)" font-size="12" text-anchor="middle">${escapeHtml(t('case.pcie_slot'))}${card ? '' : ` · ${escapeHtml(t('case.free'))}`}</text>
                 ${card ? `${tempBadge6800(76, 478, card.temp)}${boardText(130, 489, t('in.pcie_card'))}${boardText(130, 502, card.boot ? t('nvme.boot') : ssdRoleText(card.role))}
                     <rect x="76" y="512" width="330" height="86" rx="4" fill="#142a2a" stroke="#2f9a63" stroke-width="1.500"/>${goldFingers(100, 590, 260, 8, 38, null)}<rect x="62" y="522" width="14" height="66" rx="3" fill="#aeb6bf"/>${place(98, 520, 252, false, nvmeModule(252, 64, card))}` : ''}
             </svg>`;
