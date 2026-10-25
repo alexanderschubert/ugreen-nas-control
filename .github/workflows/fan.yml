@@ -3,9 +3,9 @@ name: Fan tool
 on:
   push:
     branches: [main]
-    paths: [fan/**, led/**, src/**, scripts/**, .github/workflows/fan.yml]
+    paths: [fan/**, led/**, src/**, plugin/**, scripts/**, .github/workflows/fan.yml]
   pull_request:
-    paths: [fan/**, led/**, src/**, scripts/**, .github/workflows/fan.yml]
+    paths: [fan/**, led/**, src/**, plugin/**, scripts/**, .github/workflows/fan.yml]
 
 permissions:
   contents: read
@@ -38,7 +38,7 @@ jobs:
       - run: go test ./...
 
       # Static binary: runs on every Unraid kernel without libraries.
-      - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o ugreen-nas-fan .
+      - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -ldflags "-s -w" -o ugreen-nas-fan .
 
       - uses: actions/upload-artifact@v7
         with:
@@ -98,3 +98,27 @@ jobs:
         run: |
           sudo apt-get install -y php-cli >/dev/null
           for f in src/web/api.php src/web/include/lang.php led/src/web/api.php led/src/web/include/lang.php; do php -l "$f"; done
+
+  # The plugin manager and Community Applications check every download against its <MD5>:
+  # the files of the tag against the working tree, the two binaries against this run's build.
+  hashes:
+    needs: [build, led]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ugreen-nas-fan
+          path: build
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ugreen-led-i2c
+          path: build
+
+      - name: Check the MD5 of every download in the .plg
+        run: python3 scripts/plg-hashes.py plugin/ugreen-nas-control.plg --binary ugreen-nas-fan=build/ugreen-nas-fan --binary ugreen-led-i2c=build/ugreen-led-i2c --check
