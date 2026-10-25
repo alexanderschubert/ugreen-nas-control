@@ -2818,3 +2818,59 @@
     align-items: center;
     gap: 10px;
 }
+
+/* ---------- Overview, second layout: the case big on top, hardware in one row, sensors below ---------- */
+
+.unc-cockpit {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.unc-cockpit > .unc-hero-stage { grid-column: span 7; }
+.unc-cockpit > .unc-cc.fan { grid-column: span 5; }
+.unc-cockpit > .unc-cc.cpu,
+.unc-cockpit > .unc-cc.ram,
+.unc-cockpit > .unc-cc.net,
+.unc-cockpit > .unc-cc.ssd { grid-column: span 3; }
+.unc-cockpit > .unc-cc.tmp { grid-column: span 8; }
+.unc-cockpit > .unc-cc.led { grid-column: span 4; }
+
+/* The fan mode sits right under the fans it changes; one row of buttons, the description is the tooltip. */
+.unc-cc .unc-cc-sub { margin-top: 16px; }
+
+.unc-cc .unc-effects {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.unc-cc .unc-effect { min-height: 64px; padding: 8px 4px; gap: 5px; align-content: center; align-items: center; }
+.unc-cc .unc-effect small { display: none; }
+.unc-cc .unc-effect svg { width: 20px; height: 20px; }
+.unc-cc .unc-effects + .unc-hint { margin-top: 10px; padding: 8px 10px; font-size: 12px; }
+
+/* The sensors in columns instead of one long list. */
+.unc-cockpit .unc-temps {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 10px 24px;
+}
+
+@container uncmain (max-width: 1000px) {
+    .unc-cockpit > .unc-hero-stage,
+    .unc-cockpit > .unc-cc.fan,
+    .unc-cockpit > .unc-cc.tmp,
+    .unc-cockpit > .unc-cc.led { grid-column: 1 / -1; }
+    .unc-cockpit > .unc-cc.cpu,
+    .unc-cockpit > .unc-cc.ram,
+    .unc-cockpit > .unc-cc.net,
+    .unc-cockpit > .unc-cc.ssd { grid-column: span 6; }
+}
+
+@container uncmain (max-width: 640px) {
+    .unc-cockpit > .unc-cc.cpu,
+    .unc-cockpit > .unc-cc.ram,
+    .unc-cockpit > .unc-cc.net,
+    .unc-cockpit > .unc-cc.ssd { grid-column: 1 / -1; }
+}
+
+/* The picture sits in the middle of its card when the fan card next to it is taller. */
+.unc-cockpit > .unc-hero-stage .unc-hero { flex: 1 1 auto; align-content: center; }

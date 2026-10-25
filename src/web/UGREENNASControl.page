@@ -129,58 +129,46 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 
 <section class="unc-view active" data-view="overview">
     <div class="unc-cockpit">
-        <div class="unc-ccol">
-            <article class="unc-card unc-cc cpu">
-                <h3><i></i><span data-i18n="tile.cpu">Prozessor</span></h3>
-                <div id="unc-cc-cpu"></div>
-            </article>
-            <article class="unc-card unc-cc ram">
-                <h3><i></i><span data-i18n="tile.ram">Arbeitsspeicher</span></h3>
-                <div id="unc-cc-ram"></div>
-            </article>
-            <article class="unc-card unc-cc net">
-                <h3><i></i><span data-i18n="tile.net">Netzwerk</span></h3>
-                <div id="unc-cc-net"></div>
-            </article>
-            <article class="unc-card unc-cc ssd">
-                <h3><i></i><span data-i18n="tile.nvme">NVMe-SSDs</span></h3>
-                <div id="unc-cc-nvme"></div>
-            </article>
-        </div>
-
         <div class="unc-stage unc-hero-stage">
             <div class="unc-hero-head"><b id="unc-hero-model">UGREEN NAS</b><span id="unc-hero-sub"></span></div>
             <div class="unc-hero" id="unc-hero"></div>
             <div class="unc-hero-foot" id="unc-hero-foot"></div>
         </div>
 
-        <div class="unc-ccol">
-            <article class="unc-card unc-cc fan">
-                <h3><i></i><span data-i18n="fans.title">Lüfter</span></h3>
-                <div class="unc-fans" id="unc-fans"></div>
-                <p class="unc-muted unc-follow" id="unc-follow"></p>
-            </article>
-            <article class="unc-card unc-cc led" id="unc-cc-led-card" hidden>
-                <h3><i></i><span data-i18n="led.title">LEDs</span></h3>
-                <div id="unc-cc-led"></div>
-                <button type="button" class="unc-btn small" data-nav="led:overview"><span data-i18n="led.open">LED-Einstellungen</span></button>
-            </article>
-            <article class="unc-card unc-cc tmp">
-                <h3><i></i><span data-i18n="temps.title">Temperaturen</span></h3>
-                <div class="unc-temps" id="unc-temps"></div>
-            </article>
-        </div>
-    </div>
-
-    <div class="unc-under">
-        <article class="unc-card">
-            <h2 data-i18n="mode.title">Lüftermodus</h2>
+        <article class="unc-card unc-cc fan">
+            <h3><i></i><span data-i18n="fans.title">Lüfter</span></h3>
+            <div class="unc-fans" id="unc-fans"></div>
+            <p class="unc-muted unc-follow" id="unc-follow"></p>
+            <h3 class="unc-cc-sub"><span data-i18n="mode.title">Lüftermodus</span></h3>
             <div class="unc-effects" id="unc-modes"></div>
             <p class="unc-hint" id="unc-mode-hint"></p>
         </article>
-        <article class="unc-card">
-            <h2 data-i18n="system.title">System</h2>
-            <dl class="unc-facts" id="unc-system"></dl>
+
+        <article class="unc-card unc-cc cpu">
+            <h3><i></i><span data-i18n="tile.cpu">Prozessor</span></h3>
+            <div id="unc-cc-cpu"></div>
+        </article>
+        <article class="unc-card unc-cc ram">
+            <h3><i></i><span data-i18n="tile.ram">Arbeitsspeicher</span></h3>
+            <div id="unc-cc-ram"></div>
+        </article>
+        <article class="unc-card unc-cc net">
+            <h3><i></i><span data-i18n="tile.net">Netzwerk</span></h3>
+            <div id="unc-cc-net"></div>
+        </article>
+        <article class="unc-card unc-cc ssd">
+            <h3><i></i><span data-i18n="tile.nvme">NVMe-SSDs</span></h3>
+            <div id="unc-cc-nvme"></div>
+        </article>
+
+        <article class="unc-card unc-cc tmp">
+            <h3><i></i><span data-i18n="temps.title">Temperaturen</span></h3>
+            <div class="unc-temps" id="unc-temps"></div>
+        </article>
+        <article class="unc-card unc-cc led" id="unc-cc-led-card" hidden>
+            <h3><i></i><span data-i18n="led.title">LEDs</span></h3>
+            <div id="unc-cc-led"></div>
+            <button type="button" class="unc-btn small" data-nav="led:overview"><span data-i18n="led.open">LED-Einstellungen</span></button>
         </article>
     </div>
 </section>
@@ -340,6 +328,11 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 <!-- ================= System ================= -->
 
 <section class="unc-view" data-view="system">
+    <article class="unc-card">
+        <h2 data-i18n="system.title">System</h2>
+        <dl class="unc-facts" id="unc-system"></dl>
+    </article>
+
     <article class="unc-card">
         <h2 data-i18n="language.title">Sprache</h2>
         <div class="unc-form">
