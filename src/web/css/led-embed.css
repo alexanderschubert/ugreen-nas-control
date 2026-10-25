@@ -37,3 +37,10 @@
 .ulc-embedded .ulc-card:has(#ulc-facts) {
     display: none;
 }
+
+/* Light mode: a darker blue and green so white button text and green values stay readable. */
+.ulc[data-theme="light"] {
+    --ulc-accent: #1f63d1;
+    --ulc-accent-2: #184fa8;
+    --ulc-green: #15803d;
+}

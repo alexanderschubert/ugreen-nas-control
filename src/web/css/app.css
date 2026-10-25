@@ -1753,7 +1753,9 @@
     --unc-border: #d5dce4;
     --unc-text: #1b232c;
     --unc-muted: #5b6672;
-    --unc-green: #16a34a;
+    --unc-accent: #1f63d1;
+    --unc-accent-2: #184fa8;
+    --unc-green: #15803d;
     --unc-amber: #b45309;
     --unc-red: #dc2626;
 
@@ -2539,7 +2541,7 @@
 .unc-rear6800 .r-fan small {
     position: absolute;
     bottom: -2.4cqi;
-    color: #4b545f;
+    color: #8b96a3;
     white-space: nowrap;
 }
 
@@ -2897,3 +2899,12 @@
 
 /* The picture sits in the middle of its card when the fan card next to it is taller. */
 .unc-cockpit > .unc-hero-stage .unc-hero { flex: 1 1 auto; align-content: center; }
+
+/* Light mode, readable: text on the silver bays and the role labels were too pale (contrast under 3). */
+.unc[data-theme="light"] .unc-nbay .size,
+.unc[data-theme="light"] .unc-nbay .info.standby,
+.unc[data-theme="light"] .unc-nbay .info.empty { color: #36414d; }
+.unc[data-theme="light"] .unc-nbay .info.warm { color: #6b2f00; }
+.unc[data-theme="light"] .unc-dcard .d-role.array { color: #1e40af; }
+.unc[data-theme="light"] .unc-dcard .d-role.parity { color: #6b21a8; }
+.unc[data-theme="light"] .unc-dcard .d-role.pool { color: #166534; }
