@@ -2908,3 +2908,19 @@
 .unc[data-theme="light"] .unc-dcard .d-role.array { color: #1e40af; }
 .unc[data-theme="light"] .unc-dcard .d-role.parity { color: #6b21a8; }
 .unc[data-theme="light"] .unc-dcard .d-role.pool { color: #166534; }
+
+/* An LED sits in a dark slot of its own: dimmed (status mode, standby) a white LED would vanish on silver or white. */
+.unc-nbay .bar,
+.unc-ledrow i { position: relative; }
+
+.unc-nbay .bar::before,
+.unc-ledrow i::before {
+    content: "";
+    position: absolute;
+    inset: -2px -3px;
+    z-index: -1;
+    border-radius: 6px;
+    background: #2b3138;
+}
+
+.unc-ledrow { isolation: isolate; }
