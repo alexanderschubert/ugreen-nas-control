@@ -148,8 +148,11 @@ at `build/ugreen-nas-fan` and run `scripts/install-dev.sh` (the LED tool, `build
 
 ## Release
 
-Raise `version` and add the changes in `plugin/ugreen-nas-control.plg`. After the merge to `main`
-the `Tag release` workflow creates the tag `v<version>` and the release with the binary.
+1. Raise `version` and add the changes in `plugin/ugreen-nas-control.plg`.
+2. Update the MD5 of every download in the `.plg`: `python3 scripts/plg-hashes.py plugin/ugreen-nas-control.plg --binary ugreen-nas-fan=build/ugreen-nas-fan --binary ugreen-led-i2c=build/ugreen-led-i2c`. The files come from the working tree; the two binaries are the artifacts of the pull request's CI run (`Fan tool` workflow). Any change to a downloaded file changes its hash, so this is part of every pull request that touches `src/`, `led/` or `fan/`; CI fails on stale hashes (Unraid and Community Applications check them).
+3. Merge to `main`. The `Tag release` workflow builds the binaries, checks the hashes, then creates the tag `v<version>` and the release with the binaries (an existing release asset is never replaced).
+
+The plugin downloads its files from that tag and the binaries from the release. Wait for the workflow to finish (about a minute) before updating in Unraid; an update attempted earlier can leave GitHub caching a 404 for up to five minutes.
 
 ## Community Applications
 
