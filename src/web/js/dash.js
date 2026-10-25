@@ -4,10 +4,10 @@
     'use strict';
 
     const API = '/plugins/ugreen-nas-control/api.php';
-    const LANG = window.UGREEN_NAS_LANG === 'en' ? 'en' : 'de';
+    const LANG = ['de', 'en', 'es'].includes(window.UGREEN_NAS_LANG) ? window.UGREEN_NAS_LANG : 'de';
     const TEXTS = window.UNC_I18N || { de: {}, en: {} };
 
-    const t = (key, vars = {}) => String(TEXTS[LANG][key] ?? TEXTS.de[key] ?? key)
+    const t = (key, vars = {}) => String(TEXTS[LANG]?.[key] ?? TEXTS.en?.[key] ?? TEXTS.de[key] ?? key)
         .replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? ''));
 
     const FAN = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg>';
