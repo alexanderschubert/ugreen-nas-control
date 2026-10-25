@@ -554,6 +554,10 @@
     }
 
     function render() {
+        keepScroll(drawAll);
+    }
+
+    function drawAll() {
         renderHead();
         if (!state.data?.ok) return;
 
@@ -1165,14 +1169,24 @@
             state.hw = await api({ action: 'hardware' });
             state.hwError = false;
         } catch (error) {
-            state.hw = null;
-            state.hwError = true;
+            // A failed read keeps the last picture: dropping it would shrink the page under the reader and jump to the top.
+            if (!state.hw) state.hwError = true;
         }
-        renderCase();
-        if (state.data?.ok) {
-            renderHero();
-            renderCockpitCards();
-        }
+        keepScroll(() => {
+            renderCase();
+            if (state.data?.ok) {
+                renderHero();
+                renderCockpitCards();
+            }
+        });
+    }
+
+    // Redrawing big parts of the page can make it shorter for a moment; the browser then scrolls up and stays there.
+    function keepScroll(draw) {
+        const y = window.scrollY;
+
+        draw();
+        if (window.scrollY !== y) window.scrollTo(0, y);
     }
 
     /*

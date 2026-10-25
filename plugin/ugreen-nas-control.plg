@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "0.10.8">
+<!ENTITY version   "1.0">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,11 @@
 >
 
 <CHANGES>
+
+### 1.0
+- Versions are now counted 1.0, 1.1 ... 1.9, then 2.0 (never a third number, never 1.10). Unraid compares the version as text, so 0.10.x counted as older than 0.9.x and the update check showed nothing for anyone on 0.9.x. 1.0 is above all of them
+- Drives table on the Case page: white text on white cells in some Unraid themes
+- The page jumped back to the top while scrolling (Firefox, Safari): a failed hardware read emptied the picture of the case, the page got shorter and the browser scrolled up. The last picture is kept now and the scroll position restored after a redraw
 
 ### 0.10.8
 - The LED controller facts (bay assignment, control, controller, LEDs found, saved settings) moved from the Alerts &amp; shutdown page to Appearance &amp; About. Model, kernel and version were doubled and are only on the Overview
