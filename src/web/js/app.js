@@ -6,11 +6,11 @@
 
     if (!root) return;
 
-    const LANG = window.UGREEN_NAS_LANG === 'en' ? 'en' : 'de';
+    const LANG = ['de', 'en', 'es'].includes(window.UGREEN_NAS_LANG) ? window.UGREEN_NAS_LANG : 'de';
     const TEXTS = window.UNC_I18N || { de: {}, en: {} };
 
-    // German fills gaps in other languages.
-    const t = (key, vars = {}) => String(TEXTS[LANG][key] ?? TEXTS.de[key] ?? key)
+    // English fills gaps in other languages, German after it.
+    const t = (key, vars = {}) => String(TEXTS[LANG]?.[key] ?? TEXTS.en?.[key] ?? TEXTS.de[key] ?? key)
         .replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? ''));
 
     // "auto" follows Unraid: light when the page behind the plugin is light.

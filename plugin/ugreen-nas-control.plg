@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "1.7">
+<!ENTITY version   "1.8">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 1.8
+- Spanish: the whole interface (overview, case, fans, safety, appearance, dashboard tile) is translated, next to the LED pages with ivolution's translation from UGREEN LED Control. Choose it under Appearance &amp; About or let it follow Unraid's language. The LED pages follow the language of the plugin
 
 ### 1.7
 - Every download of the plugin now carries an MD5 that Unraid checks (needed for Community Applications). The two binaries are built the same way each time, CI checks the hashes, and the release is made only if they match
@@ -190,12 +193,12 @@
 
 <FILE Name="&srcDIR;/api.php">
 <URL>&gitURL;/src/web/api.php</URL>
-<MD5>644ffb96cfe82c10bd79eb3070e18dee</MD5>
+<MD5>18a9f735e3446b2702a7064de5fb83ec</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASControl.page">
 <URL>&gitURL;/src/web/UGREENNASControl.page</URL>
-<MD5>a0f2ff04f90704849e9f32726510afa4</MD5>
+<MD5>ec5a1bffa289c810e68b6519f6f60ebc</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASDashboard.page">
@@ -221,7 +224,7 @@
 
 <FILE Name="&srcDIR;/include/lang.php">
 <URL>&gitURL;/src/web/include/lang.php</URL>
-<MD5>380a25c53b661e01bc30e4ce19d6caeb</MD5>
+<MD5>8da0bfdbb3551545db0fc0729b2a4b80</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/css/app.css">
@@ -231,17 +234,17 @@
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>41d6831e92ad0d1b8506ef400d8102fe</MD5>
+<MD5>7a8c328a503b626b83e2a2c61e404b83</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>83ed149f94f491efe8d2b7428b370b34</MD5>
+<MD5>b731b0bd6581e269969a24a48d87efa6</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">
 <URL>&gitURL;/src/web/js/dash.js</URL>
-<MD5>ec687bc02719365b47452ea41ff414f5</MD5>
+<MD5>30701e71470fb6cd58907058c844bc66</MD5>
 </FILE>
 
 <!-- LED part: a copy of UGREEN LED Control (scripts/sync-led.sh), off until the switch is on -->

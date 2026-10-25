@@ -248,7 +248,7 @@ if ($action === 'safety') {
 if ($action === 'lang') {
     $lang = (string)($input['value'] ?? '');
 
-    if (!in_array($lang, ['auto', 'de', 'en'], true)) {
+    if (!in_array($lang, ['auto', 'de', 'en', 'es'], true)) {
         respond([
             'ok' => false,
             'error' => 'Invalid language'

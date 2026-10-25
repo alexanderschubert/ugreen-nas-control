@@ -10,8 +10,9 @@ function unc_language(): array
         ? (parse_ini_file('/boot/config/plugins/dynamix/dynamix.cfg', true) ?: [])
         : [];
 
-    $unraid = str_starts_with((string)($dynamix['display']['locale'] ?? ''), 'de') ? 'de' : 'en';
-    $setting = in_array($settings['ui_lang'] ?? '', ['de', 'en'], true) ? $settings['ui_lang'] : 'auto';
+    $locale = (string)($dynamix['display']['locale'] ?? '');
+    $unraid = str_starts_with($locale, 'de') ? 'de' : (str_starts_with($locale, 'es') ? 'es' : 'en');
+    $setting = in_array($settings['ui_lang'] ?? '', ['de', 'en', 'es'], true) ? $settings['ui_lang'] : 'auto';
 
     return [$setting === 'auto' ? $unraid : $setting, $setting];
 }

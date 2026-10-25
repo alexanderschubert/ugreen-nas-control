@@ -28,7 +28,7 @@ UGREEN LED Control.
 - **Safety**: minimum speed, all fans at 100 % when the CPU or a disk gets too hot or the CPU temperature
   can't be read, an Unraid notification when a fan stops, and the BIOS values back when the plugin
   stops or is removed
-- Dashboard tile, English and German interface
+- Dashboard tile, English, German and Spanish interface
 
 - **LEDs (optional)**: colour, effects, a status mode for disk activity and SMART warnings, night mode and a
   dashboard tile – a copy of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control),
@@ -154,6 +154,10 @@ at `build/ugreen-nas-fan` and run `scripts/install-dev.sh` (the LED tool, `build
 
 The plugin downloads its files from that tag and the binaries from the release. Wait for the workflow to finish (about a minute) before updating in Unraid; an update attempted earlier can leave GitHub caching a 404 for up to five minutes.
 
+## Languages
+
+The interface is available in German, English and Spanish (`src/web/js/i18n.js`, the LED pages in `led/src/web/js/i18n.js`). The Spanish texts of the LED part are ivolution's work from UGREEN LED Control; the Spanish texts of the rest were translated with Claude's help and would like a native speaker's review. To improve a language, translate only the values, keep `{placeholders}` and HTML tags as they are, and open a pull request or an issue. Missing texts show in English.
+
 ## Community Applications
 
 `ca_profile.xml` and `plugins/ugreen-nas-control.xml` are the Community Applications listing (author profile and plugin entry). The `<PluginURL>` in the listing must stay identical to the `pluginURL` of `plugin/ugreen-nas-control.plg`.
@@ -161,6 +165,7 @@ The plugin downloads its files from that tag and the binaries from the release. 
 ## Thanks
 
 - [miskcoo](https://github.com/miskcoo/ugreen_leds_controller): the LED protocol and the bay mapping of the LED part
+- [ivolution](https://github.com/ivolution): the Spanish translation of UGREEN LED Control, which the LED part and this plugin build on
 - [j3n57h0m45](https://github.com/j3n57h0m45): the **DXP4800 GT** support: fan control through the IT5571 embedded controller, LEDs, the case view, the System view, light case pictures and the CI hardening
 - everyone who tested on their model
 

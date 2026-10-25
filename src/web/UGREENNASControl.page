@@ -337,6 +337,7 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
                 <option value="auto" data-i18n="language.auto">Wie Unraid</option>
                 <option value="de">Deutsch</option>
                 <option value="en">English</option>
+                <option value="es">Español</option>
             </select>
         </div>
     </article>
