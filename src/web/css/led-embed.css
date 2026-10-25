@@ -32,3 +32,8 @@
 .ulc-embedded .ulc-card:has(#ulc-theme) {
     display: none;
 }
+
+/* The facts about the controller are shown under Appearance & About; model, kernel and version are on the Overview. */
+.ulc-embedded .ulc-card:has(#ulc-facts) {
+    display: none;
+}

@@ -371,6 +371,11 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
         <p class="unc-hint" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel).</p>
     </article>
 
+    <article class="unc-card" id="unc-led-facts-card" data-led-only hidden>
+        <h2 data-i18n="ledfacts.title">LED-Controller</h2>
+        <dl class="unc-facts" id="unc-led-facts"></dl>
+    </article>
+
     <article class="unc-card unc-about">
         <div class="unc-about-head">
             <img class="unc-about-icon" src="/plugins/ugreen-nas-control/images/ugreen-nas-control.png" alt="">
