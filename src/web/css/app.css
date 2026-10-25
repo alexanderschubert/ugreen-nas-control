@@ -2830,8 +2830,7 @@
 .unc-cockpit > .unc-cc.fan { grid-column: span 5; }
 .unc-cockpit > .unc-cc.cpu,
 .unc-cockpit > .unc-cc.ram,
-.unc-cockpit > .unc-cc.net,
-.unc-cockpit > .unc-cc.ssd { grid-column: span 3; }
+.unc-cockpit > .unc-cc.net { grid-column: span 4; }
 .unc-cockpit > .unc-cc.tmp { grid-column: span 8; }
 .unc-cockpit > .unc-cc.led { grid-column: span 4; }
 
@@ -2886,16 +2885,14 @@
     .unc-cockpit > .unc-cc.tmp,
     .unc-cockpit > .unc-cc.led { grid-column: 1 / -1; }
     .unc-cockpit > .unc-cc.cpu,
-    .unc-cockpit > .unc-cc.ram,
-    .unc-cockpit > .unc-cc.net,
-    .unc-cockpit > .unc-cc.ssd { grid-column: span 6; }
+    .unc-cockpit > .unc-cc.ram { grid-column: span 6; }
+    .unc-cockpit > .unc-cc.net { grid-column: 1 / -1; }
 }
 
 @container uncmain (max-width: 640px) {
     .unc-cockpit > .unc-cc.cpu,
     .unc-cockpit > .unc-cc.ram,
-    .unc-cockpit > .unc-cc.net,
-    .unc-cockpit > .unc-cc.ssd { grid-column: 1 / -1; }
+    .unc-cockpit > .unc-cc.net { grid-column: 1 / -1; }
 }
 
 /* The picture sits in the middle of its card when the fan card next to it is taller. */

@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "1.3">
+<!ENTITY version   "1.4">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 1.4
+- Overview: the "NVMe SSDs" card is gone; the SSDs are in the temperatures, by their place in the case (M.2-1, M.2-2, system slot, PCIe) with the Unraid mark on the boot SSD. Processor, memory and network share the row
 
 ### 1.3
 - Overview, temperatures: sections (processor and mainboard, NVMe SSDs, drives) and a small picture in front of every sensor, coloured by its level

@@ -351,11 +351,13 @@
 
         return `
             <div class="unc-temp ${level}">
-                <span><i class="unc-temp-ico">${icon(iconName)}</i>${escapeHtml(label)}${extra ? ` <small class="unc-muted">${escapeHtml(extra)}</small>` : ''}</span>
+                <span><i class="unc-temp-ico">${iconName.startsWith('<') ? iconName : icon(iconName)}</i>${escapeHtml(label)}${extra ? ` <small class="unc-muted">${escapeHtml(extra)}</small>` : ''}</span>
                 <span class="unc-meter"><span style="width:${width}%"></span></span>
                 <strong>${escapeHtml(deg(value))}</strong>
             </div>`;
     }
+
+    const ssdSlotLabel = n => n.slot === 'pcie' ? 'PCIe' : n.slot === 'system' ? t('cc.system') : `M.2-${n.slot.replace('m2-', '')}`;
 
     // Sensors in sections: processor and board, the SSDs, the drives.
     function renderTemps() {
@@ -376,7 +378,12 @@
             if (temp != null) system.push(tempRow(t('temps.chip', { n: i + 1 }), temp, 'other', '', 'fan'));
         });
 
-        (s.nvme || []).forEach(n => ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2')));
+        // The SSDs by their place in the case (with the mark of the one Unraid runs from); the sensors' own names when the hardware isn't known.
+        if (state.hw?.nvme?.length) {
+            state.hw.nvme.forEach(n => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${n.model || n.id}`, n.temp, 'nvme', '', n.boot ? UNRAID_MARK : 'm2')));
+        } else {
+            (s.nvme || []).forEach(n => ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2')));
+        }
 
         (s.disks || []).forEach(d => {
             if (d.standby) {
@@ -1283,6 +1290,7 @@
     }
 
     function renderCockpitCards() {
+        renderTemps();
         renderHeroFoot();
         renderLedCard();
         const data = state.data || {};
@@ -1316,12 +1324,6 @@
                 <b class="${n.link ? 'up' : 'unc-muted'}">${escapeHtml(n.link ? speedText(n.speed_mbit) : t('cc.no_link'))}</b></div>
             <div class="unc-meter net"><span style="width:${n.link ? Math.min(100, Math.round(n.speed_mbit / 100)) : 0}%"></span></div>`).join('')
             : `<p class="unc-muted">${escapeHtml(t('cc.none'))}</p>`;
-
-        const ssds = hw?.nvme || [];
-        q('#unc-cc-nvme').innerHTML = ssds.length ? ssds.map(n => {
-            const slot = n.slot === 'pcie' ? 'PCIe' : n.slot === 'system' ? t('cc.system') : `M.2-${n.slot.replace('m2-', '')}`;
-            return `<div class="unc-ccrow"><span title="${escapeHtml([n.model, ssdUseText(n)].filter(Boolean).join(' · '))}"><span class="unc-slot-ico">${n.boot ? UNRAID_MARK : icon('m2')}</span>${escapeHtml(slot)} · ${escapeHtml(n.model || n.id)}</span>${tempBadge(n.temp, 'nvme') || '<b>–</b>'}</div>`;
-        }).join('') : `<p class="unc-muted">${escapeHtml(t('cc.none'))}</p>`;
     }
 
     /*
