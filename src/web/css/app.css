@@ -2671,6 +2671,18 @@
 }
 
 .unc .unc-board-svg {
+    --bd-g1: #1c1f22;
+    --bd-g2: #101214;
+    --bd-edge: #2a2f35;
+    --bd-ribA: #4b4f54;
+    --bd-ribB: #3a3d41;
+    --bd-plate: #2a2d31;
+    --bd-ink: #17191b;
+    --bd-sock: #0b0d0f;
+    --bd-sock2: #1b1f24;
+    --bd-sockedge: #3a424c;
+    --bd-text: #8b96a3;
+    --bd-text2: #6f7882;
     display: block;
     stroke: none;
     width: 100%;
@@ -2680,3 +2692,129 @@
 }
 
 .unc .unc-board-svg text { font-family: inherit; }
+
+/* The board in light mode: a pale board and a silver ribbed cover; the modules keep their own colours. */
+.unc[data-theme="light"] .unc-board-svg {
+    --bd-g1: #eef1f4;
+    --bd-g2: #dde2e8;
+    --bd-edge: #b4bcc6;
+    --bd-ribA: #c3c8ce;
+    --bd-ribB: #b0b6bd;
+    --bd-plate: #9aa2ab;
+    --bd-ink: #8b939c;
+    --bd-sock: #f5f7f9;
+    --bd-sock2: #cfd5db;
+    --bd-sockedge: #98a1ab;
+    --bd-text: #46505c;
+    --bd-text2: #6b7684;
+}
+
+/* The rear in light mode: silver housing like the front; the fan recess, the sockets and the power box stay dark. */
+.unc[data-theme="light"] .unc-rear6800 { color: #46505c; }
+
+.unc[data-theme="light"] .unc-rear6800 .r-body {
+    background: linear-gradient(180deg, #e6eaee, #d3d9df);
+    box-shadow:
+        inset 1.1cqi 0 0 #9aa3ad,
+        inset -1.1cqi 0 0 #9aa3ad,
+        0 14px 30px rgba(20, 30, 45, .22);
+}
+
+.unc[data-theme="light"] .unc-rear6800 .r-screw { background: radial-gradient(circle at 40% 35%, #aab2bb, #6b7480 70%); }
+.unc[data-theme="light"] .unc-rear6800 .r-foot { background: #aab2bb; }
+.unc[data-theme="light"] .unc-rear6800 .r-abs b { color: #3b4552; }
+.unc[data-theme="light"] .unc-rear6800 .r-abs em { color: #5f6b78; }
+.unc[data-theme="light"] .unc-rear6800 .r-lan.up em { color: #15803d; }
+.unc[data-theme="light"] .unc-rear6800 .r-pcie b { background: #bcc4cd; color: #2d3642; }
+
+/* ---------- Case: the drives as cards ---------- */
+
+.unc-dcards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 12px;
+}
+
+.unc-dcard {
+    display: grid;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--unc-border);
+    border-radius: 12px;
+    background: var(--unc-card-2);
+}
+
+.unc-dcard.empty {
+    border-style: dashed;
+    background: transparent;
+    opacity: .6;
+}
+
+.unc-dcard .d-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.unc-dcard .d-bay {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: .02em;
+}
+
+.unc-dcard .d-role {
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: rgba(139, 150, 163, .18);
+    color: var(--unc-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.unc-dcard .d-role.array { background: rgba(47, 124, 246, .18); color: var(--unc-accent); }
+.unc-dcard .d-role.parity { background: rgba(168, 85, 247, .18); color: #a855f7; }
+.unc-dcard .d-role.pool { background: rgba(34, 197, 94, .18); color: #16a34a; }
+
+.unc-dcard .d-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.unc .unc-dcard .d-pic svg {
+    width: 64px;
+    height: 43px;
+    stroke: none;
+}
+
+.unc-dcard .d-body { fill: #c9ced4; stroke: #8f99a4; stroke-width: 1.5; }
+.unc-dcard .d-plat { fill: #aab2bb; stroke: #8f99a4; stroke-width: 1; }
+.unc-dcard .d-hub { fill: #6b7480; }
+.unc-dcard .d-arm { fill: none; stroke: #6b7480; stroke-width: 3; stroke-linecap: round; }
+.unc-dcard .d-label { fill: #f1f3f5; stroke: #8f99a4; stroke-width: .8; }
+.unc-dcard .d-ssd { fill: #2a3139; stroke: #4b5563; stroke-width: 1.5; }
+.unc-dcard .d-chip { fill: #14181d; stroke: #3a424c; stroke-width: .8; }
+
+.unc-dcard .d-info {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.unc-dcard .d-info strong,
+.unc-dcard .d-info small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.unc-dcard .d-info span { font-size: 13px; }
+
+.unc-dcard .d-temp {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+}

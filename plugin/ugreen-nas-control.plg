@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "1.0">
+<!ENTITY version   "1.1">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,10 @@
 >
 
 <CHANGES>
+
+### 1.1
+- Case page: the drives are cards now (bay, role such as array disk, parity or cache, a drawing of a hard disk or SSD, model, size, temperature bar) instead of a table; empty bays are shown too
+- Light mode: the rear picture is silver like the front, the inside view has a pale board; the pages were checked one by one for dark leftovers
 
 ### 1.0
 - Versions are now counted 1.0, 1.1 ... 1.9, then 2.0 (never a third number, never 1.10). Unraid compares the version as text, so 0.10.x counted as older than 0.9.x and the update check showed nothing for anyone on 0.9.x. 1.0 is above all of them
