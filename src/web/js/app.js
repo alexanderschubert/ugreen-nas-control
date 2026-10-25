@@ -563,6 +563,8 @@
         q('#unc-led-import').hidden = !led.import_available;
         // The LED pages come with the page itself: they are there once it has been loaded with the switch on.
         qa('[data-led-only]').forEach(button => { button.hidden = !(led.enabled && window.UNC_LED); });
+        // Switched on, the switch lives under Appearance & About; the sidebar entry is only the way to it while the LEDs are off.
+        qa('[data-led-off-only]').forEach(button => { button.hidden = Boolean(led.enabled && window.UNC_LED); });
 
         q('#unc-led-limited').hidden = caseKnown();
         q('#unc-led-limited').textContent = caseKnown() ? '' : t('leds.limited', { model: led.model || '?' });
@@ -1353,6 +1355,7 @@
 
         state.view = view;
         if (view === 'led') window.ULC?.show(sub);
+        if (view === 'system' && sub === 'led') q('#unc-led-switch-card').scrollIntoView({ block: 'start' });
         if (view === 'case' || view === 'overview') loadHardware();
         qa('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === nav));
         qa('.unc-view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
