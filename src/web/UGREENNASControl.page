@@ -156,10 +156,6 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
             <h3><i></i><span data-i18n="tile.net">Netzwerk</span></h3>
             <div id="unc-cc-net"></div>
         </article>
-        <article class="unc-card unc-cc ssd">
-            <h3><i></i><span data-i18n="tile.nvme">NVMe-SSDs</span></h3>
-            <div id="unc-cc-nvme"></div>
-        </article>
 
         <article class="unc-card unc-cc tmp">
             <h3><i></i><span data-i18n="temps.title">Temperaturen</span></h3>
