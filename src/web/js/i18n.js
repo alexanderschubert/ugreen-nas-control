@@ -80,6 +80,9 @@ window.UNC_I18N = {
         'temps.board': 'Mainboard',
         'temps.chip': 'Lüfter-Chip Fühler {n}',
         'temps.standby': 'Standby',
+        'temps.group_system': 'Prozessor und Mainboard',
+        'temps.group_ssd': 'NVMe-SSDs',
+        'temps.group_drives': 'Laufwerke',
         'temps.none': 'Keine Sensoren gefunden.',
 
         'system.title': 'System',
@@ -355,6 +358,9 @@ window.UNC_I18N = {
         'temps.board': 'Mainboard',
         'temps.chip': 'Fan controller sensor {n}',
         'temps.standby': 'Standby',
+        'temps.group_system': 'Processor and mainboard',
+        'temps.group_ssd': 'NVMe SSDs',
+        'temps.group_drives': 'Drives',
         'temps.none': 'No sensors found.',
 
         'system.title': 'System',

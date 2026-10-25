@@ -64,6 +64,7 @@
         drives: '<rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/>',
         net: '<rect x="6" y="3" width="12" height="9" rx="1.5"/><path d="M12 12v4M5 16h14v5H5zM9 18.5h.01M12 18.5h.01M15 18.5h.01"/>',
         bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>',
+        board: '<rect x="3" y="3" width="18" height="18" rx="2"/><rect x="8" y="8" width="8" height="8" rx="1"/><path d="M6 6h.01M18 6h.01M6 18h.01M18 18h.01"/>',
         pen: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
     };
 
@@ -342,51 +343,65 @@
         q('#unc-mode-hint').textContent = mode === 'bios' ? t('mode.hint_bios') : t('mode.hint_curve');
     }
 
-    function tempRow(label, value, kind, extra = '') {
+    // A sensor: a small picture in the colour of its level, the name, the value and a bar.
+    function tempRow(label, value, kind, extra = '', iconName = 'gauge') {
         const [warm, hot] = LIMITS[kind] || LIMITS.other;
         const level = value == null ? '' : value >= hot ? 'hot' : value >= warm ? 'warm' : '';
         const width = value == null ? 0 : Math.max(2, Math.min(100, value));
 
         return `
             <div class="unc-temp ${level}">
-                <span>${escapeHtml(label)}${extra ? ` <small class="unc-muted">${escapeHtml(extra)}</small>` : ''}</span>
+                <span><i class="unc-temp-ico">${icon(iconName)}</i>${escapeHtml(label)}${extra ? ` <small class="unc-muted">${escapeHtml(extra)}</small>` : ''}</span>
                 <span class="unc-meter"><span style="width:${width}%"></span></span>
                 <strong>${escapeHtml(deg(value))}</strong>
             </div>`;
     }
 
+    // Sensors in sections: processor and board, the SSDs, the drives.
     function renderTemps() {
         const data = state.data;
         const s = data.sensors || {};
-        const rows = [];
+        const system = [];
+        const ssds = [];
+        const drives = [];
 
-        if (s.cpu != null) rows.push(tempRow(t('temps.cpu'), s.cpu, 'cpu'));
+        if (s.cpu != null) system.push(tempRow(t('temps.cpu'), s.cpu, 'cpu', '', 'chip'));
 
         const cores = (s.cpu_cores || []).map(c => c.temp).filter(v => v != null);
-        if (cores.length) rows.push(tempRow(t('temps.cores'), Math.max(...cores), 'cpu'));
+        if (cores.length) system.push(tempRow(t('temps.cores'), Math.max(...cores), 'cpu', '', 'gauge'));
 
-        if (s.board != null) rows.push(tempRow(t('temps.board'), s.board, 'other'));
+        if (s.board != null) system.push(tempRow(t('temps.board'), s.board, 'other', '', 'board'));
 
         (data.chip_temps || []).forEach((temp, i) => {
-            if (temp != null) rows.push(tempRow(t('temps.chip', { n: i + 1 }), temp, 'other'));
+            if (temp != null) system.push(tempRow(t('temps.chip', { n: i + 1 }), temp, 'other', '', 'fan'));
         });
 
-        (s.nvme || []).forEach(n => rows.push(tempRow(n.name, n.temp, 'nvme', n.label || '')));
+        (s.nvme || []).forEach(n => ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2')));
 
         (s.disks || []).forEach(d => {
             if (d.standby) {
-                rows.push(`
+                drives.push(`
                     <div class="unc-temp standby">
-                        <span>${escapeHtml(d.name)} <small class="unc-muted">${escapeHtml(d.device)}</small></span>
+                        <span><i class="unc-temp-ico">${icon('drives')}</i>${escapeHtml(d.name)} <small class="unc-muted">${escapeHtml(d.device)}</small></span>
                         <span class="unc-meter"><span style="width:0"></span></span>
                         <strong>${escapeHtml(t('temps.standby'))}</strong>
                     </div>`);
             } else if (d.temp != null) {
-                rows.push(tempRow(d.name, d.temp, d.hdd ? 'disk' : 'nvme', d.device));
+                drives.push(tempRow(d.name, d.temp, d.hdd ? 'disk' : 'nvme', d.device, 'drives'));
             }
         });
 
-        q('#unc-temps').innerHTML = rows.join('') || `<p class="unc-muted">${escapeHtml(t('temps.none'))}</p>`;
+        const section = (titleKey, iconName, rows) => rows.length ? `
+            <section class="unc-tgroup">
+                <h4>${icon(iconName)}<span>${escapeHtml(t(titleKey))}</span></h4>
+                <div class="unc-tgrid">${rows.join('')}</div>
+            </section>` : '';
+
+        q('#unc-temps').innerHTML = [
+            section('temps.group_system', 'chip', system),
+            section('temps.group_ssd', 'm2', ssds),
+            section('temps.group_drives', 'drives', drives)
+        ].join('') || `<p class="unc-muted">${escapeHtml(t('temps.none'))}</p>`;
     }
 
     function uptime(seconds) {

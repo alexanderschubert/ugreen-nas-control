@@ -2849,10 +2849,36 @@
 .unc-cc .unc-effects + .unc-hint { margin-top: 10px; padding: 8px 10px; font-size: 12px; }
 
 /* The sensors in columns instead of one long list. */
-.unc-cockpit .unc-temps {
+.unc-cockpit .unc-temps { gap: 16px; }
+
+.unc-tgrid {
+    display: grid;
     grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
     gap: 10px 24px;
 }
+
+.unc-tgroup h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--unc-border);
+    color: var(--unc-muted);
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+.unc .unc-tgroup h4 svg { width: 15px; height: 15px; }
+
+.unc-temp > span:first-child { display: flex; align-items: center; gap: 7px; }
+.unc-temp-ico { display: inline-flex; flex: none; color: var(--unc-green); }
+.unc .unc-temp-ico svg { width: 15px; height: 15px; }
+.unc-temp.warm .unc-temp-ico { color: var(--unc-amber); }
+.unc-temp.hot .unc-temp-ico { color: var(--unc-red); }
+.unc-temp.standby .unc-temp-ico { color: var(--unc-muted); }
 
 @container uncmain (max-width: 1000px) {
     .unc-cockpit > .unc-hero-stage,
