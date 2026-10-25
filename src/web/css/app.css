@@ -1060,6 +1060,7 @@
 }
 
 .unc-table th {
+    background: transparent;
     padding: 6px 10px;
     border-bottom: 1px solid var(--unc-border);
     color: var(--unc-muted);
@@ -1073,10 +1074,24 @@
 .unc-table td {
     padding: 8px 10px;
     border-bottom: 1px solid var(--unc-border);
+    background: transparent;
+    color: var(--unc-text);
     vertical-align: top;
 }
 
 .unc-table tr:last-child td { border-bottom: 0; }
+
+/* Unraid's own table styles (stripes, white cells in its light themes) must not reach through: the card is ours. */
+.unc table.unc-table,
+.unc table.unc-table thead,
+.unc table.unc-table tbody,
+.unc table.unc-table tr,
+.unc table.unc-table th,
+.unc table.unc-table td {
+    background: transparent !important;
+}
+
+.unc table.unc-table td { color: var(--unc-text); }
 
 .unc-table .unc-id {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
