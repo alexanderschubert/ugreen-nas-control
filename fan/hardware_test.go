@@ -183,7 +183,7 @@ func TestReadHardware(t *testing.T) {
 
 func TestReadHardwareOtherModelHasNoBays(t *testing.T) {
 	fakeSys(t)
-	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("DXP8800 Plus\n"), 0o644)
+	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("DX4600 Pro\n"), 0o644)
 	if hw := ReadHardware(); hw.Bays != nil {
 		t.Errorf("bays on another model: %+v", hw.Bays)
 	}
@@ -210,7 +210,10 @@ func TestLayoutFor(t *testing.T) {
 			t.Errorf("%q: %+v", model, l)
 		}
 	}
-	for _, model := range []string{"DXP8800 Plus", ""} {
+	if l := layoutFor("DXP8800 Plus"); len(l.bayPorts) != 8 || l.bayPorts[7] != 8 || l.otherSlot != "m2" {
+		t.Errorf("DXP8800 Plus: %+v", l)
+	}
+	for _, model := range []string{"DX4600 Pro", ""} {
 		if l := layoutFor(model); l.bayPorts != nil || l.slots != nil {
 			t.Errorf("%q: %+v", model, l)
 		}

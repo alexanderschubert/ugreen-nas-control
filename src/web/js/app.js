@@ -678,6 +678,15 @@
         }],
         // DXP4800, DXP4800 Plus and DXP4800 Pro: one chassis, drawn after a photo of the Plus. The slots of the
         // M.2 SSDs are not known, so there is no inside view; no fan control either.
+        // DXP8800 Plus: eight bays; front and rear after the ports the reviews list (not after a photo), so a plain row
+        // of sockets like the GT's. No inside view, no fan control.
+        [/^DXP8800 Plus$/, {
+            front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
+            rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0]],
+            noInside: true,
+            strip: true,
+            fan: true
+        }],
         [/^DXP4800( Plus| Pro)?$/, {
             front: [['sd', 'SD'], ['usbc', '10G'], ['usba', '10G']],
             rear4800: true,
@@ -691,7 +700,7 @@
     // drawn after the DXP4800 Plus; elsewhere the pages stay out of the way.
     const modelName = () => state.hw?.model || state.data?.info?.model || '';
     const fanKnown = () => /^(DXP6800|DXP4800.*GT)/.test(modelName());
-    const caseKnown = () => fanKnown() || /^DXP4800( Plus| Pro)?$/.test(modelName());
+    const caseKnown = () => fanKnown() || /^(DXP4800( Plus| Pro)?|DXP8800 Plus)$/.test(modelName());
 
     const caseModel = hw => (CASE_MODELS.find(([re]) => re.test(hw.model || '')) || [null, CASE_DEFAULT])[1];
 
