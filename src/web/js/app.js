@@ -429,7 +429,8 @@
             ['system.unraid', info.unraid],
             ['system.kernel', info.kernel],
             ['system.uptime', info.uptime ? uptime(info.uptime) : ''],
-            ['system.chip', data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : data.chip_error ? '–' : '']
+            ['system.chip', data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : data.chip_error ? '–' : ''],
+            ['system.ledctl', state.ledStatus ? (state.ledStatus.i2c_address ? t('system.ledctl_on', { bus: state.ledStatus.i2c_bus, address: state.ledStatus.i2c_address }) : t('ledfacts.controller_off')) : '']
         ];
 
         q('#unc-system').innerHTML = facts
@@ -1290,6 +1291,10 @@
     async function loadLeds() {
         if (!ledsOn()) {
             state.leds = null;
+            if (state.ledStatus) {
+                state.ledStatus = null;
+                renderSystem();
+            }
             return;
         }
 
@@ -1302,7 +1307,9 @@
             state.leds = all.leds || {};
             state.ledMode = { mode: status.mode, fx: status.fx };
             state.ledBays = Number(status.bays) || 0;
+            state.ledStatus = status;
             renderLedFacts(status, state.leds);
+            if (state.data) renderSystem();
             if (!state.ledSchedule) state.ledSchedule = await ledGet('schedule');
         } catch (error) {
             state.leds = null;

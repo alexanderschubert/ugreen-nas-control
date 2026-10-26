@@ -95,6 +95,8 @@ window.UNC_I18N = {
         'system.unraid': 'Unraid',
         'system.uptime': 'Laufzeit',
         'system.chip': 'Lüfter-Chip',
+        'system.ledctl': 'LED-Controller',
+        'system.ledctl_on': 'I²C {address}, Bus {bus}',
         'uptime.days': '{d} T. {h} Std.',
         'uptime.hours': '{h} Std. {m} Min.',
 
@@ -374,6 +376,8 @@ window.UNC_I18N = {
         'system.unraid': 'Unraid',
         'system.uptime': 'Uptime',
         'system.chip': 'Fan controller',
+        'system.ledctl': 'LED controller',
+        'system.ledctl_on': 'I²C {address}, bus {bus}',
         'uptime.days': '{d} d {h} h',
         'uptime.hours': '{h} h {m} min',
 
@@ -648,6 +652,8 @@ window.UNC_I18N = {
         'system.unraid': 'Unraid',
         'system.uptime': 'Tiempo activo',
         'system.chip': 'Controlador de ventiladores',
+        'system.ledctl': 'Controlador de LEDs',
+        'system.ledctl_on': 'I²C {address}, bus {bus}',
         'uptime.days': '{d} d {h} h',
         'uptime.hours': '{h} h {m} min',
         'curves.title': 'Curvas de ventiladores',
