@@ -260,7 +260,7 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>7509ba4d66f758099bbec881e27c9da5</MD5>
+<MD5>2091e985f615cf753934e6c0a43420a6</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">

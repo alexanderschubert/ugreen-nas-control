@@ -755,7 +755,7 @@
     }
 
     function renderFront(hw, target = '#unc-front') {
-        const net = hw.net || [];
+        const net = hw.net;
         const lan = net.some(n => n.link);
         const speeds = net.map(n => `<span>${n.link ? speedText(n.speed_mbit) : '✕'}</span>`).join('');
 
@@ -1138,7 +1138,7 @@
         };
 
         const card = ssd('pcie');
-        const memory = hw.memory || [];
+        const memory = hw.memory;
 
         return `
             <svg class="unc-board-svg" viewBox="0 0 1000 640" role="img" aria-label="${escapeHtml(t('case.inside'))}">
@@ -1372,7 +1372,9 @@
 
     async function loadHardware() {
         try {
-            state.hw = await api({ action: 'hardware' });
+            // The tool prints a list it found nothing for (no NVMe, no dmidecode, no NIC) as null.
+            const hw = await api({ action: 'hardware' });
+            state.hw = hw && { ...hw, memory: hw.memory || [], nvme: hw.nvme || [], net: hw.net || [] };
             state.hwError = false;
         } catch (error) {
             // A failed read keeps the last picture: dropping it would shrink the page under the reader and jump to the top.
