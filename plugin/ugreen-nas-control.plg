@@ -255,7 +255,7 @@
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>730f1e4cb1af0538ac75b6bdca41edae</MD5>
+<MD5>b2dabd3f2cf6ebee349d54557c9a796a</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
