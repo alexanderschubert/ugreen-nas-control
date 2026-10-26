@@ -2924,3 +2924,22 @@
 }
 
 .unc-ledrow { isolation: isolate; }
+
+/* The back of the DXP4800 family (after a photo of the DXP4800 Plus): square, one big mesh, the ports in one row. */
+.unc-rear6800.unc-rear4800 {
+    max-width: 520px;
+    aspect-ratio: 505 / 522;
+    font-size: clamp(6px, 1.9cqi, 11px);
+}
+
+.unc-rear4800 .r-blende { left: 12%; top: 6.9%; width: 76%; height: 72%; padding: 2.8%; border-radius: 3cqi; }
+.unc-rear4800 .r-fans { grid-template-columns: minmax(0, 1fr); inset: 6%; }
+.unc-rear4800 .r-fan .unc-fan-icon { width: 46cqi; height: 46cqi; }
+.unc-rear4800 .r-brand { width: 36%; }
+.unc-rear4800 .r-screw { width: 2.6cqi; height: 2.6cqi; }
+.unc-rear4800 .r-hdmi svg { width: 9cqi; }
+.unc-rear4800 .r-usba svg { width: 7cqi; }
+.unc-rear4800 .r-usb2 svg { width: 7cqi; }
+.unc-rear4800 .r-lan svg { width: 8.6cqi; }
+.unc-rear4800 .r-reset svg { width: 2.6cqi; }
+.unc-rear4800 .r-dc svg { width: 5.4cqi; }

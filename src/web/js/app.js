@@ -357,7 +357,7 @@
             </div>`;
     }
 
-    const ssdSlotLabel = n => n.slot === 'pcie' ? 'PCIe' : n.slot === 'system' ? t('cc.system') : `M.2-${n.slot.replace('m2-', '')}`;
+    const ssdSlotLabel = n => n.slot === 'pcie' ? 'PCIe' : n.slot === 'system' ? t('cc.system') : n.slot === 'm2' ? 'M.2' : `M.2-${n.slot.replace('m2-', '')}`;
 
     // Sensors in sections: processor and board, the SSDs, the drives.
     function renderTemps() {
@@ -566,8 +566,8 @@
         // Switched on, the switch lives under Appearance & About; the sidebar entry is only the way to it while the LEDs are off.
         qa('[data-led-off-only]').forEach(button => { button.hidden = Boolean(led.enabled && window.UNC_LED); });
 
-        q('#unc-led-limited').hidden = caseKnown();
-        q('#unc-led-limited').textContent = caseKnown() ? '' : t('leds.limited', { model: led.model || '?' });
+        q('#unc-led-limited').hidden = fanKnown();
+        q('#unc-led-limited').textContent = fanKnown() ? '' : t(caseKnown() ? 'leds.limited_fans' : 'leds.limited', { model: led.model || '?' });
         q('#unc-led-untested').hidden = !led.untested;
         q('#unc-led-untested').textContent = led.untested ? t('leds.untested', { model: led.model || '?' }) : '';
 
@@ -595,7 +595,8 @@
         renderHero();
         renderCockpitCards();
         // Fan control and the case pictures exist for the two models whose wiring is known.
-        qa('[data-nav="case"], [data-fan-only]').forEach(el => { el.hidden = !caseKnown(); });
+        qa('[data-nav="case"]').forEach(el => { el.hidden = !caseKnown(); });
+        qa('[data-fan-only]').forEach(el => { el.hidden = !fanKnown(); });
     }
 
     /*
@@ -674,11 +675,23 @@
             strip: true,
             fan: true,
             hint: 'case.inside_hint_gt'
+        }],
+        // DXP4800, DXP4800 Plus and DXP4800 Pro: one chassis, drawn after a photo of the Plus. The slots of the
+        // M.2 SSDs are not known, so there is no inside view; no fan control either.
+        [/^DXP4800( Plus| Pro)?$/, {
+            front: [['sd', 'SD'], ['usbc', '10G'], ['usba', '10G']],
+            rear4800: true,
+            rear: [],
+            noInside: true,
+            strip: true
         }]
     ];
 
-    // The case pictures exist for these two models only; elsewhere the pages stay out of the way.
-    const caseKnown = () => /^(DXP6800|DXP4800.*GT)/.test(state.hw?.model || state.data?.info?.model || '');
+    // Fan control exists for the two models whose wiring is known; the case pictures also for the DXP4800 family,
+    // drawn after the DXP4800 Plus; elsewhere the pages stay out of the way.
+    const modelName = () => state.hw?.model || state.data?.info?.model || '';
+    const fanKnown = () => /^(DXP6800|DXP4800.*GT)/.test(modelName());
+    const caseKnown = () => fanKnown() || /^DXP4800( Plus| Pro)?$/.test(modelName());
 
     const caseModel = hw => (CASE_MODELS.find(([re]) => re.test(hw.model || '')) || [null, CASE_DEFAULT])[1];
 
@@ -852,6 +865,37 @@
             </div>`;
     }
 
+    // The back of the DXP4800 family after a photo of the Plus: a square body, one big mesh with the UGREEN lettering
+    // and the fan behind it, below it HDMI, USB 3.2, two USB 2.0, the two LAN ports, reset and the DC inlet.
+    function rear4800Html(hw) {
+        const lan = (n, x, label) => {
+            const p = hw.net[n];
+            const up = Boolean(p && p.link);
+
+            return `<div class="r-abs r-lan ${up ? 'up' : ''}" style="left:${x}%;top:85%">
+                ${rj45(up, p ? p.speed_mbit : 0)}<b>${label}</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
+        };
+        const port = (x, y, kind, label, cls = '') => `<div class="r-abs r-${cls || kind}" style="left:${x}%;top:${y}%">${SOCKET[kind]}<b>${label}</b></div>`;
+        const screw = (x, y) => `<i class="r-screw" style="left:${x}%;top:${y}%"></i>`;
+
+        return `
+            <div class="unc-rear6800 unc-rear4800">
+                <div class="r-body"></div>
+                ${screw(4.6, 4.8)}${screw(95.6, 4.8)}${screw(4.6, 93.7)}${screw(95.6, 93.7)}
+                <div class="r-blende">
+                    <div class="r-fans"><div class="r-fan"><span class="unc-fan-icon">${REAR_FAN_SVG}</span></div></div>
+                    <div class="r-mesh"></div>
+                    <svg class="r-brand" viewBox="0 0 190 40" aria-label="UGREEN"><text x="95" y="31" text-anchor="middle" font-family="Arial Black, Helvetica, Arial, sans-serif" font-size="37" font-weight="900" fill="rgba(255,255,255,.1)" stroke="#e9edf1" stroke-width="1.2" stroke-dasharray="1 2.2">UGREEN</text></svg>
+                </div>
+                ${port(15.4, 86.5, 'hdmi', 'HDMI')}
+                ${port(28.7, 86.5, 'usba', 'USB3.2')}
+                <div class="r-abs r-usb2" style="left:43.8%;top:85%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
+                ${lan(1, 56, 'LAN 2.5G')}${lan(0, 72.7, 'LAN 10G')}
+                ${port(81, 85.5, 'reset', 'RESET')}
+                ${port(88.2, 86, 'dc', t('case.dc'))}
+            </div>`;
+    }
+
     function renderRear(hw, target = '#unc-rear') {
         const lan = n => {
             const p = hw.net[n];
@@ -869,6 +913,11 @@
 
         if (model.rear6800) {
             q(target).innerHTML = rear6800Html(hw);
+            return;
+        }
+
+        if (model.rear4800) {
+            q(target).innerHTML = rear4800Html(hw);
             return;
         }
 
@@ -1012,6 +1061,10 @@
     }
 
     function renderInside(hw, target = '#unc-inside') {
+        // Without known slots there is nothing to draw: the card stays away.
+        q(target).closest('article').hidden = Boolean(caseModel(hw).noInside);
+        if (caseModel(hw).noInside) return;
+
         if (caseModel(hw).inside6800) {
             const hint = q('[data-i18n^="case.inside_hint"]');
 

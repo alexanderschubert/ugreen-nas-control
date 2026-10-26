@@ -167,7 +167,7 @@
         const use = ssdUse(ssd);
         const [warm, hot] = LIMITS.nvme;
         const level = ssd.temp == null ? 'ok' : ssd.temp >= hot ? 'hot' : ssd.temp >= warm ? 'warm' : 'ok';
-        const slot = ssd.slot === 'system' ? t('case.sys_slot') : ssd.slot === 'pcie' && pcie ? t('case.pcie_slot') : t('case.m2_slot', { n: ssd.slot === 'pcie' ? '?' : ssd.slot.replace('m2-', '') });
+        const slot = ssd.slot === 'system' ? t('case.sys_slot') : ssd.slot === 'pcie' && pcie ? t('case.pcie_slot') : ssd.slot === 'm2' ? 'M.2' : t('case.m2_slot', { n: ssd.slot === 'pcie' ? '?' : ssd.slot.replace('m2-', '') });
         const lines = [
             ssd.temp != null ? `${ssd.temp} °C` : '–',
             use.text,
