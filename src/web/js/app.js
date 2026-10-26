@@ -761,11 +761,11 @@
 
         const model = caseModel(hw);
         const ports = `<span class="unc-front-ports">${model.front.map(([kind, label]) => socket(kind, label)).join('')}</span>`;
-        const led = (label, on) => `<span class="unc-led"><span class="unc-pled ${on ? 'on' : ''}"></span><span class="lbl">${escapeHtml(label)}</span></span>`;
+        const led = (label, on, key) => `<span class="unc-led"><span class="unc-pled ${on ? 'on' : ''}" data-led="${key}"></span><span class="lbl">${escapeHtml(label)}</span></span>`;
         const strip = model.strip ? `
                 <div class="unc-nas-front">
                     <span class="unc-pbtn"><span class="unc-pled power"></span></span>
-                    <span class="unc-leds">${led('LAN', lan)}${(hw.bays || []).map(b => led(`DISK${b.bay}`, b.present)).join('')}</span>
+                    <span class="unc-leds">${led('LAN', lan, 'netdev')}${(hw.bays || []).map(b => led(`DISK${b.bay}`, b.present, `disk${b.bay}`)).join('')}</span>
                     <span class="spacer"></span>
                     ${ports}
                 </div>
@@ -1335,6 +1335,7 @@
         container.querySelectorAll('.unc-nbay').forEach((bay, i) => paintLed(bay.querySelector('.bar'), state.leds[`disk${i + 1}`]));
         paintLed(container.querySelector('.unc-pled.power'), state.leds.power);
         paintLed(container.querySelector('.unc-pled.lan'), state.leds.netdev);
+        container.querySelectorAll('.unc-led .unc-pled[data-led]').forEach(el => paintLed(el, state.leds[el.dataset.led]));
     }
 
     function ledModeText() {
