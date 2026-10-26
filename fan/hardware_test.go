@@ -183,7 +183,7 @@ func TestReadHardware(t *testing.T) {
 
 func TestReadHardwareOtherModelHasNoBays(t *testing.T) {
 	fakeSys(t)
-	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("DXP4800 Plus\n"), 0o644)
+	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("DXP8800 Plus\n"), 0o644)
 	if hw := ReadHardware(); hw.Bays != nil {
 		t.Errorf("bays on another model: %+v", hw.Bays)
 	}
@@ -205,7 +205,12 @@ func TestLayoutFor(t *testing.T) {
 	if len(l.bayPorts) != 4 || l.bayPorts[3] != 4 || l.slots["0000:00:01.4"] != "m2-1" || l.slots["0000:00:01.6"] != "m2-2" {
 		t.Errorf("DXP4800 GT: %+v", l)
 	}
-	for _, model := range []string{"DXP4800 Plus", "DXP8800 Plus", ""} {
+	for _, model := range []string{"DXP4800 Plus", "DXP4800", "DXP4800 Pro"} {
+		if l := layoutFor(model); len(l.bayPorts) != 4 || l.bayPorts[0] != 1 || l.otherSlot != "m2" || l.slots != nil {
+			t.Errorf("%q: %+v", model, l)
+		}
+	}
+	for _, model := range []string{"DXP8800 Plus", ""} {
 		if l := layoutFor(model); l.bayPorts != nil || l.slots != nil {
 			t.Errorf("%q: %+v", model, l)
 		}
@@ -223,6 +228,20 @@ func TestReadHardwareDXP4800GT(t *testing.T) {
 	for i, dev := range []string{"sda", "sdb", "sdc", "sdd"} {
 		if !hw.Bays[i].Present || hw.Bays[i].Device != dev {
 			t.Errorf("bay %d: %+v, want %s", i+1, hw.Bays[i], dev)
+		}
+	}
+}
+
+func TestReadHardwareDXP4800Plus(t *testing.T) {
+	fakeSys(t)
+	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("DXP4800 Plus\n"), 0o644)
+	hw := ReadHardware()
+	if len(hw.Bays) != 4 {
+		t.Errorf("bays: %+v", hw.Bays)
+	}
+	for _, d := range hw.NVMe {
+		if d.Slot != "m2" {
+			t.Errorf("%s in slot %q", d.ID, d.Slot)
 		}
 	}
 }

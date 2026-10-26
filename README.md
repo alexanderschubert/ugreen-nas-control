@@ -44,7 +44,7 @@ UGREEN LED Control.
   manual speed and the curves; the CPU temperature comes from the AMD sensor (`k10temp`), the mainboard
   temperature from the controller
 
-On any other model the plugin does not touch the fan controller (the fan group and the case view are not shown).
+The **case view** (front, rear, drives) also exists for the **DXP4800, DXP4800 Plus and DXP4800 Pro**, drawn after photos of the DXP4800 Plus; their M.2 slots are not mapped yet, so there is no inside view and no fan control. On any other model the plugin does not touch the fan controller (the fan group and the case view are not shown).
 System info and temperatures still work, as they only read.
 
 **LEDs** work on every UGREEN DX, DXP and iDX model that UGREEN LED Control knew; the controller is the same across
