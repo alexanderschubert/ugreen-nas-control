@@ -877,8 +877,11 @@
     // The back of the DXP4800 family after a photo of the Plus: a square body, one big mesh with the UGREEN lettering
     // and the fan behind it, below it HDMI, USB 3.2, two USB 2.0, the two LAN ports, reset and the DC inlet.
     function rear4800Html(hw) {
+        // LAN 1 is the 10G port, LAN 2 the 2.5G one; the kernel's eth0 / eth1 can be either way round, so the
+        // port that supports more is LAN 1 (when ethtool didn't tell, they stay in the kernel's order).
+        const ordered = hw.net.slice().sort((a, b) => (b.max_mbit || 0) - (a.max_mbit || 0));
         const lan = (n, x, label) => {
-            const p = hw.net[n];
+            const p = ordered[n];
             const up = Boolean(p && p.link);
 
             return `<div class="r-abs r-lan ${up ? 'up' : ''}" style="left:${x}%;top:85%">

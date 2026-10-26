@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "2.3">
+<!ENTITY version   "2.4">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 2.4
+- Rear view of the DXP4800 / Plus / Pro: LAN 1 (10G) and LAN 2 (2.5G) were taken in the kernel's order (eth0, eth1), so the active port could be shown on the wrong socket. The port that supports more is LAN 1 now (speed read with ethtool)
 
 ### 2.3
 - Case view for the DXP8800 Plus: the front with its eight bays and the strip (power button, LEDs, SD, two Thunderbolt 4, USB-A) and the rear as a row of sockets after the ports the reviews list, plus the drives as cards. No inside view and no fan control yet
@@ -203,7 +206,7 @@
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>dabbac19dfe23923c428772e7e5eceed</MD5>
+<MD5>077b2b9ba027fd410724d1477b7c20c4</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
@@ -254,7 +257,7 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>79ff316abbc628bc2809196c97b396b2</MD5>
+<MD5>d1c9fdcbe4e1976b1f31d31881cb2275</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">
