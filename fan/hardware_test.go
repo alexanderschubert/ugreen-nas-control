@@ -258,3 +258,18 @@ func TestParseMaxLinkSpeed(t *testing.T) {
 		t.Errorf("max without modes %d", n)
 	}
 }
+
+func TestLayoutDXP2800AndIDX(t *testing.T) {
+	if l := layoutFor("DXP2800"); len(l.bayPorts) != 2 || l.otherSlot != "m2" {
+		t.Errorf("DXP2800: %+v", l)
+	}
+	// Without the sysfs tree of a real iDX6011 the bays are ata1 .. ata6.
+	fakeSys(t)
+	if p := idxBayPorts(); len(p) != 6 || p[0] != 1 || p[5] != 6 {
+		t.Errorf("idx ports %v", p)
+	}
+	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("iDX6011 Pro\n"), 0o644)
+	if hw := ReadHardware(); len(hw.Bays) != 6 {
+		t.Errorf("iDX bays: %+v", hw.Bays)
+	}
+}

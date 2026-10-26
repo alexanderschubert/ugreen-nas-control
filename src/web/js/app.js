@@ -678,6 +678,24 @@
         }],
         // DXP4800, DXP4800 Plus and DXP4800 Pro: one chassis, drawn after a photo of the Plus. The slots of the
         // M.2 SSDs are not known, so there is no inside view; no fan control either.
+        // DXP2800: a shrunken DXP4800, drawn after photos: two bays, USB-C and USB-A at the front (no SD slot), one
+        // 2.5G LAN port at the back. No inside view, no fan control.
+        [/^DXP2800$/, {
+            front: [['usbc', '10G'], ['usba', '10G']],
+            rear2800: true,
+            rear: [],
+            noInside: true,
+            strip: true
+        }],
+        // iDX6011 and iDX6011 Pro: six bays and a small display at the front, the ports like the DXP6800 Pro's;
+        // the back after a photo (PCIe slot, mesh, vent, power inlet). No inside view, no fan control.
+        [/^iDX6011( Pro)?$/, {
+            front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
+            screen: true,
+            rear6011: true,
+            rear: [],
+            noInside: true
+        }],
         // DXP8800 Plus: eight bays; front and rear after the ports the reviews list (not after a photo), so a plain row
         // of sockets like the GT's. No inside view, no fan control.
         [/^DXP8800 Plus$/, {
@@ -700,7 +718,7 @@
     // drawn after the DXP4800 Plus; elsewhere the pages stay out of the way.
     const modelName = () => state.hw?.model || state.data?.info?.model || '';
     const fanKnown = () => /^(DXP6800|DXP4800.*GT)/.test(modelName());
-    const caseKnown = () => fanKnown() || /^(DXP4800( Plus| Pro)?|DXP8800 Plus)$/.test(modelName());
+    const caseKnown = () => fanKnown() || /^(DXP4800( Plus| Pro)?|DXP8800 Plus|DXP2800|iDX6011( Pro)?)$/.test(modelName());
 
     const caseModel = hw => (CASE_MODELS.find(([re]) => re.test(hw.model || '')) || [null, CASE_DEFAULT])[1];
 
@@ -763,7 +781,7 @@
 
         q(target).innerHTML = `
             <div class="unc-nas" style="--bays:${(hw.bays || []).length || 6}">
-                <div class="unc-nas-bays">${(hw.bays || []).map(bayHtml).join('')}</div>${strip}
+                <div class="unc-nas-bays ${model.screen ? 'with-screen' : ''}">${(hw.bays || []).map(bayHtml).join('')}${model.screen ? '<div class="unc-nscreen" aria-hidden="true"><i></i><b></b></div>' : ''}</div>${strip}
             </div>`;
         applyLeds(q(target));
     }
@@ -908,6 +926,70 @@
             </div>`;
     }
 
+    const rearKit = (hw, ordered = hw.net) => ({
+        lan: (n, x, y, label) => {
+            const p = ordered[n];
+            const up = Boolean(p && p.link);
+
+            return `<div class="r-abs r-lan ${up ? 'up' : ''}" style="left:${x}%;top:${y}%">
+                ${rj45(up, p ? p.speed_mbit : 0)}<b>${label}</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
+        },
+        port: (x, y, kind, label, cls = '') => `<div class="r-abs r-${cls || kind}" style="left:${x}%;top:${y}%">${SOCKET[kind]}<b>${label}</b></div>`,
+        screw: (x, y) => `<i class="r-screw" style="left:${x}%;top:${y}%"></i>`
+    });
+
+    const BRAND_SVG = '<svg class="r-brand" viewBox="0 0 190 40" aria-label="UGREEN"><text x="95" y="31" text-anchor="middle" font-family="Arial Black, Helvetica, Arial, sans-serif" font-size="37" font-weight="900" fill="rgba(255,255,255,.1)" stroke="#e9edf1" stroke-width="1.2" stroke-dasharray="1 2.2">UGREEN</text></svg>';
+
+    // The back of the DXP2800 after a photo: a tall body, the mesh with the magnetic dust filter on top, below it
+    // HDMI, USB 3.2, two USB 2.0, the one 2.5G LAN port, reset and the DC inlet.
+    function rear2800Html(hw) {
+        const k = rearKit(hw);
+
+        return `
+            <div class="unc-rear6800 unc-rear2800">
+                <div class="r-body"></div>
+                ${k.screw(8, 4.6)}${k.screw(92, 4.6)}${k.screw(8, 94)}${k.screw(92, 94)}
+                <div class="r-blende">
+                    <div class="r-fans"><div class="r-fan"><span class="unc-fan-icon">${REAR_FAN_SVG}</span></div></div>
+                    <div class="r-mesh"></div>
+                    ${BRAND_SVG}
+                </div>
+                ${k.port(13, 87.5, 'hdmi', 'HDMI')}
+                ${k.port(28.8, 87.5, 'usba', 'USB3.2')}
+                <div class="r-abs r-usb2" style="left:42.4%;top:86%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
+                ${k.lan(0, 61, 86.5, 'LAN 2.5G')}
+                ${k.port(76, 87, 'reset', 'RESET')}
+                ${k.port(88, 87.5, 'dc', t('case.dc'))}
+            </div>`;
+    }
+
+    // The back of the iDX6011 (Pro) after a photo: the PCIe slot cover on the left, the big mesh with the UGREEN
+    // lettering, the vent and the power inlet on the right; below it three USB-A, two 10G LAN ports, HDMI,
+    // OCuLink (only the Pro) and reset.
+    function rear6011Html(hw) {
+        const k = rearKit(hw);
+        const pro = /Pro$/.test(hw.model || '');
+
+        return `
+            <div class="unc-rear6800 unc-rear6011">
+                <div class="r-body"></div>
+                ${k.screw(1.8, 5)}${k.screw(50, 5)}${k.screw(98.2, 5)}
+                <div class="r-blende">
+                    <div class="r-fans">${['', ''].map(() => `<div class="r-fan"><span class="unc-fan-icon">${REAR_FAN_SVG}</span></div>`).join('')}</div>
+                    <div class="r-mesh"></div>
+                    ${BRAND_SVG}
+                </div>
+                <div class="r-pcie"><b>PCIE</b><i></i></div>
+                <div class="r-vent"></div>
+                <div class="r-abs r-ac" style="left:94.5%;top:63.5%">${SOCKET.ac}<b>POWER</b></div>
+                ${k.port(16.2, 88, 'usba', 'USB3.2')}${k.port(20.6, 88, 'usba', '', 'usba2')}${k.port(24.8, 88, 'usba', 'USB3.2', 'usba3')}
+                ${k.lan(0, 29, 87, 'LAN 10G')}${k.lan(1, 36, 87, 'LAN 10G')}
+                ${k.port(43.6, 88, 'hdmi', 'HDMI')}
+                ${pro ? k.port(51.2, 88, 'usbc', 'OCuLink') : ''}
+                ${k.port(57, 88, 'reset', 'RESET')}
+            </div>`;
+    }
+
     function renderRear(hw, target = '#unc-rear') {
         const lan = n => {
             const p = hw.net[n];
@@ -930,6 +1012,16 @@
 
         if (model.rear4800) {
             q(target).innerHTML = rear4800Html(hw);
+            return;
+        }
+
+        if (model.rear2800) {
+            q(target).innerHTML = rear2800Html(hw);
+            return;
+        }
+
+        if (model.rear6011) {
+            q(target).innerHTML = rear6011Html(hw);
             return;
         }
 
