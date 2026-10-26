@@ -1144,6 +1144,7 @@
             const [all, status] = await Promise.all([ledGet('all'), ledGet('status')]);
             state.leds = all.leds || {};
             state.ledMode = { mode: status.mode, fx: status.fx };
+            state.ledBays = Number(status.bays) || 0;
             renderLedFacts(status, state.leds);
             if (!state.ledSchedule) state.ledSchedule = await ledGet('schedule');
         } catch (error) {
@@ -1196,7 +1197,7 @@
         const dots = Object.keys(state.leds)
             .filter(name => name.startsWith('disk'))
             .sort((a, b) => Number(a.slice(4)) - Number(b.slice(4)))
-            .slice(0, (state.hw?.bays || []).length || 6)
+            .slice(0, state.ledBays || (state.hw?.bays || []).length || 6)
             .map(name => {
                 const look = ledLook(state.leds[name]);
                 return `<i style="background:${look.on ? look.color : '#2c3138'};box-shadow:${look.on ? look.glow : 'none'}"></i>`;
