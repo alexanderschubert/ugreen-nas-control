@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "2.4">
+<!ENTITY version   "2.5">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 2.5
+- Case view for the DXP2800 (two bays, tall rear with one LAN port) and the iDX6011 / iDX6011 Pro (six bays and the display at the front, the rear with the PCIe slot, mesh, vent, power inlet, USB, two 10G LAN ports, HDMI and OCuLink), drawn after photos; the LEDs are drawn like on the DXP6800 Pro. No inside view, no fan control. The tool maps the iDX bays on its two SATA controllers like UGREEN LED Control does
 
 ### 2.4
 - Rear view of the DXP4800 / Plus / Pro: LAN 1 (10G) and LAN 2 (2.5G) were taken in the kernel's order (eth0, eth1), so the active port could be shown on the wrong socket. The port that supports more is LAN 1 now (speed read with ethtool)
@@ -206,7 +209,7 @@
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>077b2b9ba027fd410724d1477b7c20c4</MD5>
+<MD5>77f840016b211d5715c072b884ab46fe</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
@@ -247,17 +250,17 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>364e300105977f7feeaf4661083d05e8</MD5>
+<MD5>2688ef97119fc63962f6376160e973af</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>4dc039f401f0f46ad119574511b397e8</MD5>
+<MD5>730f1e4cb1af0538ac75b6bdca41edae</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>d1c9fdcbe4e1976b1f31d31881cb2275</MD5>
+<MD5>7509ba4d66f758099bbec881e27c9da5</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">

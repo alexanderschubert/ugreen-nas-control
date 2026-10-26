@@ -49,6 +49,8 @@ func layoutFor(model string) layout {
 		return layout{[]int{1, 2, 3, 4}, map[string]string{"0000:00:01.4": "m2-1", "0000:00:01.6": "m2-2"}, ""}
 	case model == "DXP4800" || model == "DXP4800 Plus" || model == "DXP4800 Pro":
 		return layout{bayPorts: []int{1, 2, 3, 4}, otherSlot: "m2"}
+	case model == "DXP2800":
+		return layout{bayPorts: []int{1, 2}, otherSlot: "m2"}
 	case model == "DXP8800 Plus":
 		return layout{bayPorts: []int{1, 2, 3, 4, 5, 6, 7, 8}, otherSlot: "m2"}
 	}
@@ -111,11 +113,46 @@ func ReadHardware() Hardware {
 	s := ReadSensors()
 	model := readString(filepath.Join(dmiDir, "product_name"))
 	l := layoutFor(model)
+	if strings.HasPrefix(model, "iDX601") {
+		// iDX6011 (Pro): the bays sit on two SATA controllers, so the ata numbers say nothing.
+		l = layout{bayPorts: idxBayPorts(), otherSlot: "m2"}
+	}
 	hw := Hardware{Model: model, Memory: readMemory(), NVMe: readNVMe(s, l), Net: readNet()}
 	if len(l.bayPorts) > 0 {
 		hw.Bays = readBays(s, l)
 	}
 	return hw
+}
+
+// idxBayPorts is the kernel's ata port of each bay of the iDX6011 (Pro), after UGREEN LED Control: bays 1-4
+// are the ports of the ASMedia SATA controller (PCI vendor 0x1b21), bays 5-6 those of the Intel chipset
+// (0x8086), each in port order. If six such ports aren't found: ata1 .. ata6.
+func idxBayPorts() []int {
+	var ports []int
+	for _, vendor := range []string{"0x1b21", "0x8086"} {
+		paths, _ := filepath.Glob(filepath.Join(sysDir, "class", "ata_port", "ata*"))
+		var mine []int
+		for _, p := range paths {
+			n, err := strconv.Atoi(strings.TrimPrefix(filepath.Base(p), "ata"))
+			real, err2 := filepath.EvalSymlinks(p)
+			if err != nil || err2 != nil {
+				continue
+			}
+			chain := pciChain(real)
+			if len(chain) == 0 {
+				continue
+			}
+			if readString(filepath.Join(sysDir, "bus", "pci", "devices", chain[len(chain)-1], "vendor")) == vendor {
+				mine = append(mine, n)
+			}
+		}
+		sort.Ints(mine)
+		ports = append(ports, mine...)
+	}
+	if len(ports) != 6 {
+		return []int{1, 2, 3, 4, 5, 6}
+	}
+	return ports
 }
 
 var sizeRe = regexp.MustCompile(`^(\d+)\s*(MB|MiB|GB|GiB|TB|TiB)$`)
