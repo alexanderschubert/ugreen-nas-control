@@ -209,7 +209,7 @@
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>77f840016b211d5715c072b884ab46fe</MD5>
+<MD5>cabe3d9e8dd7b7786d0a9320a06c152e</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
@@ -255,12 +255,12 @@
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>730f1e4cb1af0538ac75b6bdca41edae</MD5>
+<MD5>f0fa2b90775598754ad6081499b99259</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>7509ba4d66f758099bbec881e27c9da5</MD5>
+<MD5>c1f6a6180f0eda3040ef7d73955dd031</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">
