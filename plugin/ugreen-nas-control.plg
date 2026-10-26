@@ -255,12 +255,12 @@
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>29e33f23b6b7a49125fa448d2d9f775a</MD5>
+<MD5>379ab1adeb64f41309bb5386909eb78e</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>e4f1f57f0f49d3a923c42a81fb79a9a0</MD5>
+<MD5>912d60feb5ec365191eaf13d5a682c73</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">

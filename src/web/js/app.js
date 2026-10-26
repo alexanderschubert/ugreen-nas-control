@@ -418,6 +418,21 @@
         return d > 0 ? t('uptime.days', { d, h }) : t('uptime.hours', { h, m });
     }
 
+    // The LED controller for the System facts: what it reports, or why the LED part is off.
+    function ledController() {
+        const led = state.data?.led;
+        const status = state.ledStatus;
+
+        if (ledsOn()) {
+            if (!status) return '';
+            return status.i2c_address ? t('system.ledctl_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_off');
+        }
+        if (!led) return '';
+        if (led.blocker === 'model') return t('system.ledctl_model');
+        if (led.blocker) return t('system.ledctl_blocked');
+        return t(led.warning === 'standalone' && !led.enabled ? 'system.ledctl_standalone' : 'system.ledctl_off');
+    }
+
     function renderSystem() {
         const data = state.data;
         const info = data.info || {};
@@ -430,7 +445,7 @@
             ['system.kernel', info.kernel],
             ['system.uptime', info.uptime ? uptime(info.uptime) : ''],
             ['system.chip', data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : data.chip_error ? '–' : ''],
-            ['system.ledctl', state.ledStatus ? (state.ledStatus.i2c_address ? t('system.ledctl_on', { bus: state.ledStatus.i2c_bus, address: state.ledStatus.i2c_address }) : t('ledfacts.controller_off')) : '']
+            ['system.ledctl', ledController()]
         ];
 
         q('#unc-system').innerHTML = facts
