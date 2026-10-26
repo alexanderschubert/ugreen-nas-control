@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "2.0">
+<!ENTITY version   "2.1">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 2.1
+- Dashboard tile and LED card: the row of LEDs showed six bays on a four-bay model (DXP4800 Plus). It now follows the number of bays the LED controller reports
 
 ### 2.0
 - LEDs: the "LED control" page is gone. Its switch, the notes and the import of UGREEN LED Control's settings moved to Appearance &amp; About; while the LEDs are off the sidebar entry "LED control" leads there, once they are on the entry disappears (it only repeated the switch of General &amp; preview)
@@ -245,12 +248,12 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>733a1d8039c599b3b69cf7ebf2c1fef5</MD5>
+<MD5>dd1af4919a4f7c4a7491729f6d89cb5d</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">
 <URL>&gitURL;/src/web/js/dash.js</URL>
-<MD5>30701e71470fb6cd58907058c844bc66</MD5>
+<MD5>bf37afe169d622e356fa192c6fb32bc9</MD5>
 </FILE>
 
 <!-- LED part: a copy of UGREEN LED Control (scripts/sync-led.sh), off until the switch is on -->

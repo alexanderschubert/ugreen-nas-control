@@ -223,7 +223,8 @@
     function ledLineHtml(led, hw) {
         if (!led) return '';
 
-        const count = (hw?.bays || []).length || 6;
+        // The LED controller says how many bays the model has; the case layout only knows two models.
+        const count = Number(led.status?.bays) || (hw?.bays || []).length || 6;
         const bars = [];
         for (let i = 1; i <= count; i++) {
             const one = led.leds[`disk${i}`] || {};
