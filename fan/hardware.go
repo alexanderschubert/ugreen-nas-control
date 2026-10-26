@@ -14,6 +14,7 @@ import (
 var (
 	sysDir      = envOr("UGREEN_SYS", "/sys")
 	dmidecodeBn = envOr("UGREEN_DMIDECODE", "dmidecode")
+	ethtoolBn   = envOr("UGREEN_ETHTOOL", "ethtool")
 	mountsFile  = envOr("UGREEN_MOUNTS", "/proc/mounts")
 )
 
@@ -92,6 +93,8 @@ type NetPort struct {
 	Name      string `json:"name"`
 	Link      bool   `json:"link"`
 	SpeedMbit int    `json:"speed_mbit"`
+	// The highest speed the port supports (ethtool), 0 when unknown: tells the 10G port from the 2.5G one.
+	MaxMbit int `json:"max_mbit"`
 }
 
 type Hardware struct {
@@ -349,7 +352,40 @@ func readNet() []NetPort {
 		if n, ok := readInt(filepath.Join(p, "speed")); ok && n > 0 {
 			port.Link, port.SpeedMbit = readString(filepath.Join(p, "carrier")) == "1", n
 		}
+		port.MaxMbit = maxLinkSpeed(port.Name)
 		ports = append(ports, port)
 	}
 	return ports
+}
+
+var linkModeRe = regexp.MustCompile(`(\d+)base`)
+
+// maxLinkSpeed is the highest speed in the "Supported link modes" of ethtool, 0 when ethtool isn't there.
+func maxLinkSpeed(name string) int {
+	out, err := exec.Command(ethtoolBn, name).Output()
+	if err != nil {
+		return 0
+	}
+	return parseMaxLinkSpeed(string(out))
+}
+
+func parseMaxLinkSpeed(out string) int {
+	max, in := 0, false
+	for _, line := range strings.Split(out, "\n") {
+		switch {
+		case strings.Contains(line, "Supported link modes:"):
+			in = true
+		case strings.Contains(line, "Supported pause frame use:"):
+			in = false
+		}
+		if !in {
+			continue
+		}
+		for _, m := range linkModeRe.FindAllStringSubmatch(line, -1) {
+			if n, _ := strconv.Atoi(m[1]); n > max {
+				max = n
+			}
+		}
+	}
+	return max
 }

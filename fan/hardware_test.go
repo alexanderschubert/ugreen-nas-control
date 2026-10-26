@@ -248,3 +248,13 @@ func TestReadHardwareDXP4800Plus(t *testing.T) {
 		}
 	}
 }
+
+func TestParseMaxLinkSpeed(t *testing.T) {
+	out := "Settings for eth1:\n\tSupported ports: [ TP ]\n\tSupported link modes:   100baseT/Full\n\t                        1000baseT/Full\n\t                        2500baseT/Full\n\t                        10000baseT/Full\n\tSupported pause frame use: Symmetric\n\tAdvertised link modes:  100baseT/Full\n"
+	if n := parseMaxLinkSpeed(out); n != 10000 {
+		t.Errorf("max %d", n)
+	}
+	if n := parseMaxLinkSpeed("Settings for eth0:\n"); n != 0 {
+		t.Errorf("max without modes %d", n)
+	}
+}
