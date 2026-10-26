@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "2.2">
+<!ENTITY version   "2.3">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 2.3
+- Case view for the DXP8800 Plus: the front with its eight bays and the strip (power button, LEDs, SD, two Thunderbolt 4, USB-A) and the rear as a row of sockets after the ports the reviews list, plus the drives as cards. No inside view and no fan control yet
 
 ### 2.2
 - Case view for the DXP4800, DXP4800 Plus and DXP4800 Pro, drawn after photos of the DXP4800 Plus: front with the four bays, the rear with the big mesh, HDMI, USB, both LAN ports and the DC inlet, and the drives as cards. No inside view yet (the M.2 slots of these models are not mapped) and no fan control. SSDs show as "M.2" there
@@ -200,7 +203,7 @@
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>97dd2df0c53f5ba9762fdb738bd4d522</MD5>
+<MD5>dabbac19dfe23923c428772e7e5eceed</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
@@ -246,12 +249,12 @@
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>287dfb37d6702899e274a0b9bcd691c5</MD5>
+<MD5>4dc039f401f0f46ad119574511b397e8</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>3f520d99b3f685da33ebde852128939b</MD5>
+<MD5>79ff316abbc628bc2809196c97b396b2</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">

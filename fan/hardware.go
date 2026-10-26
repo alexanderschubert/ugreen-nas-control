@@ -30,8 +30,8 @@ type layout struct {
 	otherSlot string
 }
 
-// layoutFor knows the DXP6800 Pro (ata3..ata6, then ata1, ata2), the DXP4800 GT and the DXP4800 / Plus / Pro
-// (ata1..ata4, the order UGREEN LED Control uses). On the last three the root ports of the M.2 slots are not
+// layoutFor knows the DXP6800 Pro (ata3..ata6, then ata1, ata2), the DXP4800 GT, the DXP4800 / Plus / Pro
+// (ata1..ata4) and the DXP8800 Plus (ata1..ata8), the order UGREEN LED Control uses. On the last three the root ports of the M.2 slots are not
 // known, so an NVMe is just "m2". Any other model: no bays, every NVMe on the PCIe slot.
 //
 // DXP6800 Pro, from an Unraid box with four NVMe: the CPU's root port 00:06.0 is M.2 slot 1
@@ -48,6 +48,8 @@ func layoutFor(model string) layout {
 		return layout{[]int{1, 2, 3, 4}, map[string]string{"0000:00:01.4": "m2-1", "0000:00:01.6": "m2-2"}, ""}
 	case model == "DXP4800" || model == "DXP4800 Plus" || model == "DXP4800 Pro":
 		return layout{bayPorts: []int{1, 2, 3, 4}, otherSlot: "m2"}
+	case model == "DXP8800 Plus":
+		return layout{bayPorts: []int{1, 2, 3, 4, 5, 6, 7, 8}, otherSlot: "m2"}
 	}
 	return layout{}
 }
