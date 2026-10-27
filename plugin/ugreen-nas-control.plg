@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "3.1">
+<!ENTITY version   "3.2">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 3.2
+- About, Supported models: "Confirm my device": tick what works on your model (LEDs, bay order, case view, inside, fan control, temperatures) and open a pre-filled GitHub issue with the model, the versions and your ticks (no serial numbers, IP addresses or drive names). Nothing is sent from the plugin; you submit the issue yourself
 
 ### 3.1
 - About: a table of every UGREEN NASync model with what the plugin does for it (LEDs, case view, fan control); your model is highlighted; the models are sorted by series (DX, DXP, iDX, DH) and the card is folded away until you open it. The same table is in the README
@@ -240,7 +243,7 @@
 
 <FILE Name="&srcDIR;/UGREENNASControl.page">
 <URL>&gitURL;/src/web/UGREENNASControl.page</URL>
-<MD5>6aaede7d76da057914237a55b5a5d778</MD5>
+<MD5>71c4cb696693425b8d9d1f6a893e37d9</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASDashboard.page">
@@ -271,17 +274,17 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>0e1f03201290cfbdc940c91424f5a54f</MD5>
+<MD5>d0b9bb3a1ac9541d674d94bae80dc3e6</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>d8a9149687c16cab5362c31d90332fa9</MD5>
+<MD5>677bb6f736a59432f686bb9eeb1deefc</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>d28c3ba0e5ec414e8c5680d6d0dfb236</MD5>
+<MD5>ab83ef961c8a9f6553bf84e7c843a8ce</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">

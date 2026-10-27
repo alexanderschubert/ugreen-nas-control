@@ -322,6 +322,20 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
             <summary><h2 data-i18n="models.title">Unterstützte Modelle</h2></summary>
             <p class="unc-muted" data-i18n="models.intro">Alle UGREEN-NAS-Modelle und was das Plugin für sie kann.</p>
             <div id="unc-models"></div>
+
+            <div class="unc-confirm" id="unc-confirm">
+                <h3 data-i18n="models.confirm_title">Mein Gerät bestätigen</h3>
+                <p class="unc-muted" data-i18n="models.confirm_intro">Du hast das Plugin ausprobiert? Hake an, was bei dir funktioniert, und schick es als GitHub-Issue ab: so wissen wir, was auf deinem Modell läuft.</p>
+                <div class="unc-confirm-list" id="unc-confirm-list"></div>
+                <label class="unc-confirm-comment">
+                    <span data-i18n="models.confirm_comment">Anmerkung (optional)</span>
+                    <textarea id="unc-confirm-text" rows="2" maxlength="600"></textarea>
+                </label>
+                <div class="unc-actions">
+                    <button type="button" class="unc-btn primary" id="unc-confirm-send"><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="models.confirm_button">Als GitHub-Issue öffnen</span></button>
+                </div>
+                <p class="unc-hint" data-i18n="models.confirm_privacy">Es öffnet sich ein vorausgefülltes GitHub-Issue. Erst wenn du dort auf „Submit“ klickst, wird etwas gesendet. Im Text stehen Modell, Plugin-, Unraid- und Kernel-Version und deine Häkchen, keine Seriennummern, IP-Adressen oder Laufwerksnamen.</p>
+            </div>
         </details>
     </article>
 

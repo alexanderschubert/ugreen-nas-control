@@ -563,6 +563,45 @@
         });
     }
 
+    // What the user can confirm on this device: [key, text key, shown when, line in the issue].
+    const CONFIRMS = [
+        ['leds', 'models.confirm_leds', () => state.data?.led?.supported !== false, 'LEDs: colours and effects work'],
+        ['bays', 'models.confirm_bays', () => state.data?.led?.supported !== false, 'LEDs: the right bay blinks with "Identify" (bay order is right)'],
+        ['case', 'models.confirm_case', () => caseKnown(), 'Case view: front and rear look like my device'],
+        ['inside', 'models.confirm_inside', () => Boolean(state.hw) && !caseModel(state.hw).noInside && caseKnown(), 'Case view: the inside matches (M.2 slots, RAM)'],
+        ['fans', 'models.confirm_fans', () => fanKnown() && !fanOff(), 'Fan control: modes and curves work, the fans react'],
+        ['temps', 'models.confirm_temps', () => true, 'Temperatures and the dashboard tile show the right values']
+    ];
+
+    function renderConfirm() {
+        const box = q('#unc-confirm-list');
+        const ticked = new Set(qa('#unc-confirm-list input:checked').map(input => input.dataset.confirm));
+
+        box.innerHTML = CONFIRMS.filter(([, , when]) => when()).map(([key, text]) => `
+            <label class="unc-chipcheck"><input type="checkbox" data-confirm="${key}" ${ticked.has(key) ? 'checked' : ''}><span>${escapeHtml(t(text))}</span></label>`).join('');
+    }
+
+    // A pre-filled GitHub issue: model, versions and what was ticked. Nothing is sent from here; the user submits it on GitHub.
+    function openConfirmIssue() {
+        const info = state.data?.info || {};
+        const model = modelName() || 'unknown';
+        const marked = new Set(qa('#unc-confirm-list input:checked').map(input => input.dataset.confirm));
+        const lines = CONFIRMS.filter(([, , when]) => when()).map(([key, , , line]) => `- [${marked.has(key) ? 'x' : ' '}] ${line}`);
+        const comment = q('#unc-confirm-text').value.trim();
+        const body = [
+            `Model: ${model}`,
+            `Plugin: ${window.UGREEN_NAS_VERSION || '?'}`,
+            `Unraid: ${info.unraid || '?'}, kernel ${info.kernel || '?'}`,
+            `Fan chip: ${state.data?.chip || 'none'}; LED controller: ${state.ledStatus?.i2c_address ? `I2C ${state.ledStatus.i2c_address}` : 'not found'}`,
+            '',
+            ...lines,
+            ...(comment ? ['', comment] : [])
+        ].join('\n');
+        const url = `https://github.com/alexanderschubert/ugreen-nas-control/issues/new?labels=${encodeURIComponent('model-report')}&title=${encodeURIComponent(`Model report: ${model}`)}&body=${encodeURIComponent(body)}`;
+
+        window.open(url, '_blank', 'noopener');
+    }
+
     function renderModels() {
         const mine = modelName();
         const cell = (kind, text) => `<td class="m-${kind}">${escapeHtml(text)}</td>`;
@@ -831,6 +870,7 @@
         renderTemps();
         renderSystem();
         renderModels();
+        renderConfirm();
         renderCurves();
         renderSafety();
         renderSaveBars();
@@ -1869,6 +1909,7 @@
         });
 
         bindModelsFold();
+        q('#unc-confirm-send').addEventListener('click', openConfirmIssue);
 
         q('#unc-fan-enabled').addEventListener('change', event => {
             const on = event.target.checked;
