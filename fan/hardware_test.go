@@ -119,10 +119,11 @@ func fakeSys(t *testing.T) {
 	write("dmidecode.sh", "#!/bin/sh\ncat <<'EOT'\n"+dmidecodeSample+"EOT\n")
 	os.Chmod(filepath.Join(dir, "dmidecode.sh"), 0o755)
 
-	oldSys, oldHwmon, oldINI, oldDMI, oldBin, oldMounts := sysDir, hwmonDir, disksINI, dmiDir, dmidecodeBn, mountsFile
+	oldSys, oldHwmon, oldINI, oldDMI, oldBin, oldMounts, oldEth, oldCache := sysDir, hwmonDir, disksINI, dmiDir, dmidecodeBn, mountsFile, ethtoolBn, cacheDir
 	t.Cleanup(func() {
-		sysDir, hwmonDir, disksINI, dmiDir, dmidecodeBn, mountsFile = oldSys, oldHwmon, oldINI, oldDMI, oldBin, oldMounts
+		sysDir, hwmonDir, disksINI, dmiDir, dmidecodeBn, mountsFile, ethtoolBn, cacheDir = oldSys, oldHwmon, oldINI, oldDMI, oldBin, oldMounts, oldEth, oldCache
 	})
+	cacheDir = ""
 	sysDir, hwmonDir, disksINI = dir, filepath.Join(dir, "class/hwmon"), filepath.Join(dir, "disks.ini")
 	dmiDir, dmidecodeBn, mountsFile = filepath.Join(dir, "dmi"), filepath.Join(dir, "dmidecode.sh"), filepath.Join(dir, "mounts")
 }
@@ -186,6 +187,33 @@ func TestReadHardwareOtherModelHasNoBays(t *testing.T) {
 	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("DX4600 Pro\n"), 0o644)
 	if hw := ReadHardware(); hw.Bays != nil {
 		t.Errorf("bays on another model: %+v", hw.Bays)
+	}
+}
+
+func TestHardwareCache(t *testing.T) {
+	fakeSys(t)
+	cacheDir = t.TempDir()
+	eth := filepath.Join(t.TempDir(), "ethtool.sh")
+	os.WriteFile(eth, []byte("#!/bin/sh\necho '	Supported link modes:   100baseT/Full'\necho '	                        10000baseT/Full'\necho '	Supported pause frame use: Symmetric'\n"), 0o755)
+	ethtoolBn = eth
+	first := ReadHardware()
+	if len(first.Memory) == 0 {
+		t.Fatalf("no memory in the fake: %+v", first)
+	}
+	// The tools are gone, the second read still has what the first one learned.
+	dmidecodeBn = "/nonexistent/dmidecode"
+	ethtoolBn = "/nonexistent/ethtool"
+	second := ReadHardware()
+	if len(second.Memory) != len(first.Memory) {
+		t.Errorf("memory not cached: %+v", second.Memory)
+	}
+	if len(first.Net) == 0 || first.Net[0].MaxMbit != 10000 {
+		t.Errorf("fake ethtool not used: %+v", first.Net)
+	}
+	for i := range second.Net {
+		if second.Net[i].MaxMbit != first.Net[i].MaxMbit {
+			t.Errorf("max speed not cached: %+v vs %+v", second.Net, first.Net)
+		}
 	}
 }
 
