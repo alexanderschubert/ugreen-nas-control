@@ -770,13 +770,14 @@
                 <div class="ulc-bay-card ${kind}">
                     <strong><span class="ulc-led" data-led="${escapeHtml(bay.led)}"></span>${escapeHtml(t('led.bay', { n: bay.bay }))}</strong>
                     <small>${bay.device ? `/dev/${escapeHtml(bay.device)}${bay.slot ? ` · ${escapeHtml(bay.slot)}` : ''}` : escapeHtml(t('bays.no_disk'))}</small>
-                    ${bay.serial ? `<small>${escapeHtml(bay.serial)}</small>` : ''}
+                    <small>${bay.serial ? escapeHtml(bay.serial) : ''}</small>
                     <span class="ulc-state ${kind}">${escapeHtml(text)}</span>
-                    ${bay.device ? `<small>${escapeHtml(bayCondition(bay))}</small>` : ''}
-                    ${bay.smart_warnings ? `
-                        <span class="ulc-state warning">${escapeHtml(t('bays.smart', { list: smartText(bay.smart_warnings) }))}</span>
-                        <button type="button" class="ulc-btn small" data-smart-ack="${escapeHtml(bay.led)}" title="${escapeHtml(t('smart.ack_title'))}">${icon('check')}${escapeHtml(t('smart.ack'))}</button>` : ''}
-                    ${identifyButton(bay.led)}
+                    <small>${bay.device ? escapeHtml(bayCondition(bay)) : ''}</small>
+                    ${bay.smart_warnings ? `<span class="ulc-state warning">${escapeHtml(t('bays.smart', { list: smartText(bay.smart_warnings) }))}</span>` : ''}
+                    <div class="ulc-bay-actions">
+                        ${bay.smart_warnings ? `<button type="button" class="ulc-btn small" data-smart-ack="${escapeHtml(bay.led)}" title="${escapeHtml(t('smart.ack_title'))}">${icon('check')}${escapeHtml(t('smart.ack'))}</button>` : ''}
+                        ${identifyButton(bay.led)}
+                    </div>
                 </div>`;
         }).join('');
 

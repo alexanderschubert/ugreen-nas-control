@@ -337,7 +337,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 
 <section class="unc-view" data-view="led">
     <div id="unc-led-head">
-        <article class="unc-card" id="unc-led-switch-card">
+        <article class="unc-card unc-led-switch-card" id="unc-led-switch-card">
             <label class="unc-switch-row" id="unc-led-row">
                 <span class="unc-switch">
                     <input type="checkbox" id="unc-led-enabled">

@@ -19,6 +19,21 @@
     --unc-red: #ef4444;
     --unc-radius: 12px;
 
+    /* One spacing scale for the whole app (the same in .unc and .ulc, so NAS and LED cards line up). */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 20px;
+    --sp-6: 24px;
+    --sp-7: 32px;
+    --card-pad: var(--sp-6);
+    --card-pad-tight: var(--sp-4);
+    --card-gap: var(--sp-5);
+    --label-w: 200px;
+    --control-w: 560px;
+    --reset-w: 38px;
+
     color-scheme: dark;
     display: grid;
     grid-template-columns: 250px minmax(0, 1fr);
@@ -324,37 +339,32 @@
 }
 
 .unc-view > .unc-card + .unc-card {
-    margin-top: 18px;
+    margin-top: var(--card-gap);
 }
 
 .unc-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 18px;
+    gap: var(--card-gap);
     align-items: start;
 }
 
 .unc-col {
     display: grid;
-    gap: 18px;
+    gap: var(--card-gap);
     min-width: 0;
 }
 
 .unc-card {
-    padding: 18px 20px 20px;
+    padding: var(--card-pad);
     border: 1px solid var(--unc-border);
     border-radius: var(--unc-radius);
     background: var(--unc-card);
 }
 
 .unc-card h2 {
-    margin-bottom: 16px;
     font-size: 18px;
     font-weight: 650;
-}
-
-.unc-card > .unc-muted {
-    margin: -8px 0 16px;
 }
 
 .unc-later {
@@ -457,8 +467,8 @@
 
 .unc-field-row {
     display: grid;
-    grid-template-columns: 130px minmax(0, 1fr);
-    gap: 14px;
+    grid-template-columns: var(--label-w) minmax(0, 1fr);
+    gap: var(--sp-4);
     align-items: center;
 }
 
@@ -622,10 +632,9 @@
 
 .unc-form {
     display: grid;
-    grid-template-columns: 140px minmax(0, 1fr);
-    gap: 14px 16px;
+    grid-template-columns: var(--label-w) minmax(0, 1fr);
+    gap: var(--sp-4);
     align-items: center;
-    margin-bottom: 18px;
 }
 
 .unc-inline {
@@ -700,8 +709,8 @@
 
 .unc-facts {
     display: grid;
-    grid-template-columns: 180px minmax(0, 1fr);
-    gap: 10px 18px;
+    grid-template-columns: var(--label-w) minmax(0, 1fr);
+    gap: var(--sp-3) var(--sp-4);
 }
 
 .unc-facts dt {
@@ -865,8 +874,7 @@
 .unc-curves {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 18px;
-    margin-bottom: 18px;
+    gap: var(--card-gap);
 }
 
 .unc-curve {
@@ -958,10 +966,6 @@
     background: var(--unc-card);
     color: var(--unc-text);
     font-variant-numeric: tabular-nums;
-}
-
-.unc-curve-from {
-    margin-bottom: 0;
 }
 
 /* ---------- Dashboard tile ---------- */
@@ -1623,9 +1627,8 @@
 
 .unc-about-head {
     display: flex;
-    gap: 20px;
+    gap: var(--sp-5);
     align-items: center;
-    margin-bottom: 22px;
 }
 
 .unc-about-icon {
@@ -1651,8 +1654,7 @@
 .unc-about-links {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: var(--sp-3);
 }
 
 .unc .unc-link-tile {
@@ -1830,6 +1832,16 @@
 
 .unc[data-theme="light"] .unc-banner small {
     color: #166534;
+}
+
+/* A bad state keeps its red box in the light theme too (the rule above would paint it green). */
+.unc[data-theme="light"] .unc-banner.bad {
+    border-color: rgba(220, 38, 38, .5);
+    background: rgba(239, 68, 68, .1);
+}
+
+.unc[data-theme="light"] .unc-banner.bad small {
+    color: #991b1b;
 }
 
 .unc[data-theme="light"] .unc-warning {
@@ -2059,7 +2071,7 @@
 .unc-ccol > .unc-cc { flex: 1 1 auto; }
 
 .unc-card.unc-cc {
-    padding: 14px 16px;
+    padding: var(--card-pad-tight);
 }
 
 .unc-cc h3 {
@@ -2320,12 +2332,11 @@
 
 /* ---------- Overview: more compact ---------- */
 
-.unc-view[data-view="overview"] .unc-card { padding: 14px 16px; }
+.unc-view[data-view="overview"] .unc-card { padding: var(--card-pad-tight); }
 .unc-view[data-view="overview"] .unc-card h2 { margin-bottom: 10px; font-size: 15px; }
 
-.unc-cockpit { gap: 12px; }
+.unc-cockpit { gap: var(--card-gap); }
 .unc-ccol { gap: 10px; }
-.unc-card.unc-cc { padding: 11px 14px; }
 .unc-cc h3 { margin-bottom: 7px; }
 .unc-big { font-size: 26px; }
 .unc-hero-stage { padding: 14px 18px 12px; }
@@ -2336,7 +2347,7 @@
 .unc-hero-tabs { margin-top: 12px; }
 
 /* The fan mode as one row of buttons (the description is the tooltip), the facts in two columns. */
-.unc-under { gap: 12px; margin-top: 12px; }
+.unc-under { gap: var(--card-gap); margin-top: var(--card-gap); }
 
 .unc-under .unc-effects {
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -2748,7 +2759,8 @@
 }
 
 .unc-dcard {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     padding: 12px 14px;
     border: 1px solid var(--unc-border);
@@ -2824,7 +2836,9 @@
 
 .unc-dcard .d-info span { font-size: 13px; }
 
+/* Card footer: the last row sits at the bottom of every card in a row, whatever is above it. */
 .unc-dcard .d-temp {
+    margin-top: auto;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -2835,7 +2849,7 @@
 
 .unc-cockpit {
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 12px;
+    gap: var(--card-gap);
 }
 
 .unc-cockpit > .unc-hero-stage { grid-column: span 7; }
@@ -3033,15 +3047,10 @@
 /* ---------- LEDs: overview head (the switch) ---------- */
 
 #unc-led-head {
-    margin-bottom: 18px;
-}
-
-#unc-led-switch-card .unc-switch-row {
-    margin-bottom: 12px;
+    margin-bottom: var(--card-gap);
 }
 
 #unc-led-switch-card .unc-fineprint {
-    margin: 12px 0 0;
     font-size: 12px;
 }
 
@@ -3050,10 +3059,9 @@
 .unc-card-head {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px 16px;
+    gap: var(--sp-3) var(--sp-4);
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 12px;
 }
 
 .unc-card-head h2 { margin: 0; }
@@ -3063,8 +3071,8 @@
     flex-wrap: wrap;
     gap: 10px;
     align-items: center;
-    margin-top: 18px;
-    padding-top: 14px;
+    margin-top: var(--sp-2);
+    padding-top: var(--sp-4);
     border-top: 1px solid var(--unc-border);
 }
 
@@ -3100,7 +3108,6 @@
     background: var(--unc-amber);
 }
 
-.unc-curve-from { margin: 16px 0 0; }
 
 /* A sensor name wraps instead of being cut off; the model sits under it. */
 .unc-temp > span:first-child { align-items: flex-start; overflow: visible; white-space: normal; }
@@ -3110,3 +3117,82 @@
 
 /* Unraid lays out a dd as a column; a fact is running text with links in it. */
 .unc .unc-facts dd { display: block; }
+
+/* ---------- Rhythm: one vertical spacing system for every card ----------
+ * A card is a column with one gap (--sp-4) between its blocks; the blocks carry no margins of their own.
+ * Exceptions are written as offsets against that gap: a helper line sits --sp-2 under what it explains,
+ * a sub-heading has --sp-7 above it. Label | control rows share --label-w and --control-w on every page. */
+
+:is(.unc-view > .unc-card, .unc-led-switch-card) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+:is(.unc-view > .unc-card, .unc-led-switch-card) > *,
+:is(.unc-view > .unc-card, .unc-led-switch-card) .unc-switch-row,
+:is(.unc-view > .unc-card, .unc-led-switch-card) .unc-hint {
+    margin: 0;
+}
+
+:is(.unc-view > .unc-card, .unc-led-switch-card) > h2 {
+    margin-bottom: 0;
+}
+
+/* Helper text: tight under its heading or control. */
+:is(.unc-view > .unc-card, .unc-led-switch-card) > h2 + .unc-muted,
+:is(.unc-view > .unc-card, .unc-led-switch-card) > :is(.unc-form, .unc-inline, select) + :is(.unc-muted, .unc-hint) {
+    margin-top: calc(var(--sp-2) - var(--sp-4));
+}
+
+.unc-view > .unc-about {
+    gap: var(--sp-6);
+}
+
+.unc-switch-row {
+    margin: 0;
+}
+
+.unc-switch-row small {
+    display: block;
+    margin-top: var(--sp-1);
+    line-height: 1.4;
+}
+
+.unc-switch-row + .unc-switch-row {
+    margin-top: var(--sp-1);
+}
+
+/* The controls of a form row stop at one width on every page; labels may wrap, controls don't stretch. */
+.unc-form > :not(label),
+.unc-field-row > :not(label) {
+    max-width: var(--control-w);
+}
+
+.unc-form > label,
+.unc-field-row > label {
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.unc-savebar {
+    margin-top: var(--sp-2);
+}
+
+.unc-savebar.failed .unc-savestate {
+    color: var(--unc-red);
+}
+
+.unc-savebar.failed .unc-savestate::before {
+    background: var(--unc-red);
+}
+
+@media (max-width: 560px) {
+    .unc-form > :not(label),
+    .unc-field-row > :not(label) { max-width: none; }
+}
+
+/* Unraid pads a dl; the rows of a fact list start at the card's rhythm. */
+.unc dl.unc-facts {
+    padding: 0;
+}
