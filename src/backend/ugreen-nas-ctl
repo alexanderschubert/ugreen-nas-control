@@ -9,6 +9,7 @@ HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 FAN_TOOL="${UGREEN_NAS_FAN:-$HERE/ugreen-nas-fan}"
 PIDFILE="${UGREEN_FAN_PIDFILE:-/var/run/ugreen-nas-control.pid}"
 ERRLOG="${UGREEN_FAN_ERRLOG:-/var/run/ugreen-nas-control.err}"
+FAN_CFG="${UGREEN_FAN_CONFIG:-/boot/config/plugins/ugreen-nas-control/fan.cfg}"
 
 LED_DIR="${UGREEN_LED_DIR:-$HERE/../led/backend}"
 LED_CTL="${UGREEN_LED_CTL:-$LED_DIR/ugreen-led-ctl}"
@@ -212,8 +213,18 @@ running() {
     [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null
 }
 
+# fan_control="0" in fan.cfg: this plugin must not touch the fan chip (another plugin or the BIOS runs the fans).
+fan_off() {
+    [ "$(sed -n 's/^fan_control="\(.*\)"$/\1/p' "$FAN_CFG" 2>/dev/null | tail -n 1)" = 0 ]
+}
+
 start() {
     local probe
+
+    if fan_off; then
+        echo "Fan control is switched off in the settings."
+        return 0
+    fi
 
     if running; then
         echo "Fan daemon is already running."

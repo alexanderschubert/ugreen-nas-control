@@ -3215,3 +3215,8 @@
 
 .unc-chipcheck:has(input:checked) { border-color: var(--unc-accent); background: rgba(47, 124, 246, .14); }
 .unc-chipcheck b { font-weight: 600; }
+
+/* Fan control off: the card keeps only its note; the mode buttons would change nothing. */
+.unc-cc.fan.fan-off .unc-cc-sub,
+.unc-cc.fan.fan-off #unc-modes,
+.unc-cc.fan.fan-off #unc-mode-hint { display: none; }

@@ -17,6 +17,10 @@ if ($m === 'POST') {
         copy($src, $dst);
         echo json_encode(['ok' => true]); exit;
     }
+    if ($a === 'fan_control') {
+        if (($_POST['value'] ?? '') === 'off') { touch('/tmp/fanoff'); } else { @unlink('/tmp/fanoff'); }
+        echo json_encode(['ok' => true]); exit;
+    }
     if ($a === 'led') {
         if (($_POST['value'] ?? '') === 'on') { touch($flag); } else { @unlink($flag); }
     }
@@ -40,7 +44,7 @@ echo json_encode(['ok'=>true,'running'=>true,'chip'=>'IT8613',
  'info'=>['model'=>$model,'bios'=>'1.0','bios_date'=>'01/01/2024','cpu'=>'12th Gen Intel(R) Core(TM) i5-1235U @ 2.50GHz','threads'=>12,'memory_kb'=>67108864,'kernel'=>'6.18.38-Unraid','unraid'=>'7.3.2','uptime'=>400000],
  'sensors'=>['cpu'=>54,'cpu_cores'=>[],'nvme'=>[['name'=>'nvme0','temp'=>44]],'gpu'=>51,'nvme_extra'=>[['name'=>'nvme1','label'=>'Sensor 1','temp'=>64],['name'=>'nvme1','label'=>'Sensor 2','temp'=>42]],'nic'=>[['iface'=>'eth0','label'=>'PHY','temp'=>66],['iface'=>'eth0','label'=>'MAC','temp'=>66],['iface'=>'eth1','label'=>'PHY','temp'=>64],['iface'=>'eth1','label'=>'MAC','temp'=>64]],'disks'=>[['name'=>'disk2','device'=>'sdd','temp'=>47,'standby'=>false,'hdd'=>true]],'board'=>30],
  'presets'=>['standard'=>['40:30,70:100','30:30,50:100']],
- 'fans'=>[['id'=>'fan2','role'=>'cpu','rpm'=>1500,'pct'=>40,'auto'=>false],['id'=>'fan3','role'=>'case','rpm'=>900,'pct'=>30,'auto'=>false],['id'=>'fan4','role'=>'case','rpm'=>880,'pct'=>30,'auto'=>false]],
+ 'fans'=>is_file('/tmp/fanoff') ? [] : [['id'=>'fan2','role'=>'cpu','rpm'=>1500,'pct'=>40,'auto'=>false],['id'=>'fan3','role'=>'case','rpm'=>900,'pct'=>30,'auto'=>false],['id'=>'fan4','role'=>'case','rpm'=>880,'pct'=>30,'auto'=>false]],
  'chip_temps'=>[38],'daemon'=>['cpu_temp'=>54,'case_temp'=>47,'case_from'=>'disk'],
- 'settings'=>['mode'=>'standard','min_pct'=>25,'cpu_crit'=>90,'disk_crit'=>55,'nvme_offset'=>15,'stall_notify'=>true,'ignore_drives'=>['cache'],'ui_lang'=>'auto'],
+ 'settings'=>['mode'=>'standard','min_pct'=>25,'cpu_crit'=>90,'disk_crit'=>55,'nvme_offset'=>15,'stall_notify'=>true,'fan_control'=>!is_file('/tmp/fanoff'),'ignore_drives'=>['cache'],'ui_lang'=>'auto'],
  'led'=>['enabled'=>is_file($flag),'supported'=>true,'blocker'=>'','untested'=>strpos($model,'iDX6011')===0,'warning'=>is_dir('/usr/local/emhttp/plugins/ugreen-led-control')?'standalone':'','import_available'=>$imp,'model'=>$model]]);

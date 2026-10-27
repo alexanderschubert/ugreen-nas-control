@@ -290,3 +290,20 @@ func TestParseDriveList(t *testing.T) {
 		t.Error("empty list")
 	}
 }
+
+func TestFanControlSwitch(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "fan.cfg")
+
+	if !LoadConfig(path).FanControl {
+		t.Error("fan control is on by default")
+	}
+	os.WriteFile(path, []byte("fan_control=\"0\"\nmode=\"quiet\"\n"), 0o644)
+	if c := LoadConfig(path); c.FanControl || c.Mode != "quiet" {
+		t.Errorf("off: %+v", c)
+	}
+	os.WriteFile(path, []byte("fan_control=\"1\"\n"), 0o644)
+	if !LoadConfig(path).FanControl {
+		t.Error("on")
+	}
+}

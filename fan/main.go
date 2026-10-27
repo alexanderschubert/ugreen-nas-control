@@ -114,24 +114,13 @@ func main() {
 		sensors := ReadSensors()
 		out := map[string]any{"ok": true, "info": ReadInfo(), "sensors": &sensors, "presets": presets}
 
-		if chip, err := openChip(); err != nil {
-			out["chip_error"] = err.Error()
-		} else {
-			var fans []FanStatus
-			var temps []*int
-			_ = withLock(func() error {
-				for _, ch := range chip.Outputs() {
-					fans = append(fans, readFanStatus(chip, ch))
-				}
-				temps = chip.Temps()
-				if bt, ok := chip.(BoardTemper); ok && sensors.Board == nil {
-					sensors.Board = bt.BoardTemp()
-				}
-				return nil
-			})
-			out["chip"] = chip.Name()
-			out["fans"] = fans
-			out["chip_temps"] = temps
+		// Switched off: not a single read of the fan chip, another plugin may be using it. The temperatures
+		// from sysfs and Unraid are still reported.
+		fanOn := LoadConfig(configPath).FanControl
+		out["fan_control"] = fanOn
+
+		if fanOn {
+			addChipStatus(out, &sensors)
 		}
 
 		if b, err := os.ReadFile(statePath); err == nil {
@@ -201,6 +190,9 @@ func main() {
 		fmt.Println("BIOS fan settings restored.")
 
 	case "daemon":
+		if !LoadConfig(configPath).FanControl {
+			fail(fmt.Errorf("fan control is switched off in the settings"))
+		}
 		chip, err := openChip()
 		if err != nil {
 			fail(err)
@@ -212,6 +204,31 @@ func main() {
 	default:
 		usage()
 	}
+}
+
+// addChipStatus reads the fan chip: its fans, its own temperatures, and the mainboard temperature if the
+// controller has one. Only called while fan control is on.
+func addChipStatus(out map[string]any, sensors *Sensors) {
+	chip, err := openChip()
+	if err != nil {
+		out["chip_error"] = err.Error()
+		return
+	}
+	var fans []FanStatus
+	var temps []*int
+	_ = withLock(func() error {
+		for _, ch := range chip.Outputs() {
+			fans = append(fans, readFanStatus(chip, ch))
+		}
+		temps = chip.Temps()
+		if bt, ok := chip.(BoardTemper); ok && sensors.Board == nil {
+			sensors.Board = bt.BoardTemp()
+		}
+		return nil
+	})
+	out["chip"] = chip.Name()
+	out["fans"] = fans
+	out["chip_temps"] = temps
 }
 
 // readFanStatus reports one fan; pct stays nil where the controller does not

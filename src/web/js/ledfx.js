@@ -193,8 +193,9 @@
     const cache = new Map();
     let lastInput = Date.now();
     let asleep = false;
+    let idleMs = IDLE_MS;
 
-    const awake = () => document.visibilityState !== 'hidden' && Date.now() - lastInput < IDLE_MS;
+    const awake = () => document.visibilityState !== 'hidden' && Date.now() - lastInput < idleMs;
 
     function run(task) {
         if (task.busy) return;
@@ -269,6 +270,9 @@
 
     window.UNCPoll = {
         awake,
+        // The Unraid dashboard is often left open on a screen without anyone touching it: its tile only pauses
+        // while the tab is hidden (setIdle(Infinity)).
+        setIdle: ms => { idleMs = ms; },
         fetchText,
         lastPhaseRx: null,   // receive time (performance.now()) of the last response that carried a LED phase
         async json(url, maxAge = 0) {

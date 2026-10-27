@@ -353,9 +353,23 @@
         q('#unc-stalled-text').textContent = stalled.length ? t('stalled.text', { list: stalled.join(', ') }) : '';
     }
 
+    function renderFanSwitch() {
+        const input = q('#unc-fan-enabled');
+
+        input.checked = !fanOff();
+        q('#unc-fan-state').textContent = t(fanOff() ? 'fanctl.off' : 'fanctl.on');
+    }
+
     function renderFans() {
         const data = state.data;
         const fans = data.fans || [];
+
+        q('.unc-cc.fan').classList.toggle('fan-off', fanKnown() && fanOff());
+        if (fanKnown() && fanOff()) {
+            q('#unc-fans').innerHTML = `<p class="unc-muted">${escapeHtml(t('fanctl.off_note'))}</p>`;
+            q('#unc-follow').textContent = '';
+            return;
+        }
 
         q('#unc-fans').innerHTML = fans.map(fan => `
             <div class="unc-fan ${fan.rpm === 0 ? 'stopped' : ''}">
@@ -768,7 +782,10 @@
         renderCockpitCards();
         // Fan control and the case pictures exist for the two models whose wiring is known.
         qa('[data-nav="case"]').forEach(el => { el.hidden = !caseKnown(); });
-        qa('[data-fan-only]').forEach(el => { el.hidden = !fanKnown(); });
+        // Off: the fan pages and the fan card are out of the way; the switch stays under Settings.
+        qa('[data-fan-only]').forEach(el => { el.hidden = !fanKnown() || fanOff(); });
+        qa('[data-fan-model]').forEach(el => { el.hidden = !fanKnown(); });
+        renderFanSwitch();
     }
 
     /*
@@ -889,6 +906,7 @@
     // drawn after the DXP4800 Plus; elsewhere the pages stay out of the way.
     const modelName = () => state.hw?.model || state.data?.info?.model || '';
     const fanKnown = () => /^(DXP6800|DXP4800.*GT)/.test(modelName());
+    const fanOff = () => state.data?.settings?.fan_control === false;
     const caseKnown = () => fanKnown() || /^(DXP4800( Plus| Pro)?|DXP8800 Plus|DXP2800|iDX6011( Pro)?)$/.test(modelName());
 
     const caseModel = hw => (CASE_MODELS.find(([re]) => re.test(hw.model || '')) || [null, CASE_DEFAULT])[1];
@@ -1610,6 +1628,7 @@
             [t('dash.disk'), hottest >= 0 ? deg(hottest) : ''],
             [t('system.uptime'), data.info?.uptime ? uptime(data.info.uptime) : '']
         ];
+        if (fanOff()) items.splice(0, 2);
         if (ledsOn() && state.ledMode) items.splice(1, 0, [t('led.title'), ledModeText()]);
         items.splice(0, items.length, ...items.filter(([, value]) => value));
 
@@ -1790,6 +1809,15 @@
                 stall_notify: q('#unc-stall-notify').checked ? '1' : '0',
                 ignore_drives: ignoredDrives()
             }, true), t('safety.saved'));
+        });
+
+        q('#unc-fan-enabled').addEventListener('change', event => {
+            const on = event.target.checked;
+
+            run(async () => {
+                await api({ action: 'fan_control', value: on ? 'on' : 'off' }, true);
+                await load();
+            }, t(on ? 'fanctl.switched_on' : 'fanctl.switched_off'));
         });
 
         q('#unc-led-import-btn').addEventListener('click', () => {

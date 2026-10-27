@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "2.8">
+<!ENTITY version   "2.9">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,10 @@
 >
 
 <CHANGES>
+
+### 2.9
+- Fan control can be switched off (Settings): for users whose fans are run by another plugin or script. Off, the plugin does not start the fan daemon and does not read or write the fan chip at all, the fans get the BIOS values back, and the fan pages and the fan card are hidden
+- The Unraid dashboard tile no longer pauses after 5 minutes without input (only while the tab is hidden), so a dashboard left open on a screen keeps updating
 
 ### 2.8
 - Safety: choose drives that must not drive the case fans (an external SSD that runs hot on its own, for example). Ignored drives neither set the speed of the case fans nor trigger the disk emergency rule. Requested in the forum thread by cardsdoc
@@ -213,23 +217,23 @@
 
 <FILE Name="&srcDIR;/backend/ugreen-nas-ctl">
 <URL>&gitURL;/src/backend/ugreen-nas-ctl</URL>
-<MD5>85e73d9f3f96dc7001bf492864cd1a49</MD5>
+<MD5>a5557bbbddb2730b4a9abc918c69a8ee</MD5>
 </FILE>
 
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>ac3b2352d81ab4c49ac16bdf092bd126</MD5>
+<MD5>268d5722e03cc00a69c6899db1b693fe</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
 <URL>&gitURL;/src/web/api.php</URL>
-<MD5>f16973439cbe608083c007b61833bf01</MD5>
+<MD5>d2d748d12020aa30b1c30548ed35a5c5</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASControl.page">
 <URL>&gitURL;/src/web/UGREENNASControl.page</URL>
-<MD5>88aa97cb1d12d99573d0ae8a199a7638</MD5>
+<MD5>ef68332fc1d4052ed54c381626f358ea</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASDashboard.page">
@@ -260,27 +264,27 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>220ccf9e52f5d017223cb17b952da6e2</MD5>
+<MD5>eea5c07386d06ebc5413972bdf8eeafd</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>8969c7c0e43e25aa6255c9f7fb3e932f</MD5>
+<MD5>de95289ac6ba77e3a6f226717b06cc9e</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>6018d3f4cbbb798cbfc9750fecde22be</MD5>
+<MD5>a77fd2eb160946fb24aea2a60a57ec56</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">
 <URL>&gitURL;/src/web/js/ledfx.js</URL>
-<MD5>78ca7edde841793766f0ab4e6fcce643</MD5>
+<MD5>5cc1db0ab19f5ab0f35ca73fe4954243</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">
 <URL>&gitURL;/src/web/js/dash.js</URL>
-<MD5>69771b03bbdf538649d76e552812c0c8</MD5>
+<MD5>02359267b2acccd8a0cf89b2b6be6c7d</MD5>
 </FILE>
 
 <!-- LED part (the code of UGREEN LED Control, maintained here now), off until the switch is on -->

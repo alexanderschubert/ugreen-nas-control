@@ -157,5 +157,15 @@ before="$(cat "$T/boot/leds.cfg")"
 run led-import >/dev/null 2>&1; rc=$?
 check "import without the old settings fails and changes nothing" "$([ "$rc" -ne 0 ] && [ "$(cat "$T/boot/leds.cfg")" = "$before" ] && echo ok)"
 
+# The fan switch: off in fan.cfg, the daemon is not started and the chip is not even probed.
+FANT="$(mktemp -d)"
+printf 'fan_control="0"\n' > "$FANT/fan.cfg"
+off_out="$(UGREEN_FAN_CONFIG="$FANT/fan.cfg" UGREEN_NAS_FAN=/bin/false UGREEN_FAN_PIDFILE="$FANT/pid" bash "$CTL" start 2>&1)"; off_rc=$?
+check "fan control off: start does nothing and succeeds" "$([ "$off_rc" -eq 0 ] && echo "$off_out" | grep -q 'switched off' && echo ok)"
+printf 'fan_control="1"\n' > "$FANT/fan.cfg"
+UGREEN_FAN_CONFIG="$FANT/fan.cfg" UGREEN_NAS_FAN=/bin/false UGREEN_FAN_PIDFILE="$FANT/pid" bash "$CTL" start >/dev/null 2>&1; on_rc=$?
+check "fan control on: start probes the chip (and fails here)" "$([ "$on_rc" -ne 0 ] && echo ok)"
+rm -rf "$FANT"
+
 echo
 [ "$fails" -eq 0 ] && echo "All checks passed." || { echo "$fails failed."; exit 1; }
