@@ -411,13 +411,13 @@
     }
 
     // A sensor: a small picture in the colour of its level, the name, the value and a bar.
-    function tempRow(label, value, kind, extra = '', iconName = 'gauge') {
+    function tempRow(label, value, kind, extra = '', iconName = 'gauge', hint = '') {
         const [warm, hot] = LIMITS[kind] || LIMITS.other;
         const level = value == null ? '' : value >= hot ? 'hot' : value >= warm ? 'warm' : '';
         const width = value == null ? 0 : Math.max(2, Math.min(100, value));
 
         return `
-            <div class="unc-temp ${level}" title="${escapeHtml([label, extra].filter(Boolean).join(' · '))}">
+            <div class="unc-temp ${level}" title="${escapeHtml([[label, extra].filter(Boolean).join(' · '), hint].filter(Boolean).join('\n'))}">
                 <span><i class="unc-temp-ico">${iconName.startsWith('<') ? iconName : icon(iconName)}</i><span class="unc-temp-name">${escapeHtml(label)}${extra ? `<small class="unc-muted">${escapeHtml(extra)}</small>` : ''}</span></span>
                 <span class="unc-meter"><span style="width:${width}%"></span></span>
                 <strong>${escapeHtml(deg(value))}</strong>
@@ -452,12 +452,12 @@
         if (state.hw?.nvme?.length) {
             state.hw.nvme.forEach(n => {
                 ssds.push(tempRow(ssdSlotLabel(n), n.temp, 'nvme', n.model || n.id, n.boot ? UNRAID_MARK : 'm2'));
-                extras.filter(e => e.name === n.id).forEach(e => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', t('temps.nvme_extra', { model: n.model || n.id }), 'm2')));
+                extras.filter(e => e.name === n.id).forEach(e => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', t('temps.nvme_extra', { model: n.model || n.id }), 'm2', t('temps.hint_nvme_extra'))));
             });
         } else {
             (s.nvme || []).forEach(n => {
                 ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2'));
-                extras.filter(e => e.name === n.name).forEach(e => ssds.push(tempRow(`${n.name} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', t('temps.nvme_extra', { model: n.label || n.name }), 'm2')));
+                extras.filter(e => e.name === n.name).forEach(e => ssds.push(tempRow(`${n.name} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', t('temps.nvme_extra', { model: n.label || n.name }), 'm2', t('temps.hint_nvme_extra'))));
             });
         }
 
@@ -466,7 +466,8 @@
         (s.nic || []).forEach(n => {
             const i = ports.findIndex(p => p.name === n.iface);
             const port = i < 0 ? n.iface : ports.length > 1 ? `LAN ${i + 1}` : 'LAN';
-            nics.push(tempRow(n.label ? `${port} · ${n.label}` : port, n.temp, 'other', i < 0 ? '' : n.iface, 'net'));
+            const hint = n.label === 'PHY' ? t('temps.hint_phy') : n.label === 'MAC' ? t('temps.hint_mac') : '';
+            nics.push(tempRow(n.label ? `${port} · ${n.label}` : port, n.temp, 'other', [t('temps.nic_chip'), i < 0 ? '' : n.iface].filter(Boolean).join(' · '), 'net', hint));
         });
 
         (s.disks || []).forEach(d => {
