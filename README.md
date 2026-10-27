@@ -217,6 +217,13 @@ Questions and problems: the [support thread in the Unraid forum](https://forums.
 - [j3n57h0m45](https://github.com/j3n57h0m45): the **DXP4800 GT** support (fan control through the IT5571 embedded controller, LEDs, the case view, the system view, light case pictures), the CI hardening, the temperatures of the LAN chips, the iGPU and the extra NVMe sensors, and the overhaul of the interface (one LED page and switch, Settings and About, save bars, one spacing scale, faster polling)
 - everyone who tested on their model and reported what they found, in the forum thread and in the issues
 
+## Disclaimer
+
+- Use at your own risk. The plugin writes directly to the fan controller (the embedded controller on the DXP4800 GT, the ITE IT8613E on the DXP6800 Pro) and controls the LEDs.
+- Bad fan curves or settings can let disks or the CPU run hot or reduce hardware lifetime. Check temperatures after changing a curve; the emergency limit (all fans at 100 %) is a backstop, not a substitute.
+- Not affiliated with or endorsed by UGREEN. Using it may affect the manufacturer's warranty.
+- Provided as is, without warranty or liability; see [License](#license).
+
 ## License
 
 [MIT](LICENSE)
