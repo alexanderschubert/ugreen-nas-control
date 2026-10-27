@@ -1303,10 +1303,13 @@
             state.ledMode = { mode: status.mode, fx: status.fx };
             state.ledBays = Number(status.bays) || 0;
             renderLedFacts(status, state.leds);
-            if (!state.ledSchedule) state.ledSchedule = await ledGet('schedule');
         } catch (error) {
             state.leds = null;
+            return;
         }
+
+        // Only the night hint depends on it: a failed read must not hide the LED data.
+        if (!state.ledSchedule) state.ledSchedule = await ledGet('schedule').catch(() => null);
     }
 
     // "255 140 0" + brightness 0-255 -> a colour and a glow; off or dark gives neither.
