@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "2.7">
+<!ENTITY version   "2.8">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 2.8
+- Safety: choose drives that must not drive the case fans (an external SSD that runs hot on its own, for example). Ignored drives neither set the speed of the case fans nor trigger the disk emergency rule. Requested in the forum thread by cardsdoc
 
 ### 2.7
 - Overhaul by j3n57h0m45 (one look across the NAS and LED parts): one LED overview with one switch, the LED settings exist once (system LEDs, drive LEDs, one preview), Night mode and Alerts &amp; shutdown pages, separate Settings and About pages with page-specific headers, save bars with a leave warning on Fan curves and Safety, one spacing scale, the web LEDs mirror the device with one renderer, a shared poller that pauses when the page is hidden or idle, a fork-free LED daemon, cached dmidecode and ethtool reads. The Colours and Effects pages, the second LED switch, the global brightness slider and the dashboard tile size option are gone (the tile size did nothing since the LED tile was merged)
@@ -216,17 +219,17 @@
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>9b15ccf0deb3772bb810b7f3e8567602</MD5>
+<MD5>ac3b2352d81ab4c49ac16bdf092bd126</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
 <URL>&gitURL;/src/web/api.php</URL>
-<MD5>18a9f735e3446b2702a7064de5fb83ec</MD5>
+<MD5>f16973439cbe608083c007b61833bf01</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASControl.page">
 <URL>&gitURL;/src/web/UGREENNASControl.page</URL>
-<MD5>0b13159515b577990d8363eecbb3ebf6</MD5>
+<MD5>88aa97cb1d12d99573d0ae8a199a7638</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASDashboard.page">
@@ -257,17 +260,17 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>3ccb1bba8e54aa6970420e33aed557c5</MD5>
+<MD5>220ccf9e52f5d017223cb17b952da6e2</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>46befaf2c8700e6f047532ecf738a9eb</MD5>
+<MD5>8969c7c0e43e25aa6255c9f7fb3e932f</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>3584b6ca2a06fb3a0e62a897414523c7</MD5>
+<MD5>6018d3f4cbbb798cbfc9750fecde22be</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">

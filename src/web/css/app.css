@@ -3196,3 +3196,22 @@
 .unc dl.unc-facts {
     padding: 0;
 }
+
+/* Drives that must not drive the case fans: one tickable chip per drive. */
+.unc-ignore { margin: 18px 0 14px; display: grid; gap: 8px; }
+.unc-ignore p { margin: 0; }
+.unc-ignore-list { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.unc-chipcheck {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border: 1px solid var(--unc-border);
+    border-radius: 999px;
+    background: var(--unc-card-2);
+    cursor: pointer;
+}
+
+.unc-chipcheck:has(input:checked) { border-color: var(--unc-accent); background: rgba(47, 124, 246, .14); }
+.unc-chipcheck b { font-weight: 600; }

@@ -244,6 +244,12 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 
         <p class="unc-hint" data-i18n="safety.hint">Wird die CPU- oder eine Festplatten-Grenze erreicht oder ist die CPU-Temperatur nicht lesbar, laufen alle Lüfter auf 100 %. NVMe-SSDs vertragen mehr Wärme als Festplatten; für die Gehäuselüfter zählen sie deshalb mit diesem Abzug.</p>
 
+        <div class="unc-ignore">
+            <strong data-i18n="safety.ignore_title">Laufwerke ausnehmen</strong>
+            <p class="unc-muted" data-i18n="safety.ignore_hint">Diese Laufwerke bestimmen weder die Drehzahl der Gehäuselüfter noch lösen sie den Festplatten-Notfall aus, zum Beispiel eine externe SSD, die von sich aus warm läuft.</p>
+            <div class="unc-ignore-list" id="unc-ignore-list"></div>
+        </div>
+
         <label class="unc-switch-row">
             <span class="unc-switch">
                 <input type="checkbox" id="unc-stall-notify">

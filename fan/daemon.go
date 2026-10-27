@@ -58,7 +58,7 @@ type Decision struct {
 func Decide(c Config, s Sensors) Decision {
 	var d Decision
 
-	disk, nvme := s.MaxDisk(), s.MaxNVMe()
+	disk, nvme := s.MaxDiskExcept(c.IgnoreDrives), s.MaxNVMeExcept(c.IgnoreDrives)
 	switch {
 	case disk != nil && (nvme == nil || *disk >= *nvme-c.NVMeOffset):
 		d.CaseTemp, d.CaseFrom = disk, "disk"

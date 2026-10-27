@@ -252,9 +252,15 @@ func readDisks(path string) []Disk {
 }
 
 // Hottest disk and NVMe; nil when none reports a temperature.
-func (s Sensors) MaxDisk() *int {
+func (s Sensors) MaxDisk() *int { return s.MaxDiskExcept(nil) }
+
+// MaxDiskExcept is the hottest disk apart from the ignored ones (by Unraid name).
+func (s Sensors) MaxDiskExcept(ignore map[string]bool) *int {
 	var max *int
 	for _, d := range s.Disks {
+		if ignore[d.Name] {
+			continue
+		}
 		if d.Temp != nil && (max == nil || *d.Temp > *max) {
 			max = d.Temp
 		}
@@ -262,9 +268,15 @@ func (s Sensors) MaxDisk() *int {
 	return max
 }
 
-func (s Sensors) MaxNVMe() *int {
+func (s Sensors) MaxNVMe() *int { return s.MaxNVMeExcept(nil) }
+
+// MaxNVMeExcept is the hottest NVMe apart from the ignored ones (by device name, nvme0 ...).
+func (s Sensors) MaxNVMeExcept(ignore map[string]bool) *int {
 	var max *int
 	for _, n := range s.NVMe {
+		if ignore[n.Name] {
+			continue
+		}
 		if n.Temp != nil && (max == nil || *n.Temp > *max) {
 			max = n.Temp
 		}
