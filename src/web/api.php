@@ -140,6 +140,7 @@ if ($method === 'GET') {
         'disk_crit' => (int)($config['disk_crit'] ?? 55),
         'nvme_offset' => (int)($config['nvme_offset'] ?? 15),
         'stall_notify' => ($config['stall_notify'] ?? '1') !== '0',
+        'fan_control' => ($config['fan_control'] ?? '1') !== '0',
         'ignore_drives' => array_values(array_filter(array_map('trim', explode(',', $config['ignore_drives'] ?? '')), 'strlen')),
         'ui_lang' => $config['ui_lang'] ?? 'auto',
         'ui_theme' => $config['ui_theme'] ?? 'dark'
@@ -311,6 +312,37 @@ if ($action === 'led_import') {
     $result = run(CTL, ['led-import']);
 
     if ($result['code'] !== 0) {
+        respond([
+            'ok' => false,
+            'error' => $result['output']
+        ], 409);
+    }
+
+    respond(['ok' => true]);
+}
+
+// The fan control: off leaves the fan chip alone (another plugin may drive the fans); the daemon stops and the
+// fans get the BIOS values back.
+if ($action === 'fan_control') {
+    $value = (string)($input['value'] ?? '');
+
+    if (!in_array($value, ['on', 'off'], true)) {
+        respond([
+            'ok' => false,
+            'error' => 'Invalid value'
+        ], 400);
+    }
+
+    if (!save_settings(['fan_control' => $value === 'on' ? '1' : '0'])) {
+        respond([
+            'ok' => false,
+            'error' => CONFIG_FILE . ' is not writable'
+        ], 500);
+    }
+
+    $result = run(CTL, [$value === 'on' ? 'start' : 'stop']);
+
+    if ($value === 'on' && $result['code'] !== 0) {
         respond([
             'ok' => false,
             'error' => $result['output']

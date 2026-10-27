@@ -331,7 +331,8 @@
         if (settings) settings.title = t('dash.settings');
 
         load(root);
-        // Hidden tab or no input for 5 minutes: no polling at all (UNCPoll).
+        // Hidden tab: no polling at all (UNCPoll). The dashboard is often left open on a screen, so no idle pause here.
+        window.UNCPoll.setIdle(Infinity);
         window.UNCPoll.every(() => load(root), POLL_MS);
     }
 

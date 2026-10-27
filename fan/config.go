@@ -39,6 +39,8 @@ type Config struct {
 	// Drives (Unraid names such as "cache" or "disk2", NVMe as "nvme1") that neither drive the case fans nor
 	// trigger the disk emergency rule, e.g. an external SSD that runs hot by itself.
 	IgnoreDrives map[string]bool
+	// FanControl false: this plugin leaves the fan chip alone (another plugin or the BIOS runs the fans).
+	FanControl bool
 }
 
 func defaultConfig() Config {
@@ -53,6 +55,7 @@ func defaultConfig() Config {
 		DiskCrit:    55,
 		NVMeOffset:  15,
 		StallNotify: true,
+		FanControl:  true,
 	}
 }
 
@@ -108,6 +111,7 @@ func LoadConfig(path string) Config {
 	c.NVMeOffset = number("nvme_offset", c.NVMeOffset, 0, 40)
 	c.StallNotify = v["stall_notify"] != "0"
 	c.IgnoreDrives = parseDriveList(v["ignore_drives"])
+	c.FanControl = v["fan_control"] != "0"
 
 	return c
 }

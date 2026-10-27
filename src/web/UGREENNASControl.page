@@ -272,6 +272,21 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 <!-- ================= Einstellungen ================= -->
 
 <section class="unc-view" data-view="settings">
+    <article class="unc-card" data-fan-model hidden>
+        <h2 data-i18n="fanctl.title">Lüftersteuerung</h2>
+        <label class="unc-switch-row" id="unc-fan-row">
+            <span class="unc-switch">
+                <input type="checkbox" id="unc-fan-enabled">
+                <span></span>
+            </span>
+            <span>
+                <strong data-i18n="fanctl.switch">Lüftersteuerung dieses Plugins einschalten</strong>
+                <small id="unc-fan-state"></small>
+            </span>
+        </label>
+        <p class="unc-hint" data-i18n="fanctl.hint">Ausschalten, wenn ein anderes Plugin oder Skript die Lüfter steuert. Dann fasst dieses Plugin den Lüfter-Chip nicht an, und die Lüfter bekommen die Werte des BIOS zurück.</p>
+    </article>
+
     <article class="unc-card">
         <h2 data-i18n="settings.title">Oberfläche</h2>
         <div class="unc-form">
