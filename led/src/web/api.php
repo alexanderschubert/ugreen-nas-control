@@ -574,66 +574,6 @@ if ($method === 'POST') {
         respond(['ok' => true]);
     }
 
-    if ($action === 'dash_size') {
-        $size = (string)($input['value'] ?? '');
-
-        if (!in_array($size, ['compact', 'full'], true)) {
-            respond([
-                'ok' => false,
-                'error' => 'Invalid size'
-            ], 400);
-        }
-
-        if (!save_settings(['ui_dash' => $size])) {
-            respond([
-                'ok' => false,
-                'error' => CONFIG_FILE . ' is not writable'
-            ], 500);
-        }
-
-        respond(['ok' => true]);
-    }
-
-    if ($action === 'theme') {
-        $theme = (string)($input['value'] ?? '');
-
-        if (!in_array($theme, ['dark', 'light', 'auto'], true)) {
-            respond([
-                'ok' => false,
-                'error' => 'Invalid theme'
-            ], 400);
-        }
-
-        if (!save_settings(['ui_theme' => $theme])) {
-            respond([
-                'ok' => false,
-                'error' => CONFIG_FILE . ' is not writable'
-            ], 500);
-        }
-
-        respond(['ok' => true]);
-    }
-
-    if ($action === 'lang') {
-        $lang = (string)($input['value'] ?? '');
-
-        if (!in_array($lang, ['auto', 'de', 'en', 'es'], true)) {
-            respond([
-                'ok' => false,
-                'error' => 'Invalid language'
-            ], 400);
-        }
-
-        if (!save_settings(['ui_lang' => $lang])) {
-            respond([
-                'ok' => false,
-                'error' => CONFIG_FILE . ' is not writable'
-            ], 500);
-        }
-
-        respond(['ok' => true]);
-    }
-
     if ($action === 'fx') {
         $name = (string)($input['value'] ?? '');
 

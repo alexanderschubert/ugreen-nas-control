@@ -54,7 +54,6 @@
         gauge: '<path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 13 4-5"/>',
         flame: '<path d="M12 22c4 0 7-3 7-7 0-5-5-7-5-13-3 2-5 5-5 8-1-1-2-2-2-4-1 2-2 4-2 7 0 5 3 9 7 9z"/>',
         max: '<path d="M12 3v12M7 8l5-5 5 5M5 21h14"/>',
-        sparkles: '<path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/>',
         bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.300 21a1.900 1.900 0 0 0 3.400 0"/>',
         clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
         box: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',
@@ -98,10 +97,13 @@
         curves: { cpu: [], case: [] },
         curvesDirty: false,
         safetyDirty: false,
+        saveError: { curves: '', safety: '' },
+        edits: {},
         busy: false,
         hw: null,
         hwError: false,
         view: 'overview',
+        nav: 'overview',
         leds: null,
         ledMode: null,
         ledSchedule: null
@@ -192,7 +194,10 @@
             url += '?' + new URLSearchParams(params);
         }
 
+        // A write makes shared GET results (UNCPoll) older than the write: drop them before and after.
+        if (post) window.UNCPoll.invalidate();
         const response = await fetch(url, options);
+        if (post) window.UNCPoll.invalidate();
         let data;
 
         try {
@@ -267,6 +272,59 @@
      * ---------------------------------------------------------
      */
 
+    // Page title and subtitle follow the sidebar entry; the controller chips show what the page is about.
+    const SUBTITLES = {
+        overview: 'sub.overview',
+        case: 'case.intro',
+        curves: 'curves.intro',
+        safety: 'safety.intro',
+        'led:overview': 'leds.intro',
+        'led:drives': 'sub.led_drives',
+        'led:schedules': 'sub.led_schedules',
+        'led:system': 'sub.led_system',
+        settings: 'sub.settings',
+        about: 'sub.about'
+    };
+
+    function renderTitle() {
+        const nav = state.nav;
+
+        q('#unc-title').textContent = t(`nav.${nav.replace(':', '_')}`);
+        q('#unc-subtitle').innerHTML = t(SUBTITLES[nav] || 'sub.overview');
+        qa('[data-model]').forEach(element => {
+            element.textContent = state.data?.info?.model || 'UGREEN NAS';
+        });
+        renderBanners();
+    }
+
+    function renderBanners() {
+        const data = state.data;
+        const nav = state.nav;
+        const fanPage = nav === 'curves' || nav === 'safety';
+        const ledPage = nav.startsWith('led:');
+        const show = [];
+        const chip = name => name.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571');
+
+        if (data?.ok && nav !== 'settings' && nav !== 'about') {
+            if (!ledPage && data.chip) show.push(['banner.connected', chip(data.chip), true]);
+            // A single missed probe is not "not found": see ledControllerState().
+            const controller = ledControllerState();
+            if (!fanPage && controller) {
+                const found = controller === 'found';
+                show.push([found ? 'banner.led' : 'banner.led_off', found && state.ledStatus.i2c_address ? `I²C ${state.ledStatus.i2c_address}` : '', found]);
+            }
+        }
+
+        q('#unc-banners').innerHTML = show.map(([key, sub, good]) => `
+            <div class="unc-banner ${good ? '' : 'bad'}">
+                <span class="unc-banner-icon"><span class="unc-ico">${icon(good ? 'check' : 'alert')}</span></span>
+                <div>
+                    <strong>${escapeHtml(t(key))}</strong>
+                    ${sub ? `<small>${escapeHtml(sub)}</small>` : ''}
+                </div>
+            </div>`).join('');
+    }
+
     function renderHead() {
         const data = state.data;
         const online = Boolean(data && data.ok);
@@ -278,12 +336,7 @@
 
         if (!online) return;
 
-        qa('[data-model]').forEach(element => {
-            element.textContent = data.info?.model || 'UGREEN NAS';
-        });
-
-        q('#unc-banner').hidden = !data.chip;
-        q('#unc-chip').textContent = data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : '';
+        renderTitle();
 
         q('#unc-chip-error').hidden = !data.chip_error;
         q('#unc-chip-error-text').textContent = data.chip_error || '';
@@ -350,14 +403,14 @@
         const width = value == null ? 0 : Math.max(2, Math.min(100, value));
 
         return `
-            <div class="unc-temp ${level}">
-                <span><i class="unc-temp-ico">${iconName.startsWith('<') ? iconName : icon(iconName)}</i>${escapeHtml(label)}${extra ? ` <small class="unc-muted">${escapeHtml(extra)}</small>` : ''}</span>
+            <div class="unc-temp ${level}" title="${escapeHtml([label, extra].filter(Boolean).join(' · '))}">
+                <span><i class="unc-temp-ico">${iconName.startsWith('<') ? iconName : icon(iconName)}</i><span class="unc-temp-name">${escapeHtml(label)}${extra ? `<small class="unc-muted">${escapeHtml(extra)}</small>` : ''}</span></span>
                 <span class="unc-meter"><span style="width:${width}%"></span></span>
                 <strong>${escapeHtml(deg(value))}</strong>
             </div>`;
     }
 
-    const ssdSlotLabel = n => n.slot === 'pcie' ? 'PCIe' : n.slot === 'system' ? t('cc.system') : n.slot === 'm2' ? 'M.2' : `M.2-${n.slot.replace('m2-', '')}`;
+    const ssdSlotLabel = n => n.slot === 'pcie' ? t('in.pcie_card') : n.slot === 'system' ? t('slot.system') : n.slot === 'm2' ? 'M.2' : t('case.m2_slot', { n: n.slot.replace('m2-', '') });
 
     // Sensors in sections: processor and board, the SSDs, the drives.
     function renderTemps() {
@@ -384,13 +437,13 @@
         // The SSDs by their place in the case (with the mark of the one Unraid runs from); the sensors' own names when the hardware isn't known.
         if (state.hw?.nvme?.length) {
             state.hw.nvme.forEach(n => {
-                ssds.push(tempRow(`${ssdSlotLabel(n)} · ${n.model || n.id}`, n.temp, 'nvme', '', n.boot ? UNRAID_MARK : 'm2'));
-                extras.filter(e => e.name === n.id).forEach(e => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', '', 'm2')));
+                ssds.push(tempRow(ssdSlotLabel(n), n.temp, 'nvme', n.model || n.id, n.boot ? UNRAID_MARK : 'm2'));
+                extras.filter(e => e.name === n.id).forEach(e => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', t('temps.nvme_extra', { model: n.model || n.id }), 'm2')));
             });
         } else {
             (s.nvme || []).forEach(n => {
                 ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2'));
-                extras.filter(e => e.name === n.name).forEach(e => ssds.push(tempRow(n.name, e.temp, 'nvme', e.label || t('temps.sensor'), 'm2')));
+                extras.filter(e => e.name === n.name).forEach(e => ssds.push(tempRow(`${n.name} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', t('temps.nvme_extra', { model: n.label || n.name }), 'm2')));
             });
         }
 
@@ -436,14 +489,26 @@
         return d > 0 ? t('uptime.days', { d, h }) : t('uptime.hours', { h, m });
     }
 
+    // 'found' | 'missing' | '' (unknown, or one miss that may be transient). The backend retries and
+    // remembers the bus; "missing" needs an empty probe in three reads in a row and no LED answering.
+    function ledControllerState() {
+        const status = state.ledStatus;
+        if (!ledsOn() || !status) return '';
+        if (status.i2c_address || Object.keys(state.leds || {}).length) return 'found';
+        return (state.ledMisses || 0) >= 3 ? 'missing' : '';
+    }
+
     // The LED controller for the System facts: what it reports, or why the LED part is off.
     function ledController() {
         const led = state.data?.led;
         const status = state.ledStatus;
 
         if (ledsOn()) {
-            if (!status) return '';
-            return status.i2c_address ? t('system.ledctl_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_off');
+            const controller = ledControllerState();
+            if (!controller) return '';
+            return controller === 'found'
+                ? (status.i2c_address ? t('ledfacts.controller_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_on_short'))
+                : t('ledfacts.controller_off');
         }
         if (!led) return '';
         if (led.blocker === 'model') return t('system.ledctl_model');
@@ -463,7 +528,8 @@
             ['system.kernel', info.kernel],
             ['system.uptime', info.uptime ? uptime(info.uptime) : ''],
             ['system.chip', data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : data.chip_error ? '–' : ''],
-            ['system.ledctl', ledController()]
+            ['system.ledctl', ledController()],
+            ...ledFacts()
         ];
 
         q('#unc-system').innerHTML = facts
@@ -535,10 +601,51 @@
                 const value = Number(input.value);
                 if (!Number.isFinite(value)) return;
                 state.curves[kind][Number(input.dataset.i)][input.dataset.field] = value;
-                state.curvesDirty = true;
+                markDirty('curves');
+                state.saveError.curves = '';
+                renderSaveBars();
                 drawChart(kind);
             });
         });
+    }
+
+    // The fan pages save on request: the bar shows whether something is unsaved, the sidebar entry carries a dot.
+    function renderSaveBars() {
+        [['curves', state.curvesDirty], ['safety', state.safetyDirty]].forEach(([name, dirty]) => {
+            const bar = q(`[data-savebar="${name}"]`);
+            // A failed save keeps the changes and says why, instead of "Everything saved".
+            const error = dirty ? state.saveError[name] : '';
+
+            bar.classList.toggle('dirty', dirty);
+            bar.classList.toggle('failed', Boolean(error));
+            bar.querySelector('.unc-savestate').textContent = error ? t('save.failed', { error }) : t(dirty ? 'save.dirty' : 'save.clean');
+            bar.querySelectorAll('button').forEach(button => { button.disabled = !dirty; });
+            q(`.unc-nav [data-nav="${name}"]`).classList.toggle('dirty', dirty);
+        });
+    }
+
+    // Every edit counts, so a save only clears the flag if nothing changed while it was running.
+    function markDirty(name) {
+        state[`${name}Dirty`] = true;
+        state.edits[name] = (state.edits[name] || 0) + 1;
+    }
+
+    // Saves a fan page: the unsaved flag is cleared only once the API has confirmed, a failure keeps it.
+    async function saveFanPage(name, call, success) {
+        const edits = state.edits[name];
+        state.saveError[name] = '';
+
+        await run(async () => {
+            try {
+                await call();
+            } catch (error) {
+                state.saveError[name] = error.message;
+                throw error;
+            }
+
+            if (state.edits[name] === edits) state[`${name}Dirty`] = false;
+        }, success);
+        renderSaveBars();
     }
 
     function renderCurves() {
@@ -583,6 +690,13 @@
         q('#unc-stall-notify').checked = settings.stall_notify !== false;
     }
 
+    function discardSafety() {
+        state.safetyDirty = false;
+        state.saveError.safety = '';
+        renderSafety();
+        renderSaveBars();
+    }
+
     function renderLeds() {
         const led = state.data.led || {};
         const input = q('#unc-led-enabled');
@@ -593,12 +707,10 @@
         input.disabled = !led.enabled && Boolean(led.blocker);
         q('#unc-led-row').classList.toggle('unc-disabled', input.disabled);
         q('#unc-led-state').textContent = t(led.enabled ? 'leds.on' : 'leds.off');
-        q('#unc-led-open').hidden = !led.enabled;
         q('#unc-led-import').hidden = !led.import_available;
         // The LED pages come with the page itself: they are there once it has been loaded with the switch on.
+        // Without them the LEDs group is the overview with the switch.
         qa('[data-led-only]').forEach(button => { button.hidden = !(led.enabled && window.UNC_LED); });
-        // Switched on, the switch lives under Appearance & About; the sidebar entry is only the way to it while the LEDs are off.
-        qa('[data-led-off-only]').forEach(button => { button.hidden = Boolean(led.enabled && window.UNC_LED); });
 
         q('#unc-led-limited').hidden = fanKnown();
         q('#unc-led-limited').textContent = fanKnown() ? '' : t(caseKnown() ? 'leds.limited_fans' : 'leds.limited', { model: led.model || '?' });
@@ -625,6 +737,7 @@
         renderSystem();
         renderCurves();
         renderSafety();
+        renderSaveBars();
         renderLeds();
         renderHero();
         renderCockpitCards();
@@ -707,8 +820,7 @@
             rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0], ['reset', 'case.reset'], ['dc', 'case.dc']],
             pcie: false,
             strip: true,
-            fan: true,
-            hint: 'case.inside_hint_gt'
+            fan: true
         }],
         // DXP4800, DXP4800 Plus and DXP4800 Pro: one chassis, drawn after a photo of the Plus. The slots of the
         // M.2 SSDs are not known, so there is no inside view; no fan control either.
@@ -849,9 +961,9 @@
                 <div class="d-main">
                     <div class="d-pic ${bay.hdd ? 'hdd' : 'ssd'}">${bay.hdd ? DRIVE_HDD_SVG : DRIVE_SSD_SVG}</div>
                     <div class="d-info">
-                        <strong>${escapeHtml(bay.model || bay.id || '–')}</strong>
+                        <strong title="${escapeHtml(bay.model || bay.id || '')}">${escapeHtml(bay.model || bay.id || '–')}</strong>
                         <span>${escapeHtml([fmtSize(bay.size_bytes), t(bay.hdd ? 'case.hdd' : 'case.ssd')].filter(Boolean).join(' · '))}</span>
-                        <small class="unc-muted unc-id">${escapeHtml([bay.device, bay.id && bay.id !== bay.model ? bay.id : ''].filter(Boolean).join(' · '))}</small>
+                        <small class="unc-muted unc-id" title="${escapeHtml([bay.device, bay.id && bay.id !== bay.model ? bay.id : ''].filter(Boolean).join(' · '))}">${escapeHtml([bay.device, bay.id && bay.id !== bay.model ? bay.id : ''].filter(Boolean).join(' · '))}</small>
                     </div>
                 </div>
                 <div class="d-temp">${meter}<span>${temp}</span></div>
@@ -1198,18 +1310,24 @@
             </svg>`;
     }
 
+    // A model without a hint (the DXP4800 GT) gets no note at all.
+    function setHint(element, key) {
+        element.hidden = !key;
+        if (key) element.dataset.i18n = key; else element.removeAttribute('data-i18n');
+        element.textContent = key ? t(key) : '';
+    }
+
     function renderInside(hw, target = '#unc-inside') {
         // Without known slots there is nothing to draw: the card stays away.
         q(target).closest('article').hidden = Boolean(caseModel(hw).noInside);
         if (caseModel(hw).noInside) return;
 
         if (caseModel(hw).inside6800) {
-            const hint = q('[data-i18n^="case.inside_hint"]');
+            const hint = q('#unc-inside-hint');
 
             q(target).classList.add('board-svg');
             q(target).classList.remove('no-pcie');
-            hint.dataset.i18n = caseModel(hw).hint;
-            hint.textContent = t(caseModel(hw).hint);
+            setHint(hint, caseModel(hw).hint);
             q(target).innerHTML = inside6800Html(hw);
             return;
         }
@@ -1262,9 +1380,8 @@
             </div>`;
 
         q('#unc-inside').classList.toggle('no-pcie', !hasPcie);
-        const hint = q('[data-i18n^="case.inside_hint"]');
-        hint.dataset.i18n = model.hint;
-        hint.textContent = t(model.hint);
+        const hint = q('#unc-inside-hint');
+        setHint(hint, model.hint);
         q(target).innerHTML = `
             <div class="unc-board-col">${ramSlots}</div>
             <div class="unc-board-col">${m2(1)}${m2(2)}${model.sys ? sysSlot() : ''}</div>
@@ -1291,58 +1408,56 @@
      */
 
     const LED_API = '/plugins/ugreen-nas-control/led/api.php';
+    const LED_POLL_MS = 15000;
+    const STATUS_POLL_MS = 60000;
 
-    async function ledGet(action) {
-        const response = await fetch(`${LED_API}?action=${action}`, { credentials: 'same-origin' });
-        const data = await response.json();
+    // Shared with the LED pages (js/ledfx.js UNCPoll): one request per URL while it is in flight or younger than maxAge.
+    async function ledGet(action, maxAge = 0) {
+        const { ok, status, text } = await window.UNCPoll.fetchText(`${LED_API}?action=${action}`, maxAge);
+        const data = JSON.parse(text);
 
-        if (!response.ok || data.ok === false) throw new Error(data.error || `HTTP ${response.status}`);
+        if (!ok || data.ok === false) throw new Error(data.error || `HTTP ${status}`);
         return data;
     }
 
     // The LED pages ship with the page: only then (and with the switch on) there is anything to read.
     const ledsOn = () => Boolean(window.UNC_LED && state.data?.led?.enabled);
 
-    // What the LED controller reports, under Appearance & About (the LED pages' own copy of it is hidden).
-    function renderLedFacts(status, leds) {
-        const found = Object.keys(leds || {});
-        const facts = [
+    // What else the LED controller reports (the controller itself is the "LED controller" fact above).
+    function ledFacts() {
+        const status = state.ledStatus;
+        if (!ledsOn() || !status) return [];
+
+        const found = Object.keys(state.leds || {});
+        return [
             ['ledfacts.mapping', status.mapping ? t(`ledfacts.mapping_${status.mapping}`) : ''],
-            ['ledfacts.control', status.controller ? `${status.controller} (${t('ledfacts.no_kernel_module')})` : ''],
-            ['ledfacts.controller', status.i2c_address ? t('ledfacts.controller_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_off')],
             ['ledfacts.leds', found.length ? found.join(', ') : t('ledfacts.none')],
             ['ledfacts.monitor', status.foreign_monitor ? t('ledfacts.monitor_on') : t('ledfacts.monitor_off')],
             ['ledfacts.saved', status.settings_saved ? t('ledfacts.saved_yes') : t('ledfacts.saved_no')]
         ];
-
-        q('#unc-led-facts').innerHTML = facts
-            .filter(([, value]) => value)
-            .map(([key, value]) => `<dt>${escapeHtml(t(key))}</dt><dd>${escapeHtml(value)}</dd>`)
-            .join('');
     }
 
-    async function loadLeds() {
+    // Slow reads, see the intervals at the bottom: led/all every LED_POLL_MS, the costly led/status once a minute.
+    async function loadLeds(maxAge = LED_POLL_MS * 0.8) {
         if (!ledsOn()) {
             state.leds = null;
             if (state.ledStatus) {
                 state.ledStatus = null;
                 renderSystem();
+                renderBanners();
             }
             return;
         }
 
-        // The LED pages poll the controller themselves; keep our own reads to one every few seconds.
-        if (state.leds && Date.now() - (state.ledAt || 0) < 5500) return;
-        state.ledAt = Date.now();
-
         try {
-            const [all, status] = await Promise.all([ledGet('all'), ledGet('status')]);
+            const [all, status] = await Promise.all([ledGet('all', maxAge).then(data => ({ ...data, leds: window.UNCLedFx.stamp(data.leds) })), ledGet('status', STATUS_POLL_MS * 0.9)]);
             state.leds = all.leds || {};
             state.ledMode = { mode: status.mode, fx: status.fx };
             state.ledBays = Number(status.bays) || 0;
             state.ledStatus = status;
-            renderLedFacts(status, state.leds);
+            state.ledMisses = status.i2c_address ? 0 : (state.ledMisses || 0) + 1;
             if (state.data) renderSystem();
+            renderBanners();
         } catch (error) {
             state.leds = null;
             return;
@@ -1352,33 +1467,18 @@
         if (!state.ledSchedule) state.ledSchedule = await ledGet('schedule').catch(() => null);
     }
 
-    // "255 140 0" + brightness 0-255 -> a colour and a glow; off or dark gives neither.
-    function ledLook(led) {
-        const [r, g, b] = String(led?.color || '0 0 0').trim().split(/\s+/).map(Number);
-        const level = Math.max(0, Math.min(1, (Number(led?.brightness) || 0) / 255));
-
-        if (!led || level === 0 || [r, g, b].some(Number.isNaN)) return { on: false };
-        // Keep very low levels visible, else a dimmed LED looks like a dead one.
-        const a = (0.3 + 0.7 * level).toFixed(2);
-
-        return { on: true, color: `rgba(${r}, ${g}, ${b}, ${a})`, glow: `0 0 ${Math.round(4 + 8 * level)}px rgba(${r}, ${g}, ${b}, ${(0.7 * level).toFixed(2)})` };
-    }
-
-    function paintLed(element, led) {
-        if (!element) return;
-
-        const look = ledLook(led);
-        element.style.background = look.on ? look.color : '#2c3138';
-        element.style.boxShadow = look.on ? look.glow : 'none';
+    // Drawing (colour, brightness mapping, blink/breathe/rainbow animation) is the shared renderer's, js/ledfx.js.
+    function paintLed(element, led, name) {
+        window.UNCLedFx.paint(element, led, name, state.ledStatus);
     }
 
     function applyLeds(container) {
         if (!container || !state.leds) return;
 
-        container.querySelectorAll('.unc-nbay').forEach((bay, i) => paintLed(bay.querySelector('.bar'), state.leds[`disk${i + 1}`]));
-        paintLed(container.querySelector('.unc-pled.power'), state.leds.power);
-        paintLed(container.querySelector('.unc-pled.lan'), state.leds.netdev);
-        container.querySelectorAll('.unc-led .unc-pled[data-led]').forEach(el => paintLed(el, state.leds[el.dataset.led]));
+        container.querySelectorAll('.unc-nbay').forEach((bay, i) => paintLed(bay.querySelector('.bar'), state.leds[`disk${i + 1}`], `disk${i + 1}`));
+        paintLed(container.querySelector('.unc-pled.power'), state.leds.power, 'power');
+        paintLed(container.querySelector('.unc-pled.lan'), state.leds.netdev, 'netdev');
+        container.querySelectorAll('.unc-led .unc-pled[data-led]').forEach(el => paintLed(el, state.leds[el.dataset.led], el.dataset.led));
     }
 
     function ledModeText() {
@@ -1399,10 +1499,7 @@
             .filter(name => name.startsWith('disk'))
             .sort((a, b) => Number(a.slice(4)) - Number(b.slice(4)))
             .slice(0, state.ledBays || (state.hw?.bays || []).length || 6)
-            .map(name => {
-                const look = ledLook(state.leds[name]);
-                return `<i style="background:${look.on ? look.color : '#2c3138'};box-shadow:${look.on ? look.glow : 'none'}"></i>`;
-            })
+            .map(name => `<i data-led="${name}"></i>`)
             .join('');
         const brightness = Math.round((Number(state.leds.power?.brightness) || 0) / 2.55);
         const sched = state.ledSchedule?.enabled ? t('led.night', { start: state.ledSchedule.start, end: state.ledSchedule.end }) : '';
@@ -1412,6 +1509,7 @@
             <div class="unc-ccrow"><span class="unc-muted">${escapeHtml(t('led.brightness'))}</span><b>${brightness} %</b></div>
             ${sched ? `<div class="unc-ccrow"><span class="unc-muted">${escapeHtml(sched)}</span></div>` : ''}
             <div class="unc-ledrow">${dots}</div>`;
+        q('#unc-cc-led').querySelectorAll('.unc-ledrow i[data-led]').forEach(el => paintLed(el, state.leds[el.dataset.led], el.dataset.led));
     }
 
     async function loadHardware() {
@@ -1553,17 +1651,29 @@
      * ---------------------------------------------------------
      */
 
+    const polls = {};
+
     function showView(nav) {
         // "led:colours": the LED pages are one view of ours, each of their pages an entry of the sidebar.
         const [view, sub] = nav.split(':');
 
         state.view = view;
-        if (view === 'led') window.ULC?.show(sub);
-        if (view === 'system' && sub === 'led') q('#unc-led-switch-card').scrollIntoView({ block: 'start' });
-        if (view === 'case' || view === 'overview') loadHardware();
+        state.nav = nav;
+        renderTitle();
+        if (view === 'led') {
+            window.ULC?.show(sub);
+            // The switch belongs to the overview page only.
+            q('#unc-led-head').hidden = sub !== 'overview';
+        }
+        if (view === 'case' || view === 'overview') polls.hardware?.poke();
+        if (view === 'case' || view === 'overview') polls.leds?.poke();
+        polls.status?.poke();
         qa('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === nav));
         qa('.unc-view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
     }
+
+    // The LED pages ask for a page of the sidebar ("Status options" on the drive LEDs card).
+    window.UNC_NAV = nav => showView(nav);
 
     function bindEvents() {
         qa('[data-unc-icon]').forEach(element => {
@@ -1584,17 +1694,36 @@
             run(() => api({ action: 'mode', value: mode }, true), t('mode.saved', { mode: t(`mode.${mode}`) }));
         });
 
-        q('#unc-curve-load').addEventListener('click', () => {
-            const mode = q('#unc-curve-preset').value;
+        q('#unc-curve-preset').addEventListener('change', event => {
+            const mode = event.target.value;
             const preset = state.data?.presets?.[mode];
+            event.target.value = '';
             if (!preset) return;
 
             state.curves = { cpu: parseCurve(preset[0]), case: parseCurve(preset[1]) };
-            state.curvesDirty = true;
+            markDirty('curves');
             buildPoints('cpu');
             buildPoints('case');
             renderCurves();
+            renderSaveBars();
             toast(t('curves.loaded', { mode: t(`mode.${mode}`) }));
+        });
+
+        q('[data-discard="curves"]').addEventListener('click', () => {
+            state.curvesDirty = false;
+            state.saveError.curves = '';
+            state.curves = activeCurves();
+            buildPoints('cpu');
+            buildPoints('case');
+            renderCurves();
+            renderSaveBars();
+        });
+
+        q('[data-discard="safety"]').addEventListener('click', discardSafety);
+
+        // Unsaved fan settings are lost on reload: ask first.
+        window.addEventListener('beforeunload', event => {
+            if (state.curvesDirty || state.safetyDirty) event.preventDefault();
         });
 
         q('#unc-curves-save').addEventListener('click', () => {
@@ -1605,25 +1734,27 @@
                 return;
             }
 
-            state.curvesDirty = false;
-            run(() => api({ action: 'curves', cpu_curve: curveText(cpu), case_curve: curveText(cs) }, true), t('curves.saved'));
+            saveFanPage('curves', () => api({ action: 'curves', cpu_curve: curveText(cpu), case_curve: curveText(cs) }, true), t('curves.saved'));
         });
 
         SAFETY.forEach(field => {
             q(`#unc-${field.id}`).addEventListener('input', () => {
-                state.safetyDirty = true;
+                markDirty('safety');
+                state.saveError.safety = '';
                 showSafetyValue(field);
+                renderSaveBars();
             });
         });
         q('#unc-stall-notify').addEventListener('change', () => {
-            state.safetyDirty = true;
+            markDirty('safety');
+            state.saveError.safety = '';
+            renderSaveBars();
         });
 
         q('#unc-safety-save').addEventListener('click', () => {
             const values = Object.fromEntries(SAFETY.map(field => [field.key, q(`#unc-${field.id}`).value]));
 
-            state.safetyDirty = false;
-            run(() => api({
+            saveFanPage('safety', () => api({
                 action: 'safety',
                 ...values,
                 stall_notify: q('#unc-stall-notify').checked ? '1' : '0'
@@ -1643,7 +1774,8 @@
 
             run(async () => {
                 await api({ action: 'led', value: on ? 'on' : 'off' }, true);
-                // The LED pages are part of the page, so it loads again with or without them.
+                // The LED pages are part of the page, so it loads again with or without them; back on the overview.
+                try { sessionStorage.setItem('unc-nav', 'led:overview'); } catch (error) { /* then it opens on the cockpit */ }
                 location.reload();
             }, t(on ? 'leds.switched_on' : 'leds.switched_off'));
         });
@@ -1653,6 +1785,9 @@
 
         theme.addEventListener('change', async () => {
             root.dataset.theme = resolveTheme(theme.value);
+            // The LED pages sit in their own root; they follow the scheme at once.
+            const ledRoot = document.getElementById('ulc');
+            if (ledRoot) ledRoot.dataset.theme = root.dataset.theme;
             window.UGREEN_NAS_THEME = theme.value;
 
             try {
@@ -1662,20 +1797,6 @@
                 toast(error.message, 'error');
             }
         });
-
-        // The size of the dashboard tile is saved by the LED backend (it is the LED tile's setting).
-        const dashSize = q('#unc-dash-size');
-        dashSize.value = window.UGREEN_LED_DASH_SIZE === 'full' ? 'full' : 'compact';
-        dashSize.addEventListener('change', () => run(async () => {
-            const response = await fetch(LED_API, {
-                method: 'POST',
-                credentials: 'same-origin',
-                body: new URLSearchParams({ action: 'dash_size', value: dashSize.value, csrf_token: window.UGREEN_LED_CSRF_TOKEN || '' })
-            });
-            const data = await response.json();
-
-            if (!response.ok || data.ok === false) throw new Error(data.error || `HTTP ${response.status}`);
-        }, t('theme.dash_saved')));
 
         q('#unc-language').addEventListener('change', async event => {
             try {
@@ -1696,6 +1817,12 @@
         });
     }
 
+    function paintLedsNow() {
+        applyLeds(q('#unc-hero'));
+        renderLedCard();
+        renderHeroFoot();
+    }
+
     async function init() {
         translatePage();
         bindEvents();
@@ -1703,23 +1830,25 @@
         q('#unc-version').textContent = window.UGREEN_NAS_VERSION || '';
         q('#unc-language').value = window.UGREEN_NAS_LANG_SETTING || 'auto';
 
-        await load();
-        loadHardware().then(loadLeds).then(() => {
-            applyLeds(q('#unc-hero'));
-            renderLedCard();
-            renderHeroFoot();
-        });
+        // After switching the LEDs on or off the page loads again: back to where the switch is.
+        try {
+            const nav = sessionStorage.getItem('unc-nav');
+            sessionStorage.removeItem('unc-nav');
+            if (nav) showView(nav);
+        } catch (error) { /* storage blocked */ }
 
-        setInterval(() => {
-            if (!document.hidden && !state.busy) load();
-            if (!document.hidden && (state.view === 'case' || state.view === 'overview') && !state.busy) {
-                loadHardware().then(loadLeds).then(() => {
-                    applyLeds(q('#unc-hero'));
-                    renderLedCard();
-                    renderHeroFoot();
-                });
-            }
-        }, 3000);
+        await load();
+        loadHardware().then(() => loadLeds()).then(paintLedsNow);
+
+        // Polling cost: the NAS runs a process per request, so each resource has its own pace and only
+        // runs on the views that show it (hidden/idle tabs: see UNCPoll). The fan daemon itself refreshes every 2 s.
+        const LIVE = ['overview', 'case', 'curves'];
+        const decor = () => state.view === 'case' || state.view === 'overview';
+
+        polls.status = window.UNCPoll.every(() => (state.busy ? null : load()), () => (LIVE.includes(state.view) ? 5000 : 15000));
+        polls.hardware = window.UNCPoll.every(() => (state.busy ? null : loadHardware()), 60000, decor);
+        // On the LED pages the LED app polls led/all itself (every 10 s); elsewhere the LEDs are decoration.
+        polls.leds = window.UNCPoll.every(() => (state.busy ? null : loadLeds().then(paintLedsNow)), LED_POLL_MS, decor);
     }
 
     init();

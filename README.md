@@ -14,8 +14,8 @@
 [![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
 
 Unraid plugin for UGREEN DX/DXP NAS: **LED control on every model UGREEN LED Control knew**, and, for the
-**DXP6800 Pro and DXP4800 GT**, fan control and a case view as well, like the fan settings of UGOS. It succeeds
-UGREEN LED Control.
+**DXP6800 Pro and DXP4800 GT**, fan control and a case view as well, like the fan settings of UGOS. The LED control
+grew out of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control).
 
 - **System**: model, BIOS, CPU, memory, Unraid and kernel version, uptime
 - **Temperatures**: CPU package and cores, mainboard, the fan controller's own sensors, every NVMe SSD,
@@ -32,7 +32,7 @@ UGREEN LED Control.
 - Dashboard tile, English, German and Spanish interface
 
 - **LEDs (optional)**: colour, effects, a status mode for disk activity and SMART warnings, night mode and a
-  dashboard tile – a copy of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control),
+  dashboard tile, built in (it grew out of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control)),
   **off until you switch it on** under *UGREEN NAS Control → LEDs*
 
 ## Supported models
@@ -75,7 +75,20 @@ Unraid 7.0 or newer. In **Plugins → Install Plugin**:
 https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugin/ugreen-nas-control.plg
 ```
 
-Settings: **Settings → UGREEN NAS Control**.
+Settings: **Settings → UGREEN NAS Control**. The page has a sidebar; the page title and the controller chips at the top follow the entry you open:
+
+| Group | Entry | What it has |
+| --- | --- | --- |
+| Cockpit | Overview | the front with the bays, fans and fan mode, processor, memory, network, all temperatures, LED summary |
+| Cockpit | Case | drives in detail (with a link to the bay LEDs), rear, inside |
+| Fans | Fan curves | the two curves; pick a preset or edit the points, then *Save* (an unsaved change is marked, *Discard* undoes it) |
+| Fans | Safety | minimum speed, emergency limits, NVMe offset, fan-stopped notification; *Save* like the curves |
+| LEDs | LED overview | the LED switch, mode, system and drive LEDs, preview (the other LED entries appear once it is on) |
+| LEDs | Drive status, Night mode, Alerts & shutdown | bay assignment with *Identify* and status display; night mode; Unraid alerts and the shutdown signal |
+| System | Settings | interface language and colour scheme |
+| System | About | one System card (model, BIOS, CPU, memory, Unraid, kernel, uptime, the fan and LED controller), the plugin, links and thanks |
+
+The fan mode on the Overview and everything on the LED pages apply at once; only the two fan pages save on request. The fan entries show on the two models with fan control only.
 
 ## How it works
 
@@ -104,7 +117,7 @@ No kernel module, so Unraid updates don't break it.
 | `fan/` | Go tool: chip access, curves, sensors, daemon |
 | `src/backend/ugreen-nas-ctl` | starts and stops the daemon |
 | `src/web/` | settings page, dashboard tile, API |
-| `led/` | copy of UGREEN LED Control: Go tool `i2c/`, backend and web under `src/` |
+| `led/` | built-in LED control: Go tool `i2c/`, backend and web under `src/` |
 | `plugin/ugreen-nas-control.plg` | the Unraid plugin |
 
 Settings are saved in `/boot/config/plugins/ugreen-nas-control/fan.cfg`.
@@ -118,27 +131,21 @@ Settings are saved in `/boot/config/plugins/ugreen-nas-control/fan.cfg`.
 
 ## LEDs
 
-The LED part is a copy of UGREEN LED Control (`led/`, the version is in `led/VERSION`) and talks to the LED
-controller through `/dev/i2c-N` (on the DXP4800 GT through `/dev/mem`, no kernel module). It succeeds the standalone plugin
-*UGREEN LED Control* for these two models and runs on its own: it stays off until the switch under
-*UGREEN NAS Control → LEDs* is on; then the group **LEDs** of the sidebar shows General & preview, Colours, Effects,
-Drive status and Schedules, the cockpit and the dashboard tile show the colours of the LEDs live. It is only offered on
-the DXP6800 Pro and the DXP4800 GT, and not while the plugin *ugreenleds-driver* or the kernel module `led_ugreen` holds the
-controller. If the standalone plugin *UGREEN LED Control* is installed too, both still run (the runtime files have their own
-names), but they write the same LEDs and the last write wins: the page says so. Use one of them, best this one, and switch
-LED control off in the other or remove it. **Take over its settings:** if the settings of the standalone plugin are found, the LEDs page offers *Take over the settings* (colours, effects, status mode, night mode; what this part had is kept as `leds.cfg.bak`), and the first time you switch LED control on without own settings they are taken over by themselves. Afterwards uninstall UGREEN LED Control under Plugins.
+LED control is built in (`led/`: Go tool `i2c/`, backend and web under `src/`) and talks to the LED
+controller through `/dev/i2c-N` (on the DXP4800 GT through `/dev/mem`, no kernel module). It replaces the standalone plugin
+*UGREEN LED Control*. It stays off until the switch on *LEDs → LED overview* is on; then the
+group **LEDs** of the sidebar also shows Drive status, Night mode and Alerts & shutdown, and the cockpit and the dashboard
+tile show the colours of the LEDs live. LED overview has the mode, one card for the system LEDs and one for the drive LEDs
+(colours, brightness, effects, single bays), a preview with Test and Reset, and the effect settings (speed, direction, only
+when idle) once an animated effect is in use. LED control is offered on every UGREEN DX, DXP and iDX model (the product name starts with `DX`, `DXP` or `iDX`; see
+[Supported models](#supported-models) for how far each is verified), and not while the plugin
+*ugreenleds-driver* or the kernel module `led_ugreen` holds the controller. If the standalone plugin *UGREEN LED Control* is
+installed too, both still run (the runtime files have their own names, the I2C bus lock is shared), but they write the same
+LEDs and the last write wins: the page says so. Use one of them, best this one, and switch LED control off in the other or
+remove it. **Take over its settings:** if the settings of the standalone plugin are found, the LEDs page offers *Take over the settings* (colours, effects, status mode, night mode; what this part had is kept as `leds.cfg.bak`), and the first time you switch LED control on without own settings they are taken over by themselves. Afterwards uninstall UGREEN LED Control under Plugins.
 
-To take over a new version of the LED plugin:
-
-```
-LED_REPO=<url of that repository> scripts/sync-led.sh /path/to/ugreen-led-control v0.24.0
-scripts/test-led-ctl.sh
-```
-
-`led/` is only ever the output of `scripts/sync-led.sh`, never edited by hand. `led/VERSION` records
-`<describe> <commit> <repo url>` (`LED_REPO`, default `alexanderschubert/ugreen-led-control`).
-`scripts/check-led.sh` fetches that commit, syncs it into a temporary directory and fails with the diff if
-`led/` differs. CI runs it (`led-sync` job) whenever `led/`, `scripts/` or the workflow change.
+The LED code started as a copy of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control) and is
+maintained here now. `scripts/test-led-ctl.sh` checks the switch and conflict rules.
 
 ## Development
 
@@ -176,7 +183,7 @@ Questions and problems: the [support thread in the Unraid forum](https://forums.
 
 - [miskcoo](https://github.com/miskcoo/ugreen_leds_controller): the LED protocol and the bay mapping of the LED part
 - [ivolution](https://github.com/ivolution): the Spanish translation of UGREEN LED Control, which the LED part and this plugin build on
-- [j3n57h0m45](https://github.com/j3n57h0m45): the **DXP4800 GT** support: fan control through the IT5571 embedded controller, LEDs, the case view, the System view, light case pictures and the CI hardening
+- [j3n57h0m45](https://github.com/j3n57h0m45): the **DXP4800 GT** support: fan control through the IT5571 embedded controller, LEDs, the case view, the system view, light case pictures and the CI hardening
 - everyone who tested on their model
 
 ## License

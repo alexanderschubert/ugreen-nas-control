@@ -12,15 +12,9 @@ require_once '/usr/local/emhttp/plugins/ugreen-nas-control/include/lang.php';
 [$unc_lang, $unc_lang_setting] = unc_language();
 $unc_theme = unc_theme();
 
-// The LED pages run inside this page once the switch under LEDs is on.
+// The LED pages run inside this page once the switch on the LED overview is on.
 $unc_led_dir = '/usr/local/emhttp/plugins/ugreen-nas-control/led';
 $unc_led_on = is_file('/boot/config/plugins/ugreen-nas-control/led.enabled') && is_file("{$unc_led_dir}/include/views.php");
-if ($unc_led_on) {
-    require_once "{$unc_led_dir}/include/lang.php";
-    // Language and colour scheme are NAS Control's (Appearance & About); the LED pages follow them.
-    [$ulc_lang, $ulc_lang_setting] = [$unc_lang, $unc_lang_setting];
-    $ulc_dash_size = ulc_dash_size();
-}
 
 $unc_version = preg_match(
     '/ENTITY\s+version\s+"([^"]+)"/',
@@ -38,11 +32,8 @@ window.UGREEN_NAS_THEME = <?= json_encode($unc_theme) ?>;
 window.UNC_LED = <?= json_encode($unc_led_on) ?>;
 <?php if ($unc_led_on): ?>
 window.UGREEN_LED_CSRF_TOKEN = <?= json_encode($unc_var['csrf_token'] ?? '') ?>;
-window.UGREEN_LED_VERSION = <?= json_encode($unc_version) ?>;
-window.UGREEN_LED_LANG = <?= json_encode($ulc_lang) ?>;
+window.UGREEN_LED_LANG = <?= json_encode($unc_lang) ?>;
 window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
-window.UGREEN_LED_DASH_SIZE = <?= json_encode($ulc_dash_size) ?>;
-window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 <?php endif; ?>
 </script>
 
@@ -72,15 +63,13 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
         <button type="button" data-nav="curves" data-fan-only><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
         <button type="button" data-nav="safety" data-fan-only><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
         <div class="unc-nav-group" data-i18n="nav.group_leds">LEDs</div>
-        <button type="button" data-nav="system:led" data-led-off-only><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds_switch">LED-Steuerung</span></button>
-        <button type="button" data-nav="led:overview" data-led-only hidden><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.led_overview">Allgemein &amp; Vorschau</span></button>
-        <button type="button" data-nav="led:leds" data-led-only hidden><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.led_colors">Farben</span></button>
-        <button type="button" data-nav="led:effects" data-led-only hidden><span class="unc-ico" data-unc-icon="sparkles"></span><span data-i18n="nav.led_effects">Effekte</span></button>
-        <button type="button" data-nav="led:drives" data-led-only hidden><span class="unc-ico" data-unc-icon="drives"></span><span data-i18n="nav.led_drives">Laufwerks-Status</span></button>
-        <button type="button" data-nav="led:schedules" data-led-only hidden><span class="unc-ico" data-unc-icon="clock"></span><span data-i18n="nav.led_schedules">Zeitpläne</span></button>
+        <button type="button" data-nav="led:overview"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.led_overview">LED-Übersicht</span></button>
+        <button type="button" data-nav="led:drives" data-led-only hidden><span class="unc-ico" data-unc-icon="drives"></span><span data-i18n="nav.led_drives">Laufwerksstatus</span></button>
+        <button type="button" data-nav="led:schedules" data-led-only hidden><span class="unc-ico" data-unc-icon="clock"></span><span data-i18n="nav.led_schedules">Nachtmodus</span></button>
         <button type="button" data-nav="led:system" data-led-only hidden><span class="unc-ico" data-unc-icon="bell"></span><span data-i18n="nav.led_system">Meldungen &amp; Herunterfahren</span></button>
         <div class="unc-nav-group" data-i18n="nav.group_system">System</div>
-        <button type="button" data-nav="system"><span class="unc-ico" data-unc-icon="gear"></span><span data-i18n="nav.system">Darstellung &amp; Info</span></button>
+        <button type="button" data-nav="settings"><span class="unc-ico" data-unc-icon="gear"></span><span data-i18n="nav.settings">Einstellungen</span></button>
+        <button type="button" data-nav="about"><span class="unc-ico" data-unc-icon="info"></span><span data-i18n="nav.about">Über</span></button>
     </nav>
 
 </aside>
@@ -89,16 +78,10 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 
 <header class="unc-head">
     <div>
-        <h1>UGREEN NAS Control <span class="unc-badge" id="unc-online" data-i18n="head.connecting">Verbinde…</span></h1>
-        <p data-i18n-html="head.subtitle">Systeminfo, Temperaturen und Lüfter deines <span data-model>UGREEN NAS</span> direkt in Unraid.</p>
+        <h1><span id="unc-title" data-i18n="nav.overview">Übersicht</span> <span class="unc-badge" id="unc-online" data-i18n="head.connecting">Verbinde…</span></h1>
+        <p id="unc-subtitle"></p>
     </div>
-    <div class="unc-banner" id="unc-banner" hidden>
-        <span class="unc-banner-icon"><span class="unc-ico" data-unc-icon="check"></span></span>
-        <div>
-            <strong data-i18n="banner.connected">Lüfter-Chip erkannt</strong>
-            <small id="unc-chip">IT8613E</small>
-        </div>
-    </div>
+    <div class="unc-banners" id="unc-banners"></div>
 </header>
 
 <div class="unc-warning" id="unc-chip-error" hidden>
@@ -172,10 +155,11 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 <!-- ================= Gehäuse ================= -->
 
 <section class="unc-view" data-view="case">
-    <p class="unc-muted unc-case-intro" data-i18n="case.intro">Die Vorderseite mit den Schächten, die Temperaturen und die LEDs stehen auf der Übersicht. Hier sind die Laufwerke im Einzelnen, die Rückseite und der Innenraum.</p>
-
     <article class="unc-card">
-        <h2 data-i18n="case.drives">Laufwerke</h2>
+        <div class="unc-card-head">
+            <h2 data-i18n="case.drives">Laufwerke</h2>
+            <button type="button" class="unc-btn small" data-nav="led:drives" data-led-only hidden><span data-i18n="case.drives_leds">Schacht-LEDs &amp; Identifizieren</span></button>
+        </div>
         <div class="unc-drive-list" id="unc-drive-list"></div>
     </article>
 
@@ -187,7 +171,7 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
     <article class="unc-card">
         <h2 data-i18n="case.inside">Innenraum</h2>
         <div class="unc-board" id="unc-inside"></div>
-        <p class="unc-hint" data-i18n="case.inside_hint">Die M.2-Plätze werden am PCIe-Anschluss erkannt: die zwei Plätze auf dem Mainboard hängen direkt an der CPU, jede weitere SSD sitzt auf einer Karte im PCIe-Steckplatz. Welcher Platz „1“ und „2“ ist, ist eine Vermutung.</p>
+        <p class="unc-hint" id="unc-inside-hint" data-i18n="case.inside_hint">Die M.2-Plätze werden am PCIe-Anschluss erkannt: die zwei Plätze auf dem Mainboard hängen direkt an der CPU, jede weitere SSD sitzt auf einer Karte im PCIe-Steckplatz. Welcher Platz „1“ und „2“ ist, ist eine Vermutung.</p>
     </article>
 </section>
 
@@ -195,9 +179,6 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 
 <section class="unc-view" data-view="curves">
     <article class="unc-card">
-        <h2 data-i18n="curves.title">Lüfterkurven</h2>
-        <p class="unc-muted" data-i18n="curves.intro">Zwischen den Punkten steigt die Drehzahl gleichmäßig. Beim Speichern wechselt der Lüftermodus auf „Eigene Kurve“.</p>
-
         <div class="unc-curves">
             <div class="unc-curve" data-curve="cpu">
                 <h3 data-i18n="curves.cpu">CPU-Lüfter</h3>
@@ -214,19 +195,19 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
         </div>
 
         <div class="unc-form unc-curve-from">
-            <label for="unc-curve-preset" data-i18n="curves.load">Vorlage laden</label>
-            <div class="unc-inline">
-                <select id="unc-curve-preset">
-                    <option value="quiet" data-i18n="mode.quiet">Leise</option>
-                    <option value="standard" data-i18n="mode.standard" selected>Standard</option>
-                    <option value="performance" data-i18n="mode.performance">Leistung</option>
-                </select>
-                <button type="button" class="unc-btn" id="unc-curve-load"><span class="unc-ico" data-unc-icon="reset"></span><span data-i18n="curves.load_button">Übernehmen</span></button>
-            </div>
+            <label for="unc-curve-preset" data-i18n="curves.load">Mit einer Vorlage beginnen</label>
+            <select id="unc-curve-preset">
+                <option value="" data-i18n="curves.preset_pick" selected>Auswählen…</option>
+                <option value="quiet" data-i18n="mode.quiet">Leise</option>
+                <option value="standard" data-i18n="mode.standard">Standard</option>
+                <option value="performance" data-i18n="mode.performance">Leistung</option>
+            </select>
         </div>
 
-        <div class="unc-actions">
-            <button type="button" class="unc-btn primary" id="unc-curves-save"><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="common.save">Speichern</span></button>
+        <div class="unc-savebar" data-savebar="curves">
+            <span class="unc-savestate" data-i18n="save.clean">Alles gespeichert</span>
+            <button type="button" class="unc-btn" data-discard="curves" disabled><span data-i18n="save.discard">Verwerfen</span></button>
+            <button type="button" class="unc-btn primary" id="unc-curves-save" disabled><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="common.save">Speichern</span></button>
         </div>
     </article>
 </section>
@@ -235,9 +216,6 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 
 <section class="unc-view" data-view="safety">
     <article class="unc-card">
-        <h2 data-i18n="safety.title">Sicherheit</h2>
-        <p class="unc-muted" data-i18n="safety.intro">Grenzen, die in jedem Lüftermodus außer „BIOS“ gelten.</p>
-
         <div class="unc-form">
             <label for="unc-min" data-i18n="safety.min">Mindestdrehzahl</label>
             <div class="unc-inline">
@@ -277,24 +255,19 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
             </span>
         </label>
 
-        <div class="unc-actions">
-            <button type="button" class="unc-btn primary" id="unc-safety-save"><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="common.save">Speichern</span></button>
+        <div class="unc-savebar" data-savebar="safety">
+            <span class="unc-savestate" data-i18n="save.clean">Alles gespeichert</span>
+            <button type="button" class="unc-btn" data-discard="safety" disabled><span data-i18n="save.discard">Verwerfen</span></button>
+            <button type="button" class="unc-btn primary" id="unc-safety-save" disabled><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="common.save">Speichern</span></button>
         </div>
     </article>
 </section>
 
-<!-- ================= LEDs ================= -->
+<!-- ================= Einstellungen ================= -->
 
-<!-- ================= System ================= -->
-
-<section class="unc-view" data-view="system">
+<section class="unc-view" data-view="settings">
     <article class="unc-card">
-        <h2 data-i18n="system.title">System</h2>
-        <dl class="unc-facts" id="unc-system"></dl>
-    </article>
-
-    <article class="unc-card">
-        <h2 data-i18n="language.title">Sprache</h2>
+        <h2 data-i18n="settings.title">Oberfläche</h2>
         <div class="unc-form">
             <label for="unc-language" data-i18n="language.label">Sprache der Oberfläche</label>
             <select id="unc-language">
@@ -303,65 +276,24 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
                 <option value="en">English</option>
                 <option value="es">Español</option>
             </select>
-        </div>
-    </article>
 
-    <article class="unc-card">
-        <h2 data-i18n="theme.title">Darstellung</h2>
-        <div class="unc-form">
             <label for="unc-theme" data-i18n="theme.label">Farbschema</label>
             <select id="unc-theme">
                 <option value="dark" data-i18n="theme.dark">Dunkel</option>
                 <option value="light" data-i18n="theme.light">Hell</option>
                 <option value="auto" data-i18n="theme.auto">Wie Unraid</option>
             </select>
-
-            <label for="unc-dash-size" data-i18n="theme.dash" data-led-only hidden>Dashboard-Kachel</label>
-            <select id="unc-dash-size" data-led-only hidden>
-                <option value="compact" data-i18n="theme.dash_compact">Kompakt</option>
-                <option value="full" data-i18n="theme.dash_full">Mit Temperaturen</option>
-            </select>
         </div>
         <p class="unc-hint" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel).</p>
     </article>
+</section>
 
-    <article class="unc-card" id="unc-led-switch-card">
-        <h2 data-i18n="leds.title">LEDs</h2>
-        <p class="unc-muted" data-i18n="leds.intro">Die Front-LEDs steuert ein eingebauter Teil von UGREEN LED Control. Er ist ausgeschaltet, bis du ihn hier einschaltest.</p>
+<!-- ================= Über ================= -->
 
-        <label class="unc-switch-row" id="unc-led-row">
-            <span class="unc-switch">
-                <input type="checkbox" id="unc-led-enabled">
-                <span></span>
-            </span>
-            <span>
-                <strong data-i18n="leds.switch">LED-Steuerung einschalten</strong>
-                <small id="unc-led-state"></small>
-            </span>
-        </label>
-
-        <p class="unc-hint" id="unc-led-limited" hidden></p>
-        <p class="unc-hint unc-untested" id="unc-led-untested" hidden></p>
-        <p class="unc-hint" id="unc-led-blocker" hidden></p>
-
-
-        <div class="unc-import" id="unc-led-import" hidden>
-            <strong data-i18n="leds.import_title">Einstellungen von UGREEN LED Control übernehmen</strong>
-            <p class="unc-muted" data-i18n="leds.import_text">Die Einstellungen des Plugins UGREEN LED Control wurden gefunden (Farben, Effekte, Statusmodus, Nachtmodus). Du kannst sie hier übernehmen; die jetzigen Einstellungen dieses Teils werden vorher als leds.cfg.bak gesichert.</p>
-            <button type="button" class="unc-btn" id="unc-led-import-btn"><span class="unc-ico" data-unc-icon="reset"></span><span data-i18n="leds.import_btn">Einstellungen übernehmen</span></button>
-            <p class="unc-hint" data-i18n="leds.import_after">Danach kannst du UGREEN LED Control unter Plugins deinstallieren: dieses Plugin löst es ab.</p>
-        </div>
-
-        <div class="unc-actions" id="unc-led-open" hidden>
-            <button type="button" class="unc-btn primary" data-nav="led:overview"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="leds.open">LED-Einstellungen öffnen</span></button>
-        </div>
-
-        <p class="unc-hint" data-i18n="leds.hint">Beim Ausschalten bleiben die LEDs im letzten Zustand, bis der Strom getrennt wird. Läuft das eigenständige Plugin UGREEN LED Control, lässt sich dieser Teil nicht einschalten, weil beide dieselben LEDs beschreiben würden.</p>
-    </article>
-
-    <article class="unc-card" id="unc-led-facts-card" data-led-only hidden>
-        <h2 data-i18n="ledfacts.title">LED-Controller</h2>
-        <dl class="unc-facts" id="unc-led-facts"></dl>
+<section class="unc-view" data-view="about">
+    <article class="unc-card">
+        <h2 data-i18n="system.title">System</h2>
+        <dl class="unc-facts" id="unc-system"></dl>
     </article>
 
     <article class="unc-card unc-about">
@@ -369,7 +301,7 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
             <img class="unc-about-icon" src="/plugins/ugreen-nas-control/images/ugreen-nas-control.png" alt="">
             <div>
                 <h2>UGREEN NAS Control</h2>
-                <p class="unc-muted" data-i18n="about.tagline">Systeminfo, Temperaturen und Lüftersteuerung für den UGREEN DXP6800 Pro und DXP4800 GT unter Unraid</p>
+                <p class="unc-muted" data-i18n="about.tagline">Lüfter- und LED-Steuerung und Systeminfo für UGREEN-NAS unter Unraid</p>
                 <div class="unc-about-badges">
                     <span class="unc-badge online">v<span id="unc-version"></span></span>
                     <span class="unc-badge" data-i18n="about.license_badge">MIT-Lizenz</span>
@@ -390,30 +322,56 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
             </a>
             <a class="unc-link-tile" href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg>
-                <span><strong>UGREEN LED Control</strong><small data-i18n="about.led_hint">Das Plugin, aus dem der LED-Teil stammt</small></span>
+                <span><strong>UGREEN LED Control</strong><small data-i18n="about.led_hint">Das Projekt, aus dem die eingebaute LED-Steuerung hervorging</small></span>
             </a>
         </div>
 
         <dl class="unc-facts">
-            <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip direkt über I/O-Ports an (ITE IT8613E beim DXP6800 Pro, Embedded Controller IT5571 beim DXP4800 GT), ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
-            <dt data-i18n="about.leds">LEDs</dt><dd data-i18n-html="about.leds_text">Die Front-LEDs steuert ein eingebauter, optionaler Teil, der <a href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">UGREEN LED Control</a> für den DXP6800 Pro und DXP4800 GT ablöst.</dd>
-            <dt data-i18n="about.thanks">Dank an</dt><dd data-i18n-html="about.thanks_text"><a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a> (Protokoll und Schacht-Zuordnung des LED-Teils), <a href="https://github.com/j3n57h0m45" target="_blank" rel="noopener">j3n57h0m45</a> (Entwicklung für den DXP4800 GT: Lüfter über den IT5571, LEDs, Gehäuse- und System-Ansicht) und alle, die auf ihrem Modell getestet haben</dd>
+            <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip direkt über I/O-Ports an (ITE IT8613E beim DXP6800 Pro, Embedded Controller IT5571 beim DXP4800 GT) und den LED-Controller über I²C, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
+            <dt data-i18n="about.thanks">Dank an</dt><dd data-i18n-html="about.thanks_text"><a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a> (Protokoll und Schacht-Zuordnung der LED-Steuerung), <a href="https://github.com/alexanderschubert" target="_blank" rel="noopener">Alexander</a> (UGREEN LED Control, Ausgangspunkt des LED-Codes), <a href="https://github.com/j3n57h0m45" target="_blank" rel="noopener">j3n57h0m45</a> (Entwicklung für den DXP4800 GT: Lüfter über den IT5571, LEDs, Gehäuse- und Systemansicht) und alle, die auf ihrem Modell getestet haben</dd>
         </dl>
     </article>
 </section>
 
-<?php if ($unc_led_on): ?>
-<!-- ================= LEDs (the LED pages) ================= -->
+<!-- ================= LEDs: the overview starts with the switch; the other pages are the LED part's own ================= -->
 
 <section class="unc-view" data-view="led">
+    <div id="unc-led-head">
+        <article class="unc-card unc-led-switch-card" id="unc-led-switch-card">
+            <label class="unc-switch-row" id="unc-led-row">
+                <span class="unc-switch">
+                    <input type="checkbox" id="unc-led-enabled">
+                    <span></span>
+                </span>
+                <span>
+                    <strong data-i18n="leds.switch">Front-LEDs mit diesem Plugin steuern</strong>
+                    <small id="unc-led-state"></small>
+                </span>
+            </label>
+
+            <p class="unc-hint" id="unc-led-limited" hidden></p>
+            <p class="unc-hint unc-untested" id="unc-led-untested" hidden></p>
+            <p class="unc-hint" id="unc-led-blocker" hidden></p>
+
+            <div class="unc-import" id="unc-led-import" hidden>
+                <strong data-i18n="leds.import_title">Einstellungen von UGREEN LED Control übernehmen</strong>
+                <p class="unc-muted" data-i18n="leds.import_text">Die Einstellungen des Plugins UGREEN LED Control wurden gefunden (Farben, Effekte, Statusmodus, Nachtmodus). Du kannst sie hier übernehmen; die jetzigen Einstellungen dieses Teils werden vorher als leds.cfg.bak gesichert.</p>
+                <button type="button" class="unc-btn" id="unc-led-import-btn"><span class="unc-ico" data-unc-icon="reset"></span><span data-i18n="leds.import_btn">Einstellungen übernehmen</span></button>
+                <p class="unc-hint" data-i18n="leds.import_after">Danach kannst du UGREEN LED Control unter Plugins deinstallieren: die eingebaute LED-Steuerung ersetzt es.</p>
+            </div>
+
+            <p class="unc-muted unc-fineprint" data-i18n="leds.hint">Beim Ausschalten bleiben die LEDs im letzten Zustand, bis der Strom getrennt wird.</p>
+        </article>
+    </div>
+<?php if ($unc_led_on): ?>
     <div class="ulc ulc-embedded" id="ulc" data-theme="<?= $unc_theme === 'light' ? 'light' : 'dark' ?>">
         <div class="ulc-main">
 <?php include "{$unc_led_dir}/include/views.php"; ?>
         </div>
         <div class="ulc-toast" id="ulc-toast" role="status"></div>
     </div>
-</section>
 <?php endif; ?>
+</section>
 
 </main>
 
@@ -422,6 +380,7 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 </div>
 
 <script src="<?autov('/plugins/ugreen-nas-control/js/i18n.js')?>"></script>
+<script src="<?autov('/plugins/ugreen-nas-control/js/ledfx.js')?>"></script>
 <script src="<?autov('/plugins/ugreen-nas-control/js/app.js')?>"></script>
 <?php if ($unc_led_on): ?>
 <script src="<?autov('/plugins/ugreen-nas-control/led/js/i18n.js')?>"></script>

@@ -4,6 +4,7 @@
     'use strict';
 
     const API = '/plugins/ugreen-nas-control/api.php';
+    const POLL_MS = 15000;
     const LANG = ['de', 'en', 'es'].includes(window.UGREEN_NAS_LANG) ? window.UGREEN_NAS_LANG : 'de';
     const TEXTS = window.UNC_I18N || { de: {}, en: {} };
 
@@ -211,8 +212,11 @@
         if (!api) return null;
 
         try {
-            const [all, status] = await Promise.all(['all', 'status'].map(action =>
-                fetch(`${api}?action=${action}`, { credentials: 'same-origin' }).then(r => r.json())));
+            // led/status costs the NAS over a second of CPU: once a minute. led/all draws the bars.
+            const [all, status] = await Promise.all([
+                window.UNCPoll.json(`${api}?action=all`, POLL_MS * 0.8).then(data => ({ ...data, leds: window.UNCLedFx.stamp(data.leds) })),
+                window.UNCPoll.json(`${api}?action=status`, 55000)
+            ]);
             return all.ok === false || !all.leds ? null : { leds: all.leds, status };
         } catch (error) {
             return null;
@@ -227,12 +231,7 @@
         const count = Number(led.status?.bays) || (hw?.bays || []).length || 6;
         const bars = [];
         for (let i = 1; i <= count; i++) {
-            const one = led.leds[`disk${i}`] || {};
-            const [r, g, b] = String(one.color || '0 0 0').trim().split(/\s+/).map(Number);
-            const level = Math.max(0, Math.min(1, (Number(one.brightness) || 0) / 255));
-            const on = level > 0 && ![r, g, b].some(Number.isNaN);
-            const colour = on ? `rgba(${r}, ${g}, ${b}, ${(0.3 + 0.7 * level).toFixed(2)})` : '#2c3138';
-            bars.push(`<i style="background:${colour};box-shadow:${on ? `0 0 ${Math.round(4 + 8 * level)}px rgba(${r}, ${g}, ${b}, ${(0.7 * level).toFixed(2)})` : 'none'}"></i>`);
+            bars.push(`<i data-led="disk${i}"></i>`);
         }
 
         const mode = led.status?.fx ? led.status.fx : t(led.status?.mode === 'status' ? 'led.mode_status' : 'led.mode_manual');
@@ -251,6 +250,8 @@
         }
 
         box.querySelector('[data-detail]')?.insertAdjacentHTML('beforebegin', html);
+        // Colour, brightness and animation come from the shared renderer (ledfx.js), from the state just read.
+        box.querySelectorAll('.unc-ledrow i[data-led]').forEach(el => window.UNCLedFx.paint(el, led.leds[el.dataset.led], el.dataset.led, led.status));
     }
 
     function paintHeader(data) {
@@ -287,13 +288,15 @@
             // Drives and LEDs are read together and drawn in one go: drawing the drives first and adding the
             // LED row after its own request made the row vanish for a moment on every refresh.
             const [raw, led] = await Promise.all([
-                fetch(`${API}?action=hardware`, { credentials: 'same-origin' }).then(r => r.json()).catch(() => null),
+                // Static facts (drives, memory, NICs): once a minute.
+                window.UNCPoll.json(`${API}?action=hardware`, 55000).catch(() => null),
                 fetchLeds(root)
             ]);
             const hw = raw && raw.ok !== false ? raw : null;
 
             // Nothing changed: leave the rows alone (a hovered bay keeps its details).
-            const key = JSON.stringify([hw, led]);
+            // now_ms and rx move on every read; they are not a change.
+            const key = JSON.stringify([hw, led], (k, v) => k === 'now_ms' || k === 'rx' ? undefined : v);
             if (key === root.dataset.key) return;
             root.dataset.key = key;
 
@@ -328,7 +331,8 @@
         if (settings) settings.title = t('dash.settings');
 
         load(root);
-        setInterval(() => { if (!document.hidden) load(root); }, 5000);
+        // Hidden tab or no input for 5 minutes: no polling at all (UNCPoll).
+        window.UNCPoll.every(() => load(root), POLL_MS);
     }
 
     if (document.readyState === 'loading') {

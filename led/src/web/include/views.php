@@ -1,17 +1,3 @@
-<header class="ulc-head">
-    <div>
-        <h1>UGREEN LED Control <span class="ulc-badge" id="ulc-online" data-i18n="head.connecting">Verbinde…</span> <span class="ulc-badge night" id="ulc-night-badge" data-i18n="head.night" hidden>Nachtmodus</span> <span class="ulc-badge alert" id="ulc-alert-badge" data-i18n="head.alert" hidden>Warnung</span></h1>
-        <p data-i18n-html="head.subtitle">Steuerung der LED-Beleuchtung deines <span data-model>UGREEN NAS</span> direkt in Unraid.</p>
-    </div>
-    <div class="ulc-banner" id="ulc-banner" hidden>
-        <span class="ulc-banner-icon"><span class="ulc-ico" data-ulc-icon="check"></span></span>
-        <div>
-            <strong data-i18n="banner.connected">NAS verbunden</strong>
-            <small data-i18n-html="banner.detected"><span data-model>UGREEN NAS</span> erkannt</small>
-        </div>
-    </div>
-</header>
-
 <div class="ulc-warning" id="ulc-foreign" hidden>
     <span class="ulc-ico" data-ulc-icon="alert"></span>
     <div>
@@ -20,199 +6,160 @@
     </div>
 </div>
 
-<!-- ================= Übersicht ================= -->
+<!-- ================= Übersicht (the switch card above it is the page's own) ================= -->
 
 <section class="ulc-view active" data-view="overview">
 <div class="ulc-grid">
 
     <div class="ulc-col">
 
-        <article class="ulc-card">
-            <h2 data-i18n="general.title">Allgemeine Einstellungen</h2>
+        <article class="ulc-card" id="ulc-mode-card">
+            <h2 id="ulc-mode-title" data-i18n="mode.title">Modus</h2>
+            <select id="ulc-mode" aria-labelledby="ulc-mode-title">
+                <option value="status" data-i18n="mode.status">Laufwerksstatus anzeigen</option>
+                <option value="manual" data-i18n="mode.manual">Manuell</option>
+            </select>
+            <p class="ulc-muted ulc-mode-hint" id="ulc-mode-hint"></p>
+        </article>
 
-            <label class="ulc-switch-row">
-                <span class="ulc-switch">
-                    <input type="checkbox" id="ulc-enabled">
-                    <span></span>
-                </span>
-                <span>
-                    <strong data-i18n="general.enable">LED-Steuerung aktivieren</strong>
-                    <small data-i18n="general.enable_hint">Schaltet alle LEDs am NAS ein oder aus. Änderungen bleiben nach einem Neustart erhalten.</small>
-                </span>
-            </label>
+        <article class="ulc-card" id="ulc-system-card">
+            <h2 data-i18n="group.system">System-LEDs</h2>
 
-            <div class="ulc-slider-row">
-                <span class="ulc-ico" data-ulc-icon="sun"></span>
-                <div>
-                    <span data-i18n="general.brightness">Helligkeit (gesamt)</span>
-                    <input type="range" id="ulc-brightness" min="0" max="100" step="1" value="80">
-                </div>
-                <output class="ulc-value" id="ulc-brightness-value">80%</output>
-            </div>
-            <p class="ulc-muted ulc-night-note" id="ulc-night-note" hidden></p>
-
-            <div class="ulc-field-row">
-                <label for="ulc-mode" data-i18n="general.mode">Standardmodus</label>
-                <select id="ulc-mode">
-                    <option value="manual" selected data-i18n="mode.manual">Manuell</option>
-                    <option value="status" data-i18n="mode.status">Statusbasiert</option>
-                </select>
-            </div>
+            <div class="ulc-table" id="ulc-system-table"></div>
 
             <div class="ulc-field-row" id="ulc-netdev-row" hidden>
-                <label for="ulc-netdev-status" data-i18n="display.netdev">Netzwerk-LED</label>
+                <label for="ulc-netdev-status" data-i18n="display.netdev">Netzwerk-LED zeigt</label>
                 <select id="ulc-netdev-status">
-                    <option value="activity" data-i18n="display.netdev_activity">Blinkt bei Datenverkehr</option>
-                    <option value="link" data-i18n="display.netdev_link">Nur Verbindung, ohne Blinken</option>
-                    <option value="manual" data-i18n="display.netdev_manual">Manuell wie im manuellen Modus</option>
+                    <option value="activity" data-i18n="display.netdev_activity">Verbindung und Datenverkehr</option>
+                    <option value="link" data-i18n="display.netdev_link">Nur Verbindung</option>
+                    <option value="manual" data-i18n="display.netdev_manual">Manuell einstellen</option>
                 </select>
             </div>
 
-            <p class="ulc-hint" id="ulc-mode-hint" data-i18n="mode.hint" hidden>
-                Laufwerks-LEDs leuchten in ihrer Farbe, blinken bei Zugriffen und zeigen bei Fehlern die Fehlerfarbe.
-                Die Netzwerk-LED blinkt bei Datenverkehr und zeigt ohne Verbindung die Fehlerfarbe.
-                Effekte gelten in diesem Modus nur für die Power-LED.
-            </p>
-        </article>
+            <div id="ulc-network-box">
+                <label class="ulc-switch-row">
+                    <span class="ulc-switch">
+                        <input type="checkbox" id="ulc-speed-enabled">
+                        <span></span>
+                    </span>
+                    <span>
+                        <strong data-i18n="display.speed">Netzwerk-LED nach Verbindungsgeschwindigkeit färben</strong>
+                        <small data-i18n="display.speed_hint">Die Farbe zeigt die ausgehandelte Geschwindigkeit, z. B. 1 statt 2,5 Gbit/s bei einem schlechten Kabel.</small>
+                    </span>
+                </label>
 
-        <article class="ulc-card">
-            <h2 data-i18n="colors.title">LED Farben</h2>
-
-            <div class="ulc-tabs" role="tablist">
-                <button type="button" class="active" data-tab="system" data-i18n="colors.tab_system">System LEDs</button>
-                <button type="button" data-tab="bays" data-i18n="colors.tab_bays">Laufwerk LEDs</button>
+                <div class="ulc-form ulc-speed-grid" id="ulc-speed-colors" hidden></div>
+                <p class="ulc-hint" id="ulc-speed-current" hidden></p>
             </div>
 
-            <div class="ulc-color-list" id="ulc-colors"></div>
+            <h3 id="ulc-system-effect-title" data-i18n="group.effect">Effekt</h3>
+            <div class="ulc-field-row" id="ulc-system-target-row" hidden>
+                <label for="ulc-system-target" data-i18n="group.target">Effekt für</label>
+                <select id="ulc-system-target">
+                    <option value="both" data-i18n="group.target_both">Power- und Netzwerk-LED</option>
+                    <option value="power" data-i18n="led.power">Power-LED</option>
+                    <option value="netdev" data-i18n="led.netdev">Netzwerk-LED</option>
+                </select>
+            </div>
+            <div class="ulc-effects" data-effects="system"></div>
         </article>
 
-        <div data-slot="effects-home">
-            <article class="ulc-card" id="ulc-effects-card">
-                <h2 data-i18n="effects.title">LED Effekte</h2>
-                <div class="ulc-effects" id="ulc-effects"></div>
-            </article>
-        </div>
+        <article class="ulc-card" id="ulc-drives-card">
+            <h2 data-i18n="group.drives">Laufwerks-LEDs</h2>
+
+            <p class="ulc-note" id="ulc-drive-note">
+                <span id="ulc-drive-note-text"></span>
+                <button type="button" class="ulc-link" id="ulc-drive-mode-btn"></button>
+                <button type="button" class="ulc-link" id="ulc-drive-status-link" data-i18n="drives.status_options">Statusoptionen</button>
+            </p>
+
+            <div class="ulc-table" id="ulc-drives-table"></div>
+
+            <div id="ulc-drive-effect">
+                <h3 data-i18n="group.effect">Effekt</h3>
+                <div class="ulc-effects" data-effects="drives"></div>
+            </div>
+
+            <details class="ulc-bays-colors">
+                <summary data-i18n="group.bays">Einzelne Schächte</summary>
+                <div class="ulc-table" id="ulc-bay-table"></div>
+            </details>
+        </article>
 
     </div>
 
     <div class="ulc-col">
 
-        <div class="ulc-hero">
-            <div class="ulc-nas ulc-nas-large" data-nas></div>
-        </div>
-
         <article class="ulc-card">
-            <h2 data-i18n="preview.title">Vorschau / Live-Test</h2>
+            <h2 data-i18n="preview.title">Vorschau</h2>
             <div class="ulc-preview">
                 <div class="ulc-nas" data-nas></div>
             </div>
+            <p class="ulc-muted ulc-night-note" id="ulc-night-note" hidden></p>
             <div class="ulc-actions">
                 <button type="button" class="ulc-btn primary" id="ulc-test"><span class="ulc-ico" data-ulc-icon="play"></span><span data-i18n="preview.test">Testen</span></button>
                 <button type="button" class="ulc-btn" id="ulc-reset"><span class="ulc-ico" data-ulc-icon="refresh"></span><span data-i18n="preview.reset">Auf Standard zurücksetzen</span></button>
             </div>
         </article>
 
-        <div data-slot="settings-home">
-            <article class="ulc-card" id="ulc-settings-card">
-                <h2 data-i18n="fxset.title">Effekt Einstellungen</h2>
+        <article class="ulc-card" id="ulc-settings-card" hidden>
+            <h2 data-i18n="fxset.title">Effekt-Einstellungen</h2>
+            <p class="ulc-muted" data-i18n="fxset.scope">Gelten für alle LEDs mit animiertem Effekt.</p>
 
-                <div class="ulc-form">
-                    <label for="ulc-target" data-i18n="fxset.target">Anwenden auf</label>
-                    <select id="ulc-target">
-                        <option value="all" data-i18n="target.all">Alle LEDs</option>
-                        <option value="disks" data-i18n="target.disks">Alle Laufwerk-LEDs</option>
-                        <option value="power" data-i18n="target.power">Power LED</option>
-                        <option value="netdev" data-i18n="target.netdev">Netzwerk LED</option>
-                    </select>
-
-                    <label for="ulc-speed" data-i18n="fxset.speed">Geschwindigkeit</label>
-                    <div class="ulc-inline">
-                        <input type="range" id="ulc-speed" min="0" max="4" step="1" value="2">
-                        <output class="ulc-value" id="ulc-speed-value">Mittel</output>
-                    </div>
-
-                    <label for="ulc-direction" data-i18n="fxset.direction">Richtung</label>
-                    <select id="ulc-direction">
-                        <option value="forward" data-i18n="dir.forward">Vorwärts</option>
-                        <option value="backward" data-i18n="dir.backward">Rückwärts</option>
-                    </select>
-
-                    <label data-i18n="fxset.rainbow">Regenbogen</label>
-                    <div class="ulc-palette" aria-hidden="true">
-                        <span style="--c:#ff3b30"></span><span style="--c:#ff9500"></span><span style="--c:#ffd60a"></span><span style="--c:#34c759"></span><span style="--c:#32d4f5"></span><span style="--c:#0a84ff"></span><span style="--c:#bf5af2"></span>
-                    </div>
+            <div class="ulc-form">
+                <label for="ulc-speed" data-fx-row="speed" data-i18n="fxset.speed">Geschwindigkeit</label>
+                <div class="ulc-inline" data-fx-row="speed">
+                    <input type="range" id="ulc-speed" min="0" max="4" step="1" value="2">
+                    <output class="ulc-value" id="ulc-speed-value" for="ulc-speed">Mittel</output>
                 </div>
 
-                <label class="ulc-switch-row">
-                    <span class="ulc-switch">
-                        <input type="checkbox" id="ulc-idle">
-                        <span></span>
-                    </span>
-                    <span>
-                        <strong data-i18n="fxset.idle">Nur im Leerlauf ausführen</strong>
-                        <small data-i18n="fxset.idle_hint">Regenbogen und Temperatur pausieren, solange eine Platte arbeitet.</small>
-                    </span>
-                </label>
-            </article>
-        </div>
+                <label for="ulc-direction" data-fx-row="direction" data-i18n="fxset.direction">Richtung</label>
+                <select id="ulc-direction" data-fx-row="direction">
+                    <option value="forward" data-i18n="dir.forward">Vorwärts</option>
+                    <option value="backward" data-i18n="dir.backward">Rückwärts</option>
+                </select>
+
+                <span data-fx-row="palette" data-i18n="fxset.rainbow">Regenbogenfarben</span>
+                <div class="ulc-palette" data-fx-row="palette" aria-hidden="true">
+                    <span style="--c:#ff3b30"></span><span style="--c:#ff9500"></span><span style="--c:#ffd60a"></span><span style="--c:#34c759"></span><span style="--c:#32d4f5"></span><span style="--c:#0a84ff"></span><span style="--c:#bf5af2"></span>
+                </div>
+            </div>
+
+            <label class="ulc-switch-row" data-fx-row="idle">
+                <span class="ulc-switch">
+                    <input type="checkbox" id="ulc-idle">
+                    <span></span>
+                </span>
+                <span>
+                    <strong data-i18n="fxset.idle">Nur im Leerlauf ausführen</strong>
+                    <small data-i18n="fxset.idle_hint">Regenbogen und Temperatur pausieren, solange eine Platte arbeitet.</small>
+                </span>
+            </label>
+        </article>
 
     </div>
 
 </div>
 </section>
 
-<!-- ================= LED Einstellungen ================= -->
-
-<section class="ulc-view" data-view="leds">
-    <article class="ulc-card">
-        <h2 data-i18n="leds.title">LED Einstellungen</h2>
-        <p class="ulc-muted" data-i18n="leds.intro">Jede LED einzeln: Farbe, Helligkeit und Effekt werden sofort übernommen.</p>
-        <p class="ulc-hint" data-status-hint data-i18n="status.hint" hidden>
-            Statusmodus aktiv: Laufwerks- und Netzwerk-LED zeigen Aktivität und Fehler. Farbe und Helligkeit stellst du hier ein, Effekte gelten nur für die Power-LED.
-        </p>
-        <div class="ulc-table" id="ulc-led-table"></div>
-    </article>
-    <article class="ulc-card" id="ulc-network-card">
-        <h2 data-i18n="network.title">Netzwerk-LED</h2>
-        <p class="ulc-muted" data-i18n="network.intro">Die Netzwerk-LED kann die Geschwindigkeit der Verbindung anzeigen. Die Anschlüsse stehen im Gehäusebild neben „LAN“.</p>
-
-        <label class="ulc-switch-row">
-            <span class="ulc-switch">
-                <input type="checkbox" id="ulc-speed-enabled">
-                <span></span>
-            </span>
-            <span>
-                <strong data-i18n="display.speed">Netzwerk-LED nach Verbindungsgeschwindigkeit</strong>
-                <small data-i18n="display.speed_hint">Die Farbe der Netzwerk-LED zeigt die ausgehandelte Geschwindigkeit der Verbindung, z. B. 1 statt 2,5 Gbit/s bei einem schlechten Kabel. Ohne Verbindung bleibt die Fehlerfarbe, bei „Manuell“ gilt die eigene Farbe.</small>
-            </span>
-        </label>
-
-        <div class="ulc-form" id="ulc-speed-colors" hidden></div>
-        <p class="ulc-hint" id="ulc-speed-current" hidden></p>
-    </article>
-</section>
-
-<!-- ================= Laufwerke ================= -->
+<!-- ================= Laufwerksstatus ================= -->
 
 <section class="ulc-view" data-view="drives">
-    <article class="ulc-card">
-        <h2 data-i18n="drives.title">Laufwerke</h2>
-        <p class="ulc-muted" data-i18n="drives.intro">Die LED unter jedem Schacht. Schacht 1 ist ganz links.</p>
-        <p class="ulc-hint" data-status-hint data-i18n="status.hint" hidden>
-            Statusmodus aktiv: Laufwerks- und Netzwerk-LED zeigen Aktivität und Fehler. Farbe und Helligkeit stellst du hier ein, Effekte gelten nur für die Power-LED.
-        </p>
-        <div class="ulc-table" id="ulc-bay-table"></div>
-    </article>
+    <h2 class="ulc-page-title" data-i18n="view.drives">Laufwerksstatus</h2>
+
     <article class="ulc-card">
         <h2 data-i18n="bays.title">Zuordnung &amp; Status</h2>
-        <p class="ulc-muted" data-i18n="bays.intro">Welche Platte in welchem Schacht steckt und wie Unraid sie meldet. Im Statusmodus zeigen die LEDs genau das an.</p>
+        <p class="ulc-muted" data-i18n="bays.intro">Welche Platte in welchem Schacht steckt und wie Unraid sie meldet.</p>
         <p class="ulc-hint" id="ulc-mapping-hint" data-i18n="mapping.hint" hidden>Für dieses Modell ist die Zuordnung der Schächte nicht geprüft. Kontrolliere sie mit „Identifizieren“: Blinkt der richtige Schacht?</p>
         <p class="ulc-hint" id="ulc-sync-state" hidden></p>
         <div class="ulc-bays" id="ulc-bays"></div>
     </article>
     <article class="ulc-card" id="ulc-display-card">
         <h2 data-i18n="display.title">Statusanzeige</h2>
-        <p class="ulc-muted" data-i18n="display.intro">Wie die Laufwerks- und Netzwerk-LEDs im Statusmodus Unraid-Zustände zeigen.</p>
+        <p class="ulc-note" id="ulc-display-note" hidden>
+            <span data-i18n="display.manual_note">Diese Optionen gelten, wenn die Laufwerks-LEDs den Laufwerksstatus zeigen.</span>
+            <button type="button" class="ulc-link" data-act="mode-status" data-i18n="drives.show_status">Laufwerksstatus anzeigen</button>
+        </p>
 
         <label class="ulc-switch-row">
             <span class="ulc-switch">
@@ -265,39 +212,33 @@
                 <option value="temperature" data-i18n="display.color_temperature">Nach Plattentemperatur</option>
             </select>
 
+            <label data-i18n="display.error_color">Farbe bei Plattenfehler</label>
+            <div id="ulc-error-color" data-label-key="display.error_color"></div>
+
             <label data-i18n="display.smart_color">Farbe bei SMART-Warnung</label>
-            <div id="ulc-smart-color"></div>
+            <div id="ulc-smart-color" data-label-key="display.smart_color"></div>
 
             <label data-i18n="display.sync_color">Farbe bei Prüfung</label>
-            <div id="ulc-sync-color"></div>
+            <div id="ulc-sync-color" data-label-key="display.sync_color"></div>
 
             <label for="ulc-standby-mode" data-i18n="display.standby">Platten im Standby</label>
             <select id="ulc-standby-mode">
                 <option value="dim" data-i18n="display.standby_dim">Gedimmt</option>
                 <option value="normal" data-i18n="display.standby_normal">Normal</option>
                 <option value="off" data-i18n="display.standby_off">Aus</option>
-                <option value="pulse" data-i18n="display.standby_pulse">Langsam pulsieren</option>
+                <option value="pulse" data-i18n="display.standby_pulse">Langsam atmen</option>
             </select>
 
             <label for="ulc-standby-level" data-i18n="display.standby_level">Helligkeit im Standby</label>
             <div class="ulc-inline">
                 <input type="range" id="ulc-standby-level" min="5" max="100" step="5" value="30">
-                <output class="ulc-value" id="ulc-standby-level-value">30%</output>
+                <output class="ulc-value" id="ulc-standby-level-value" for="ulc-standby-level">30%</output>
             </div>
         </div>
     </article>
 </section>
 
-<!-- ================= Effekte ================= -->
-
-<section class="ulc-view" data-view="effects">
-    <div class="ulc-grid">
-        <div class="ulc-col" data-slot="effects-view"></div>
-        <div class="ulc-col" data-slot="settings-view"></div>
-    </div>
-</section>
-
-<!-- ================= Zeitpläne ================= -->
+<!-- ================= Nachtmodus ================= -->
 
 <section class="ulc-view" data-view="schedules">
     <article class="ulc-card" id="ulc-night-card">
@@ -331,19 +272,17 @@
             <label for="ulc-night-brightness" data-i18n="night.brightness">Helligkeit nachts</label>
             <div class="ulc-inline">
                 <input type="range" id="ulc-night-brightness" min="1" max="100" step="1" value="8">
-                <output class="ulc-value" id="ulc-night-brightness-value">8%</output>
+                <output class="ulc-value" id="ulc-night-brightness-value" for="ulc-night-brightness">8%</output>
             </div>
         </div>
     </article>
 </section>
 
-<!-- ================= System ================= -->
+<!-- ================= Meldungen & Herunterfahren ================= -->
 
 <section class="ulc-view" data-view="system">
-    <article class="ulc-card">
-        <h2 data-i18n="system.title">System</h2>
-        <dl class="ulc-facts" id="ulc-facts"></dl>
-    </article>
+    <h2 class="ulc-page-title" data-i18n="view.alerts">Meldungen &amp; Herunterfahren</h2>
+
     <article class="ulc-card" id="ulc-alert-card">
         <h2 data-i18n="alerts.title">Unraid-Warnungen</h2>
         <p class="ulc-muted" data-i18n="alerts.intro">Bei ungelesenen Unraid-Meldungen blinkt die Power-LED. Liest oder archivierst du sie in Unraid, kehrt sie in ihren normalen Zustand zurück. Geprüft wird jede Minute.</p>
@@ -367,7 +306,7 @@
             </select>
 
             <label data-i18n="alerts.color">Farbe</label>
-            <div id="ulc-alert-color"></div>
+            <div id="ulc-alert-color" data-label-key="alerts.color"></div>
         </div>
     </article>
     <article class="ulc-card" id="ulc-shutdown-card">
@@ -387,7 +326,7 @@
 
         <div class="ulc-form">
             <label data-i18n="shutdown.color">Farbe</label>
-            <div id="ulc-shutdown-color"></div>
+            <div id="ulc-shutdown-color" data-label-key="shutdown.color"></div>
 
             <label for="ulc-shutdown-effect" data-i18n="shutdown.effect">Darstellung</label>
             <select id="ulc-shutdown-effect">
@@ -399,73 +338,5 @@
         <div class="ulc-actions">
             <button type="button" class="ulc-btn" id="ulc-shutdown-test"><span class="ulc-ico" data-ulc-icon="play"></span><span data-i18n="shutdown.test">Testen (6 Sekunden)</span></button>
         </div>
-    </article>
-    <article class="ulc-card">
-        <h2 data-i18n="language.title">Sprache</h2>
-        <div class="ulc-field-row">
-            <label for="ulc-language" data-i18n="language.label">Sprache der Oberfläche</label>
-            <select id="ulc-language">
-                <option value="auto" data-i18n="language.auto">Automatisch (wie Unraid)</option>
-                <option value="de">Deutsch</option>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-            </select>
-        </div>
-    </article>
-    <article class="ulc-card">
-        <h2 data-i18n="theme.title">Darstellung</h2>
-        <div class="ulc-form">
-            <label for="ulc-theme" data-i18n="theme.label">Farbschema</label>
-            <select id="ulc-theme">
-                <option value="dark" data-i18n="theme.dark">Dunkel</option>
-                <option value="light" data-i18n="theme.light">Hell</option>
-                <option value="auto" data-i18n="theme.auto">Wie Unraid</option>
-            </select>
-
-            <label for="ulc-dash-size" data-i18n="theme.dash">Dashboard-Kachel</label>
-            <select id="ulc-dash-size">
-                <option value="compact" data-i18n="theme.dash_compact">Kompakt</option>
-                <option value="full" data-i18n="theme.dash_full">Mit Temperaturen</option>
-            </select>
-        </div>
-        <p class="ulc-hint" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel). Die kompakte Kachel zeigt nur die LEDs; ein Schacht nennt seinen Zustand nur bei Fehler oder SMART-Warnung.</p>
-    </article>
-</section>
-
-<!-- ================= Über ================= -->
-
-<section class="ulc-view" data-view="about">
-    <article class="ulc-card ulc-about">
-        <div class="ulc-about-head">
-            <img class="ulc-about-icon" src="/plugins/ugreen-nas-control/led/images/ugreen-led-control.png" alt="">
-            <div>
-                <h2>UGREEN LED Control</h2>
-                <p class="ulc-muted" data-i18n="about.tagline">LED-Steuerung für UGREEN DX/DXP NAS unter Unraid</p>
-                <div class="ulc-about-badges">
-                    <span class="ulc-badge online">v<span id="ulc-version"></span></span>
-                    <span class="ulc-badge" data-i18n="about.license_badge">MIT-Lizenz</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="ulc-about-links">
-            <a class="ulc-link-tile" href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">
-                <svg class="ulc-ico-fill" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                <span><strong>GitHub</strong><small data-i18n="about.github_hint">Quellcode, Releases und Änderungen</small></span>
-            </a>
-            <a class="ulc-link-tile" href="https://forums.unraid.net/topic/200791-plugin-ugreen-led-control-led-control-for-ugreen-dxdxp-nas/" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.5-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4.5"/></svg>
-                <span><strong data-i18n="about.forum">Unraid-Forum</strong><small data-i18n="about.forum_hint">Support, Fragen und Austausch</small></span>
-            </a>
-            <a class="ulc-link-tile" href="https://github.com/alexanderschubert/ugreen-led-control/issues" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9a4 4 0 0 1 8 0v6a4 4 0 0 1-8 0z"/><path d="M12 5V3M9 3l1.5 2M15 3l-1.5 2M4 12h4M16 12h4M5 7l3 2M19 7l-3 2M5 19l3-2M19 19l-3-2M8 12h8"/></svg>
-                <span><strong data-i18n="about.issues">Fehler melden</strong><small data-i18n="about.issues_hint">Probleme und Wünsche als Issue</small></span>
-            </a>
-        </div>
-
-        <dl class="ulc-facts">
-            <dt data-i18n="about.protocol">Protokoll</dt><dd data-i18n-html="about.protocol_text">nach <a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo/ugreen_leds_controller</a>, ohne Kernel-Modul</dd>
-            <dt data-i18n="about.thanks">Dank an</dt><dd data-i18n-html="about.thanks_text">miskcoo (Protokoll und Schacht-Zuordnung), ich777 (ugreenleds-driver) und alle, die auf ihrem Modell getestet haben</dd>
-        </dl>
     </article>
 </section>

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,7 +17,38 @@ var (
 	dmidecodeBn = envOr("UGREEN_DMIDECODE", "dmidecode")
 	ethtoolBn   = envOr("UGREEN_ETHTOOL", "ethtool")
 	mountsFile  = envOr("UGREEN_MOUNTS", "/proc/mounts")
+	// tmpfs: what dmidecode and ethtool report does not change while the NAS runs, and every page
+	// that asks for the hardware starts a new process. "" switches the cache off.
+	cacheDir = envOr("UGREEN_HW_CACHE", "/var/run")
 )
+
+func cachePath(name string) string {
+	if cacheDir == "" {
+		return ""
+	}
+	return filepath.Join(cacheDir, "ugreen-nas-control.hw-"+name+".json")
+}
+
+// readCache fills v from a cache file, false when there is none.
+func readCache(name string, v any) bool {
+	p := cachePath(name)
+	if p == "" {
+		return false
+	}
+	b, err := os.ReadFile(p)
+	return err == nil && json.Unmarshal(b, v) == nil
+}
+
+// writeCache is best effort: no cache file just means asking again next time.
+func writeCache(name string, v any) {
+	p := cachePath(name)
+	if p == "" {
+		return
+	}
+	if b, err := json.Marshal(v); err == nil {
+		os.WriteFile(p, b, 0o644)
+	}
+}
 
 // What a model has built in.
 type layout struct {
@@ -211,11 +243,19 @@ func mtPerSecond(s string) int {
 }
 
 func readMemory() []DIMM {
+	var dimms []DIMM
+	if readCache("memory", &dimms) && len(dimms) > 0 {
+		return dimms
+	}
 	out, err := exec.Command(dmidecodeBn, "-t", "memory").Output()
 	if err != nil {
 		return nil
 	}
-	return parseDmidecode(string(out))
+	dimms = parseDmidecode(string(out))
+	if len(dimms) > 0 {
+		writeCache("memory", dimms)
+	}
+	return dimms
 }
 
 var pciRe = regexp.MustCompile(`^[0-9a-f]{4}:[0-9a-f]{2}:[0-9a-f]{2}\.[0-9a-f]$`)
@@ -399,11 +439,21 @@ var linkModeRe = regexp.MustCompile(`(\d+)base`)
 
 // maxLinkSpeed is the highest speed in the "Supported link modes" of ethtool, 0 when ethtool isn't there.
 func maxLinkSpeed(name string) int {
+	speeds := map[string]int{}
+	readCache("maxspeed", &speeds)
+	if n := speeds[name]; n > 0 {
+		return n
+	}
 	out, err := exec.Command(ethtoolBn, name).Output()
 	if err != nil {
 		return 0
 	}
-	return parseMaxLinkSpeed(string(out))
+	n := parseMaxLinkSpeed(string(out))
+	if n > 0 {
+		speeds[name] = n
+		writeCache("maxspeed", speeds)
+	}
+	return n
 }
 
 func parseMaxLinkSpeed(out string) int {
