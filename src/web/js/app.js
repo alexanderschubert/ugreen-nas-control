@@ -531,6 +531,46 @@
         return t(led.warning === 'standalone' && !led.enabled ? 'system.ledctl_standalone' : 'system.ledctl_off');
     }
 
+    // Every UGREEN NASync model and what this plugin does for it: [model, test regex of the DMI name, LEDs, case view, fans].
+    // LEDs: verified | confirmed | reported (by users) | untested | power (power LED only) | none; case: full | fr | ''.
+    const MODELS = [
+        ['DXP6800 Pro', /^DXP6800 Pro$/, 'verified', 'full', true],
+        ['DXP4800 GT', /^DXP4800.*GT/, 'confirmed', 'full', true],
+        ['DXP4800 / Plus / Pro', /^DXP4800( Plus| Pro)?$/, 'confirmed', 'fr', false],
+        ['DXP8800 Plus', /^DXP8800 Plus$/, 'verified', 'fr', false],
+        ['DXP2800', /^DXP2800$/, 'reported', 'fr', false],
+        ['DXP2800 GT', /^DXP2800 GT/, 'untested', '', false],
+        ['DXP480T Plus', /^DXP480T/, 'power', '', false],
+        ['DXP6800 Ultra', /^DXP6800 Ultra/, 'untested', '', false],
+        ['DXP8800 Ultra', /^DXP8800 Ultra/, 'untested', '', false],
+        ['iDX6011 / Pro', /^iDX6011/, 'untested', 'fr', false],
+        ['DX4600 Pro', /^DX4600/, 'verified', '', false],
+        ['DX4700 / Plus', /^DX4700/, 'reported', '', false],
+        ['DH2300, DH4300 Plus', /^DH/, 'none', '', false]
+    ];
+
+    function renderModels() {
+        const mine = modelName();
+        const cell = (kind, text) => `<td class="m-${kind}">${escapeHtml(text)}</td>`;
+
+        q('#unc-models').innerHTML = `
+            <table class="unc-table unc-models">
+                <thead><tr>
+                    <th>${escapeHtml(t('models.col_model'))}</th><th>${escapeHtml(t('models.col_leds'))}</th>
+                    <th>${escapeHtml(t('models.col_case'))}</th><th>${escapeHtml(t('models.col_fans'))}</th>
+                </tr></thead>
+                <tbody>${MODELS.map(([name, re, leds, view, fans]) => `
+                    <tr class="${re.test(mine) ? 'mine' : ''}">
+                        <td><b>${escapeHtml(name)}</b>${re.test(mine) ? ` <small class="unc-muted">${escapeHtml(t('models.mine'))}</small>` : ''}</td>
+                        ${cell(leds, t(`models.st_${leds}`))}
+                        ${cell(view || 'none', view ? t(`models.case_${view}`) : '–')}
+                        ${cell(fans ? 'yes' : 'none', fans ? '✓' : '–')}
+                    </tr>`).join('')}
+                </tbody>
+            </table>
+            <p class="unc-hint">${escapeHtml(t('models.footnote'))}</p>`;
+    }
+
     function renderSystem() {
         const data = state.data;
         const info = data.info || {};
@@ -775,6 +815,7 @@
         renderModes();
         renderTemps();
         renderSystem();
+        renderModels();
         renderCurves();
         renderSafety();
         renderSaveBars();
