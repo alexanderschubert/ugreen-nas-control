@@ -366,8 +366,11 @@
         const system = [];
         const ssds = [];
         const drives = [];
+        const extras = s.nvme_extra || [];
+        const nics = [];
 
         if (s.cpu != null) system.push(tempRow(t('temps.cpu'), s.cpu, 'cpu', '', 'chip'));
+        if (s.gpu != null) system.push(tempRow(t('temps.gpu'), s.gpu, 'cpu', '', 'pcie'));
 
         const cores = (s.cpu_cores || []).map(c => c.temp).filter(v => v != null);
         if (cores.length) system.push(tempRow(t('temps.cores'), Math.max(...cores), 'cpu', '', 'gauge'));
@@ -380,10 +383,24 @@
 
         // The SSDs by their place in the case (with the mark of the one Unraid runs from); the sensors' own names when the hardware isn't known.
         if (state.hw?.nvme?.length) {
-            state.hw.nvme.forEach(n => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${n.model || n.id}`, n.temp, 'nvme', '', n.boot ? UNRAID_MARK : 'm2')));
+            state.hw.nvme.forEach(n => {
+                ssds.push(tempRow(`${ssdSlotLabel(n)} · ${n.model || n.id}`, n.temp, 'nvme', '', n.boot ? UNRAID_MARK : 'm2'));
+                extras.filter(e => e.name === n.id).forEach(e => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', '', 'm2')));
+            });
         } else {
-            (s.nvme || []).forEach(n => ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2')));
+            (s.nvme || []).forEach(n => {
+                ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2'));
+                extras.filter(e => e.name === n.name).forEach(e => ssds.push(tempRow(n.name, e.temp, 'nvme', e.label || t('temps.sensor'), 'm2')));
+            });
         }
+
+        // The LAN ports' chips, named like the rear view: the port that supports more speed is LAN 1.
+        const ports = (state.hw?.net || []).slice().sort((a, b) => (b.max_mbit || 0) - (a.max_mbit || 0));
+        (s.nic || []).forEach(n => {
+            const i = ports.findIndex(p => p.name === n.iface);
+            const port = i < 0 ? n.iface : ports.length > 1 ? `LAN ${i + 1}` : 'LAN';
+            nics.push(tempRow(n.label ? `${port} · ${n.label}` : port, n.temp, 'other', i < 0 ? '' : n.iface, 'net'));
+        });
 
         (s.disks || []).forEach(d => {
             if (d.standby) {
@@ -407,6 +424,7 @@
         q('#unc-temps').innerHTML = [
             section('temps.group_system', 'chip', system),
             section('temps.group_ssd', 'm2', ssds),
+            section('temps.group_net', 'net', nics),
             section('temps.group_drives', 'drives', drives)
         ].join('') || `<p class="unc-muted">${escapeHtml(t('temps.none'))}</p>`;
     }
@@ -416,6 +434,21 @@
         const h = Math.floor(seconds % 86400 / 3600);
         const m = Math.floor(seconds % 3600 / 60);
         return d > 0 ? t('uptime.days', { d, h }) : t('uptime.hours', { h, m });
+    }
+
+    // The LED controller for the System facts: what it reports, or why the LED part is off.
+    function ledController() {
+        const led = state.data?.led;
+        const status = state.ledStatus;
+
+        if (ledsOn()) {
+            if (!status) return '';
+            return status.i2c_address ? t('system.ledctl_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_off');
+        }
+        if (!led) return '';
+        if (led.blocker === 'model') return t('system.ledctl_model');
+        if (led.blocker) return t('system.ledctl_blocked');
+        return t(led.warning === 'standalone' && !led.enabled ? 'system.ledctl_standalone' : 'system.ledctl_off');
     }
 
     function renderSystem() {
@@ -429,7 +462,8 @@
             ['system.unraid', info.unraid],
             ['system.kernel', info.kernel],
             ['system.uptime', info.uptime ? uptime(info.uptime) : ''],
-            ['system.chip', data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : data.chip_error ? '–' : '']
+            ['system.chip', data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : data.chip_error ? '–' : ''],
+            ['system.ledctl', ledController()]
         ];
 
         q('#unc-system').innerHTML = facts
@@ -755,17 +789,17 @@
     }
 
     function renderFront(hw, target = '#unc-front') {
-        const net = hw.net || [];
+        const net = hw.net;
         const lan = net.some(n => n.link);
         const speeds = net.map(n => `<span>${n.link ? speedText(n.speed_mbit) : '✕'}</span>`).join('');
 
         const model = caseModel(hw);
         const ports = `<span class="unc-front-ports">${model.front.map(([kind, label]) => socket(kind, label)).join('')}</span>`;
-        const led = (label, on) => `<span class="unc-led"><span class="unc-pled ${on ? 'on' : ''}"></span><span class="lbl">${escapeHtml(label)}</span></span>`;
+        const led = (label, on, key) => `<span class="unc-led"><span class="unc-pled ${on ? 'on' : ''}" data-led="${key}"></span><span class="lbl">${escapeHtml(label)}</span></span>`;
         const strip = model.strip ? `
                 <div class="unc-nas-front">
                     <span class="unc-pbtn"><span class="unc-pled power"></span></span>
-                    <span class="unc-leds">${led('LAN', lan)}${(hw.bays || []).map(b => led(`DISK${b.bay}`, b.present)).join('')}</span>
+                    <span class="unc-leds">${led('LAN', lan, 'netdev')}${(hw.bays || []).map(b => led(`DISK${b.bay}`, b.present, `disk${b.bay}`)).join('')}</span>
                     <span class="spacer"></span>
                     ${ports}
                 </div>
@@ -1138,7 +1172,7 @@
         };
 
         const card = ssd('pcie');
-        const memory = hw.memory || [];
+        const memory = hw.memory;
 
         return `
             <svg class="unc-board-svg" viewBox="0 0 1000 640" role="img" aria-label="${escapeHtml(t('case.inside'))}">
@@ -1290,6 +1324,10 @@
     async function loadLeds() {
         if (!ledsOn()) {
             state.leds = null;
+            if (state.ledStatus) {
+                state.ledStatus = null;
+                renderSystem();
+            }
             return;
         }
 
@@ -1302,7 +1340,9 @@
             state.leds = all.leds || {};
             state.ledMode = { mode: status.mode, fx: status.fx };
             state.ledBays = Number(status.bays) || 0;
+            state.ledStatus = status;
             renderLedFacts(status, state.leds);
+            if (state.data) renderSystem();
         } catch (error) {
             state.leds = null;
             return;
@@ -1338,6 +1378,7 @@
         container.querySelectorAll('.unc-nbay').forEach((bay, i) => paintLed(bay.querySelector('.bar'), state.leds[`disk${i + 1}`]));
         paintLed(container.querySelector('.unc-pled.power'), state.leds.power);
         paintLed(container.querySelector('.unc-pled.lan'), state.leds.netdev);
+        container.querySelectorAll('.unc-led .unc-pled[data-led]').forEach(el => paintLed(el, state.leds[el.dataset.led]));
     }
 
     function ledModeText() {
@@ -1375,7 +1416,9 @@
 
     async function loadHardware() {
         try {
-            state.hw = await api({ action: 'hardware' });
+            // The tool prints a list it found nothing for (no NVMe, no dmidecode, no NIC) as null.
+            const hw = await api({ action: 'hardware' });
+            state.hw = hw && { ...hw, memory: hw.memory || [], nvme: hw.nvme || [], net: hw.net || [] };
             state.hwError = false;
         } catch (error) {
             // A failed read keeps the last picture: dropping it would shrink the page under the reader and jump to the top.

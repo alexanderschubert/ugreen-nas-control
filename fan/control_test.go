@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -174,5 +176,80 @@ rotational="1"
 	}
 	if len(s.Disks) != 3 || !s.Disks[1].Standby || s.Disks[1].Temp != nil || *s.MaxDisk() != 38 {
 		t.Fatalf("disks = %+v", s.Disks)
+	}
+}
+
+// Display-only temperatures: the extra NVMe sensors, the iGPU and the PHY / MAC of the LAN ports.
+func TestSensorsDisplayOnly(t *testing.T) {
+	dir := t.TempDir()
+	write := func(path, content string) {
+		full := filepath.Join(dir, path)
+		os.MkdirAll(filepath.Dir(full), 0o755)
+		os.WriteFile(full, []byte(content), 0o644)
+	}
+
+	// nvme with two more sensors whose max is nonsense
+	write("hwmon/hwmon1/name", "nvme\n")
+	write("hwmon/hwmon1/temp1_input", "41000\n")
+	write("hwmon/hwmon1/temp1_label", "Composite\n")
+	write("hwmon/hwmon1/temp2_input", "64850\n")
+	write("hwmon/hwmon1/temp2_label", "Sensor 1\n")
+	write("hwmon/hwmon1/temp2_max", "65261850\n")
+	write("hwmon/hwmon1/temp3_input", "42000\n")
+	write("hwmon/hwmon1/temp3_label", "Sensor 2\n")
+	os.MkdirAll(filepath.Join(dir, "devices/nvme1"), 0o755)
+	os.Symlink(filepath.Join(dir, "devices/nvme1"), filepath.Join(dir, "hwmon/hwmon1/device"))
+	// iGPU
+	write("hwmon/hwmon2/name", "amdgpu\n")
+	write("hwmon/hwmon2/temp1_input", "51000\n")
+	write("hwmon/hwmon2/temp1_label", "edge\n")
+	// atlantic: named after the interface
+	write("hwmon/hwmon3/name", "eth0\n")
+	write("hwmon/hwmon3/temp1_input", "64000\n")
+	write("hwmon/hwmon3/temp1_label", "PHY Temperature\n")
+	write("hwmon/hwmon3/temp2_input", "66000\n")
+	write("hwmon/hwmon3/temp2_label", "MAC Temperature\n")
+	os.MkdirAll(filepath.Join(dir, "sys/class/net/eth0"), 0o755)
+	// another driver: the hwmon's device has the interface as a child
+	write("hwmon/hwmon4/name", "igc\n")
+	write("hwmon/hwmon4/temp1_input", "55000\n")
+	os.MkdirAll(filepath.Join(dir, "sys/devices/pci/net/enp2s0"), 0o755)
+	os.Symlink(filepath.Join(dir, "sys/devices/pci"), filepath.Join(dir, "hwmon/hwmon4/device"))
+	// not a NIC
+	write("hwmon/hwmon5/name", "something\n")
+	write("hwmon/hwmon5/temp1_input", "30000\n")
+
+	defer func(h, sy, d string) { hwmonDir, sysDir, disksINI = h, sy, d }(hwmonDir, sysDir, disksINI)
+	hwmonDir, sysDir = filepath.Join(dir, "hwmon"), filepath.Join(dir, "sys")
+	disksINI = filepath.Join(dir, "none.ini")
+	s := ReadSensors()
+
+	if s.GPU == nil || *s.GPU != 51 {
+		t.Fatalf("gpu = %v", s.GPU)
+	}
+	if len(s.NVMe) != 1 || *s.NVMe[0].Temp != 41 {
+		t.Fatalf("nvme = %+v", s.NVMe)
+	}
+	if len(s.NVMeExtra) != 2 || s.NVMeExtra[0].Name != "nvme1" || s.NVMeExtra[0].Label != "Sensor 1" || *s.NVMeExtra[0].Temp != 65 || *s.NVMeExtra[1].Temp != 42 {
+		t.Fatalf("nvme extra = %+v", s.NVMeExtra)
+	}
+	if len(s.NIC) != 3 {
+		t.Fatalf("nic = %+v", s.NIC)
+	}
+	if n := s.NIC[0]; n.Iface != "enp2s0" || n.Label != "" || *n.Temp != 55 {
+		t.Fatalf("nic[0] = %+v", n)
+	}
+	if n := s.NIC[1]; n.Iface != "eth0" || n.Label != "PHY" || *n.Temp != 64 {
+		t.Fatalf("nic[1] = %+v", n)
+	}
+	if n := s.NIC[2]; n.Label != "MAC" || *n.Temp != 66 {
+		t.Fatalf("nic[2] = %+v", n)
+	}
+
+	// Never null for the lists, and the curves still see only the composite sensor.
+	hwmonDir = filepath.Join(dir, "empty")
+	b, _ := json.Marshal(ReadSensors())
+	if !strings.Contains(string(b), `"nic":[]`) || !strings.Contains(string(b), `"nvme_extra":[]`) {
+		t.Fatalf("json = %s", b)
 	}
 }

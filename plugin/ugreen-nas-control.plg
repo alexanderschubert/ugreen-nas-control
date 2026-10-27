@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "2.5">
+<!ENTITY version   "2.6">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 2.6
+- Contributions by j3n57h0m45: temperatures of the LAN ports, the iGPU and the extra NVMe sensors; the System facts show the fan controller and the LED controller side by side and say why the LED part is off; the LAN and DISK LEDs in the strip front take the LED controller's colours; the case view keeps working on a model without NVMe drives; the Processor card names the fan controller temperature like the temperature list
 
 ### 2.5
 - Case view for the DXP2800 (two bays, tall rear with one LAN port) and the iDX6011 / iDX6011 Pro (six bays and the display at the front, the rear with the PCIe slot, mesh, vent, power inlet, USB, two 10G LAN ports, HDMI and OCuLink), drawn after photos; the LEDs are drawn like on the DXP6800 Pro. No inside view, no fan control. The tool maps the iDX bays on its two SATA controllers like UGREEN LED Control does
@@ -209,7 +212,7 @@
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>77f840016b211d5715c072b884ab46fe</MD5>
+<MD5>cabe3d9e8dd7b7786d0a9320a06c152e</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
@@ -255,12 +258,12 @@
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>730f1e4cb1af0538ac75b6bdca41edae</MD5>
+<MD5>c98ad5cb1b9983156ea1eb20189b13c9</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>e75a3a498e76c50c3e7dc2cf42c80516</MD5>
+<MD5>083d86dbaf352b98b06dfb02c4f362bd</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/dash.js">
