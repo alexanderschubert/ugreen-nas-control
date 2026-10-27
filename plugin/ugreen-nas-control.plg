@@ -27,7 +27,7 @@
 
 ### 3.0
 - Temperatures: the LAN chip rows say "network chip" and a tooltip explains PHY and MAC (two parts of the same chip; some report the same value), and the extra sensors of an SSD get a tooltip (often the controller or the memory chips; only the Composite value steers the fans)
-- About: the UGREEN LED Control link tile is gone, the thanks name Alexander for the development of UGREEN NAS Control
+- About: the UGREEN LED Control link tile is gone, the badge says DX · DXP · iDX, the thanks name Alexander and j3n57h0m45 for the development of UGREEN NAS Control
 
 ### 2.9
 - Fan control can be switched off (Settings): for users whose fans are run by another plugin or script. Off, the plugin does not start the fan daemon and does not read or write the fan chip at all, the fans get the BIOS values back, and the fan pages and the fan card are hidden
@@ -237,7 +237,7 @@
 
 <FILE Name="&srcDIR;/UGREENNASControl.page">
 <URL>&gitURL;/src/web/UGREENNASControl.page</URL>
-<MD5>e780f5104e4a2e1fdf61d0911911d7b1</MD5>
+<MD5>75864fb67ca1707c2644351d953c684a</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASDashboard.page">
@@ -273,7 +273,7 @@
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>fa7d4f07be136af47262314b33416d0d</MD5>
+<MD5>0c222d5c38e045397f1e3b3ac8ff06d0</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
