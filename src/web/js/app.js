@@ -549,6 +549,16 @@
         ['DH2300, DH4300 Plus', /^DH/, 'none', '', false]
     ];
 
+    // The list is long: folded away until opened; the choice is remembered in this browser.
+    function bindModelsFold() {
+        const fold = q('#unc-models-fold');
+
+        try { fold.open = localStorage.getItem('unc-models-open') === '1'; } catch (error) { /* closed */ }
+        fold.addEventListener('toggle', () => {
+            try { localStorage.setItem('unc-models-open', fold.open ? '1' : '0'); } catch (error) { /* not remembered */ }
+        });
+    }
+
     function renderModels() {
         const mine = modelName();
         const cell = (kind, text) => `<td class="m-${kind}">${escapeHtml(text)}</td>`;
@@ -1852,6 +1862,8 @@
                 ignore_drives: ignoredDrives()
             }, true), t('safety.saved'));
         });
+
+        bindModelsFold();
 
         q('#unc-fan-enabled').addEventListener('change', event => {
             const on = event.target.checked;

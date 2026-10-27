@@ -26,7 +26,7 @@
 <CHANGES>
 
 ### 3.1
-- About: a table of every UGREEN NASync model with what the plugin does for it (LEDs, case view, fan control); your model is highlighted. The same table is in the README
+- About: a table of every UGREEN NASync model with what the plugin does for it (LEDs, case view, fan control); your model is highlighted; the card is folded away until you open it. The same table is in the README
 
 ### 3.0
 - Temperatures: the LAN chip rows say "network chip" and a tooltip explains PHY and MAC (two parts of the same chip; some report the same value), and the extra sensors of an SSD get a tooltip (often the controller or the memory chips; only the Composite value steers the fans)
@@ -240,7 +240,7 @@
 
 <FILE Name="&srcDIR;/UGREENNASControl.page">
 <URL>&gitURL;/src/web/UGREENNASControl.page</URL>
-<MD5>b830ab420a9ef84342a9089da743a78c</MD5>
+<MD5>6aaede7d76da057914237a55b5a5d778</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASDashboard.page">
@@ -271,7 +271,7 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>5111ebb99fc967ab00d2b34e0e1dd50f</MD5>
+<MD5>dafcca9132a646e8849a47fc9f01add9</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
@@ -281,7 +281,7 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>4fe4aac49717ec040d1cff689c5fde06</MD5>
+<MD5>e4f1d626a59e7d89e18c319de4e453b7</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">

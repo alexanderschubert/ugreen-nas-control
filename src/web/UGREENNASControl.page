@@ -318,9 +318,11 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
     </article>
 
     <article class="unc-card" id="unc-models-card">
-        <h2 data-i18n="models.title">Unterstützte Modelle</h2>
-        <p class="unc-muted" data-i18n="models.intro">Alle UGREEN-NAS-Modelle und was das Plugin für sie kann.</p>
-        <div id="unc-models"></div>
+        <details class="unc-fold" id="unc-models-fold">
+            <summary><h2 data-i18n="models.title">Unterstützte Modelle</h2></summary>
+            <p class="unc-muted" data-i18n="models.intro">Alle UGREEN-NAS-Modelle und was das Plugin für sie kann.</p>
+            <div id="unc-models"></div>
+        </details>
     </article>
 
     <article class="unc-card unc-about">

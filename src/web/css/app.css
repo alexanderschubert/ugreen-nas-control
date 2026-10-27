@@ -3227,3 +3227,29 @@
 .unc .unc-models td.m-verified, .unc .unc-models td.m-confirmed, .unc .unc-models td.m-yes { color: var(--unc-green); font-weight: 600; }
 .unc .unc-models td.m-reported { color: var(--unc-text); }
 .unc .unc-models td.m-untested, .unc .unc-models td.m-power, .unc .unc-models td.m-none { color: var(--unc-muted); }
+
+/* A card that folds away: the heading is the summary, the arrow turns when it is open. */
+.unc-fold > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.unc-fold > summary::-webkit-details-marker { display: none; }
+.unc-fold > summary h2 { margin: 0; }
+
+.unc-fold > summary::after {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid var(--unc-muted);
+    border-bottom: 2px solid var(--unc-muted);
+    transform: rotate(45deg);
+    transition: transform .15s;
+}
+
+.unc-fold[open] > summary::after { transform: rotate(-135deg); }
+.unc-fold[open] > summary { margin-bottom: 8px; }
