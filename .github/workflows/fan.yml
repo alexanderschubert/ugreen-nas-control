@@ -84,7 +84,7 @@ jobs:
       - name: PHP syntax
         run: |
           sudo apt-get install -y php-cli >/dev/null
-          for f in src/web/api.php src/web/include/lang.php led/src/web/api.php led/src/web/include/lang.php; do php -l "$f"; done
+          for f in src/web/api.php src/web/include/lang.php led/src/web/api.php led/src/web/include/views.php; do php -l "$f"; done
 
   # The plugin manager and Community Applications check every download against its <MD5>:
   # the files of the tag against the working tree, the two binaries against this run's build.

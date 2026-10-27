@@ -49,7 +49,7 @@ cp "$LED/backend/ugreen-led-ctl" "$DEST/led/backend/"
 cp "$LED/web/api.php" "$DEST/led/"
 cp "$LED/web/css/app.css" "$DEST/led/css/"
 cp "$LED/web/js/app.js" "$LED/web/js/i18n.js" "$DEST/led/js/"
-cp "$LED/web/include/lang.php" "$LED/web/include/views.php" "$DEST/led/include/"
+cp "$LED/web/include/views.php" "$DEST/led/include/"
 cp "$LED/web/images/ugreen-led-control.png" "$DEST/led/images/"
 cp "$LED/event/stopping" "$DEST/event/"
 
