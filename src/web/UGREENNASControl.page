@@ -317,6 +317,14 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
         <dl class="unc-facts" id="unc-system"></dl>
     </article>
 
+    <article class="unc-card" id="unc-models-card">
+        <details class="unc-fold" id="unc-models-fold">
+            <summary><h2 data-i18n="models.title">Unterstützte Modelle</h2></summary>
+            <p class="unc-muted" data-i18n="models.intro">Alle UGREEN-NAS-Modelle und was das Plugin für sie kann.</p>
+            <div id="unc-models"></div>
+        </details>
+    </article>
+
     <article class="unc-card unc-about">
         <div class="unc-about-head">
             <img class="unc-about-icon" src="/plugins/ugreen-nas-control/images/ugreen-nas-control.png" alt="">

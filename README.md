@@ -37,6 +37,30 @@ grew out of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led
 
 ## Supported models
 
+Every UGREEN NASync model and what the plugin does for it (the same table is on the plugin's About page, with your model highlighted):
+
+| Model | LEDs | Case view | Fan control |
+| --- | --- | --- | --- |
+| **DX series** | | | |
+| DX4600 Pro | verified (miskcoo) | – | – |
+| DX4700 / Plus | reported by users | – | – |
+| **DXP series** | | | |
+| DXP2800 | reported by users | front, rear | – |
+| DXP2800 GT | untested | – | – |
+| DXP480T Plus | power LED only | – | – |
+| DXP4800 / Plus / Pro | confirmed | front, rear | – |
+| DXP4800 GT | confirmed | front, rear, inside | yes |
+| DXP6800 Pro | verified | front, rear, inside | yes |
+| DXP6800 Ultra | untested | – | – |
+| DXP8800 Plus | verified | front, rear | – |
+| DXP8800 Ultra | untested | – | – |
+| **iDX series** | | | |
+| iDX6011 / iDX6011 Pro | untested | front, rear | – |
+| **DH series** | | | |
+| DH2300, DH4300 Plus | not offered (the LED part is enabled on DX, DXP and iDX only) | – | – |
+
+Verified: tested by the author or by miskcoo. Confirmed or reported: users saw it on their device. Untested: the LEDs are enabled but the bay order is guessed. Fan control exists only where the wiring is known.
+
 **Fans and case view** exist for two models, the only ones with known wiring:
 
 - **UGREEN DXP6800 Pro**: ITE IT8613E; CPU fan on header 2, case fans on headers 3 and 4

@@ -3220,3 +3220,52 @@
 .unc-cc.fan.fan-off .unc-cc-sub,
 .unc-cc.fan.fan-off #unc-modes,
 .unc-cc.fan.fan-off #unc-mode-hint { display: none; }
+
+/* Supported models: one row per model, the one running here highlighted. */
+.unc-models td, .unc-models th { white-space: normal; }
+.unc-models tr.mine td { background: rgba(47, 124, 246, .12); }
+.unc .unc-models td.m-verified, .unc .unc-models td.m-confirmed, .unc .unc-models td.m-yes { color: var(--unc-green); font-weight: 600; }
+.unc .unc-models td.m-reported { color: var(--unc-text); }
+.unc .unc-models td.m-untested, .unc .unc-models td.m-power, .unc .unc-models td.m-none { color: var(--unc-muted); }
+
+/* A card that folds away: the heading is the summary, the arrow turns when it is open. */
+.unc-fold > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.unc-fold > summary::-webkit-details-marker { display: none; }
+.unc-fold > summary h2 { margin: 0; }
+
+.unc-fold > summary::after {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid var(--unc-muted);
+    border-bottom: 2px solid var(--unc-muted);
+    transform: rotate(45deg);
+    transition: transform .15s;
+}
+
+.unc-fold[open] > summary::after { transform: rotate(-135deg); }
+.unc-fold[open] > summary { margin-bottom: 8px; }
+
+.unc table.unc-table.unc-models tr.series th {
+    padding: 8px 12px;
+    border-left: 3px solid var(--unc-accent);
+    border-bottom: 0;
+    background: var(--unc-card-2) !important;
+    color: var(--unc-text);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-align: left;
+    text-transform: none;
+}
+
+.unc-models tr.series:not(:first-child) th { box-shadow: 0 -14px 0 0 var(--unc-card); }
+.unc-models tr.series + tr td { border-top: 0; }
