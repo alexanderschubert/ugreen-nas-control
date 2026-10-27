@@ -71,7 +71,7 @@
         { label: 'speed.1', breath: [2000, 1500], blink: [700, 700] },
         { label: 'speed.2', breath: [1200, 900], blink: [450, 450] },
         { label: 'speed.3', breath: [700, 500], blink: [250, 250] },
-        { label: 'speed.4', breath: [400, 300], blink: [120, 120] }
+        { label: 'speed.4', breath: [400, 300], blink: [167, 167] }   // 3 Hz at most (WCAG 2.3.1)
     ];
 
     const EFFECTS = [
@@ -126,9 +126,6 @@
     // Rainbow/temperature run as a process on a set of LEDs (status.fx, status.fx_leds).
     const fxLeds = () => (state.status.fx_leds || '').split(',').filter(Boolean);
     const fxOn = led => Boolean(state.status.fx) && fxLeds().includes(led);
-
-    // ms per rainbow step (10°) for the speed levels, as in ugreen-led-i2c.
-    const RAINBOW_STEP_MS = [600, 400, 250, 150, 80];
 
     // In status mode the daemon drives disk and network LEDs; only colour and brightness stay manual.
     // The network LED can be left manual (netdev_status).
@@ -332,6 +329,7 @@
 
         try {
             const data = await api({ action: 'all' });
+            window.UNCLedFx.stamp(data.leds);
 
             // A write ran while this read was in flight; its own refresh follows.
             if (state.busy || seq !== state.writeSeq) return;
@@ -342,7 +340,12 @@
                 leds[name] = {
                     color: rgbToHex(led.color),
                     brightness: Number(led.brightness) || 0,
-                    effect: led.effect || 'none'
+                    effect: led.effect || 'none',
+                    on_ms: Number(led.on_ms) || 0,
+                    off_ms: Number(led.off_ms) || 0,
+                    sent_ms: led.sent_ms,
+                    now_ms: led.now_ms,
+                    rx: led.rx
                 };
             }
 
@@ -398,24 +401,24 @@
         renderFxSettings();
     }
 
+    // The drawing is the shared renderer's (js/ledfx.js), fed with the state the page already polls.
     function paintLed(element, led) {
         const s = state.leds[led];
 
         if (!s) return;
 
-        const on = s.brightness > 0;
-        const effect = on ? s.effect : 'none';
-        const speed = SPEEDS[state.speed][effect === 'blink' ? 'blink' : 'breath'];
+        const { r, g, b } = hexToRgb(s.color);
 
-        element.classList.toggle('off', !on);
-        element.classList.toggle('fx-breath', effect === 'breath');
-        element.classList.toggle('fx-blink', effect === 'blink');
-        element.classList.toggle('fx-rainbow', on && fxOn(led) && state.status.fx === 'rainbow');
-        element.classList.toggle('reverse', Boolean(state.status.fx_reverse));
-        element.style.setProperty('--rainbow', `${RAINBOW_STEP_MS[state.status.fx_speed ?? 2] * 36}ms`);
-        element.style.setProperty('--c', s.color);
-        element.style.setProperty('--level', (s.brightness / 255).toFixed(2));
-        element.style.setProperty('--speed', `${speed[0] + speed[1]}ms`);
+        window.UNCLedFx.paint(element, {
+            color: `${r} ${g} ${b}`,
+            brightness: s.brightness,
+            effect: s.effect,
+            on_ms: s.on_ms,
+            off_ms: s.off_ms,
+            sent_ms: s.sent_ms,
+            now_ms: s.now_ms,
+            rx: s.rx
+        }, led, state.status);
         element.title = `${ledLabel(led)}: ${s.color.toUpperCase()}, ${Math.round(s.brightness / 2.55)} %`;
     }
 
@@ -1103,7 +1106,10 @@
     // Show a change in the preview right away; the next refresh confirms it.
     function preview(leds, change) {
         for (const led of leds) {
-            if (state.leds[led]) Object.assign(state.leds[led], change);
+            if (!state.leds[led]) continue;
+            Object.assign(state.leds[led], change);
+            // A new effect starts now: the old command's phase no longer applies.
+            if ('effect' in change) Object.assign(state.leds[led], { sent_ms: undefined, now_ms: undefined, rx: undefined });
         }
 
         qa('.ulc-led[data-led]').forEach(element => paintLed(element, element.dataset.led));
@@ -1180,9 +1186,11 @@
             return applySoftwareEffect(leds, effect, name);
         }
 
+        const [on, off] = SPEEDS[state.speed][effect] || [0, 0];
+
         preview(leds, effect === 'off'
             ? { brightness: 0 }
-            : { effect: effect === 'static' ? 'none' : effect });
+            : { effect: effect === 'static' ? 'none' : effect, on_ms: on, off_ms: off });
 
         return run(() => setEffect(leds, effect), t('effect.applied', { name }));
     }
@@ -1212,7 +1220,7 @@
 
         await run(async () => {
             await write(leds, 'blink', { on: 150, off: 150 });
-            preview(leds, { effect: 'blink' });
+            preview(leds, { effect: 'blink', on_ms: 150, off_ms: 150 });
             await sleep(3000);
 
             // Put every LED back to the effect it had before.

@@ -380,6 +380,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 </div>
 
 <script src="<?autov('/plugins/ugreen-nas-control/js/i18n.js')?>"></script>
+<script src="<?autov('/plugins/ugreen-nas-control/js/ledfx.js')?>"></script>
 <script src="<?autov('/plugins/ugreen-nas-control/js/app.js')?>"></script>
 <?php if ($unc_led_on): ?>
 <script src="<?autov('/plugins/ugreen-nas-control/led/js/i18n.js')?>"></script>

@@ -43,4 +43,5 @@ window.UGREEN_NAS_LANG = <?= json_encode($unc_lang) ?>;
 window.UGREEN_NAS_THEME = <?= json_encode($unc_theme) ?>;
 </script>
 <script src="<?autov('/plugins/ugreen-nas-control/js/i18n.js')?>"></script>
+<script src="<?autov('/plugins/ugreen-nas-control/js/ledfx.js')?>"></script>
 <script src="<?autov('/plugins/ugreen-nas-control/js/dash.js')?>"></script>

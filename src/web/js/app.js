@@ -1447,7 +1447,7 @@
         state.ledAt = Date.now();
 
         try {
-            const [all, status] = await Promise.all([ledGet('all'), ledGet('status')]);
+            const [all, status] = await Promise.all([ledGet('all').then(data => ({ ...data, leds: window.UNCLedFx.stamp(data.leds) })), ledGet('status')]);
             state.leds = all.leds || {};
             state.ledMode = { mode: status.mode, fx: status.fx };
             state.ledBays = Number(status.bays) || 0;
@@ -1464,33 +1464,18 @@
         if (!state.ledSchedule) state.ledSchedule = await ledGet('schedule').catch(() => null);
     }
 
-    // "255 140 0" + brightness 0-255 -> a colour and a glow; off or dark gives neither.
-    function ledLook(led) {
-        const [r, g, b] = String(led?.color || '0 0 0').trim().split(/\s+/).map(Number);
-        const level = Math.max(0, Math.min(1, (Number(led?.brightness) || 0) / 255));
-
-        if (!led || level === 0 || [r, g, b].some(Number.isNaN)) return { on: false };
-        // Keep very low levels visible, else a dimmed LED looks like a dead one.
-        const a = (0.3 + 0.7 * level).toFixed(2);
-
-        return { on: true, color: `rgba(${r}, ${g}, ${b}, ${a})`, glow: `0 0 ${Math.round(4 + 8 * level)}px rgba(${r}, ${g}, ${b}, ${(0.7 * level).toFixed(2)})` };
-    }
-
-    function paintLed(element, led) {
-        if (!element) return;
-
-        const look = ledLook(led);
-        element.style.background = look.on ? look.color : '#2c3138';
-        element.style.boxShadow = look.on ? look.glow : 'none';
+    // Drawing (colour, brightness mapping, blink/breathe/rainbow animation) is the shared renderer's, js/ledfx.js.
+    function paintLed(element, led, name) {
+        window.UNCLedFx.paint(element, led, name, state.ledStatus);
     }
 
     function applyLeds(container) {
         if (!container || !state.leds) return;
 
-        container.querySelectorAll('.unc-nbay').forEach((bay, i) => paintLed(bay.querySelector('.bar'), state.leds[`disk${i + 1}`]));
-        paintLed(container.querySelector('.unc-pled.power'), state.leds.power);
-        paintLed(container.querySelector('.unc-pled.lan'), state.leds.netdev);
-        container.querySelectorAll('.unc-led .unc-pled[data-led]').forEach(el => paintLed(el, state.leds[el.dataset.led]));
+        container.querySelectorAll('.unc-nbay').forEach((bay, i) => paintLed(bay.querySelector('.bar'), state.leds[`disk${i + 1}`], `disk${i + 1}`));
+        paintLed(container.querySelector('.unc-pled.power'), state.leds.power, 'power');
+        paintLed(container.querySelector('.unc-pled.lan'), state.leds.netdev, 'netdev');
+        container.querySelectorAll('.unc-led .unc-pled[data-led]').forEach(el => paintLed(el, state.leds[el.dataset.led], el.dataset.led));
     }
 
     function ledModeText() {
@@ -1511,10 +1496,7 @@
             .filter(name => name.startsWith('disk'))
             .sort((a, b) => Number(a.slice(4)) - Number(b.slice(4)))
             .slice(0, state.ledBays || (state.hw?.bays || []).length || 6)
-            .map(name => {
-                const look = ledLook(state.leds[name]);
-                return `<i style="background:${look.on ? look.color : '#2c3138'};box-shadow:${look.on ? look.glow : 'none'}"></i>`;
-            })
+            .map(name => `<i data-led="${name}"></i>`)
             .join('');
         const brightness = Math.round((Number(state.leds.power?.brightness) || 0) / 2.55);
         const sched = state.ledSchedule?.enabled ? t('led.night', { start: state.ledSchedule.start, end: state.ledSchedule.end }) : '';
@@ -1524,6 +1506,7 @@
             <div class="unc-ccrow"><span class="unc-muted">${escapeHtml(t('led.brightness'))}</span><b>${brightness} %</b></div>
             ${sched ? `<div class="unc-ccrow"><span class="unc-muted">${escapeHtml(sched)}</span></div>` : ''}
             <div class="unc-ledrow">${dots}</div>`;
+        q('#unc-cc-led').querySelectorAll('.unc-ledrow i[data-led]').forEach(el => paintLed(el, state.leds[el.dataset.led], el.dataset.led));
     }
 
     async function loadHardware() {

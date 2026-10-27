@@ -22,6 +22,8 @@ FX_PIDFILE="${UGREEN_FX_PIDFILE:-/var/run/ugreen-nas-control.led-fx.pid}"
 FX_LOG="${UGREEN_FX_LOG:-/var/run/ugreen-nas-control.led-fx.log}"
 IDENTIFY_PREFIX="${UGREEN_IDENTIFY_PREFIX:-/var/run/ugreen-nas-control.led.identify-}"
 ALERT_STATE="${UGREEN_ALERT_STATE:-/var/run/ugreen-nas-control.led.alert}"
+# tmpfs: when each LED last got a blink/breath command ("epoch_ms on off"), for the web preview's phase.
+PHASE_PREFIX="${UGREEN_PHASE_PREFIX:-/var/run/ugreen-nas-control.led.phase-}"
 SHUTDOWN_MARK="${UGREEN_SHUTDOWN_MARK:-/var/run/ugreen-nas-control.led.shutdown}"
 BUS_CACHE="${UGREEN_BUS_CACHE:-/var/run/ugreen-nas-control.led.bus}"
 DYNAMIX_CFG="${UGREEN_DYNAMIX_CFG:-/boot/config/plugins/dynamix/dynamix.cfg}"
@@ -143,7 +145,15 @@ is_byte() {
 }
 
 tool() {
-    "$LED_TOOL" "$@"
+    "$LED_TOOL" "$@" || return $?
+
+    # Slow blink/breath commands only (they change rarely; the 0.2 s activity blink is not worth a file):
+    # note the time so the browser can start its animation in step. No fork: bash builtins only.
+    if [ "$1" = set ] && [ "$3" = blink -o "$3" = breath ] && [ $(( ${4:-0} + ${5:-0} )) -ge 500 ]; then
+        local us="${EPOCHREALTIME/./}"
+        printf '%s %s %s\n' "${us%???}" "$4" "$5" > "${PHASE_PREFIX}$2" 2>/dev/null
+    fi
+    return 0
 }
 
 # DXP4800 GT: the controller sits on an AMD DesignWare I2C controller (ACPI AMDI0010)
@@ -218,8 +228,16 @@ status_json() {
     printf '  "color": "%s",\n' "$color"
     printf '  "effect": "%s",\n' "$effect"
     printf '  "on_ms": "%s",\n' "$7"
-    printf '  "off_ms": "%s"\n' "$8"
-    printf '}\n'
+    printf '  "off_ms": "%s"' "$8"
+
+    # Phase: ms epoch of the last blink/breath command with these timings and now, same clock.
+    local sent stamp_on stamp_off
+    if [ "$mode" = blink -o "$mode" = breath ] && read -r sent stamp_on stamp_off < "${PHASE_PREFIX}$name" 2>/dev/null \
+        && [ "$stamp_on" = "$7" ] && [ "$stamp_off" = "$8" ]; then
+        local us="${EPOCHREALTIME/./}"
+        printf ',\n  "sent_ms": %s,\n  "now_ms": %s' "$sent" "${us%???}"
+    fi
+    printf '\n}\n'
 }
 
 get_status() {

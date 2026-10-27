@@ -212,7 +212,7 @@
 
         try {
             const [all, status] = await Promise.all(['all', 'status'].map(action =>
-                fetch(`${api}?action=${action}`, { credentials: 'same-origin' }).then(r => r.json())));
+                fetch(`${api}?action=${action}`, { credentials: 'same-origin' }).then(r => r.json()).then(data => action === 'all' ? { ...data, leds: window.UNCLedFx.stamp(data.leds) } : data)));
             return all.ok === false || !all.leds ? null : { leds: all.leds, status };
         } catch (error) {
             return null;
@@ -227,12 +227,7 @@
         const count = Number(led.status?.bays) || (hw?.bays || []).length || 6;
         const bars = [];
         for (let i = 1; i <= count; i++) {
-            const one = led.leds[`disk${i}`] || {};
-            const [r, g, b] = String(one.color || '0 0 0').trim().split(/\s+/).map(Number);
-            const level = Math.max(0, Math.min(1, (Number(one.brightness) || 0) / 255));
-            const on = level > 0 && ![r, g, b].some(Number.isNaN);
-            const colour = on ? `rgba(${r}, ${g}, ${b}, ${(0.3 + 0.7 * level).toFixed(2)})` : '#2c3138';
-            bars.push(`<i style="background:${colour};box-shadow:${on ? `0 0 ${Math.round(4 + 8 * level)}px rgba(${r}, ${g}, ${b}, ${(0.7 * level).toFixed(2)})` : 'none'}"></i>`);
+            bars.push(`<i data-led="disk${i}"></i>`);
         }
 
         const mode = led.status?.fx ? led.status.fx : t(led.status?.mode === 'status' ? 'led.mode_status' : 'led.mode_manual');
@@ -251,6 +246,8 @@
         }
 
         box.querySelector('[data-detail]')?.insertAdjacentHTML('beforebegin', html);
+        // Colour, brightness and animation come from the shared renderer (ledfx.js), from the state just read.
+        box.querySelectorAll('.unc-ledrow i[data-led]').forEach(el => window.UNCLedFx.paint(el, led.leds[el.dataset.led], el.dataset.led, led.status));
     }
 
     function paintHeader(data) {
@@ -293,7 +290,8 @@
             const hw = raw && raw.ok !== false ? raw : null;
 
             // Nothing changed: leave the rows alone (a hovered bay keeps its details).
-            const key = JSON.stringify([hw, led]);
+            // now_ms and rx move on every read; they are not a change.
+            const key = JSON.stringify([hw, led], (k, v) => k === 'now_ms' || k === 'rx' ? undefined : v);
             if (key === root.dataset.key) return;
             root.dataset.key = key;
 

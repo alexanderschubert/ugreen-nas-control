@@ -266,6 +266,11 @@
 <MD5>083d86dbaf352b98b06dfb02c4f362bd</MD5>
 </FILE>
 
+<FILE Name="&srcDIR;/js/ledfx.js">
+<URL>&gitURL;/src/web/js/ledfx.js</URL>
+<MD5>5ab505304e3a2d43a6263bf2ad1e9daa</MD5>
+</FILE>
+
 <FILE Name="&srcDIR;/js/dash.js">
 <URL>&gitURL;/src/web/js/dash.js</URL>
 <MD5>f5777e37bd85816ee3e61d52abfa8632</MD5>

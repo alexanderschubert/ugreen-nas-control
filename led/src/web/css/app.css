@@ -857,67 +857,45 @@
     letter-spacing: .12em;
 }
 
-/* A single LED: colour, brightness and the hardware effect */
+/*
+ * A single LED. Colour, glow and animation (blink, breathe, rainbow) are set by js/ledfx.js
+ * through the Web Animations API, the same renderer as on the NAS Overview and the Dashboard.
+ */
+
+.ulc {
+    --led-off: #2b3036;
+}
+
+.ulc[data-theme="light"] {
+    --led-off: #aeb6bf;
+}
 
 .ulc-led {
     --c: #fff;
-    --level: 1;
-    --speed: 1.5s;
+    position: relative;
     width: 62%;
     height: 4px;
     border-radius: 99px;
-    background: var(--c);
-    opacity: calc(.12 + .88 * var(--level));
-    box-shadow: 0 0 calc(10px * var(--level)) var(--c), 0 0 calc(3px * var(--level)) var(--c);
+    background: var(--led-off);
 }
 
-.ulc-led.off {
-    background: #2b3036;
-    box-shadow: none;
-    opacity: 1;
-}
-
-.ulc-led.fx-breath {
-    animation: ulc-breath var(--speed) ease-in-out infinite;
-}
-
-/* Rainbow is painted by software; the preview turns a red LED round the colour wheel. */
-
-.ulc-led.fx-rainbow {
-    --c: #ff2a2a;
-    background: #ff2a2a;
-    animation: ulc-rainbow var(--rainbow) linear infinite;
-}
-
-@keyframes ulc-rainbow {
-    from { filter: hue-rotate(0deg); }
-    to { filter: hue-rotate(360deg); }
-}
-
-.ulc-led.fx-rainbow.reverse {
-    animation-direction: reverse;
-}
-
-.ulc-led.fx-blink {
-    animation: ulc-blink var(--speed) steps(1, end) infinite;
-}
-
-@keyframes ulc-breath {
-    0%, 100% { opacity: .12; }
-    50% { opacity: calc(.12 + .88 * var(--level)); }
-}
-
-@keyframes ulc-blink {
-    0% { opacity: calc(.12 + .88 * var(--level)); }
-    50% { opacity: .1; }
-}
-
+/* Reduced motion: no animation, the effect is named next to the LED instead. */
 @media (prefers-reduced-motion: reduce) {
-    .ulc-led.fx-breath,
-    .ulc-led.fx-blink,
-    .ulc-led.fx-rainbow {
-        animation: none;
+    .ulc-led[data-fx]::after {
+        content: "";
+        position: absolute;
+        left: calc(100% + 5px);
+        top: 50%;
+        translate: 0 -50%;
+        color: var(--ulc-muted);
+        font: 700 9px/1 sans-serif;
+        letter-spacing: .04em;
+        white-space: nowrap;
     }
+
+    .ulc-led[data-fx="breath"]::after { content: "\223F"; }
+    .ulc-led[data-fx="blink"]::after { content: "\25AE\25AF"; }
+    .ulc-led[data-fx="rainbow"]::after { content: "\25D0"; }
 }
 
 /* ---------- Per-LED table ---------- */
@@ -1290,13 +1268,9 @@
     stroke: #8f99a4;
 }
 
-.ulc[data-theme="light"] .ulc-led.off {
-    background: #aeb6bf;
-}
-
 /* A white LED would vanish on silver. */
 
-.ulc[data-theme="light"] .ulc-led[style*="--c: #fff" i]:not(.off) {
+.ulc[data-theme="light"] .ulc-led[style*="--c: rgb(255,255,255)" i]:not(.off) {
     outline: 1px solid #5b6672;
 }
 
