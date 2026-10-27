@@ -36,13 +36,24 @@ type Disk struct {
 	HDD     bool   `json:"hdd"`
 }
 
-// Sensors is everything the fan curves look at.
+// NICTemp is one temperature of a network chip (a NIC with a hwmon, e.g. atlantic: PHY and MAC per port).
+type NICTemp struct {
+	Iface string `json:"iface"`
+	Label string `json:"label,omitempty"` // PHY, MAC
+	Temp  *int   `json:"temp"`
+}
+
+// Sensors is everything the fan curves look at, plus temperatures that are only shown (GPU, NIC, NVMe
+// sensors beyond the composite one); the curves never read those.
 type Sensors struct {
-	CPU      *int   `json:"cpu"`
-	CPUCores []Temp `json:"cpu_cores"`
-	NVMe     []Temp `json:"nvme"`
-	Disks    []Disk `json:"disks"`
-	Board    *int   `json:"board"`
+	CPU       *int      `json:"cpu"`
+	CPUCores  []Temp    `json:"cpu_cores"`
+	NVMe      []Temp    `json:"nvme"`
+	NVMeExtra []Temp    `json:"nvme_extra"` // Sensor 1, Sensor 2 ... of each drive (name = nvme0, ...)
+	NIC       []NICTemp `json:"nic"`
+	GPU       *int      `json:"gpu"`
+	Disks     []Disk    `json:"disks"`
+	Board     *int      `json:"board"`
 }
 
 func readInt(path string) (int, bool) {
@@ -71,7 +82,7 @@ func milli(path string) *int {
 // ReadSensors collects CPU (coretemp, or k10temp on AMD), NVMe (hwmon) and Unraid's disk temperatures.
 // Disks are only read from disks.ini, so a spun-down disk is never woken up.
 func ReadSensors() Sensors {
-	var s Sensors
+	s := Sensors{NVMeExtra: []Temp{}, NIC: []NICTemp{}}
 
 	dirs, _ := filepath.Glob(filepath.Join(hwmonDir, "hwmon*"))
 	sort.Slice(dirs, func(i, j int) bool { return hwmonNumber(dirs[i]) < hwmonNumber(dirs[j]) })
@@ -115,15 +126,38 @@ func ReadSensors() Sensors {
 		case "nvme":
 			name := filepath.Base(readLink(filepath.Join(dir, "device")))
 			s.NVMe = append(s.NVMe, Temp{Name: name, Label: readString(filepath.Join(dir, "temp1_label")), Temp: milli(filepath.Join(dir, "temp1_input"))})
+			// temp2 and up (Sensor 1, ...): shown only; their max/crit are not trustworthy.
+			extra, _ := filepath.Glob(filepath.Join(dir, "temp*_input"))
+			sort.Slice(extra, func(i, j int) bool { return tempNumber(extra[i]) < tempNumber(extra[j]) })
+			for _, in := range extra {
+				if tempNumber(in) > 1 {
+					s.NVMeExtra = append(s.NVMeExtra, Temp{Name: name, Label: readString(strings.TrimSuffix(in, "_input") + "_label"), Temp: milli(in)})
+				}
+			}
 		case "acpitz":
 			if s.Board == nil {
 				s.Board = milli(filepath.Join(dir, "temp1_input"))
+			}
+		case "amdgpu", "i915", "xe":
+			if s.GPU == nil {
+				s.GPU = milli(filepath.Join(dir, "temp1_input"))
+			}
+		default:
+			if iface := nicOf(dir); iface != "" {
+				inputs, _ := filepath.Glob(filepath.Join(dir, "temp*_input"))
+				sort.Slice(inputs, func(i, j int) bool { return tempNumber(inputs[i]) < tempNumber(inputs[j]) })
+				for _, in := range inputs {
+					label := strings.TrimSuffix(readString(strings.TrimSuffix(in, "_input")+"_label"), " Temperature")
+					s.NIC = append(s.NIC, NICTemp{Iface: iface, Label: label, Temp: milli(in)})
+				}
 			}
 		}
 	}
 
 	// hwmon numbers follow probe order; nvme0, nvme1, ... read better.
 	sort.SliceStable(s.NVMe, func(i, j int) bool { return s.NVMe[i].Name < s.NVMe[j].Name })
+	sort.SliceStable(s.NVMeExtra, func(i, j int) bool { return s.NVMeExtra[i].Name < s.NVMeExtra[j].Name })
+	sort.SliceStable(s.NIC, func(i, j int) bool { return s.NIC[i].Iface < s.NIC[j].Iface })
 
 	// Without a package sensor the hottest core counts.
 	if s.CPU == nil {
@@ -137,6 +171,22 @@ func ReadSensors() Sensors {
 
 	s.Disks = readDisks(disksINI)
 	return s
+}
+
+// nicOf is the network interface a hwmon belongs to, "" when it isn't a NIC's: the hwmon's device has a
+// net/<iface> child, or the chip is named after an interface in /sys/class/net (atlantic: eth0).
+func nicOf(dir string) string {
+	if nets, _ := filepath.Glob(filepath.Join(dir, "device", "net", "*")); len(nets) > 0 {
+		return filepath.Base(nets[0])
+	}
+	name := readString(filepath.Join(dir, "name"))
+	if name == "" || strings.ContainsAny(name, "/") {
+		return ""
+	}
+	if _, err := os.Stat(filepath.Join(sysDir, "class", "net", name)); err == nil {
+		return name
+	}
+	return ""
 }
 
 func readLink(path string) string {

@@ -366,8 +366,11 @@
         const system = [];
         const ssds = [];
         const drives = [];
+        const extras = s.nvme_extra || [];
+        const nics = [];
 
         if (s.cpu != null) system.push(tempRow(t('temps.cpu'), s.cpu, 'cpu', '', 'chip'));
+        if (s.gpu != null) system.push(tempRow(t('temps.gpu'), s.gpu, 'cpu', '', 'pcie'));
 
         const cores = (s.cpu_cores || []).map(c => c.temp).filter(v => v != null);
         if (cores.length) system.push(tempRow(t('temps.cores'), Math.max(...cores), 'cpu', '', 'gauge'));
@@ -380,10 +383,24 @@
 
         // The SSDs by their place in the case (with the mark of the one Unraid runs from); the sensors' own names when the hardware isn't known.
         if (state.hw?.nvme?.length) {
-            state.hw.nvme.forEach(n => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${n.model || n.id}`, n.temp, 'nvme', '', n.boot ? UNRAID_MARK : 'm2')));
+            state.hw.nvme.forEach(n => {
+                ssds.push(tempRow(`${ssdSlotLabel(n)} · ${n.model || n.id}`, n.temp, 'nvme', '', n.boot ? UNRAID_MARK : 'm2'));
+                extras.filter(e => e.name === n.id).forEach(e => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', '', 'm2')));
+            });
         } else {
-            (s.nvme || []).forEach(n => ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2')));
+            (s.nvme || []).forEach(n => {
+                ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2'));
+                extras.filter(e => e.name === n.name).forEach(e => ssds.push(tempRow(n.name, e.temp, 'nvme', e.label || t('temps.sensor'), 'm2')));
+            });
         }
+
+        // The LAN ports' chips, named like the rear view: the port that supports more speed is LAN 1.
+        const ports = (state.hw?.net || []).slice().sort((a, b) => (b.max_mbit || 0) - (a.max_mbit || 0));
+        (s.nic || []).forEach(n => {
+            const i = ports.findIndex(p => p.name === n.iface);
+            const port = i < 0 ? n.iface : ports.length > 1 ? `LAN ${i + 1}` : 'LAN';
+            nics.push(tempRow(n.label ? `${port} · ${n.label}` : port, n.temp, 'other', i < 0 ? '' : n.iface, 'net'));
+        });
 
         (s.disks || []).forEach(d => {
             if (d.standby) {
@@ -407,6 +424,7 @@
         q('#unc-temps').innerHTML = [
             section('temps.group_system', 'chip', system),
             section('temps.group_ssd', 'm2', ssds),
+            section('temps.group_net', 'net', nics),
             section('temps.group_drives', 'drives', drives)
         ].join('') || `<p class="unc-muted">${escapeHtml(t('temps.none'))}</p>`;
     }
