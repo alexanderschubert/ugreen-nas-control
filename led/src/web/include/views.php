@@ -1,17 +1,3 @@
-<header class="ulc-head">
-    <div>
-        <h1>UGREEN LED Control <span class="ulc-badge" id="ulc-online" data-i18n="head.connecting">Verbinde…</span> <span class="ulc-badge night" id="ulc-night-badge" data-i18n="head.night" hidden>Nachtmodus</span> <span class="ulc-badge alert" id="ulc-alert-badge" data-i18n="head.alert" hidden>Warnung</span></h1>
-        <p data-i18n-html="head.subtitle">Steuerung der LED-Beleuchtung deines <span data-model>UGREEN NAS</span> direkt in Unraid.</p>
-    </div>
-    <div class="ulc-banner" id="ulc-banner" hidden>
-        <span class="ulc-banner-icon"><span class="ulc-ico" data-ulc-icon="check"></span></span>
-        <div>
-            <strong data-i18n="banner.connected">NAS verbunden</strong>
-            <small data-i18n-html="banner.detected"><span data-model>UGREEN NAS</span> erkannt</small>
-        </div>
-    </div>
-</header>
-
 <div class="ulc-warning" id="ulc-foreign" hidden>
     <span class="ulc-ico" data-ulc-icon="alert"></span>
     <div>
@@ -329,10 +315,6 @@
 <!-- ================= System ================= -->
 
 <section class="ulc-view" data-view="system">
-    <article class="ulc-card">
-        <h2 data-i18n="system.title">System</h2>
-        <dl class="ulc-facts" id="ulc-facts"></dl>
-    </article>
     <article class="ulc-card" id="ulc-alert-card">
         <h2 data-i18n="alerts.title">Unraid-Warnungen</h2>
         <p class="ulc-muted" data-i18n="alerts.intro">Bei ungelesenen Unraid-Meldungen blinkt die Power-LED. Liest oder archivierst du sie in Unraid, kehrt sie in ihren normalen Zustand zurück. Geprüft wird jede Minute.</p>
@@ -389,72 +371,5 @@
             <button type="button" class="ulc-btn" id="ulc-shutdown-test"><span class="ulc-ico" data-ulc-icon="play"></span><span data-i18n="shutdown.test">Testen (6 Sekunden)</span></button>
         </div>
     </article>
-    <article class="ulc-card">
-        <h2 data-i18n="language.title">Sprache</h2>
-        <div class="ulc-field-row">
-            <label for="ulc-language" data-i18n="language.label">Sprache der Oberfläche</label>
-            <select id="ulc-language">
-                <option value="auto" data-i18n="language.auto">Automatisch (wie Unraid)</option>
-                <option value="de">Deutsch</option>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-            </select>
-        </div>
-    </article>
-    <article class="ulc-card">
-        <h2 data-i18n="theme.title">Darstellung</h2>
-        <div class="ulc-form">
-            <label for="ulc-theme" data-i18n="theme.label">Farbschema</label>
-            <select id="ulc-theme">
-                <option value="dark" data-i18n="theme.dark">Dunkel</option>
-                <option value="light" data-i18n="theme.light">Hell</option>
-                <option value="auto" data-i18n="theme.auto">Wie Unraid</option>
-            </select>
-
-            <label for="ulc-dash-size" data-i18n="theme.dash">Dashboard-Kachel</label>
-            <select id="ulc-dash-size">
-                <option value="compact" data-i18n="theme.dash_compact">Kompakt</option>
-                <option value="full" data-i18n="theme.dash_full">Mit Temperaturen</option>
-            </select>
-        </div>
-        <p class="ulc-hint" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel). Die kompakte Kachel zeigt nur die LEDs; ein Schacht nennt seinen Zustand nur bei Fehler oder SMART-Warnung.</p>
-    </article>
 </section>
 
-<!-- ================= Über ================= -->
-
-<section class="ulc-view" data-view="about">
-    <article class="ulc-card ulc-about">
-        <div class="ulc-about-head">
-            <img class="ulc-about-icon" src="/plugins/ugreen-nas-control/led/images/ugreen-led-control.png" alt="">
-            <div>
-                <h2>UGREEN LED Control</h2>
-                <p class="ulc-muted" data-i18n="about.tagline">LED-Steuerung für UGREEN DX/DXP NAS unter Unraid</p>
-                <div class="ulc-about-badges">
-                    <span class="ulc-badge online">v<span id="ulc-version"></span></span>
-                    <span class="ulc-badge" data-i18n="about.license_badge">MIT-Lizenz</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="ulc-about-links">
-            <a class="ulc-link-tile" href="https://github.com/alexanderschubert/ugreen-led-control" target="_blank" rel="noopener">
-                <svg class="ulc-ico-fill" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-                <span><strong>GitHub</strong><small data-i18n="about.github_hint">Quellcode, Releases und Änderungen</small></span>
-            </a>
-            <a class="ulc-link-tile" href="https://forums.unraid.net/topic/200791-plugin-ugreen-led-control-led-control-for-ugreen-dxdxp-nas/" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.5-5.4A8.5 8.5 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4.5"/></svg>
-                <span><strong data-i18n="about.forum">Unraid-Forum</strong><small data-i18n="about.forum_hint">Support, Fragen und Austausch</small></span>
-            </a>
-            <a class="ulc-link-tile" href="https://github.com/alexanderschubert/ugreen-led-control/issues" target="_blank" rel="noopener">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9a4 4 0 0 1 8 0v6a4 4 0 0 1-8 0z"/><path d="M12 5V3M9 3l1.5 2M15 3l-1.5 2M4 12h4M16 12h4M5 7l3 2M19 7l-3 2M5 19l3-2M19 19l-3-2M8 12h8"/></svg>
-                <span><strong data-i18n="about.issues">Fehler melden</strong><small data-i18n="about.issues_hint">Probleme und Wünsche als Issue</small></span>
-            </a>
-        </div>
-
-        <dl class="ulc-facts">
-            <dt data-i18n="about.protocol">Protokoll</dt><dd data-i18n-html="about.protocol_text">nach <a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo/ugreen_leds_controller</a>, ohne Kernel-Modul</dd>
-            <dt data-i18n="about.thanks">Dank an</dt><dd data-i18n-html="about.thanks_text">miskcoo (Protokoll und Schacht-Zuordnung), ich777 (ugreenleds-driver) und alle, die auf ihrem Modell getestet haben</dd>
-        </dl>
-    </article>
-</section>

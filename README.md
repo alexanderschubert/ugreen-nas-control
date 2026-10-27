@@ -32,7 +32,7 @@ UGREEN LED Control.
 - Dashboard tile, English, German and Spanish interface
 
 - **LEDs (optional)**: colour, effects, a status mode for disk activity and SMART warnings, night mode and a
-  dashboard tile – a copy of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control),
+  dashboard tile, built in (it grew out of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control)),
   **off until you switch it on** under *UGREEN NAS Control → LEDs*
 
 ## Supported models
@@ -104,7 +104,7 @@ No kernel module, so Unraid updates don't break it.
 | `fan/` | Go tool: chip access, curves, sensors, daemon |
 | `src/backend/ugreen-nas-ctl` | starts and stops the daemon |
 | `src/web/` | settings page, dashboard tile, API |
-| `led/` | copy of UGREEN LED Control: Go tool `i2c/`, backend and web under `src/` |
+| `led/` | built-in LED control: Go tool `i2c/`, backend and web under `src/` |
 | `plugin/ugreen-nas-control.plg` | the Unraid plugin |
 
 Settings are saved in `/boot/config/plugins/ugreen-nas-control/fan.cfg`.
@@ -118,27 +118,19 @@ Settings are saved in `/boot/config/plugins/ugreen-nas-control/fan.cfg`.
 
 ## LEDs
 
-The LED part is a copy of UGREEN LED Control (`led/`, the version is in `led/VERSION`) and talks to the LED
+LED control is built in (`led/`: Go tool `i2c/`, backend and web under `src/`) and talks to the LED
 controller through `/dev/i2c-N` (on the DXP4800 GT through `/dev/mem`, no kernel module). It succeeds the standalone plugin
-*UGREEN LED Control* for these two models and runs on its own: it stays off until the switch under
-*UGREEN NAS Control → LEDs* is on; then the group **LEDs** of the sidebar shows General & preview, Colours, Effects,
-Drive status and Schedules, the cockpit and the dashboard tile show the colours of the LEDs live. It is only offered on
-the DXP6800 Pro and the DXP4800 GT, and not while the plugin *ugreenleds-driver* or the kernel module `led_ugreen` holds the
-controller. If the standalone plugin *UGREEN LED Control* is installed too, both still run (the runtime files have their own
-names), but they write the same LEDs and the last write wins: the page says so. Use one of them, best this one, and switch
-LED control off in the other or remove it. **Take over its settings:** if the settings of the standalone plugin are found, the LEDs page offers *Take over the settings* (colours, effects, status mode, night mode; what this part had is kept as `leds.cfg.bak`), and the first time you switch LED control on without own settings they are taken over by themselves. Afterwards uninstall UGREEN LED Control under Plugins.
+*UGREEN LED Control* for these two models. It stays off until the switch under *UGREEN NAS Control → LEDs* is on; then the
+group **LEDs** of the sidebar shows General & preview, Colours, Drive status and Schedules, and the cockpit and the dashboard
+tile show the colours of the LEDs live. General & preview has one card for the system LEDs and one for the drive LEDs, each
+with colours and an effect. LED control is only offered on the DXP6800 Pro and the DXP4800 GT, and not while the plugin
+*ugreenleds-driver* or the kernel module `led_ugreen` holds the controller. If the standalone plugin *UGREEN LED Control* is
+installed too, both still run (the runtime files have their own names, the I2C bus lock is shared), but they write the same
+LEDs and the last write wins: the page says so. Use one of them, best this one, and switch LED control off in the other or
+remove it. **Take over its settings:** if the settings of the standalone plugin are found, the LEDs page offers *Take over the settings* (colours, effects, status mode, night mode; what this part had is kept as `leds.cfg.bak`), and the first time you switch LED control on without own settings they are taken over by themselves. Afterwards uninstall UGREEN LED Control under Plugins.
 
-To take over a new version of the LED plugin:
-
-```
-LED_REPO=<url of that repository> scripts/sync-led.sh /path/to/ugreen-led-control v0.24.0
-scripts/test-led-ctl.sh
-```
-
-`led/` is only ever the output of `scripts/sync-led.sh`, never edited by hand. `led/VERSION` records
-`<describe> <commit> <repo url>` (`LED_REPO`, default `alexanderschubert/ugreen-led-control`).
-`scripts/check-led.sh` fetches that commit, syncs it into a temporary directory and fails with the diff if
-`led/` differs. CI runs it (`led-sync` job) whenever `led/`, `scripts/` or the workflow change.
+The LED code started as a copy of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control) and is
+maintained here now. `scripts/test-led-ctl.sh` checks the switch and conflict rules.
 
 ## Development
 

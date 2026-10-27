@@ -295,7 +295,7 @@
 
             if (baysChanged) buildLayout();
 
-            renderStatus(true);
+            renderStatus();
             renderMode();
             renderNight();
             renderAlerts();
@@ -304,7 +304,7 @@
             renderShutdown();
             await loadBays();
         } catch (error) {
-            renderStatus(false, error.message);
+            renderStatus();
         }
     }
 
@@ -343,7 +343,7 @@
             state.leds = leds;
             render();
         } catch (error) {
-            renderStatus(false, error.message);
+            renderStatus();
         }
     }
 
@@ -353,45 +353,9 @@
      * ---------------------------------------------------------
      */
 
-    function renderStatus(online, error) {
-        const badge = q('#ulc-online');
-
-        badge.textContent = online ? t('online') : t('offline');
-        badge.className = `ulc-badge ${online ? 'online' : 'offline'}`;
-        badge.title = error || '';
-
-        q('#ulc-banner').hidden = !online;
+    function renderStatus() {
         q('#ulc-mapping-hint').hidden = !state.status.mapping || state.status.mapping === 'tested';
         q('#ulc-foreign').hidden = !state.status.foreign_monitor;
-
-        qa('[data-model]').forEach(element => {
-            element.textContent = state.model;
-        });
-
-        q('#ulc-version').textContent = window.UGREEN_LED_VERSION || '';
-
-        const facts = [
-            [t('fact.model'), state.model],
-            [t('fact.bays'), state.bays || '—'],
-            [t('fact.mapping'), state.status.mapping ? t(`mapping.${state.status.mapping}`) : '—'],
-            [t('fact.control'), state.status.controller ? `${state.status.controller} (${t('fact.no_kernel_module')})` : '—'],
-            [t('fact.controller'), state.status.i2c_address
-                ? t('fact.controller_on', { bus: state.status.i2c_bus, address: state.status.i2c_address })
-                : t('fact.controller_off')],
-            [t('fact.leds'), state.order.length ? state.order.join(', ') : t('fact.none')],
-            [t('fact.ports'), (state.status.network_ports || []).length
-                ? state.status.network_ports.map(portTitle).join(' · ')
-                : '—'],
-            [t('fact.kernel'), state.status.kernel || '—'],
-            [t('fact.monitor'), state.status.foreign_monitor ? t('fact.monitor_on') : t('fact.monitor_off')],
-            [t('fact.saved'), state.status.settings_saved ? t('fact.saved_yes') : t('fact.saved_no')],
-            [t('fact.version'), window.UGREEN_LED_VERSION || '—'],
-            [t('fact.status'), online ? t('fact.connected') : t('fact.disconnected', { error: error || '' })]
-        ];
-
-        q('#ulc-facts').innerHTML = facts
-            .map(([key, value]) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(value)}</dd>`)
-            .join('');
     }
 
     // Parts that depend on the bay count are built once and then only updated.
@@ -731,7 +695,6 @@
         const schedule = state.schedule;
         const night = Boolean(state.status.night);
 
-        q('#ulc-night-badge').hidden = !night;
         q('#ulc-night-brightness').closest('.ulc-inline').classList.toggle('disabled', q('#ulc-night-action').value === 'off');
 
         if (!schedule) return;
@@ -1078,8 +1041,6 @@
     function renderAlerts() {
         const status = state.status;
         const card = q('#ulc-alert-card');
-
-        q('#ulc-alert-badge').hidden = !status.alert_active;
 
         q('#ulc-alert-state').textContent = !status.alert_enabled
             ? t('alerts.state_off')
@@ -1447,46 +1408,6 @@
 
             const ack = event.target.closest('[data-smart-ack]');
             if (ack) ackSmart(ack.dataset.smartAck);
-        });
-
-        const theme = q('#ulc-theme');
-        theme.value = window.UGREEN_LED_THEME || 'dark';
-
-        theme.addEventListener('change', async () => {
-            root.dataset.theme = resolveTheme(theme.value);
-            window.UGREEN_LED_THEME = theme.value;
-
-            try {
-                await api({ action: 'theme', value: theme.value }, true);
-                toast(t('theme.saved'));
-            } catch (error) {
-                toast(error.message, 'error');
-            }
-        });
-
-        const dashSize = q('#ulc-dash-size');
-        dashSize.value = window.UGREEN_LED_DASH_SIZE === 'full' ? 'full' : 'compact';
-        dashSize.addEventListener('change', () => run(
-            () => api({ action: 'dash_size', value: dashSize.value }, true),
-            t('theme.dash_saved')
-        ));
-
-        const language = q('#ulc-language');
-
-        // A language shows up once it has translations.
-        [...language.options].forEach(option => {
-            if (option.value !== 'auto' && !Object.keys(TEXTS[option.value] || {}).length) option.remove();
-        });
-        language.value = window.UGREEN_LED_LANG_SETTING || 'auto';
-
-        // The page is built in one language, so a new one needs a reload.
-        language.addEventListener('change', async () => {
-            try {
-                await api({ action: 'lang', value: language.value }, true);
-                window.location.reload();
-            } catch (error) {
-                toast(error.message, 'error');
-            }
         });
 
         /* Night mode */

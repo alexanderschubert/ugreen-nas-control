@@ -1,7 +1,7 @@
 /*
- * The LED pages (a copy of UGREEN LED Control) inside the NAS Control page: their own
- * stylesheet is loaded as it is; this one only takes away the frame the standalone page had
- * (sidebar, header, border), so the pages sit in the content area like the others.
+ * The LED pages inside the NAS Control page: their own stylesheet (led/css/app.css) is loaded
+ * first; this one takes away the frame of the standalone layout (sidebar, border), so the pages
+ * sit in the content area like the others.
  */
 
 .ulc.ulc-embedded {
@@ -18,24 +18,8 @@
     padding: 0;
 }
 
-/* The page title and the connection badges of the standalone page; NAS Control has its own. */
-.ulc-embedded .ulc-head {
-    display: none;
-}
-
 .ulc-embedded .ulc-view {
     margin: 0;
-}
-
-/* Language and colour scheme are set once, under Appearance & About (with the size of the dashboard tile); the LED pages follow them. */
-.ulc-embedded .ulc-card:has(#ulc-language),
-.ulc-embedded .ulc-card:has(#ulc-theme) {
-    display: none;
-}
-
-/* The facts about the controller are shown under Appearance & About; model, kernel and version are on the Overview. */
-.ulc-embedded .ulc-card:has(#ulc-facts) {
-    display: none;
 }
 
 /* Light mode: a darker blue and green so white button text and green values stay readable. */
