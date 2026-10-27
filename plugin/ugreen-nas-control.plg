@@ -271,7 +271,7 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>51010e73f2339dff0c4b1b0dac9e463e</MD5>
+<MD5>0e1f03201290cfbdc940c91424f5a54f</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
