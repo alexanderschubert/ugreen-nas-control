@@ -75,7 +75,6 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
         <button type="button" data-nav="system:led" data-led-off-only><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds_switch">LED-Steuerung</span></button>
         <button type="button" data-nav="led:overview" data-led-only hidden><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.led_overview">Allgemein &amp; Vorschau</span></button>
         <button type="button" data-nav="led:leds" data-led-only hidden><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.led_colors">Farben</span></button>
-        <button type="button" data-nav="led:effects" data-led-only hidden><span class="unc-ico" data-unc-icon="sparkles"></span><span data-i18n="nav.led_effects">Effekte</span></button>
         <button type="button" data-nav="led:drives" data-led-only hidden><span class="unc-ico" data-unc-icon="drives"></span><span data-i18n="nav.led_drives">Laufwerks-Status</span></button>
         <button type="button" data-nav="led:schedules" data-led-only hidden><span class="unc-ico" data-unc-icon="clock"></span><span data-i18n="nav.led_schedules">Zeitpläne</span></button>
         <button type="button" data-nav="led:system" data-led-only hidden><span class="unc-ico" data-unc-icon="bell"></span><span data-i18n="nav.led_system">Meldungen &amp; Herunterfahren</span></button>

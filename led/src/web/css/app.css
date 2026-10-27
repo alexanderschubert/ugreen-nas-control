@@ -625,30 +625,22 @@
     color: var(--ulc-muted);
 }
 
-/* ---------- Tabs & colour rows ---------- */
+/* ---------- Colour rows ---------- */
 
-.ulc-tabs {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
-    gap: 4px;
-    margin-bottom: 10px;
-    padding: 4px;
-    border: 1px solid var(--ulc-border);
-    border-radius: 10px;
-    background: var(--ulc-card-2);
+.ulc-card h3 {
+    margin: 20px 0 10px;
+    font-size: 14px;
+    font-weight: 650;
 }
 
-.ulc-tabs button {
-    padding: 8px 10px;
-    border-radius: 7px;
-    color: #c9d1da;
-    text-align: center;
+.ulc-bays-colors {
+    margin-top: 6px;
 }
 
-.ulc-tabs button.active {
-    background: var(--ulc-accent);
-    color: #fff;
+.ulc-bays-colors summary {
+    padding: 9px 0;
+    color: var(--ulc-muted);
+    cursor: pointer;
 }
 
 .ulc-color-row {
@@ -1567,14 +1559,6 @@
 .ulc[data-theme="light"] .ulc-state.empty {
     background: rgba(0, 0, 0, .05);
     color: var(--ulc-muted);
-}
-
-.ulc[data-theme="light"] .ulc-tabs button {
-    color: #3b4652;
-}
-
-.ulc[data-theme="light"] .ulc-tabs button.active {
-    color: #fff;
 }
 
 .ulc[data-theme="light"] .ulc-swatch {

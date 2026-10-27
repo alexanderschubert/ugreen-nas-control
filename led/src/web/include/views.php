@@ -75,23 +75,31 @@
             </p>
         </article>
 
-        <article class="ulc-card">
-            <h2 data-i18n="colors.title">LED Farben</h2>
+        <article class="ulc-card" id="ulc-system-card">
+            <h2 data-i18n="group.system">System LEDs</h2>
 
-            <div class="ulc-tabs" role="tablist">
-                <button type="button" class="active" data-tab="system" data-i18n="colors.tab_system">System LEDs</button>
-                <button type="button" data-tab="bays" data-i18n="colors.tab_bays">Laufwerk LEDs</button>
-            </div>
+            <div class="ulc-color-list" data-colors="system"></div>
 
-            <div class="ulc-color-list" id="ulc-colors"></div>
+            <h3 data-i18n="group.effect">Effekt</h3>
+            <div class="ulc-effects" data-effects="system"></div>
         </article>
 
-        <div data-slot="effects-home">
-            <article class="ulc-card" id="ulc-effects-card">
-                <h2 data-i18n="effects.title">LED Effekte</h2>
-                <div class="ulc-effects" id="ulc-effects"></div>
-            </article>
-        </div>
+        <article class="ulc-card" id="ulc-drives-card">
+            <h2 data-i18n="group.drives">Laufwerk LEDs</h2>
+            <p class="ulc-hint" data-status-hint data-i18n="status.hint" hidden>
+                Statusmodus aktiv: Laufwerks- und Netzwerk-LED zeigen Aktivität und Fehler. Farbe und Helligkeit stellst du hier ein, Effekte gelten nur für die Power-LED.
+            </p>
+
+            <div class="ulc-color-list" data-colors="drives"></div>
+
+            <details class="ulc-bays-colors">
+                <summary data-i18n="group.bays">Einzelne Schächte</summary>
+                <div class="ulc-color-list" data-colors="bays"></div>
+            </details>
+
+            <h3 data-i18n="group.effect">Effekt</h3>
+            <div class="ulc-effects" data-effects="drives"></div>
+        </article>
 
     </div>
 
@@ -112,49 +120,39 @@
             </div>
         </article>
 
-        <div data-slot="settings-home">
-            <article class="ulc-card" id="ulc-settings-card">
-                <h2 data-i18n="fxset.title">Effekt Einstellungen</h2>
+        <article class="ulc-card" id="ulc-settings-card">
+            <h2 data-i18n="fxset.title">Effekt Einstellungen</h2>
 
-                <div class="ulc-form">
-                    <label for="ulc-target" data-i18n="fxset.target">Anwenden auf</label>
-                    <select id="ulc-target">
-                        <option value="all" data-i18n="target.all">Alle LEDs</option>
-                        <option value="disks" data-i18n="target.disks">Alle Laufwerk-LEDs</option>
-                        <option value="power" data-i18n="target.power">Power LED</option>
-                        <option value="netdev" data-i18n="target.netdev">Netzwerk LED</option>
-                    </select>
-
-                    <label for="ulc-speed" data-i18n="fxset.speed">Geschwindigkeit</label>
-                    <div class="ulc-inline">
-                        <input type="range" id="ulc-speed" min="0" max="4" step="1" value="2">
-                        <output class="ulc-value" id="ulc-speed-value">Mittel</output>
-                    </div>
-
-                    <label for="ulc-direction" data-i18n="fxset.direction">Richtung</label>
-                    <select id="ulc-direction">
-                        <option value="forward" data-i18n="dir.forward">Vorwärts</option>
-                        <option value="backward" data-i18n="dir.backward">Rückwärts</option>
-                    </select>
-
-                    <label data-i18n="fxset.rainbow">Regenbogen</label>
-                    <div class="ulc-palette" aria-hidden="true">
-                        <span style="--c:#ff3b30"></span><span style="--c:#ff9500"></span><span style="--c:#ffd60a"></span><span style="--c:#34c759"></span><span style="--c:#32d4f5"></span><span style="--c:#0a84ff"></span><span style="--c:#bf5af2"></span>
-                    </div>
+            <div class="ulc-form">
+                <label for="ulc-speed" data-i18n="fxset.speed">Geschwindigkeit</label>
+                <div class="ulc-inline">
+                    <input type="range" id="ulc-speed" min="0" max="4" step="1" value="2">
+                    <output class="ulc-value" id="ulc-speed-value">Mittel</output>
                 </div>
 
-                <label class="ulc-switch-row">
-                    <span class="ulc-switch">
-                        <input type="checkbox" id="ulc-idle">
-                        <span></span>
-                    </span>
-                    <span>
-                        <strong data-i18n="fxset.idle">Nur im Leerlauf ausführen</strong>
-                        <small data-i18n="fxset.idle_hint">Regenbogen und Temperatur pausieren, solange eine Platte arbeitet.</small>
-                    </span>
-                </label>
-            </article>
-        </div>
+                <label for="ulc-direction" data-i18n="fxset.direction">Richtung</label>
+                <select id="ulc-direction">
+                    <option value="forward" data-i18n="dir.forward">Vorwärts</option>
+                    <option value="backward" data-i18n="dir.backward">Rückwärts</option>
+                </select>
+
+                <label data-i18n="fxset.rainbow">Regenbogen</label>
+                <div class="ulc-palette" aria-hidden="true">
+                    <span style="--c:#ff3b30"></span><span style="--c:#ff9500"></span><span style="--c:#ffd60a"></span><span style="--c:#34c759"></span><span style="--c:#32d4f5"></span><span style="--c:#0a84ff"></span><span style="--c:#bf5af2"></span>
+                </div>
+            </div>
+
+            <label class="ulc-switch-row">
+                <span class="ulc-switch">
+                    <input type="checkbox" id="ulc-idle">
+                    <span></span>
+                </span>
+                <span>
+                    <strong data-i18n="fxset.idle">Nur im Leerlauf ausführen</strong>
+                    <small data-i18n="fxset.idle_hint">Regenbogen und Temperatur pausieren, solange eine Platte arbeitet.</small>
+                </span>
+            </label>
+        </article>
 
     </div>
 
@@ -286,15 +284,6 @@
             </div>
         </div>
     </article>
-</section>
-
-<!-- ================= Effekte ================= -->
-
-<section class="ulc-view" data-view="effects">
-    <div class="ulc-grid">
-        <div class="ulc-col" data-slot="effects-view"></div>
-        <div class="ulc-col" data-slot="settings-view"></div>
-    </div>
 </section>
 
 <!-- ================= Zeitpläne ================= -->
