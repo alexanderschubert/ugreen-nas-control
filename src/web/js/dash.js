@@ -4,6 +4,7 @@
     'use strict';
 
     const API = '/plugins/ugreen-nas-control/api.php';
+    const POLL_MS = 15000;
     const LANG = ['de', 'en', 'es'].includes(window.UGREEN_NAS_LANG) ? window.UGREEN_NAS_LANG : 'de';
     const TEXTS = window.UNC_I18N || { de: {}, en: {} };
 
@@ -211,8 +212,11 @@
         if (!api) return null;
 
         try {
-            const [all, status] = await Promise.all(['all', 'status'].map(action =>
-                fetch(`${api}?action=${action}`, { credentials: 'same-origin' }).then(r => r.json()).then(data => action === 'all' ? { ...data, leds: window.UNCLedFx.stamp(data.leds) } : data)));
+            // led/status costs the NAS over a second of CPU: once a minute. led/all draws the bars.
+            const [all, status] = await Promise.all([
+                window.UNCPoll.json(`${api}?action=all`, POLL_MS * 0.8).then(data => ({ ...data, leds: window.UNCLedFx.stamp(data.leds) })),
+                window.UNCPoll.json(`${api}?action=status`, 55000)
+            ]);
             return all.ok === false || !all.leds ? null : { leds: all.leds, status };
         } catch (error) {
             return null;
@@ -284,7 +288,8 @@
             // Drives and LEDs are read together and drawn in one go: drawing the drives first and adding the
             // LED row after its own request made the row vanish for a moment on every refresh.
             const [raw, led] = await Promise.all([
-                fetch(`${API}?action=hardware`, { credentials: 'same-origin' }).then(r => r.json()).catch(() => null),
+                // Static facts (drives, memory, NICs): once a minute.
+                window.UNCPoll.json(`${API}?action=hardware`, 55000).catch(() => null),
                 fetchLeds(root)
             ]);
             const hw = raw && raw.ok !== false ? raw : null;
@@ -326,7 +331,8 @@
         if (settings) settings.title = t('dash.settings');
 
         load(root);
-        setInterval(() => { if (!document.hidden) load(root); }, 5000);
+        // Hidden tab or no input for 5 minutes: no polling at all (UNCPoll).
+        window.UNCPoll.every(() => load(root), POLL_MS);
     }
 
     if (document.readyState === 'loading') {

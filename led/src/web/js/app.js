@@ -205,8 +205,8 @@
 
     // Every write counts twice (start, end), so a read that was in flight while a
     // write ran can be told apart and dropped: its values are older than the write.
-    async function api(params, post = false) {
-        if (!post) return request(params, false);
+    async function api(params, post = false, maxAge = 0) {
+        if (!post) return request(params, false, maxAge);
 
         state.writeSeq++;
 
@@ -217,7 +217,9 @@
         }
     }
 
-    async function request(params, post) {
+    // GETs go through the shared poller (js/ledfx.js UNCPoll): maxAge > 0 reuses a read the NAS page or an earlier
+    // poll already made; writes drop all of them.
+    async function request(params, post, maxAge = 0) {
         const options = { credentials: 'same-origin' };
         let url = API;
 
@@ -232,8 +234,19 @@
             url += '?' + new URLSearchParams(params);
         }
 
-        const response = await fetch(url, options);
-        const text = await response.text();
+        let response;
+        let text;
+
+        if (post) {
+            window.UNCPoll.invalidate();
+            const raw = await fetch(url, options);
+            response = { ok: raw.ok, status: raw.status };
+            text = await raw.text();
+            window.UNCPoll.invalidate();
+        } else {
+            response = await window.UNCPoll.fetchText(url, maxAge);
+            text = response.text;
+        }
         let data;
 
         try {
@@ -272,9 +285,9 @@
             toast(error.message, 'error');
         }
 
-        // An action may have started or ended a rainbow/temperature effect.
-        await loadStatus();
-        await refresh();
+        // An action may have started or ended a rainbow/temperature effect. The cheap read (the LEDs) does
+        // not wait for the costly one (status).
+        await Promise.all([loadStatus(), refresh()]);
     }
 
     /*
@@ -283,9 +296,14 @@
      * ---------------------------------------------------------
      */
 
-    async function loadStatus() {
+    // led/status and bays are the costly reads (hundreds of processes on the NAS): once a minute, at load,
+    // on a page switch and after the user changed something (those pass maxAge 0).
+    const STATUS_POLL_MS = 60000;
+    const ALL_POLL_MS = 10000;
+
+    async function loadStatus(maxAge = 0) {
         try {
-            const data = await api({ action: 'status' });
+            const data = await api({ action: 'status' }, false, maxAge);
 
             state.status = data;
             state.model = data.model || 'UGREEN NAS';
@@ -305,15 +323,15 @@
             renderDisplay();
             renderNetwork();
             renderShutdown();
-            await loadBays();
+            await loadBays(maxAge);
         } catch (error) {
             renderStatus();
         }
     }
 
-    async function loadBays() {
+    async function loadBays(maxAge = 0) {
         try {
-            const data = await api({ action: 'bays' });
+            const data = await api({ action: 'bays' }, false, maxAge);
             state.bayInfo = data.bays || [];
         } catch (error) {
             state.bayInfo = [];
@@ -322,13 +340,13 @@
         renderBays();
     }
 
-    async function refresh() {
+    async function refresh(maxAge = 0) {
         if (!state.order.length) return;
 
         const seq = state.writeSeq;
 
         try {
-            const data = await api({ action: 'all' });
+            const data = await api({ action: 'all' }, false, maxAge);
             window.UNCLedFx.stamp(data.leds);
 
             // A write ran while this read was in flight; its own refresh follows.
@@ -1029,7 +1047,7 @@
         );
 
         clearTimeout(state.identifyTimer);
-        if (!stop) state.identifyTimer = setTimeout(loadStatus, 31000);
+        if (!stop) state.identifyTimer = setTimeout(() => window.UNCPoll.awake() && loadStatus(), 31000);
     }
 
     /* Unraid alerts */
@@ -1072,12 +1090,14 @@
     }
 
     async function setMode(mode) {
+        // Show it at once; the re-read after the write confirms it (or puts the old value back on a failure).
+        state.status.mode = mode;
+        renderMode();
+
         await run(
             () => api({ action: 'mode', value: mode }, true),
             mode === 'status' ? t('mode.status_on') : t('mode.manual_on')
         );
-
-        await loadStatus();
     }
 
     function applyErrorColor(hex) {
@@ -1268,6 +1288,9 @@
     function showView(view) {
         qa('.ulc-view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
     }
+
+    // Inside the NAS page the LED pages are hidden most of the time: only poll while they are on screen.
+    const onScreen = () => root.getClientRects().length > 0;
 
     // Another page of the sidebar: the page around us owns it; standing alone, only the view changes.
     const goto = nav => window.UNC_NAV ? window.UNC_NAV(nav) : showView(nav.split(':')[1]);
@@ -1542,17 +1565,21 @@
         buildEffects();
         bindEvents();
 
-        await loadStatus();
-        await refresh();
+        // The NAS page loads the same URLs at the same moment: maxAge lets one request serve both.
+        await loadStatus(15000);
+        await refresh(5000);
         await loadSchedule();
 
-        setInterval(() => {
-            if (!document.hidden && !state.busy && !state.dragging) refresh();
-        }, 4000);
+        // led/all drives the preview (blink and breathe phases come from sent_ms/now_ms), so a slow poll is enough.
+        window.UNCPoll.every(() => (state.busy || state.dragging ? null : refresh(ALL_POLL_MS * 0.8)), ALL_POLL_MS, onScreen);
+        window.UNCPoll.every(() => (state.busy ? null : loadStatus(STATUS_POLL_MS * 0.9)), STATUS_POLL_MS, onScreen);
 
-        setInterval(() => {
-            if (!document.hidden) loadStatus();
-        }, 30000);
+        // Switching to an LED page: fresh preview now, status unless it is only seconds old.
+        shown = () => {
+            if (state.busy || state.dragging) return;
+            refresh(3000);
+            loadStatus(15000);
+        };
     }
 
     if (document.readyState === 'loading') {
@@ -1561,5 +1588,7 @@
         init();
     }
 
-    window.ULC = { show: showView };
+    let shown = () => {};
+
+    window.ULC = { show: view => { showView(view); shown(); } };
 })();

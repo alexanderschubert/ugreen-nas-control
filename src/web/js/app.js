@@ -194,7 +194,10 @@
             url += '?' + new URLSearchParams(params);
         }
 
+        // A write makes shared GET results (UNCPoll) older than the write: drop them before and after.
+        if (post) window.UNCPoll.invalidate();
         const response = await fetch(url, options);
+        if (post) window.UNCPoll.invalidate();
         let data;
 
         try {
@@ -1405,12 +1408,15 @@
      */
 
     const LED_API = '/plugins/ugreen-nas-control/led/api.php';
+    const LED_POLL_MS = 15000;
+    const STATUS_POLL_MS = 60000;
 
-    async function ledGet(action) {
-        const response = await fetch(`${LED_API}?action=${action}`, { credentials: 'same-origin' });
-        const data = await response.json();
+    // Shared with the LED pages (js/ledfx.js UNCPoll): one request per URL while it is in flight or younger than maxAge.
+    async function ledGet(action, maxAge = 0) {
+        const { ok, status, text } = await window.UNCPoll.fetchText(`${LED_API}?action=${action}`, maxAge);
+        const data = JSON.parse(text);
 
-        if (!response.ok || data.ok === false) throw new Error(data.error || `HTTP ${response.status}`);
+        if (!ok || data.ok === false) throw new Error(data.error || `HTTP ${status}`);
         return data;
     }
 
@@ -1431,7 +1437,8 @@
         ];
     }
 
-    async function loadLeds() {
+    // Slow reads, see the intervals at the bottom: led/all every LED_POLL_MS, the costly led/status once a minute.
+    async function loadLeds(maxAge = LED_POLL_MS * 0.8) {
         if (!ledsOn()) {
             state.leds = null;
             if (state.ledStatus) {
@@ -1442,12 +1449,8 @@
             return;
         }
 
-        // The LED pages poll the controller themselves; keep our own reads to one every few seconds.
-        if (state.leds && Date.now() - (state.ledAt || 0) < 5500) return;
-        state.ledAt = Date.now();
-
         try {
-            const [all, status] = await Promise.all([ledGet('all').then(data => ({ ...data, leds: window.UNCLedFx.stamp(data.leds) })), ledGet('status')]);
+            const [all, status] = await Promise.all([ledGet('all', maxAge).then(data => ({ ...data, leds: window.UNCLedFx.stamp(data.leds) })), ledGet('status', STATUS_POLL_MS * 0.9)]);
             state.leds = all.leds || {};
             state.ledMode = { mode: status.mode, fx: status.fx };
             state.ledBays = Number(status.bays) || 0;
@@ -1648,6 +1651,8 @@
      * ---------------------------------------------------------
      */
 
+    const polls = {};
+
     function showView(nav) {
         // "led:colours": the LED pages are one view of ours, each of their pages an entry of the sidebar.
         const [view, sub] = nav.split(':');
@@ -1660,7 +1665,9 @@
             // The switch belongs to the overview page only.
             q('#unc-led-head').hidden = sub !== 'overview';
         }
-        if (view === 'case' || view === 'overview') loadHardware();
+        if (view === 'case' || view === 'overview') polls.hardware?.poke();
+        if (view === 'case' || view === 'overview') polls.leds?.poke();
+        polls.status?.poke();
         qa('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === nav));
         qa('.unc-view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
     }
@@ -1810,6 +1817,12 @@
         });
     }
 
+    function paintLedsNow() {
+        applyLeds(q('#unc-hero'));
+        renderLedCard();
+        renderHeroFoot();
+    }
+
     async function init() {
         translatePage();
         bindEvents();
@@ -1825,22 +1838,17 @@
         } catch (error) { /* storage blocked */ }
 
         await load();
-        loadHardware().then(loadLeds).then(() => {
-            applyLeds(q('#unc-hero'));
-            renderLedCard();
-            renderHeroFoot();
-        });
+        loadHardware().then(() => loadLeds()).then(paintLedsNow);
 
-        setInterval(() => {
-            if (!document.hidden && !state.busy) load();
-            if (!document.hidden && (state.view === 'case' || state.view === 'overview') && !state.busy) {
-                loadHardware().then(loadLeds).then(() => {
-                    applyLeds(q('#unc-hero'));
-                    renderLedCard();
-                    renderHeroFoot();
-                });
-            }
-        }, 3000);
+        // Polling cost: the NAS runs a process per request, so each resource has its own pace and only
+        // runs on the views that show it (hidden/idle tabs: see UNCPoll). The fan daemon itself refreshes every 2 s.
+        const LIVE = ['overview', 'case', 'curves'];
+        const decor = () => state.view === 'case' || state.view === 'overview';
+
+        polls.status = window.UNCPoll.every(() => (state.busy ? null : load()), () => (LIVE.includes(state.view) ? 5000 : 15000));
+        polls.hardware = window.UNCPoll.every(() => (state.busy ? null : loadHardware()), 60000, decor);
+        // On the LED pages the LED app polls led/all itself (every 10 s); elsewhere the LEDs are decoration.
+        polls.leds = window.UNCPoll.every(() => (state.busy ? null : loadLeds().then(paintLedsNow)), LED_POLL_MS, decor);
     }
 
     init();
