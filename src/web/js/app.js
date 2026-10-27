@@ -679,9 +679,34 @@
         q(`#unc-${field.id}-value`).textContent = `${input.value} ${field.unit}`;
     }
 
+    // Every disk and NVMe with its temperature, to tick the ones that must not drive the case fans.
+    function renderIgnoreList() {
+        const sensors = state.data?.sensors || {};
+        const ignored = new Set(state.data?.settings?.ignore_drives || []);
+        const drives = [
+            ...(sensors.disks || []).map(d => ({ name: d.name, device: d.device, temp: d.standby ? null : d.temp })),
+            ...(sensors.nvme || []).map(n => ({ name: n.name, device: '', temp: n.temp }))
+        ].filter(d => d.name);
+
+        q('#unc-ignore-list').innerHTML = drives.length ? drives.map(d => `
+            <label class="unc-chipcheck">
+                <input type="checkbox" data-ignore="${escapeHtml(d.name)}" ${ignored.has(d.name) ? 'checked' : ''}>
+                <span>${escapeHtml(d.name)}${d.device ? ` <small class="unc-muted">${escapeHtml(d.device)}</small>` : ''}${d.temp != null ? ` <b>${d.temp} °C</b>` : ''}</span>
+            </label>`).join('') : `<p class="unc-muted">${escapeHtml(t('safety.ignore_none'))}</p>`;
+    }
+
+    // The ticked names, plus saved ones whose drive isn't listed right now (unplugged, asleep): they stay saved.
+    function ignoredDrives() {
+        const shown = new Set(qa('#unc-ignore-list [data-ignore]').map(box => box.dataset.ignore));
+        const kept = (state.data?.settings?.ignore_drives || []).filter(name => !shown.has(name));
+
+        return [...qa('#unc-ignore-list [data-ignore]:checked').map(box => box.dataset.ignore), ...kept].join(',');
+    }
+
     function renderSafety() {
         if (state.safetyDirty) return;
         const settings = state.data?.settings || {};
+        renderIgnoreList();
 
         SAFETY.forEach(field => {
             if (settings[field.key] != null) q(`#unc-${field.id}`).value = settings[field.key];
@@ -1745,6 +1770,11 @@
                 renderSaveBars();
             });
         });
+        q('#unc-ignore-list').addEventListener('change', () => {
+            markDirty('safety');
+            state.saveError.safety = '';
+            renderSaveBars();
+        });
         q('#unc-stall-notify').addEventListener('change', () => {
             markDirty('safety');
             state.saveError.safety = '';
@@ -1757,7 +1787,8 @@
             saveFanPage('safety', () => api({
                 action: 'safety',
                 ...values,
-                stall_notify: q('#unc-stall-notify').checked ? '1' : '0'
+                stall_notify: q('#unc-stall-notify').checked ? '1' : '0',
+                ignore_drives: ignoredDrives()
             }, true), t('safety.saved'));
         });
 

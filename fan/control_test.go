@@ -253,3 +253,40 @@ func TestSensorsDisplayOnly(t *testing.T) {
 		t.Fatalf("json = %s", b)
 	}
 }
+
+func TestIgnoredDrivesDoNotDriveTheCaseFans(t *testing.T) {
+	hot, warm, cpu := 70, 35, 40
+	s := Sensors{CPU: &cpu, Disks: []Disk{
+		{Name: "cache", Device: "sdb", Temp: &hot},
+		{Name: "disk1", Device: "sdc", Temp: &warm},
+	}}
+	c := defaultConfig()
+
+	if d := Decide(c, s); d.Failsafe != "disk_hot" {
+		t.Fatalf("without the list the hot drive trips the emergency rule: %+v", d)
+	}
+
+	c.IgnoreDrives = parseDriveList("cache, nvme9")
+	d := Decide(c, s)
+	if d.Failsafe != "" || d.CaseTemp == nil || *d.CaseTemp != 35 || d.CaseFrom != "disk" {
+		t.Errorf("the ignored drive must not count: %+v", d)
+	}
+
+	// An ignored NVMe neither drives the fans nor counts as the hottest.
+	h := 62
+	s = Sensors{CPU: &cpu, NVMe: []Temp{{Name: "nvme1", Temp: &h}}, Disks: []Disk{{Name: "disk1", Temp: &warm}}}
+	c.IgnoreDrives = parseDriveList("nvme1")
+	if d := Decide(c, s); d.CaseFrom != "disk" || *d.CaseTemp != 35 {
+		t.Errorf("ignored nvme: %+v", d)
+	}
+}
+
+func TestParseDriveList(t *testing.T) {
+	l := parseDriveList(" disk2,cache ,,bad name,nvme1;x,../etc ")
+	if len(l) != 2 || !l["disk2"] || !l["cache"] {
+		t.Errorf("%v", l)
+	}
+	if len(parseDriveList("")) != 0 {
+		t.Error("empty list")
+	}
+}

@@ -27,7 +27,7 @@ grew out of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led
 - **Fan modes**: BIOS (no control), Quiet, Standard, Performance, Full speed, or your own curves;
   the CPU fan follows the CPU, the case fans the hottest disk or NVMe
 - **Safety**: minimum speed, all fans at 100 % when the CPU or a disk gets too hot or the CPU temperature
-  can't be read, an Unraid notification when a fan stops, and the BIOS values back when the plugin
+  can't be read, drives you choose that must not drive the case fans, an Unraid notification when a fan stops, and the BIOS values back when the plugin
   stops or is removed
 - Dashboard tile, English, German and Spanish interface
 

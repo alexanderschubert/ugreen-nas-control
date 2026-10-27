@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -35,6 +36,9 @@ type Config struct {
 	DiskCrit    int
 	NVMeOffset  int
 	StallNotify bool
+	// Drives (Unraid names such as "cache" or "disk2", NVMe as "nvme1") that neither drive the case fans nor
+	// trigger the disk emergency rule, e.g. an external SSD that runs hot by itself.
+	IgnoreDrives map[string]bool
 }
 
 func defaultConfig() Config {
@@ -103,8 +107,23 @@ func LoadConfig(path string) Config {
 	c.DiskCrit = number("disk_crit", c.DiskCrit, 40, 70)
 	c.NVMeOffset = number("nvme_offset", c.NVMeOffset, 0, 40)
 	c.StallNotify = v["stall_notify"] != "0"
+	c.IgnoreDrives = parseDriveList(v["ignore_drives"])
 
 	return c
+}
+
+var driveNameRe = regexp.MustCompile(`^[A-Za-z0-9_.-]{1,40}$`)
+
+// parseDriveList reads "disk2,cache,nvme1": names only, at most 32 of them; anything else is dropped.
+func parseDriveList(s string) map[string]bool {
+	list := map[string]bool{}
+	for _, name := range strings.Split(s, ",") {
+		name = strings.TrimSpace(name)
+		if driveNameRe.MatchString(name) && len(list) < 32 {
+			list[name] = true
+		}
+	}
+	return list
 }
 
 // ParseCurve reads "temp:pct,temp:pct,...", e.g. "40:30,60:50,80:100".

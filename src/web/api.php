@@ -140,6 +140,7 @@ if ($method === 'GET') {
         'disk_crit' => (int)($config['disk_crit'] ?? 55),
         'nvme_offset' => (int)($config['nvme_offset'] ?? 15),
         'stall_notify' => ($config['stall_notify'] ?? '1') !== '0',
+        'ignore_drives' => array_values(array_filter(array_map('trim', explode(',', $config['ignore_drives'] ?? '')), 'strlen')),
         'ui_lang' => $config['ui_lang'] ?? 'auto',
         'ui_theme' => $config['ui_theme'] ?? 'dark'
     ];
@@ -234,6 +235,26 @@ if ($action === 'safety') {
     }
 
     $changes['stall_notify'] = ($input['stall_notify'] ?? '') === '1' ? '1' : '0';
+
+    // Drives that don't drive the case fans: Unraid names (disk2, cache) or nvme1, at most 32.
+    $ignored = [];
+    foreach (explode(',', (string)($input['ignore_drives'] ?? '')) as $name) {
+        $name = trim($name);
+
+        if ($name === '') {
+            continue;
+        }
+
+        if (!preg_match('/^[A-Za-z0-9_.-]{1,40}$/', $name) || count($ignored) >= 32) {
+            respond([
+                'ok' => false,
+                'error' => 'Invalid drive name'
+            ], 400);
+        }
+
+        $ignored[$name] = true;
+    }
+    $changes['ignore_drives'] = implode(',', array_keys($ignored));
 
     if (!save_settings($changes)) {
         respond([
