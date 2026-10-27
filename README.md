@@ -6,34 +6,35 @@
 [![Downloads](https://img.shields.io/github/downloads/alexanderschubert/ugreen-nas-control/latest/total?color=00c853&label=downloads%20(latest))](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
 [![Build](https://img.shields.io/github/actions/workflow/status/alexanderschubert/ugreen-nas-control/fan.yml?branch=main&label=build)](https://github.com/alexanderschubert/ugreen-nas-control/actions/workflows/fan.yml)
 [![Unraid](https://img.shields.io/badge/Unraid-7.0%2B-f15a2c)](https://unraid.net)
-[![Models](https://img.shields.io/badge/fans%20%C2%B7%20case-DXP6800%20Pro%20%C2%B7%20DXP4800%20GT-0078ff)](#supported-models)
-[![LEDs](https://img.shields.io/badge/LEDs-all%20UGREEN%20DX%2FDXP-0078ff)](#supported-models)
+[![Models](https://img.shields.io/badge/models-DX%20%C2%B7%20DXP%20%C2%B7%20iDX-0078ff)](#supported-models)
+[![Fans](https://img.shields.io/badge/fan%20control-DXP6800%20Pro%20%C2%B7%20DXP4800%20GT-0078ff)](#supported-models)
 [![License: MIT](https://img.shields.io/github/license/alexanderschubert/ugreen-nas-control?color=lightgrey)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/alexanderschubert/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/alexanderschubert/ugreen-nas-control/stargazers)
 [![Unraid forum](https://img.shields.io/badge/support-Unraid%20forum-f15a2c)](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/)
 [![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
 
-Unraid plugin for UGREEN DX/DXP NAS: **LED control on every model UGREEN LED Control knew**, and, for the
-**DXP6800 Pro and DXP4800 GT**, fan control and a case view as well, like the fan settings of UGOS. The LED control
-grew out of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control).
+Unraid plugin for UGREEN NASync devices (DX, DXP and iDX series): **LED control**, a **case view** that draws your NAS
+with its real bays, ports, RAM and SSDs, **temperatures** of everything, and, for the **DXP6800 Pro and DXP4800 GT**, **fan control**
+like the fan settings of UGOS. No kernel module, so Unraid updates don't break it. It runs on its own; the LED control grew out of
+[UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control) and is maintained here now.
 
-- **System**: model, BIOS, CPU, memory, Unraid and kernel version, uptime
-- **Temperatures**: CPU package and cores, mainboard, the fan controller's own sensors, every NVMe SSD,
-  and every disk – read from Unraid, so sleeping disks are never woken up
-- **Case view**: tiles for processor, memory, drives, NVMe and network; front with the bays (six on the DXP6800 Pro, four on the DXP4800 GT; disk, size,
-  temperature, standby), rear with the LAN ports (link and speed), inside with the RAM slots, the two M.2 slots
-  and the PCIe slot with the SSDs on its card (not on the DXP4800 GT)
-- **Fans**: live speed of the CPU fan and both case fans
-- **Fan modes**: BIOS (no control), Quiet, Standard, Performance, Full speed, or your own curves;
-  the CPU fan follows the CPU, the case fans the hottest disk or NVMe
-- **Safety**: minimum speed, all fans at 100 % when the CPU or a disk gets too hot or the CPU temperature
-  can't be read, drives you choose that must not drive the case fans, an Unraid notification when a fan stops, and the BIOS values back when the plugin
-  stops or is removed
-- Dashboard tile, English, German and Spanish interface
-
-- **LEDs (optional)**: colour, effects, a status mode for disk activity and SMART warnings, night mode and a
-  dashboard tile, built in (it grew out of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control)),
-  **off until you switch it on** under *UGREEN NAS Control → LEDs*
+- **Overview**: a cockpit with your NAS drawn as it is (front with the bays, their temperatures, the LED colours live), the fans and the fan
+  mode next to it, processor, memory, network, and all temperatures in sections with icons (processor and board, the SSDs by their place in the case,
+  drives, the LAN chips)
+- **Case view**: the drives as cards (bay, role, size, temperature), the rear with the ports and the LAN link speeds, and, on the
+  DXP6800 Pro and DXP4800 GT, the inside with the M.2 modules, the RAM sticks, the system slot and the PCIe slot; light and dark
+- **Temperatures**: CPU package and cores, mainboard, the fan controller's own sensors, the LAN chips, every NVMe SSD (with its extra sensors) and
+  every disk, read from Unraid, so sleeping disks are never woken up
+- **Fans** (DXP6800 Pro, DXP4800 GT): live speed of the CPU fan and the case fans; modes BIOS (no control), Quiet, Standard, Performance,
+  Full speed, or your own curves; the CPU fan follows the CPU, the case fans the hottest disk or NVMe
+- **Safety**: minimum speed, all fans at 100 % when the CPU or a disk gets too hot or the CPU temperature can't be read, drives you
+  choose that must not drive the case fans (an external SSD, say), an Unraid notification when a fan stops, and the BIOS values back when
+  the plugin stops or is removed. **Fan control can be switched off** under Settings for people whose fans are run by another plugin: then the
+  plugin doesn't touch the fan chip at all
+- **LEDs** (optional, **off until you switch it on**): colour, effects and brightness per LED, a status mode for disk activity, errors and SMART warnings, the
+  network LED by link speed, night mode, Unraid alerts and a shutdown/reboot signal on the power LED
+- **Dashboard tile** with the fans, temperatures, the SSDs (with the Unraid mark on the boot SSD) and the live LEDs
+- Dark, light or "same as Unraid" colour scheme; English, German and Spanish
 
 ## Supported models
 
@@ -61,15 +62,21 @@ Every UGREEN NASync model and what the plugin does for it (the same table is on 
 
 Verified: tested by the author or by miskcoo. Confirmed or reported: users saw it on their device. Untested: the LEDs are enabled but the bay order is guessed. Fan control exists only where the wiring is known.
 
-**Fans and case view** exist for two models, the only ones with known wiring:
+**Fan control** exists for two models, the only ones with known wiring:
 
 - **UGREEN DXP6800 Pro**: ITE IT8613E; CPU fan on header 2, case fans on headers 3 and 4
 - **UGREEN DXP4800 GT**: ITE IT5571 embedded controller; CPU fan (fan1) and case fan (fan3), with rpm,
   manual speed and the curves; the CPU temperature comes from the AMD sensor (`k10temp`), the mainboard
   temperature from the controller
 
-The **case view** (front, rear, drives) also exists for the **DXP4800, DXP4800 Plus and DXP4800 Pro** (drawn after photos of the DXP4800 Plus) the **DXP8800 Plus** (front and rear as a row of ports, after the reviews' port lists), the **DXP2800** and the **iDX6011 / iDX6011 Pro** (both drawn after photos; the iDX with its display at the front); their M.2 slots are not mapped yet, so there is no inside view and no fan control. On any other model the plugin does not touch the fan controller (the fan group and the case view are not shown).
-System info and temperatures still work, as they only read.
+On any other model the plugin does not touch the fan controller (the fan pages are not shown). System info and temperatures still work, as they only read.
+
+The **case view** (front, rear, drives) exists for more models. The DXP4800 / Plus / Pro, the DXP2800 and the iDX6011 / Pro are drawn after
+photos; the DXP8800 Plus as a row of ports after the reviews' port lists. The M.2 slots of those models are not mapped yet, so they have no inside view.
+
+**Confirm your model:** on the About page, in *Supported models*, *Confirm my device* lets you tick what works on your NAS (LEDs, bay order, case view, fan
+control, temperatures) and opens a pre-filled GitHub issue (label `model-report`) with the model, the versions and your ticks. Nothing is sent from the
+plugin; no serial numbers, IP addresses or drive names are in it. This is how the table above gets its "confirmed".
 
 **LEDs** work on every UGREEN DX, DXP and iDX model that UGREEN LED Control knew; the controller is the same across
 them. The bays are matched to the disks by SATA port, after
@@ -88,8 +95,8 @@ them. The bays are matched to the disks by SATA port, after
 | other UGREEN models | ata1 … ataN | **untested**, bay order guessed |
 
 For a model marked untested the LEDs page says so; check with *Identify* that the right bay blinks and report
-problems in the [issues](https://github.com/alexanderschubert/ugreen-nas-control/issues). Not supported: the DXP2800 V1.2 and
-the other GT models, which miskcoo lists as experimental.
+problems in the [issues](https://github.com/alexanderschubert/ugreen-nas-control/issues). The DXP2800 V1.2 and other models miskcoo lists as experimental are not
+confirmed.
 
 ## Install
 
@@ -106,13 +113,13 @@ Settings: **Settings → UGREEN NAS Control**. The page has a sidebar; the page 
 | Cockpit | Overview | the front with the bays, fans and fan mode, processor, memory, network, all temperatures, LED summary |
 | Cockpit | Case | drives in detail (with a link to the bay LEDs), rear, inside |
 | Fans | Fan curves | the two curves; pick a preset or edit the points, then *Save* (an unsaved change is marked, *Discard* undoes it) |
-| Fans | Safety | minimum speed, emergency limits, NVMe offset, fan-stopped notification; *Save* like the curves |
+| Fans | Safety | minimum speed, emergency limits, NVMe offset, drives to ignore for the case fans, fan-stopped notification; *Save* like the curves |
 | LEDs | LED overview | the LED switch, mode, system and drive LEDs, preview (the other LED entries appear once it is on) |
 | LEDs | Drive status, Night mode, Alerts & shutdown | bay assignment with *Identify* and status display; night mode; Unraid alerts and the shutdown signal |
-| System | Settings | interface language and colour scheme |
-| System | About | one System card (model, BIOS, CPU, memory, Unraid, kernel, uptime, the fan and LED controller), the plugin, links and thanks |
+| System | Settings | the fan control switch (on the two models with fan control), interface language and colour scheme |
+| System | About | one System card (model, BIOS, CPU, memory, Unraid, kernel, uptime, the fan and LED controller), the supported models (fold-away, with *Confirm my device*), the plugin, links and thanks |
 
-The fan mode on the Overview and everything on the LED pages apply at once; only the two fan pages save on request. The fan entries show on the two models with fan control only.
+The fan mode on the Overview and everything on the LED pages apply at once; only the two fan pages save on request. The fan entries show on the two models with fan control only, and not while fan control is switched off.
 
 ## How it works
 
@@ -180,7 +187,7 @@ at `build/ugreen-nas-fan` and run `scripts/install-dev.sh` (the LED tool, `build
 
 ## Release
 
-1. Raise `version` and add the changes in `plugin/ugreen-nas-control.plg`.
+1. Raise `version` and add the changes in `plugin/ugreen-nas-control.plg`. Versions count 1.0, 1.1 … 1.9, then 2.0: two numbers, never a third and never 1.10 (Unraid compares the version as text, so 0.10 sorted below 0.9).
 2. Update the MD5 of every download in the `.plg`: `python3 scripts/plg-hashes.py plugin/ugreen-nas-control.plg --binary ugreen-nas-fan=build/ugreen-nas-fan --binary ugreen-led-i2c=build/ugreen-led-i2c`. The files come from the working tree; the two binaries are the artifacts of the pull request's CI run (`Fan tool` workflow). Any change to a downloaded file changes its hash, so this is part of every pull request that touches `src/`, `led/` or `fan/`; CI fails on stale hashes (Unraid and Community Applications check them).
 3. Merge to `main`. The `Tag release` workflow builds the binaries, checks the hashes, then creates the tag `v<version>` and the release with the binaries (an existing release asset is never replaced).
 
@@ -207,8 +214,8 @@ Questions and problems: the [support thread in the Unraid forum](https://forums.
 
 - [miskcoo](https://github.com/miskcoo/ugreen_leds_controller): the LED protocol and the bay mapping of the LED part
 - [ivolution](https://github.com/ivolution): the Spanish translation of UGREEN LED Control, which the LED part and this plugin build on
-- [j3n57h0m45](https://github.com/j3n57h0m45): the **DXP4800 GT** support: fan control through the IT5571 embedded controller, LEDs, the case view, the system view, light case pictures and the CI hardening
-- everyone who tested on their model
+- [j3n57h0m45](https://github.com/j3n57h0m45): the **DXP4800 GT** support (fan control through the IT5571 embedded controller, LEDs, the case view, the system view, light case pictures), the CI hardening, the temperatures of the LAN chips, the iGPU and the extra NVMe sensors, and the overhaul of the interface (one LED page and switch, Settings and About, save bars, one spacing scale, faster polling)
+- everyone who tested on their model and reported what they found, in the forum thread and in the issues
 
 ## License
 
