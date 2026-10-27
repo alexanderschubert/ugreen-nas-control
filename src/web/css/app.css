@@ -3253,3 +3253,12 @@
 
 .unc-fold[open] > summary::after { transform: rotate(-135deg); }
 .unc-fold[open] > summary { margin-bottom: 8px; }
+
+.unc-models tr.series th {
+    padding-top: 14px;
+    color: var(--unc-text);
+    font-size: 12px;
+    letter-spacing: .04em;
+    text-align: left;
+    text-transform: none;
+}

@@ -236,6 +236,7 @@ window.UNC_I18N = {
 
         'about.how': 'Funktionsweise',
         'about.how_text': 'Spricht den Lüfter-Chip direkt über I/O-Ports an (ITE IT8613E beim DXP6800 Pro, Embedded Controller IT5571 beim DXP4800 GT) und den LED-Controller über I²C, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.',
+        'models.series': '{s}-Serie',
         'models.title': 'Unterstützte Modelle',
         'models.intro': 'Alle UGREEN-NASync-Modelle und was dieses Plugin für sie kann.',
         'models.col_model': 'Modell',
@@ -547,6 +548,7 @@ window.UNC_I18N = {
 
         'about.how': 'How it works',
         'about.how_text': 'Talks to the fan controller directly through I/O ports (ITE IT8613E on the DXP6800 Pro, IT5571 embedded controller on the DXP4800 GT) and to the LED controller over I²C, without a kernel module. When stopped or uninstalled, the fans get the BIOS values back.',
+        'models.series': '{s} series',
         'models.title': 'Supported models',
         'models.intro': 'Every UGREEN NASync model and what this plugin does for it.',
         'models.col_model': 'Model',
@@ -848,6 +850,7 @@ window.UNC_I18N = {
         'safety.saved': 'Ajustes de seguridad guardados',
         'about.how': 'Cómo funciona',
         'about.how_text': 'Habla directamente con el controlador de ventiladores a través de puertos de E/S (ITE IT8613E en el DXP6800 Pro, controlador embebido IT5571 en el DXP4800 GT) y con el controlador de LEDs por I²C, sin módulo del kernel. Al detenerlo o desinstalarlo, los ventiladores recuperan los valores de la BIOS.',
+        'models.series': 'Serie {s}',
         'models.title': 'Modelos compatibles',
         'models.intro': 'Todos los modelos UGREEN NASync y lo que este plugin hace por ellos.',
         'models.col_model': 'Modelo',
