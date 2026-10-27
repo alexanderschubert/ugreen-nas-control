@@ -574,26 +574,6 @@ if ($method === 'POST') {
         respond(['ok' => true]);
     }
 
-    if ($action === 'dash_size') {
-        $size = (string)($input['value'] ?? '');
-
-        if (!in_array($size, ['compact', 'full'], true)) {
-            respond([
-                'ok' => false,
-                'error' => 'Invalid size'
-            ], 400);
-        }
-
-        if (!save_settings(['ui_dash' => $size])) {
-            respond([
-                'ok' => false,
-                'error' => CONFIG_FILE . ' is not writable'
-            ], 500);
-        }
-
-        respond(['ok' => true]);
-    }
-
     if ($action === 'fx') {
         $name = (string)($input['value'] ?? '');
 

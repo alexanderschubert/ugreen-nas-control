@@ -12,15 +12,9 @@ require_once '/usr/local/emhttp/plugins/ugreen-nas-control/include/lang.php';
 [$unc_lang, $unc_lang_setting] = unc_language();
 $unc_theme = unc_theme();
 
-// The LED pages run inside this page once the switch under LEDs is on.
+// The LED pages run inside this page once the switch on the LED overview is on.
 $unc_led_dir = '/usr/local/emhttp/plugins/ugreen-nas-control/led';
 $unc_led_on = is_file('/boot/config/plugins/ugreen-nas-control/led.enabled') && is_file("{$unc_led_dir}/include/views.php");
-if ($unc_led_on) {
-    require_once "{$unc_led_dir}/include/lang.php";
-    // Language and colour scheme are NAS Control's (Appearance & About); the LED pages follow them.
-    [$ulc_lang, $ulc_lang_setting] = [$unc_lang, $unc_lang_setting];
-    $ulc_dash_size = ulc_dash_size();
-}
 
 $unc_version = preg_match(
     '/ENTITY\s+version\s+"([^"]+)"/',
@@ -38,11 +32,8 @@ window.UGREEN_NAS_THEME = <?= json_encode($unc_theme) ?>;
 window.UNC_LED = <?= json_encode($unc_led_on) ?>;
 <?php if ($unc_led_on): ?>
 window.UGREEN_LED_CSRF_TOKEN = <?= json_encode($unc_var['csrf_token'] ?? '') ?>;
-window.UGREEN_LED_VERSION = <?= json_encode($unc_version) ?>;
-window.UGREEN_LED_LANG = <?= json_encode($ulc_lang) ?>;
+window.UGREEN_LED_LANG = <?= json_encode($unc_lang) ?>;
 window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
-window.UGREEN_LED_DASH_SIZE = <?= json_encode($ulc_dash_size) ?>;
-window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
 <?php endif; ?>
 </script>
 
@@ -72,11 +63,9 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
         <button type="button" data-nav="curves" data-fan-only><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
         <button type="button" data-nav="safety" data-fan-only><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
         <div class="unc-nav-group" data-i18n="nav.group_leds">LEDs</div>
-        <button type="button" data-nav="system:led" data-led-off-only><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.leds_switch">LED-Steuerung</span></button>
-        <button type="button" data-nav="led:overview" data-led-only hidden><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.led_overview">Allgemein &amp; Vorschau</span></button>
-        <button type="button" data-nav="led:leds" data-led-only hidden><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.led_colors">Farben</span></button>
-        <button type="button" data-nav="led:drives" data-led-only hidden><span class="unc-ico" data-unc-icon="drives"></span><span data-i18n="nav.led_drives">Laufwerks-Status</span></button>
-        <button type="button" data-nav="led:schedules" data-led-only hidden><span class="unc-ico" data-unc-icon="clock"></span><span data-i18n="nav.led_schedules">Zeitpläne</span></button>
+        <button type="button" data-nav="led:overview"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.led_overview">LED-Übersicht</span></button>
+        <button type="button" data-nav="led:drives" data-led-only hidden><span class="unc-ico" data-unc-icon="drives"></span><span data-i18n="nav.led_drives">Laufwerksstatus</span></button>
+        <button type="button" data-nav="led:schedules" data-led-only hidden><span class="unc-ico" data-unc-icon="clock"></span><span data-i18n="nav.led_schedules">Nachtmodus</span></button>
         <button type="button" data-nav="led:system" data-led-only hidden><span class="unc-ico" data-unc-icon="bell"></span><span data-i18n="nav.led_system">Meldungen &amp; Herunterfahren</span></button>
         <div class="unc-nav-group" data-i18n="nav.group_system">System</div>
         <button type="button" data-nav="system"><span class="unc-ico" data-unc-icon="gear"></span><span data-i18n="nav.system">Darstellung &amp; Info</span></button>
@@ -282,8 +271,6 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
     </article>
 </section>
 
-<!-- ================= LEDs ================= -->
-
 <!-- ================= System ================= -->
 
 <section class="unc-view" data-view="system">
@@ -314,48 +301,8 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
                 <option value="light" data-i18n="theme.light">Hell</option>
                 <option value="auto" data-i18n="theme.auto">Wie Unraid</option>
             </select>
-
-            <label for="unc-dash-size" data-i18n="theme.dash" data-led-only hidden>Dashboard-Kachel</label>
-            <select id="unc-dash-size" data-led-only hidden>
-                <option value="compact" data-i18n="theme.dash_compact">Kompakt</option>
-                <option value="full" data-i18n="theme.dash_full">Mit Temperaturen</option>
-            </select>
         </div>
         <p class="unc-hint" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel).</p>
-    </article>
-
-    <article class="unc-card" id="unc-led-switch-card">
-        <h2 data-i18n="leds.title">LEDs</h2>
-        <p class="unc-muted" data-i18n="leds.intro">Die Front-LEDs steuert ein eingebauter Teil von UGREEN LED Control. Er ist ausgeschaltet, bis du ihn hier einschaltest.</p>
-
-        <label class="unc-switch-row" id="unc-led-row">
-            <span class="unc-switch">
-                <input type="checkbox" id="unc-led-enabled">
-                <span></span>
-            </span>
-            <span>
-                <strong data-i18n="leds.switch">LED-Steuerung einschalten</strong>
-                <small id="unc-led-state"></small>
-            </span>
-        </label>
-
-        <p class="unc-hint" id="unc-led-limited" hidden></p>
-        <p class="unc-hint unc-untested" id="unc-led-untested" hidden></p>
-        <p class="unc-hint" id="unc-led-blocker" hidden></p>
-
-
-        <div class="unc-import" id="unc-led-import" hidden>
-            <strong data-i18n="leds.import_title">Einstellungen von UGREEN LED Control übernehmen</strong>
-            <p class="unc-muted" data-i18n="leds.import_text">Die Einstellungen des Plugins UGREEN LED Control wurden gefunden (Farben, Effekte, Statusmodus, Nachtmodus). Du kannst sie hier übernehmen; die jetzigen Einstellungen dieses Teils werden vorher als leds.cfg.bak gesichert.</p>
-            <button type="button" class="unc-btn" id="unc-led-import-btn"><span class="unc-ico" data-unc-icon="reset"></span><span data-i18n="leds.import_btn">Einstellungen übernehmen</span></button>
-            <p class="unc-hint" data-i18n="leds.import_after">Danach kannst du UGREEN LED Control unter Plugins deinstallieren: dieses Plugin löst es ab.</p>
-        </div>
-
-        <div class="unc-actions" id="unc-led-open" hidden>
-            <button type="button" class="unc-btn primary" data-nav="led:overview"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="leds.open">LED-Einstellungen öffnen</span></button>
-        </div>
-
-        <p class="unc-hint" data-i18n="leds.hint">Beim Ausschalten bleiben die LEDs im letzten Zustand, bis der Strom getrennt wird. Läuft das eigenständige Plugin UGREEN LED Control, lässt sich dieser Teil nicht einschalten, weil beide dieselben LEDs beschreiben würden.</p>
     </article>
 
     <article class="unc-card" id="unc-led-facts-card" data-led-only hidden>
@@ -401,18 +348,49 @@ window.UGREEN_LED_LANG_SETTING = <?= json_encode($ulc_lang_setting) ?>;
     </article>
 </section>
 
-<?php if ($unc_led_on): ?>
-<!-- ================= LEDs (the LED pages) ================= -->
+<!-- ================= LEDs: the overview starts with the switch; the other pages are the LED part's own ================= -->
 
 <section class="unc-view" data-view="led">
+    <div id="unc-led-head">
+        <h2 class="unc-page-title" data-i18n="nav.led_overview">LED-Übersicht</h2>
+
+        <article class="unc-card" id="unc-led-switch-card">
+            <label class="unc-switch-row" id="unc-led-row">
+                <span class="unc-switch">
+                    <input type="checkbox" id="unc-led-enabled">
+                    <span></span>
+                </span>
+                <span>
+                    <strong data-i18n="leds.switch">Front-LEDs mit diesem Plugin steuern</strong>
+                    <small id="unc-led-state"></small>
+                </span>
+            </label>
+
+            <p class="unc-muted" data-i18n="leds.intro">Farben, Effekte, Laufwerksstatus und Nachtmodus der Front-LEDs. Aus, bis du es einschaltest.</p>
+
+            <p class="unc-hint" id="unc-led-limited" hidden></p>
+            <p class="unc-hint unc-untested" id="unc-led-untested" hidden></p>
+            <p class="unc-hint" id="unc-led-blocker" hidden></p>
+
+            <div class="unc-import" id="unc-led-import" hidden>
+                <strong data-i18n="leds.import_title">Einstellungen von UGREEN LED Control übernehmen</strong>
+                <p class="unc-muted" data-i18n="leds.import_text">Die Einstellungen des Plugins UGREEN LED Control wurden gefunden (Farben, Effekte, Statusmodus, Nachtmodus). Du kannst sie hier übernehmen; die jetzigen Einstellungen dieses Teils werden vorher als leds.cfg.bak gesichert.</p>
+                <button type="button" class="unc-btn" id="unc-led-import-btn"><span class="unc-ico" data-unc-icon="reset"></span><span data-i18n="leds.import_btn">Einstellungen übernehmen</span></button>
+                <p class="unc-hint" data-i18n="leds.import_after">Danach kannst du UGREEN LED Control unter Plugins deinstallieren: dieses Plugin löst es ab.</p>
+            </div>
+
+            <p class="unc-muted unc-fineprint" data-i18n="leds.hint">Beim Ausschalten bleiben die LEDs im letzten Zustand, bis der Strom getrennt wird.</p>
+        </article>
+    </div>
+<?php if ($unc_led_on): ?>
     <div class="ulc ulc-embedded" id="ulc" data-theme="<?= $unc_theme === 'light' ? 'light' : 'dark' ?>">
         <div class="ulc-main">
 <?php include "{$unc_led_dir}/include/views.php"; ?>
         </div>
         <div class="ulc-toast" id="ulc-toast" role="status"></div>
     </div>
-</section>
 <?php endif; ?>
+</section>
 
 </main>
 

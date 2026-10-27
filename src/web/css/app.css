@@ -3019,3 +3019,24 @@
 .unc-rear6011 .r-lan svg { width: 5cqi; }
 .unc-rear6011 .r-reset svg { width: 1.7cqi; }
 .unc-rear6011 .r-fan .unc-fan-icon { width: 17cqi; height: 17cqi; }
+
+/* ---------- LEDs: overview head (page title and the switch) ---------- */
+
+.unc .unc-page-title {
+    margin: 0 0 14px;
+    font-size: 20px;
+    font-weight: 650;
+}
+
+#unc-led-head {
+    margin-bottom: 18px;
+}
+
+#unc-led-switch-card .unc-switch-row {
+    margin-bottom: 12px;
+}
+
+#unc-led-switch-card .unc-fineprint {
+    margin: 12px 0 0;
+    font-size: 12px;
+}

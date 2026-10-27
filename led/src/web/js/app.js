@@ -40,20 +40,12 @@
      */
 
     const ICONS = {
-        nas: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7.5 7v8M12 7v8M16.5 7v8M7 18.5h.01M17 18.5h.01"/>',
-        home: '<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2h-4v-7H9v7H5a2 2 0 0 1-2-2z"/>',
         bulb: '<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>',
         drives: '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
-        sparkles: '<path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/>',
-        clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
-        gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
-        info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
         check: '<path d="M20 6 9 17l-5-5"/>',
         alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
-        sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
         power: '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>',
         activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
-        network: '<rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M5 16v-3h14v3M12 12V8"/>',
         wave: '<path d="M2 12c2.5-5 5-5 7.5 0s5 5 7.5 0 3.5-3.5 5-2"/>',
         rainbow: '<path stroke="#ff3b30" d="M22 18a10 10 0 0 0-20 0"/><path stroke="#ffd60a" d="M18.5 18a6.5 6.5 0 0 0-13 0"/><path stroke="#34c759" d="M15 18a3 3 0 0 0-6 0"/>',
         thermo: '<path stroke="#ff6b5e" d="M14 4v10.5a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0z"/>',
@@ -92,6 +84,7 @@
     ];
 
     const state = {
+        lastLevel: {},
         model: 'UGREEN NAS',
         bays: 0,
         order: [],
@@ -102,19 +95,31 @@
         busy: 0,
         writeSeq: 0,
         speed: 2,
+        sysTarget: 'both',
         dragging: false
     };
 
     const disks = () => state.order.filter(led => led.startsWith('disk'));
 
-    // The two LED groups of the overview: each has its colours and its effect.
-    // In status mode the daemon owns the drive and network LEDs, so only the power LED
-    // (and a manual network LED) take an effect.
+    // The two LED groups of the overview, each with its effect tiles. In status mode the daemon owns
+    // the drive and network LEDs, so only the power LED (and a manual network LED) take an effect.
     const GROUPS = ['system', 'drives'];
+    const ANIMATED = ['breath', 'blink', 'rainbow', 'temperature'];
 
-    const groupLeds = group =>
-        group === 'drives' ? (statusMode() ? [] : disks())
-            : ['power', 'netdev'].filter(led => state.order.includes(led) && (!statusMode() || led === 'power' || netdevManual()));
+    // The LEDs of the system group an effect can take, narrowed by the "Effect for" choice.
+    const systemTargets = () => ['power', 'netdev'].filter(led => state.order.includes(led) && !managed(led));
+
+    function groupLeds(group) {
+        if (group === 'drives') return statusMode() ? [] : disks();
+
+        const targets = systemTargets();
+
+        return targets.length > 1 && targets.includes(state.sysTarget) ? [state.sysTarget] : targets;
+    }
+
+    // A row of the LED lists: one LED, or "drives" for all bays at once.
+    const rowLeds = key => key === 'drives' ? disks() : [key];
+    const rowDefault = key => key === 'power' ? DEFAULTS.power : key === 'netdev' ? DEFAULTS.netdev : DEFAULTS.disk;
 
     const statusMode = () => state.status.mode === 'status';
 
@@ -131,7 +136,8 @@
     const managed = led => statusMode() && (led.startsWith('disk') || (led === 'netdev' && !netdevManual()));
 
     const ledLabel = led =>
-        led === 'power' ? t('led.power')
+        led === 'drives' ? t('drives.all')
+            : led === 'power' ? t('led.power')
             : led === 'netdev' ? t('led.netdev')
                 : t('led.bay', { n: led.slice(4) });
 
@@ -379,17 +385,17 @@
                 '</div>';
         });
 
-        buildColors();
-        buildTable(q('#ulc-led-table'), state.order);
-        buildTable(q('#ulc-bay-table'), disks());
+        buildRows(q('#ulc-system-table'), ['power', 'netdev'].filter(led => state.order.includes(led)));
+        buildRows(q('#ulc-drives-table'), disks().length ? ['drives'] : []);
+        buildRows(q('#ulc-bay-table'), disks(), true);
     }
 
     function render() {
         qa('.ulc-led[data-led]').forEach(element => paintLed(element, element.dataset.led));
         renderGeneral();
-        renderColors();
         renderEffects();
         renderTables();
+        renderFxSettings();
     }
 
     function paintLed(element, led) {
@@ -466,51 +472,12 @@
     function renderGeneral() {
         renderLinkSpeed();
 
-        const values = state.order.map(dayLevel);
-        const max = Math.max(0, ...values);
         const note = q('#ulc-night-note');
 
         note.hidden = !state.status.night;
         if (state.status.night) {
             note.textContent = t(state.schedule?.action === 'off' ? 'night.note_off' : 'night.note_dim', { time: state.schedule?.end || '' });
         }
-
-        q('#ulc-enabled').checked = max > 0;
-
-        if (!state.dragging && max > 0) {
-            const percent = Math.round(max / 2.55);
-            const slider = q('#ulc-brightness');
-
-            slider.value = percent;
-            setRangeFill(slider);
-            q('#ulc-brightness-value').textContent = `${percent}%`;
-        }
-    }
-
-    /* LED colours card */
-
-    function colorRows(group) {
-        if (group === 'bays') {
-            return disks().map(led => ({
-                key: led,
-                label: ledLabel(led),
-                icon: 'drives',
-                leds: [led],
-                def: DEFAULTS.disk
-            }));
-        }
-
-        const rows = group === 'system'
-            ? [
-                { key: 'power', label: t('led.power'), icon: 'power', leds: ['power'], def: DEFAULTS.power },
-                { key: 'netdev', label: t('led.netdev'), icon: 'network', leds: ['netdev'], def: DEFAULTS.netdev }
-            ]
-            : [
-                { key: 'disks', label: t('colors.disks'), sub: t('colors.all_bays'), icon: 'drives', leds: disks(), def: DEFAULTS.disk },
-                { key: 'error', label: t('colors.error'), sub: statusMode() ? '' : t('colors.status_only'), icon: 'alert', leds: [], def: DEFAULTS.error, soon: !statusMode() }
-            ];
-
-        return rows.filter(row => row.key === 'error' || row.leds.every(led => state.order.includes(led)));
     }
 
     // Network LED by link speed (Mbit/s); the backend picks the largest step at or below the speed.
@@ -528,33 +495,24 @@
         ? `${String(mbps / 1000).replace('.', LANG === 'en' ? '.' : ',')} Gbit/s`
         : `${mbps} Mbit/s`;
 
-    const colorInput = (value, disabled = false) => `
+    // "name" tells a screen reader which colour the two fields (picker and hex value) belong to.
+    const colorInput = (value, disabled = false, name = '') => `
         <div class="ulc-color-input">
             <label class="ulc-swatch" style="--c:${value}">
-                <input type="color" value="${value}" ${disabled ? 'disabled' : ''} aria-label="${t('colors.pick')}">
+                <input type="color" value="${value}" ${disabled ? 'disabled' : ''} aria-label="${escapeHtml([t('colors.pick'), name].filter(Boolean).join(': '))}">
             </label>
-            <input type="text" value="${value.toUpperCase()}" maxlength="7" spellcheck="false" ${disabled ? 'disabled' : ''} aria-label="${t('colors.hex')}">
+            <input type="text" value="${value.toUpperCase()}" maxlength="7" spellcheck="false" ${disabled ? 'disabled' : ''} aria-label="${escapeHtml([t('colors.hex'), name].filter(Boolean).join(': '))}">
         </div>`;
 
-    const COLOR_GROUPS = ['system', 'drives', 'bays'];
+    // The colour field of a settings card; its heading says which colour it is.
+    function ensureColor(selector, fallback) {
+        const container = q(selector);
 
-    const colorList = group => q(`[data-colors="${group}"]`);
-
-    function buildColors() {
-        for (const group of COLOR_GROUPS) {
-            const container = colorList(group);
-
-            container._rows = colorRows(group);
-            container.innerHTML = container._rows.map(row => `
-                <div class="ulc-color-row ${row.soon ? 'ulc-disabled' : ''}" data-row="${row.key}">
-                    ${icon(row.icon)}
-                    <span>${escapeHtml(row.label)} ${row.sub ? `<small>${escapeHtml(row.sub)}</small>` : ''}</span>
-                    ${colorInput(row.def, row.soon)}
-                    <button type="button" class="ulc-icon-btn" data-reset title="${t('colors.reset')}" ${row.soon ? 'disabled' : ''}>${icon('reset')}</button>
-                </div>`).join('');
+        if (!container.firstElementChild) {
+            container.innerHTML = colorInput(fallback, false, t(container.dataset.labelKey));
         }
 
-        renderColors();
+        return container;
     }
 
     function setColorInput(container, value) {
@@ -563,36 +521,21 @@
         container.querySelector('input[type="text"]').value = value.toUpperCase();
     }
 
-    function renderColors() {
-        for (const group of COLOR_GROUPS) {
-            const container = colorList(group);
-
-            for (const row of container._rows || []) {
-                const element = container.querySelector(`[data-row="${row.key}"]`);
-
-                if (!element || element.contains(document.activeElement)) continue;
-
-                if (row.key === 'error') {
-                    setColorInput(element, rgbToHex(state.status.disk_error_color || '255 59 48'));
-                    continue;
-                }
-
-                const led = row.leds[0];
-                if (led && state.leds[led]) setColorInput(element, state.leds[led].color);
-            }
-        }
-    }
-
     /* Effects of a group */
 
+    // The effect all of these LEDs show, or null when they differ.
     function currentEffect(leds) {
-        const s = state.leds[leds[0]];
+        const effects = leds.map(led => {
+            const s = state.leds[led];
 
-        if (!s) return null;
-        if (s.brightness === 0) return 'off';
-        if (leds.length && leds.every(fxOn)) return state.status.fx;
+            if (!s) return null;
+            if (s.brightness === 0) return 'off';
+            if (fxOn(led)) return state.status.fx;
 
-        return s.effect === 'none' ? 'static' : s.effect;
+            return s.effect === 'none' ? 'static' : s.effect;
+        });
+
+        return effects.length && effects.every(effect => effect && effect === effects[0]) ? effects[0] : null;
     }
 
     function buildEffects() {
@@ -618,19 +561,63 @@
                 button.disabled = !leds.length;
             });
         }
+
+        // The power and the network LED can take different effects: say which one a tile applies to.
+        const targets = systemTargets();
+
+        q('#ulc-system-target-row').hidden = targets.length < 2;
+        q('#ulc-system-target').value = targets.includes(state.sysTarget) ? state.sysTarget : 'both';
+        q('#ulc-system-effect-title').textContent = targets.length === 1
+            ? t('group.effect_for', { led: ledLabel(targets[0]) })
+            : t('group.effect');
+    }
+
+    // Speed, direction and idle-only are one setting for all LEDs (a single effect process, one speed
+    // for breathe and pulse), so they show once, and only the ones the effects in use understand.
+    function renderFxSettings() {
+        const used = new Set(state.order.filter(led => !managed(led)).map(led => currentEffect([led])));
+        const uses = effects => effects.some(effect => used.has(effect));
+        const rows = {
+            speed: uses(['breath', 'blink', 'rainbow']),
+            direction: uses(['rainbow']),
+            palette: uses(['rainbow']),
+            idle: uses(['rainbow', 'temperature'])
+        };
+
+        q('#ulc-settings-card').hidden = !uses(ANIMATED);
+        qa('#ulc-settings-card [data-fx-row]').forEach(element => {
+            element.hidden = !rows[element.dataset.fxRow];
+        });
+        q('#ulc-settings-card .ulc-form').hidden = !(rows.speed || rows.direction || rows.palette);
     }
 
     /* Per-LED tables */
 
-    function buildTable(container, leds) {
-        container.innerHTML = leds.map(led => `
-            <div class="ulc-led-row" data-led-row="${led}">
-                <span class="ulc-led" data-led="${led}"></span>
-                <span>${escapeHtml(ledLabel(led))}<small data-led-sub="${led}"></small></span>
-                ${colorInput('#ffffff')}
-                <input type="range" min="0" max="100" step="1" value="0" data-brightness aria-label="${t('brightness.label')}">
-                <div class="ulc-effect-cell">
-                    <select data-led-effect aria-label="${t('effect.label')}">
+    // One row per LED (or "drives" for all bays): colour, brightness and, for single bays, an effect.
+    // The effect of a group is picked with its tiles.
+    function buildRows(container, keys, withEffect = false) {
+        container.innerHTML = keys.map(key => {
+            const label = ledLabel(key);
+
+            return `
+            <div class="ulc-led-row" data-led-row="${key}">
+                ${key === 'drives' ? icon('drives') : `<span class="ulc-led" data-led="${key}"></span>`}
+                <span>${escapeHtml(label)}<small data-led-sub="${key}"></small></span>
+                <div class="ulc-color-reset">
+                    ${colorInput('#ffffff', false, label)}
+                    <button type="button" class="ulc-icon-btn" data-reset title="${escapeHtml(t('colors.reset'))}" aria-label="${escapeHtml(t('colors.reset_for', { led: label }))}">${icon('reset')}</button>
+                </div>
+                <div class="ulc-led-field">
+                    <label for="ulc-br-${key}">${escapeHtml(t('row.brightness'))}</label>
+                    <div class="ulc-inline">
+                        <input type="range" id="ulc-br-${key}" min="0" max="100" step="1" value="0" data-brightness aria-label="${escapeHtml(t('brightness.label_for', { led: label }))}">
+                        <output class="ulc-value" data-brightness-value for="ulc-br-${key}">0%</output>
+                    </div>
+                </div>
+                ${withEffect ? `
+                <div class="ulc-led-field" data-effect-field>
+                    <label for="ulc-fx-${key}">${escapeHtml(t('row.effect'))}</label>
+                    <select id="ulc-fx-${key}" data-led-effect aria-label="${escapeHtml(t('effect.label_for', { led: label }))}">
                         <option value="static">${t('effect.static')}</option>
                         <option value="breath">${t('effect.breath')}</option>
                         <option value="blink">${t('effect.blink')}</option>
@@ -638,30 +625,31 @@
                         <option value="rainbow" disabled>${t('effect.rainbow')}</option>
                         <option value="temperature" disabled>${t('effect.temperature')}</option>
                     </select>
-                    <span class="ulc-managed" data-managed hidden title="${t('managed.title')}">${t('managed.label')}</span>
-                </div>
-            </div>`).join('');
+                </div>` : ''}
+            </div>`;
+        }).join('');
     }
 
     function renderTables() {
         qa('[data-led-row]').forEach(row => {
-            const led = row.dataset.ledRow;
-            const s = state.leds[led];
-            const effect = row.querySelector('[data-led-effect]');
+            const leds = rowLeds(row.dataset.ledRow);
+            const first = state.leds[leds[0]];
+            const effectField = row.querySelector('[data-effect-field]');
 
-            // In status mode the effect belongs to the daemon; say so instead of a dead select.
-            effect.hidden = managed(led);
-            row.querySelector('[data-managed]').hidden = !managed(led);
+            // In status mode the daemon owns a bay's effect; the card says so.
+            if (effectField) effectField.hidden = managed(leds[0]);
 
-            if (!s || row.contains(document.activeElement)) return;
+            if (!first || row.contains(document.activeElement)) return;
 
-            setColorInput(row, s.color);
+            setColorInput(row, first.color);
 
             const range = row.querySelector('[data-brightness]');
-            range.value = Math.round(dayLevel(led) / 2.55);
+            range.value = Math.round(Math.max(...leds.map(dayLevel)) / 2.55);
             setRangeFill(range);
+            row.querySelector('[data-brightness-value]').textContent = `${range.value}%`;
 
-            effect.value = currentEffect([led]);
+            const effect = row.querySelector('[data-led-effect]');
+            if (effect) effect.value = currentEffect(leds);
         });
     }
 
@@ -732,27 +720,36 @@
 
     function renderMode() {
         const status = statusMode();
+        const modeButton = q('#ulc-drive-mode-btn');
+
         q('#ulc-mode').value = status ? 'status' : 'manual';
+        q('#ulc-mode-hint').textContent = t(status ? 'mode.hint_status' : 'mode.hint_manual');
 
         if (document.activeElement !== q('#ulc-direction')) {
             q('#ulc-direction').value = state.status.fx_reverse ? 'backward' : 'forward';
         }
         q('#ulc-idle').checked = Boolean(state.status.fx_idle);
-        q('#ulc-mode-hint').hidden = !status;
+
+        // Network LED behaviour only exists while the drive status is shown.
         q('#ulc-netdev-row').hidden = !status;
         if (document.activeElement !== q('#ulc-netdev-status')) {
             q('#ulc-netdev-status').value = state.status.netdev_status || 'activity';
         }
-        qa('[data-status-hint]').forEach(hint => {
-            hint.hidden = !status;
-        });
 
-        const errorRow = (colorList('drives')._rows || []).find(row => row.key === 'error');
-
-        if (errorRow && errorRow.soon === status) buildColors();
+        // Drive LEDs: a line saying who drives them, instead of tiles that do nothing.
+        // In status mode it also names the standby look, which lives on the Drive status page.
+        q('#ulc-drive-note-text').textContent = status
+            ? `${t('drives.note_status')} ${t('drives.note_standby', { mode: t(`display.standby_${state.status.standby_mode || 'dim'}`) })}`
+            : t('drives.note_manual');
+        modeButton.textContent = t(status ? 'drives.set_manual' : 'drives.show_status');
+        modeButton.dataset.act = status ? 'mode-manual' : 'mode-status';
+        q('#ulc-drive-status-link').hidden = !status;
+        q('#ulc-drive-effect').hidden = status;
+        q('#ulc-display-note').hidden = status;
 
         renderEffects();
         renderTables();
+        renderFxSettings();
     }
 
     function renderBays() {
@@ -880,9 +877,8 @@
 
         q('#ulc-sync-enabled').checked = status.sync_enabled !== false;
 
-        const color = q('#ulc-sync-color');
-        if (!color.firstElementChild) color.innerHTML = colorInput('#0078ff');
-        setColorInput(color, rgbToHex(status.sync_color || '0 120 255'));
+        setColorInput(ensureColor('#ulc-sync-color', '#0078ff'), rgbToHex(status.sync_color || '0 120 255'));
+        setColorInput(ensureColor('#ulc-error-color', '#ff3b30'), rgbToHex(status.disk_error_color || '255 59 48'));
 
         q('#ulc-standby-mode').value = status.standby_mode || 'dim';
         q('#ulc-disk-color-mode').value = status.disk_color_mode || 'own';
@@ -890,9 +886,7 @@
         q('#ulc-error-enabled').checked = status.error_enabled !== false;
         q('#ulc-activity-enabled').checked = status.activity_enabled !== false;
 
-        const smartColor = q('#ulc-smart-color');
-        if (!smartColor.firstElementChild) smartColor.innerHTML = colorInput('#ff8c00');
-        setColorInput(smartColor, rgbToHex(status.smart_color || '255 140 0'));
+        setColorInput(ensureColor('#ulc-smart-color', '#ff8c00'), rgbToHex(status.smart_color || '255 140 0'));
 
         const level = q('#ulc-standby-level');
         level.value = status.standby_level || 30;
@@ -911,9 +905,7 @@
         q('#ulc-shutdown-enabled').checked = Boolean(status.shutdown_blink);
         q('#ulc-shutdown-effect').value = status.shutdown_effect || 'blink';
 
-        const color = q('#ulc-shutdown-color');
-        if (!color.firstElementChild) color.innerHTML = colorInput('#ff8c00');
-        setColorInput(color, rgbToHex(status.shutdown_color || '255 140 0'));
+        setColorInput(ensureColor('#ulc-shutdown-color', '#ff8c00'), rgbToHex(status.shutdown_color || '255 140 0'));
     }
 
     function saveShutdown() {
@@ -946,7 +938,7 @@
             ? t('display.speed_current', { speed: speedLabel(status.netdev_speed) })
             : t('display.speed_unknown');
 
-        if (q('#ulc-network-card').contains(document.activeElement)) return;
+        if (q('#ulc-network-box').contains(document.activeElement)) return;
 
         q('#ulc-speed-enabled').checked = speedOn;
         q('#ulc-speed-colors').hidden = !speedOn;
@@ -1053,9 +1045,7 @@
         q('#ulc-alert-enabled').checked = Boolean(status.alert_enabled);
         q('#ulc-alert-level').value = status.alert_level || 'warning';
 
-        const color = q('#ulc-alert-color');
-        if (!color.firstElementChild) color.innerHTML = colorInput('#ff3b30');
-        setColorInput(color, rgbToHex(status.alert_color || '255 59 48'));
+        setColorInput(ensureColor('#ulc-alert-color', '#ff3b30'), rgbToHex(status.alert_color || '255 59 48'));
     }
 
     function saveAlerts() {
@@ -1091,7 +1081,7 @@
 
         if (!value) {
             toast(t('colors.invalid'), 'error');
-            renderColors();
+            render();
             return;
         }
 
@@ -1118,14 +1108,12 @@
         qa('.ulc-led[data-led]').forEach(element => paintLed(element, element.dataset.led));
     }
 
-    const globalLevel = () => levelFromPercent(Number(q('#ulc-brightness').value) || DEFAULTS.brightness);
-
     function applyColor(leds, hex) {
         const value = normalizeHex(hex);
 
         if (!value) {
             toast(t('colors.invalid'), 'error');
-            renderColors();
+            render();
             return;
         }
 
@@ -1142,14 +1130,24 @@
         const dark = leds.filter(led => (state.leds[led]?.brightness || 0) === 0);
 
         if (effect === 'off') {
+            // Remember each LED's own level (the saved one in status/night mode), so a later effect lights it as it was.
+            leds.forEach(led => {
+                const level = dayLevel(led);
+                if (level) state.lastLevel[led] = level;
+            });
             await write(leds, 'off');
             return;
         }
 
-        // breath/blink and "static" need a lit LED to be visible.
-        if (dark.length) {
-            await write(dark, 'brightness', { value: globalLevel() });
-        }
+        // breath/blink and "static" need a lit LED to be visible: back to the level before "Off", else
+        // that of a lit LED, else the default. Every LED gets its own level, LEDs with the same level one write.
+        const fallback = Math.max(0, ...state.order.map(led => state.leds[led]?.brightness || 0)) || levelFromPercent(DEFAULTS.brightness);
+        const byLevel = new Map();
+        dark.forEach(led => {
+            const value = state.lastLevel[led] || fallback;
+            byLevel.set(value, [...(byLevel.get(value) || []), led]);
+        });
+        for (const [value, group] of byLevel) await write(group, 'brightness', { value });
 
         if (effect === 'static') {
             await write(leds, 'stop');
@@ -1259,12 +1257,11 @@
      */
 
     function showView(view) {
-        // The effects now sit in the cards of the LED groups, on the overview.
-        if (view === 'effects') view = 'overview';
-
-        qa('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === view));
         qa('.ulc-view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
     }
+
+    // Another page of the sidebar: the page around us owns it; standing alone, only the view changes.
+    const goto = nav => window.UNC_NAV ? window.UNC_NAV(nav) : showView(nav.split(':')[1]);
 
     /*
      * ---------------------------------------------------------
@@ -1327,47 +1324,31 @@
             element.innerHTML = icon(element.dataset.ulcIcon);
         });
 
-        qa('[data-nav]').forEach(button => {
-            button.addEventListener('click', () => showView(button.dataset.nav));
-        });
-
-        /* General */
-
-        q('#ulc-enabled').addEventListener('change', event => {
-            const on = event.target.checked;
-
-            if (on) {
-                applyBrightness(state.order, Number(q('#ulc-brightness').value) || DEFAULTS.brightness);
-            } else {
-                preview(state.order, { brightness: 0 });
-                run(() => write(state.order, 'off'), t('all_off'));
-            }
-        });
-
-        const brightness = q('#ulc-brightness');
-
-        brightness.addEventListener('input', () => {
-            state.dragging = true;
-            setRangeFill(brightness);
-            q('#ulc-brightness-value').textContent = `${brightness.value}%`;
-        });
-
-        brightness.addEventListener('change', async () => {
-            await applyBrightness(state.order, Number(brightness.value));
-            state.dragging = false;
-        });
+        /* Mode */
 
         q('#ulc-mode').addEventListener('change', event => setMode(event.target.value));
+
+        root.addEventListener('click', event => {
+            const act = event.target.closest('[data-act]')?.dataset.act;
+
+            if (act === 'mode-manual') setMode('manual');
+            if (act === 'mode-status') setMode('status');
+        });
+
+        q('#ulc-drive-status-link').addEventListener('click', () => goto('led:drives'));
 
         // Like everything else on the page, these cards save every change at once
         // (a range when it is let go, a colour when it is picked or typed).
         bindColorInputs(q('#ulc-alert-color'), () => {});
         bindColorInputs(q('#ulc-sync-color'), () => {});
         bindColorInputs(q('#ulc-smart-color'), () => {});
+        bindColorInputs(q('#ulc-error-color'), (input, value) => applyErrorColor(value));
         const speedColors = q('#ulc-speed-colors');
         speedColors.innerHTML = LINK_SPEEDS.map(speed => `
-            <label>${escapeHtml(t('display.speed_color', { speed: speedLabel(speed) }))}</label>
-            <div data-speed="${speed}">${colorInput(SPEED_DEFAULTS[speed])}</div>`).join('');
+            <div class="ulc-speed-item">
+                <label>${escapeHtml(t('display.speed_color', { speed: speedLabel(speed) }))}</label>
+                <div data-speed="${speed}">${colorInput(SPEED_DEFAULTS[speed], false, t('display.speed_color', { speed: speedLabel(speed) }))}</div>
+            </div>`).join('');
         bindColorInputs(speedColors, () => {});
         q('#ulc-speed-enabled').addEventListener('change', event => {
             speedColors.hidden = !event.target.checked;
@@ -1375,7 +1356,7 @@
         });
 
         autoSave(q('#ulc-display-card'), saveDisplay);
-        autoSave(q('#ulc-network-card'), saveNetwork);
+        autoSave(q('#ulc-network-box'), saveNetwork);
 
         bindColorInputs(q('#ulc-shutdown-color'), () => {});
         autoSave(q('#ulc-shutdown-card'), saveShutdown);
@@ -1421,32 +1402,7 @@
 
         q('#ulc-night-action').addEventListener('change', renderNight);
 
-        /* Colours */
-
-        const applyRow = (container, key, value) => {
-            const row = container._rows.find(r => r.key === key);
-
-            if (!row || row.soon) return;
-            if (key === 'error') return applyErrorColor(value);
-            if (row.leds.length) return applyColor(row.leds, value);
-        };
-
-        for (const group of COLOR_GROUPS) {
-            const colors = colorList(group);
-
-            bindColorInputs(colors, (input, value) => applyRow(colors, input.closest('[data-row]').dataset.row, value));
-
-            colors.addEventListener('click', event => {
-                const button = event.target.closest('[data-reset]');
-                if (!button || button.disabled) return;
-
-                const key = button.closest('[data-row]').dataset.row;
-                const row = colors._rows.find(r => r.key === key);
-                if (row) applyRow(colors, key, row.def);
-            });
-        }
-
-        /* Effects */
+        /* Effects of the two groups */
 
         for (const group of GROUPS) {
             q(`[data-effects="${group}"]`).addEventListener('click', event => {
@@ -1457,18 +1413,24 @@
             });
         }
 
-        // Speed, direction and idle-only are shared by both groups. The running effect
-        // process (rainbow/temperature) keeps its LEDs; breathe and pulse are per group.
+        q('#ulc-system-target').addEventListener('change', event => {
+            state.sysTarget = event.target.value;
+            renderEffects();
+        });
+
+        // Speed, direction and idle-only are shared by all LEDs. The running effect process
+        // (rainbow/temperature) keeps its LEDs; breathe and pulse are set per LED.
         const reapplyEffects = kinds => {
             if (state.status.fx && kinds.includes(state.status.fx)) {
                 applyEffect(fxLeds(), state.status.fx);
             }
 
-            for (const group of GROUPS) {
-                const leds = groupLeds(group);
-                const effect = leds.length ? currentEffect(leds) : null;
+            for (const effect of ['breath', 'blink']) {
+                const leds = kinds.includes(effect)
+                    ? state.order.filter(led => !managed(led) && currentEffect([led]) === effect)
+                    : [];
 
-                if (['breath', 'blink'].includes(effect) && kinds.includes(effect)) applyEffect(leds, effect);
+                if (leds.length) applyEffect(leds, effect);
             }
         };
 
@@ -1502,25 +1464,35 @@
         q('#ulc-test').addEventListener('click', testLeds);
         q('#ulc-reset').addEventListener('click', resetDefaults);
 
-        /* Per-LED tables */
+        /* LED rows: system LEDs, all bays, single bays */
 
-        for (const table of [q('#ulc-led-table'), q('#ulc-bay-table')]) {
-            bindColorInputs(table, (input, value) => applyColor([input.closest('[data-led-row]').dataset.ledRow], value));
+        const rowKey = element => element.closest('[data-led-row]').dataset.ledRow;
+
+        for (const table of [q('#ulc-system-table'), q('#ulc-drives-table'), q('#ulc-bay-table')]) {
+            bindColorInputs(table, (input, value) => applyColor(rowLeds(rowKey(input)), value));
+
+            table.addEventListener('click', event => {
+                const button = event.target.closest('[data-reset]');
+                if (button) applyColor(rowLeds(rowKey(button)), rowDefault(rowKey(button)));
+            });
 
             table.addEventListener('input', event => {
-                if (event.target.matches('[data-brightness]')) setRangeFill(event.target);
+                if (!event.target.matches('[data-brightness]')) return;
+
+                setRangeFill(event.target);
+                event.target.closest('.ulc-inline').querySelector('[data-brightness-value]').textContent = `${event.target.value}%`;
             });
 
             table.addEventListener('change', event => {
                 const row = event.target.closest('[data-led-row]');
                 if (!row) return;
 
-                const led = row.dataset.ledRow;
+                const leds = rowLeds(row.dataset.ledRow);
 
                 if (event.target.matches('[data-brightness]')) {
-                    applyBrightness([led], Number(event.target.value));
+                    applyBrightness(leds, Number(event.target.value));
                 } else if (event.target.matches('[data-led-effect]')) {
-                    applyEffect([led], event.target.value);
+                    applyEffect(leds, event.target.value);
                 }
             });
         }

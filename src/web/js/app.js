@@ -592,12 +592,10 @@
         input.disabled = !led.enabled && Boolean(led.blocker);
         q('#unc-led-row').classList.toggle('unc-disabled', input.disabled);
         q('#unc-led-state').textContent = t(led.enabled ? 'leds.on' : 'leds.off');
-        q('#unc-led-open').hidden = !led.enabled;
         q('#unc-led-import').hidden = !led.import_available;
         // The LED pages come with the page itself: they are there once it has been loaded with the switch on.
+        // Without them the LEDs group is the overview with the switch.
         qa('[data-led-only]').forEach(button => { button.hidden = !(led.enabled && window.UNC_LED); });
-        // Switched on, the switch lives under Appearance & About; the sidebar entry is only the way to it while the LEDs are off.
-        qa('[data-led-off-only]').forEach(button => { button.hidden = Boolean(led.enabled && window.UNC_LED); });
 
         q('#unc-led-limited').hidden = fanKnown();
         q('#unc-led-limited').textContent = fanKnown() ? '' : t(caseKnown() ? 'leds.limited_fans' : 'leds.limited', { model: led.model || '?' });
@@ -1557,12 +1555,18 @@
         const [view, sub] = nav.split(':');
 
         state.view = view;
-        if (view === 'led') window.ULC?.show(sub);
-        if (view === 'system' && sub === 'led') q('#unc-led-switch-card').scrollIntoView({ block: 'start' });
+        if (view === 'led') {
+            window.ULC?.show(sub);
+            // The switch belongs to the overview page only.
+            q('#unc-led-head').hidden = sub !== 'overview';
+        }
         if (view === 'case' || view === 'overview') loadHardware();
         qa('[data-nav]').forEach(button => button.classList.toggle('active', button.dataset.nav === nav));
         qa('.unc-view').forEach(section => section.classList.toggle('active', section.dataset.view === view));
     }
+
+    // The LED pages ask for a page of the sidebar ("Status options" on the drive LEDs card).
+    window.UNC_NAV = nav => showView(nav);
 
     function bindEvents() {
         qa('[data-unc-icon]').forEach(element => {
@@ -1642,7 +1646,8 @@
 
             run(async () => {
                 await api({ action: 'led', value: on ? 'on' : 'off' }, true);
-                // The LED pages are part of the page, so it loads again with or without them.
+                // The LED pages are part of the page, so it loads again with or without them; back on the overview.
+                try { sessionStorage.setItem('unc-nav', 'led:overview'); } catch (error) { /* then it opens on the cockpit */ }
                 location.reload();
             }, t(on ? 'leds.switched_on' : 'leds.switched_off'));
         });
@@ -1652,6 +1657,9 @@
 
         theme.addEventListener('change', async () => {
             root.dataset.theme = resolveTheme(theme.value);
+            // The LED pages sit in their own root; they follow the scheme at once.
+            const ledRoot = document.getElementById('ulc');
+            if (ledRoot) ledRoot.dataset.theme = root.dataset.theme;
             window.UGREEN_NAS_THEME = theme.value;
 
             try {
@@ -1661,20 +1669,6 @@
                 toast(error.message, 'error');
             }
         });
-
-        // The size of the dashboard tile is saved by the LED backend (it is the LED tile's setting).
-        const dashSize = q('#unc-dash-size');
-        dashSize.value = window.UGREEN_LED_DASH_SIZE === 'full' ? 'full' : 'compact';
-        dashSize.addEventListener('change', () => run(async () => {
-            const response = await fetch(LED_API, {
-                method: 'POST',
-                credentials: 'same-origin',
-                body: new URLSearchParams({ action: 'dash_size', value: dashSize.value, csrf_token: window.UGREEN_LED_CSRF_TOKEN || '' })
-            });
-            const data = await response.json();
-
-            if (!response.ok || data.ok === false) throw new Error(data.error || `HTTP ${response.status}`);
-        }, t('theme.dash_saved')));
 
         q('#unc-language').addEventListener('change', async event => {
             try {
@@ -1701,6 +1695,13 @@
 
         q('#unc-version').textContent = window.UGREEN_NAS_VERSION || '';
         q('#unc-language').value = window.UGREEN_NAS_LANG_SETTING || 'auto';
+
+        // After switching the LEDs on or off the page loads again: back to where the switch is.
+        try {
+            const nav = sessionStorage.getItem('unc-nav');
+            sessionStorage.removeItem('unc-nav');
+            if (nav) showView(nav);
+        } catch (error) { /* storage blocked */ }
 
         await load();
         loadHardware().then(loadLeds).then(() => {
