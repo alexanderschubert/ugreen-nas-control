@@ -97,10 +97,13 @@
         curves: { cpu: [], case: [] },
         curvesDirty: false,
         safetyDirty: false,
+        saveError: { curves: '', safety: '' },
+        edits: {},
         busy: false,
         hw: null,
         hwError: false,
         view: 'overview',
+        nav: 'overview',
         leds: null,
         ledMode: null,
         ledSchedule: null
@@ -266,6 +269,57 @@
      * ---------------------------------------------------------
      */
 
+    // Page title and subtitle follow the sidebar entry; the controller chips show what the page is about.
+    const SUBTITLES = {
+        overview: 'sub.overview',
+        case: 'case.intro',
+        curves: 'curves.intro',
+        safety: 'safety.intro',
+        'led:overview': 'leds.intro',
+        'led:drives': 'sub.led_drives',
+        'led:schedules': 'sub.led_schedules',
+        'led:system': 'sub.led_system',
+        settings: 'sub.settings',
+        about: 'sub.about'
+    };
+
+    function renderTitle() {
+        const nav = state.nav;
+
+        q('#unc-title').textContent = t(`nav.${nav.replace(':', '_')}`);
+        q('#unc-subtitle').innerHTML = t(SUBTITLES[nav] || 'sub.overview');
+        qa('[data-model]').forEach(element => {
+            element.textContent = state.data?.info?.model || 'UGREEN NAS';
+        });
+        renderBanners();
+    }
+
+    function renderBanners() {
+        const data = state.data;
+        const nav = state.nav;
+        const fanPage = nav === 'curves' || nav === 'safety';
+        const ledPage = nav.startsWith('led:');
+        const show = [];
+        const chip = name => name.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571');
+
+        if (data?.ok && nav !== 'settings' && nav !== 'about') {
+            if (!ledPage && data.chip) show.push(['banner.connected', chip(data.chip), true]);
+            if (!fanPage && ledsOn() && state.ledStatus) {
+                const found = Boolean(state.ledStatus.i2c_address);
+                show.push([found ? 'banner.led' : 'banner.led_off', found ? `I²C ${state.ledStatus.i2c_address}` : '', found]);
+            }
+        }
+
+        q('#unc-banners').innerHTML = show.map(([key, sub, good]) => `
+            <div class="unc-banner ${good ? '' : 'bad'}">
+                <span class="unc-banner-icon"><span class="unc-ico">${icon(good ? 'check' : 'alert')}</span></span>
+                <div>
+                    <strong>${escapeHtml(t(key))}</strong>
+                    ${sub ? `<small>${escapeHtml(sub)}</small>` : ''}
+                </div>
+            </div>`).join('');
+    }
+
     function renderHead() {
         const data = state.data;
         const online = Boolean(data && data.ok);
@@ -277,12 +331,7 @@
 
         if (!online) return;
 
-        qa('[data-model]').forEach(element => {
-            element.textContent = data.info?.model || 'UGREEN NAS';
-        });
-
-        q('#unc-banner').hidden = !data.chip;
-        q('#unc-chip').textContent = data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : '';
+        renderTitle();
 
         q('#unc-chip-error').hidden = !data.chip_error;
         q('#unc-chip-error-text').textContent = data.chip_error || '';
@@ -349,14 +398,14 @@
         const width = value == null ? 0 : Math.max(2, Math.min(100, value));
 
         return `
-            <div class="unc-temp ${level}">
-                <span><i class="unc-temp-ico">${iconName.startsWith('<') ? iconName : icon(iconName)}</i>${escapeHtml(label)}${extra ? ` <small class="unc-muted">${escapeHtml(extra)}</small>` : ''}</span>
+            <div class="unc-temp ${level}" title="${escapeHtml([label, extra].filter(Boolean).join(' · '))}">
+                <span><i class="unc-temp-ico">${iconName.startsWith('<') ? iconName : icon(iconName)}</i><span class="unc-temp-name">${escapeHtml(label)}${extra ? `<small class="unc-muted">${escapeHtml(extra)}</small>` : ''}</span></span>
                 <span class="unc-meter"><span style="width:${width}%"></span></span>
                 <strong>${escapeHtml(deg(value))}</strong>
             </div>`;
     }
 
-    const ssdSlotLabel = n => n.slot === 'pcie' ? 'PCIe' : n.slot === 'system' ? t('cc.system') : n.slot === 'm2' ? 'M.2' : `M.2-${n.slot.replace('m2-', '')}`;
+    const ssdSlotLabel = n => n.slot === 'pcie' ? t('in.pcie_card') : n.slot === 'system' ? t('slot.system') : n.slot === 'm2' ? 'M.2' : t('case.m2_slot', { n: n.slot.replace('m2-', '') });
 
     // Sensors in sections: processor and board, the SSDs, the drives.
     function renderTemps() {
@@ -383,13 +432,13 @@
         // The SSDs by their place in the case (with the mark of the one Unraid runs from); the sensors' own names when the hardware isn't known.
         if (state.hw?.nvme?.length) {
             state.hw.nvme.forEach(n => {
-                ssds.push(tempRow(`${ssdSlotLabel(n)} · ${n.model || n.id}`, n.temp, 'nvme', '', n.boot ? UNRAID_MARK : 'm2'));
-                extras.filter(e => e.name === n.id).forEach(e => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', '', 'm2')));
+                ssds.push(tempRow(ssdSlotLabel(n), n.temp, 'nvme', n.model || n.id, n.boot ? UNRAID_MARK : 'm2'));
+                extras.filter(e => e.name === n.id).forEach(e => ssds.push(tempRow(`${ssdSlotLabel(n)} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', t('temps.nvme_extra', { model: n.model || n.id }), 'm2')));
             });
         } else {
             (s.nvme || []).forEach(n => {
                 ssds.push(tempRow(n.name, n.temp, 'nvme', n.label || '', 'm2'));
-                extras.filter(e => e.name === n.name).forEach(e => ssds.push(tempRow(n.name, e.temp, 'nvme', e.label || t('temps.sensor'), 'm2')));
+                extras.filter(e => e.name === n.name).forEach(e => ssds.push(tempRow(`${n.name} · ${e.label || t('temps.sensor')}`, e.temp, 'nvme', t('temps.nvme_extra', { model: n.label || n.name }), 'm2')));
             });
         }
 
@@ -442,7 +491,7 @@
 
         if (ledsOn()) {
             if (!status) return '';
-            return status.i2c_address ? t('system.ledctl_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_off');
+            return status.i2c_address ? t('ledfacts.controller_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_off');
         }
         if (!led) return '';
         if (led.blocker === 'model') return t('system.ledctl_model');
@@ -462,7 +511,8 @@
             ['system.kernel', info.kernel],
             ['system.uptime', info.uptime ? uptime(info.uptime) : ''],
             ['system.chip', data.chip ? data.chip.replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571') : data.chip_error ? '–' : ''],
-            ['system.ledctl', ledController()]
+            ['system.ledctl', ledController()],
+            ...ledFacts()
         ];
 
         q('#unc-system').innerHTML = facts
@@ -534,10 +584,51 @@
                 const value = Number(input.value);
                 if (!Number.isFinite(value)) return;
                 state.curves[kind][Number(input.dataset.i)][input.dataset.field] = value;
-                state.curvesDirty = true;
+                markDirty('curves');
+                state.saveError.curves = '';
+                renderSaveBars();
                 drawChart(kind);
             });
         });
+    }
+
+    // The fan pages save on request: the bar shows whether something is unsaved, the sidebar entry carries a dot.
+    function renderSaveBars() {
+        [['curves', state.curvesDirty], ['safety', state.safetyDirty]].forEach(([name, dirty]) => {
+            const bar = q(`[data-savebar="${name}"]`);
+            // A failed save keeps the changes and says why, instead of "Everything saved".
+            const error = dirty ? state.saveError[name] : '';
+
+            bar.classList.toggle('dirty', dirty);
+            bar.classList.toggle('failed', Boolean(error));
+            bar.querySelector('.unc-savestate').textContent = error ? t('save.failed', { error }) : t(dirty ? 'save.dirty' : 'save.clean');
+            bar.querySelectorAll('button').forEach(button => { button.disabled = !dirty; });
+            q(`.unc-nav [data-nav="${name}"]`).classList.toggle('dirty', dirty);
+        });
+    }
+
+    // Every edit counts, so a save only clears the flag if nothing changed while it was running.
+    function markDirty(name) {
+        state[`${name}Dirty`] = true;
+        state.edits[name] = (state.edits[name] || 0) + 1;
+    }
+
+    // Saves a fan page: the unsaved flag is cleared only once the API has confirmed, a failure keeps it.
+    async function saveFanPage(name, call, success) {
+        const edits = state.edits[name];
+        state.saveError[name] = '';
+
+        await run(async () => {
+            try {
+                await call();
+            } catch (error) {
+                state.saveError[name] = error.message;
+                throw error;
+            }
+
+            if (state.edits[name] === edits) state[`${name}Dirty`] = false;
+        }, success);
+        renderSaveBars();
     }
 
     function renderCurves() {
@@ -582,6 +673,13 @@
         q('#unc-stall-notify').checked = settings.stall_notify !== false;
     }
 
+    function discardSafety() {
+        state.safetyDirty = false;
+        state.saveError.safety = '';
+        renderSafety();
+        renderSaveBars();
+    }
+
     function renderLeds() {
         const led = state.data.led || {};
         const input = q('#unc-led-enabled');
@@ -622,6 +720,7 @@
         renderSystem();
         renderCurves();
         renderSafety();
+        renderSaveBars();
         renderLeds();
         renderHero();
         renderCockpitCards();
@@ -704,8 +803,7 @@
             rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0], ['reset', 'case.reset'], ['dc', 'case.dc']],
             pcie: false,
             strip: true,
-            fan: true,
-            hint: 'case.inside_hint_gt'
+            fan: true
         }],
         // DXP4800, DXP4800 Plus and DXP4800 Pro: one chassis, drawn after a photo of the Plus. The slots of the
         // M.2 SSDs are not known, so there is no inside view; no fan control either.
@@ -1195,18 +1293,24 @@
             </svg>`;
     }
 
+    // A model without a hint (the DXP4800 GT) gets no note at all.
+    function setHint(element, key) {
+        element.hidden = !key;
+        if (key) element.dataset.i18n = key; else element.removeAttribute('data-i18n');
+        element.textContent = key ? t(key) : '';
+    }
+
     function renderInside(hw, target = '#unc-inside') {
         // Without known slots there is nothing to draw: the card stays away.
         q(target).closest('article').hidden = Boolean(caseModel(hw).noInside);
         if (caseModel(hw).noInside) return;
 
         if (caseModel(hw).inside6800) {
-            const hint = q('[data-i18n^="case.inside_hint"]');
+            const hint = q('#unc-inside-hint');
 
             q(target).classList.add('board-svg');
             q(target).classList.remove('no-pcie');
-            hint.dataset.i18n = caseModel(hw).hint;
-            hint.textContent = t(caseModel(hw).hint);
+            setHint(hint, caseModel(hw).hint);
             q(target).innerHTML = inside6800Html(hw);
             return;
         }
@@ -1259,9 +1363,8 @@
             </div>`;
 
         q('#unc-inside').classList.toggle('no-pcie', !hasPcie);
-        const hint = q('[data-i18n^="case.inside_hint"]');
-        hint.dataset.i18n = model.hint;
-        hint.textContent = t(model.hint);
+        const hint = q('#unc-inside-hint');
+        setHint(hint, model.hint);
         q(target).innerHTML = `
             <div class="unc-board-col">${ramSlots}</div>
             <div class="unc-board-col">${m2(1)}${m2(2)}${model.sys ? sysSlot() : ''}</div>
@@ -1300,22 +1403,18 @@
     // The LED pages ship with the page: only then (and with the switch on) there is anything to read.
     const ledsOn = () => Boolean(window.UNC_LED && state.data?.led?.enabled);
 
-    // What the LED controller reports, under Appearance & About (the LED pages' own copy of it is hidden).
-    function renderLedFacts(status, leds) {
-        const found = Object.keys(leds || {});
-        const facts = [
+    // What else the LED controller reports (the controller itself is the "LED controller" fact above).
+    function ledFacts() {
+        const status = state.ledStatus;
+        if (!ledsOn() || !status) return [];
+
+        const found = Object.keys(state.leds || {});
+        return [
             ['ledfacts.mapping', status.mapping ? t(`ledfacts.mapping_${status.mapping}`) : ''],
-            ['ledfacts.control', status.controller ? `${status.controller} (${t('ledfacts.no_kernel_module')})` : ''],
-            ['ledfacts.controller', status.i2c_address ? t('ledfacts.controller_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_off')],
             ['ledfacts.leds', found.length ? found.join(', ') : t('ledfacts.none')],
             ['ledfacts.monitor', status.foreign_monitor ? t('ledfacts.monitor_on') : t('ledfacts.monitor_off')],
             ['ledfacts.saved', status.settings_saved ? t('ledfacts.saved_yes') : t('ledfacts.saved_no')]
         ];
-
-        q('#unc-led-facts').innerHTML = facts
-            .filter(([, value]) => value)
-            .map(([key, value]) => `<dt>${escapeHtml(t(key))}</dt><dd>${escapeHtml(value)}</dd>`)
-            .join('');
     }
 
     async function loadLeds() {
@@ -1324,6 +1423,7 @@
             if (state.ledStatus) {
                 state.ledStatus = null;
                 renderSystem();
+                renderBanners();
             }
             return;
         }
@@ -1338,8 +1438,8 @@
             state.ledMode = { mode: status.mode, fx: status.fx };
             state.ledBays = Number(status.bays) || 0;
             state.ledStatus = status;
-            renderLedFacts(status, state.leds);
             if (state.data) renderSystem();
+            renderBanners();
         } catch (error) {
             state.leds = null;
             return;
@@ -1555,6 +1655,8 @@
         const [view, sub] = nav.split(':');
 
         state.view = view;
+        state.nav = nav;
+        renderTitle();
         if (view === 'led') {
             window.ULC?.show(sub);
             // The switch belongs to the overview page only.
@@ -1587,17 +1689,36 @@
             run(() => api({ action: 'mode', value: mode }, true), t('mode.saved', { mode: t(`mode.${mode}`) }));
         });
 
-        q('#unc-curve-load').addEventListener('click', () => {
-            const mode = q('#unc-curve-preset').value;
+        q('#unc-curve-preset').addEventListener('change', event => {
+            const mode = event.target.value;
             const preset = state.data?.presets?.[mode];
+            event.target.value = '';
             if (!preset) return;
 
             state.curves = { cpu: parseCurve(preset[0]), case: parseCurve(preset[1]) };
-            state.curvesDirty = true;
+            markDirty('curves');
             buildPoints('cpu');
             buildPoints('case');
             renderCurves();
+            renderSaveBars();
             toast(t('curves.loaded', { mode: t(`mode.${mode}`) }));
+        });
+
+        q('[data-discard="curves"]').addEventListener('click', () => {
+            state.curvesDirty = false;
+            state.saveError.curves = '';
+            state.curves = activeCurves();
+            buildPoints('cpu');
+            buildPoints('case');
+            renderCurves();
+            renderSaveBars();
+        });
+
+        q('[data-discard="safety"]').addEventListener('click', discardSafety);
+
+        // Unsaved fan settings are lost on reload: ask first.
+        window.addEventListener('beforeunload', event => {
+            if (state.curvesDirty || state.safetyDirty) event.preventDefault();
         });
 
         q('#unc-curves-save').addEventListener('click', () => {
@@ -1608,25 +1729,27 @@
                 return;
             }
 
-            state.curvesDirty = false;
-            run(() => api({ action: 'curves', cpu_curve: curveText(cpu), case_curve: curveText(cs) }, true), t('curves.saved'));
+            saveFanPage('curves', () => api({ action: 'curves', cpu_curve: curveText(cpu), case_curve: curveText(cs) }, true), t('curves.saved'));
         });
 
         SAFETY.forEach(field => {
             q(`#unc-${field.id}`).addEventListener('input', () => {
-                state.safetyDirty = true;
+                markDirty('safety');
+                state.saveError.safety = '';
                 showSafetyValue(field);
+                renderSaveBars();
             });
         });
         q('#unc-stall-notify').addEventListener('change', () => {
-            state.safetyDirty = true;
+            markDirty('safety');
+            state.saveError.safety = '';
+            renderSaveBars();
         });
 
         q('#unc-safety-save').addEventListener('click', () => {
             const values = Object.fromEntries(SAFETY.map(field => [field.key, q(`#unc-${field.id}`).value]));
 
-            state.safetyDirty = false;
-            run(() => api({
+            saveFanPage('safety', () => api({
                 action: 'safety',
                 ...values,
                 stall_notify: q('#unc-stall-notify').checked ? '1' : '0'

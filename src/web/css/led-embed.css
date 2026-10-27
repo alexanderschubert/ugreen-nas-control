@@ -5,3 +5,8 @@
     --ulc-accent-2: #184fa8;
     --ulc-green: #15803d;
 }
+
+/* The page heading above is the LED page's title. */
+.ulc-embedded .ulc-page-title {
+    display: none;
+}

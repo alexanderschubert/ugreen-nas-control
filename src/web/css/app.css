@@ -246,6 +246,27 @@
     display: none;
 }
 
+.unc-banners {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.unc-banner.bad {
+    border-color: rgba(239, 68, 68, .5);
+    background: rgba(127, 29, 29, .3);
+}
+
+.unc-banner.bad .unc-banner-icon {
+    background: var(--unc-red);
+    color: #2b0606;
+}
+
+.unc-banner.bad small {
+    color: #fca5a5;
+}
+
 .unc-banner-icon {
     display: grid;
     place-items: center;
@@ -631,13 +652,6 @@
 }
 
 /* ---------- Buttons ---------- */
-
-.unc-actions {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 14px;
-    margin-top: 16px;
-}
 
 .unc .unc-btn {
     display: inline-flex;
@@ -1176,10 +1190,6 @@
     .unc-form,
     .unc-field-row,
     .unc-facts {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .unc-actions {
         grid-template-columns: minmax(0, 1fr);
     }
 }
@@ -1780,6 +1790,10 @@
 
 .unc[data-theme="light"] .unc-nav button.active {
     color: #fff;
+}
+
+.unc[data-theme="light"] .unc-nav button.active:hover {
+    background: linear-gradient(180deg, var(--unc-accent), var(--unc-accent-2));
 }
 
 .unc[data-theme="light"] .unc-head p {
@@ -2447,10 +2461,6 @@
 .unc-hero-stage .unc-pled { width: clamp(9px, 3cqi, 16px); }
 .unc-hero-stage .unc-nas-model { font-size: clamp(7px, 2.4cqi, 12px); }
 
-.unc-case-intro {
-    margin: 0 0 14px;
-}
-
 /* ---------- Rear of the DXP6800 Pro, after a photo of the device ---------- */
 
 .unc-rear6800 {
@@ -3020,13 +3030,7 @@
 .unc-rear6011 .r-reset svg { width: 1.7cqi; }
 .unc-rear6011 .r-fan .unc-fan-icon { width: 17cqi; height: 17cqi; }
 
-/* ---------- LEDs: overview head (page title and the switch) ---------- */
-
-.unc .unc-page-title {
-    margin: 0 0 14px;
-    font-size: 20px;
-    font-weight: 650;
-}
+/* ---------- LEDs: overview head (the switch) ---------- */
 
 #unc-led-head {
     margin-bottom: 18px;
@@ -3040,3 +3044,69 @@
     margin: 12px 0 0;
     font-size: 12px;
 }
+
+/* ---------- Card heading with a button, save bar of the fan pages, sensor names ---------- */
+
+.unc-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.unc-card-head h2 { margin: 0; }
+
+.unc-savebar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--unc-border);
+}
+
+.unc-savestate {
+    margin-right: auto;
+    color: var(--unc-muted);
+    font-size: 13px;
+}
+
+.unc-savebar.dirty .unc-savestate {
+    color: var(--unc-amber);
+    font-weight: 600;
+}
+
+.unc-savebar.dirty .unc-savestate::before {
+    content: "";
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--unc-amber);
+}
+
+.unc .unc-btn:disabled { opacity: .45; cursor: default; }
+
+.unc-nav button.dirty::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    margin-left: auto;
+    border-radius: 50%;
+    background: var(--unc-amber);
+}
+
+.unc-curve-from { margin: 16px 0 0; }
+
+/* A sensor name wraps instead of being cut off; the model sits under it. */
+.unc-temp > span:first-child { align-items: flex-start; overflow: visible; white-space: normal; }
+.unc-temp-name { min-width: 0; overflow-wrap: anywhere; line-height: 1.3; }
+.unc-temp-name small { display: block; font-size: 11px; }
+.unc-temp-ico { margin-top: 2px; }
+
+/* Unraid lays out a dd as a column; a fact is running text with links in it. */
+.unc .unc-facts dd { display: block; }

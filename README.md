@@ -14,8 +14,8 @@
 [![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
 
 Unraid plugin for UGREEN DX/DXP NAS: **LED control on every model UGREEN LED Control knew**, and, for the
-**DXP6800 Pro and DXP4800 GT**, fan control and a case view as well, like the fan settings of UGOS. It succeeds
-UGREEN LED Control.
+**DXP6800 Pro and DXP4800 GT**, fan control and a case view as well, like the fan settings of UGOS. The LED control
+grew out of [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control).
 
 - **System**: model, BIOS, CPU, memory, Unraid and kernel version, uptime
 - **Temperatures**: CPU package and cores, mainboard, the fan controller's own sensors, every NVMe SSD,
@@ -75,7 +75,20 @@ Unraid 7.0 or newer. In **Plugins → Install Plugin**:
 https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugin/ugreen-nas-control.plg
 ```
 
-Settings: **Settings → UGREEN NAS Control**.
+Settings: **Settings → UGREEN NAS Control**. The page has a sidebar; the page title and the controller chips at the top follow the entry you open:
+
+| Group | Entry | What it has |
+| --- | --- | --- |
+| Cockpit | Overview | the front with the bays, fans and fan mode, processor, memory, network, all temperatures, LED summary |
+| Cockpit | Case | drives in detail (with a link to the bay LEDs), rear, inside |
+| Fans | Fan curves | the two curves; pick a preset or edit the points, then *Save* (an unsaved change is marked, *Discard* undoes it) |
+| Fans | Safety | minimum speed, emergency limits, NVMe offset, fan-stopped notification; *Save* like the curves |
+| LEDs | LED overview | the LED switch, mode, system and drive LEDs, preview (the other LED entries appear once it is on) |
+| LEDs | Drive status, Night mode, Alerts & shutdown | bay assignment with *Identify* and status display; night mode; Unraid alerts and the shutdown signal |
+| System | Settings | interface language and colour scheme |
+| System | About | one System card (model, BIOS, CPU, memory, Unraid, kernel, uptime, the fan and LED controller), the plugin, links and thanks |
+
+The fan mode on the Overview and everything on the LED pages apply at once; only the two fan pages save on request. The fan entries show on the two models with fan control only.
 
 ## How it works
 
@@ -119,12 +132,13 @@ Settings are saved in `/boot/config/plugins/ugreen-nas-control/fan.cfg`.
 ## LEDs
 
 LED control is built in (`led/`: Go tool `i2c/`, backend and web under `src/`) and talks to the LED
-controller through `/dev/i2c-N` (on the DXP4800 GT through `/dev/mem`, no kernel module). It succeeds the standalone plugin
-*UGREEN LED Control* for these two models. It stays off until the switch on *LEDs → LED overview* is on; then the
+controller through `/dev/i2c-N` (on the DXP4800 GT through `/dev/mem`, no kernel module). It replaces the standalone plugin
+*UGREEN LED Control*. It stays off until the switch on *LEDs → LED overview* is on; then the
 group **LEDs** of the sidebar also shows Drive status, Night mode and Alerts & shutdown, and the cockpit and the dashboard
 tile show the colours of the LEDs live. LED overview has the mode, one card for the system LEDs and one for the drive LEDs
 (colours, brightness, effects, single bays), a preview with Test and Reset, and the effect settings (speed, direction, only
-when idle) once an animated effect is in use. LED control is only offered on the DXP6800 Pro and the DXP4800 GT, and not while the plugin
+when idle) once an animated effect is in use. LED control is offered on every UGREEN DX, DXP and iDX model (the product name starts with `DX`, `DXP` or `iDX`; see
+[Supported models](#supported-models) for how far each is verified), and not while the plugin
 *ugreenleds-driver* or the kernel module `led_ugreen` holds the controller. If the standalone plugin *UGREEN LED Control* is
 installed too, both still run (the runtime files have their own names, the I2C bus lock is shared), but they write the same
 LEDs and the last write wins: the page says so. Use one of them, best this one, and switch LED control off in the other or
@@ -169,7 +183,7 @@ Questions and problems: the [support thread in the Unraid forum](https://forums.
 
 - [miskcoo](https://github.com/miskcoo/ugreen_leds_controller): the LED protocol and the bay mapping of the LED part
 - [ivolution](https://github.com/ivolution): the Spanish translation of UGREEN LED Control, which the LED part and this plugin build on
-- [j3n57h0m45](https://github.com/j3n57h0m45): the **DXP4800 GT** support: fan control through the IT5571 embedded controller, LEDs, the case view, the System view, light case pictures and the CI hardening
+- [j3n57h0m45](https://github.com/j3n57h0m45): the **DXP4800 GT** support: fan control through the IT5571 embedded controller, LEDs, the case view, the system view, light case pictures and the CI hardening
 - everyone who tested on their model
 
 ## License
