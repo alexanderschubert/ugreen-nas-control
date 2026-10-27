@@ -23,6 +23,7 @@ FX_LOG="${UGREEN_FX_LOG:-/var/run/ugreen-nas-control.led-fx.log}"
 IDENTIFY_PREFIX="${UGREEN_IDENTIFY_PREFIX:-/var/run/ugreen-nas-control.led.identify-}"
 ALERT_STATE="${UGREEN_ALERT_STATE:-/var/run/ugreen-nas-control.led.alert}"
 SHUTDOWN_MARK="${UGREEN_SHUTDOWN_MARK:-/var/run/ugreen-nas-control.led.shutdown}"
+BUS_CACHE="${UGREEN_BUS_CACHE:-/var/run/ugreen-nas-control.led.bus}"
 DYNAMIX_CFG="${UGREEN_DYNAMIX_CFG:-/boot/config/plugins/dynamix/dynamix.cfg}"
 
 DEFAULT_DISK_COLOR="255 160 0"
@@ -270,8 +271,24 @@ foreign_monitor_running() {
 status() {
     local probe
     local bus=""
+    local found="failed"
+    local attempt
 
-    probe="$(tool probe 2>/dev/null)" && bus="$(printf '%s' "$probe" | sed -n -e 's/.*"bus": "\/dev\/i2c-\([0-9]*\)".*/\1/p' -e 's/.*"bus": "\(\/dev\/mem\)".*/"\1"/p')"
+    # One failed probe (the controller did not answer while the daemon or an effect was
+    # writing) is not "no controller": ask up to three times, then fall back to the bus
+    # that answered within the last 10 minutes.
+    for attempt in 1 2 3; do
+        probe="$(tool probe 2>/dev/null)" && bus="$(printf '%s' "$probe" | sed -n -e 's/.*"bus": "\/dev\/i2c-\([0-9]*\)".*/\1/p' -e 's/.*"bus": "\(\/dev\/mem\)".*/"\1"/p')"
+        [ -n "$bus" ] && break
+        sleep 0.3
+    done
+    if [ -n "$bus" ]; then
+        found="ok"
+        printf '%s\n' "$bus" > "$BUS_CACHE" 2>/dev/null || true
+    elif [ -n "$(find "$BUS_CACHE" -mmin -10 2>/dev/null)" ]; then
+        bus="$(cat "$BUS_CACHE" 2>/dev/null)"
+        [ -n "$bus" ] && found="cached"
+    fi
 
     printf '{\n'
     printf '  "ok": true,\n'
@@ -338,9 +355,11 @@ status() {
     if [ -n "$bus" ]; then
         printf '  "i2c_bus": %s,\n' "$bus"
         printf '  "i2c_address": "0x3a",\n'
+        printf '  "i2c_probe": "%s",\n' "$found"
     else
         printf '  "i2c_bus": null,\n'
         printf '  "i2c_address": null,\n'
+        printf '  "i2c_probe": "failed",\n'
     fi
     printf '  "leds": '
     list_leds

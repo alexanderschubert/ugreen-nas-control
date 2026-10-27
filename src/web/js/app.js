@@ -304,9 +304,11 @@
 
         if (data?.ok && nav !== 'settings' && nav !== 'about') {
             if (!ledPage && data.chip) show.push(['banner.connected', chip(data.chip), true]);
-            if (!fanPage && ledsOn() && state.ledStatus) {
-                const found = Boolean(state.ledStatus.i2c_address);
-                show.push([found ? 'banner.led' : 'banner.led_off', found ? `I²C ${state.ledStatus.i2c_address}` : '', found]);
+            // A single missed probe is not "not found": see ledControllerState().
+            const controller = ledControllerState();
+            if (!fanPage && controller) {
+                const found = controller === 'found';
+                show.push([found ? 'banner.led' : 'banner.led_off', found && state.ledStatus.i2c_address ? `I²C ${state.ledStatus.i2c_address}` : '', found]);
             }
         }
 
@@ -484,14 +486,26 @@
         return d > 0 ? t('uptime.days', { d, h }) : t('uptime.hours', { h, m });
     }
 
+    // 'found' | 'missing' | '' (unknown, or one miss that may be transient). The backend retries and
+    // remembers the bus; "missing" needs an empty probe in three reads in a row and no LED answering.
+    function ledControllerState() {
+        const status = state.ledStatus;
+        if (!ledsOn() || !status) return '';
+        if (status.i2c_address || Object.keys(state.leds || {}).length) return 'found';
+        return (state.ledMisses || 0) >= 3 ? 'missing' : '';
+    }
+
     // The LED controller for the System facts: what it reports, or why the LED part is off.
     function ledController() {
         const led = state.data?.led;
         const status = state.ledStatus;
 
         if (ledsOn()) {
-            if (!status) return '';
-            return status.i2c_address ? t('ledfacts.controller_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_off');
+            const controller = ledControllerState();
+            if (!controller) return '';
+            return controller === 'found'
+                ? (status.i2c_address ? t('ledfacts.controller_on', { bus: status.i2c_bus, address: status.i2c_address }) : t('ledfacts.controller_on_short'))
+                : t('ledfacts.controller_off');
         }
         if (!led) return '';
         if (led.blocker === 'model') return t('system.ledctl_model');
@@ -944,9 +958,9 @@
                 <div class="d-main">
                     <div class="d-pic ${bay.hdd ? 'hdd' : 'ssd'}">${bay.hdd ? DRIVE_HDD_SVG : DRIVE_SSD_SVG}</div>
                     <div class="d-info">
-                        <strong>${escapeHtml(bay.model || bay.id || '–')}</strong>
+                        <strong title="${escapeHtml(bay.model || bay.id || '')}">${escapeHtml(bay.model || bay.id || '–')}</strong>
                         <span>${escapeHtml([fmtSize(bay.size_bytes), t(bay.hdd ? 'case.hdd' : 'case.ssd')].filter(Boolean).join(' · '))}</span>
-                        <small class="unc-muted unc-id">${escapeHtml([bay.device, bay.id && bay.id !== bay.model ? bay.id : ''].filter(Boolean).join(' · '))}</small>
+                        <small class="unc-muted unc-id" title="${escapeHtml([bay.device, bay.id && bay.id !== bay.model ? bay.id : ''].filter(Boolean).join(' · '))}">${escapeHtml([bay.device, bay.id && bay.id !== bay.model ? bay.id : ''].filter(Boolean).join(' · '))}</small>
                     </div>
                 </div>
                 <div class="d-temp">${meter}<span>${temp}</span></div>
@@ -1438,6 +1452,7 @@
             state.ledMode = { mode: status.mode, fx: status.fx };
             state.ledBays = Number(status.bays) || 0;
             state.ledStatus = status;
+            state.ledMisses = status.i2c_address ? 0 : (state.ledMisses || 0) + 1;
             if (state.data) renderSystem();
             renderBanners();
         } catch (error) {
