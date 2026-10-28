@@ -26,6 +26,7 @@ window.UNC_I18N = {
 
         'head.connecting': 'Verbinde…',
         'head.online': 'Online',
+        'head.night': 'Nachtmodus',
         'head.offline': 'Offline',
         'banner.connected': 'Lüfter-Chip erkannt',
 
@@ -349,6 +350,7 @@ window.UNC_I18N = {
 
         'head.connecting': 'Connecting…',
         'head.online': 'Online',
+        'head.night': 'Night mode',
         'head.offline': 'Offline',
         'banner.connected': 'Fan controller found',
 
@@ -672,6 +674,7 @@ window.UNC_I18N = {
         'nav.group_system': 'Sistema',
         'head.connecting': 'Conectando…',
         'head.online': 'En línea',
+        'head.night': 'Modo nocturno',
         'head.offline': 'Desconectado',
         'banner.connected': 'Controlador de ventiladores encontrado',
         'warn.chip': 'El controlador de ventiladores no se puede usar.',

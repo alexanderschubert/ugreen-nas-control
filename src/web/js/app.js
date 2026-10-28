@@ -325,6 +325,13 @@
             </div>`).join('');
     }
 
+    // The LEDs are dimmed or off right now because of the night mode.
+    function renderNightBadge() {
+        const badge = q('#unc-night');
+
+        if (badge) badge.hidden = !(ledsOn() && state.ledStatus?.night);
+    }
+
     function renderHead() {
         const data = state.data;
         const online = Boolean(data && data.ok);
@@ -333,6 +340,7 @@
         badge.textContent = online ? t('head.online') : t('head.offline');
         badge.classList.toggle('online', online);
         badge.classList.toggle('offline', !online);
+        renderNightBadge();
 
         if (!online) return;
 
@@ -1585,6 +1593,7 @@
                 state.ledStatus = null;
                 renderSystem();
                 renderBanners();
+                renderNightBadge();
             }
             return;
         }
@@ -1598,13 +1607,14 @@
             state.ledMisses = status.i2c_address ? 0 : (state.ledMisses || 0) + 1;
             if (state.data) renderSystem();
             renderBanners();
+            renderNightBadge();
         } catch (error) {
             state.leds = null;
             return;
         }
 
         // Only the night hint depends on it: a failed read must not hide the LED data.
-        if (!state.ledSchedule) state.ledSchedule = await ledGet('schedule').catch(() => null);
+        state.ledSchedule = await ledGet('schedule', STATUS_POLL_MS * 0.9).catch(() => state.ledSchedule);
     }
 
     // Drawing (colour, brightness mapping, blink/breathe/rainbow animation) is the shared renderer's, js/ledfx.js.

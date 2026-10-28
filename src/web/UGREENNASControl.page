@@ -78,7 +78,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 
 <header class="unc-head">
     <div>
-        <h1><span id="unc-title" data-i18n="nav.overview">Übersicht</span> <span class="unc-badge" id="unc-online" data-i18n="head.connecting">Verbinde…</span></h1>
+        <h1><span id="unc-title" data-i18n="nav.overview">Übersicht</span> <span class="unc-badge" id="unc-online" data-i18n="head.connecting">Verbinde…</span> <span class="unc-badge night" id="unc-night" data-i18n="head.night" hidden>Nachtmodus</span></h1>
         <p id="unc-subtitle"></p>
     </div>
     <div class="unc-banners" id="unc-banners"></div>
