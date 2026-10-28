@@ -27,6 +27,9 @@ const (
 
 	// A fan that shows 0 rpm for this many ticks while driven counts as stalled.
 	stallTicks = 8
+
+	// Stall check applies from this speed up unless fan_rpm.json shows the fan turning lower.
+	stallDefaultPct = 20
 )
 
 // Role of each fan: fan2 to fan4 on the DXP6800 Pro, fan1 and fan3 on the DXP4800 GT.
@@ -34,15 +37,16 @@ var roles = map[string]string{"fan1": "cpu", "fan2": "cpu", "fan3": "case", "fan
 
 // State is written after every tick for the web page and the dashboard.
 type State struct {
-	Time      int64          `json:"time"`
-	Mode      string         `json:"mode"`
-	Failsafe  string         `json:"failsafe"`
-	CPUTemp   *int           `json:"cpu_temp"`
-	CaseTemp  *int           `json:"case_temp"`
-	CaseFrom  string         `json:"case_from"`
-	Targets   map[string]int `json:"targets"`
-	Stalled   []string       `json:"stalled"`
-	ChipTemps []*int         `json:"chip_temps"`
+	Time       int64          `json:"time"`
+	Mode       string         `json:"mode"`
+	Failsafe   string         `json:"failsafe"`
+	CPUTemp    *int           `json:"cpu_temp"`
+	CaseTemp   *int           `json:"case_temp"`
+	CaseFrom   string         `json:"case_from"`
+	CaseDriver string         `json:"case_driver"`
+	Targets    map[string]int `json:"targets"`
+	Stalled    []string       `json:"stalled"`
+	ChipTemps  []*int         `json:"chip_temps"`
 }
 
 // Decision is what one tick wants from the fans, apart from smoothing.
@@ -52,6 +56,8 @@ type Decision struct {
 	Failsafe string
 	CaseTemp *int
 	CaseFrom string
+	// CaseDriver says which curve set the case target: "case" or, with case_follows_cpu, "cpu".
+	CaseDriver string
 }
 
 // Decide applies the curves, the minimum speed and the emergency rules.
@@ -74,6 +80,8 @@ func Decide(c Config, s Sensors) Decision {
 		d.Failsafe = "cpu_hot"
 	case disk != nil && *disk >= c.DiskCrit:
 		d.Failsafe = "disk_hot"
+	case nvme != nil && *nvme-c.NVMeOffset >= c.DiskCrit:
+		d.Failsafe = "nvme_hot"
 	}
 	if d.Failsafe != "" {
 		d.CPU, d.Case = 100, 100
@@ -81,11 +89,16 @@ func Decide(c Config, s Sensors) Decision {
 	}
 
 	d.CPU = c.CPUCurve.At(float64(*s.CPU))
+	d.CaseDriver = "case"
 	if d.CaseTemp != nil {
 		d.Case = c.CaseCurve.At(float64(*d.CaseTemp))
 	} else {
 		// All disks asleep and no NVMe: the lowest point of the curve.
 		d.Case = c.CaseCurve.At(-1)
+	}
+
+	if c.CaseFollowsCPU && d.CPU > d.Case {
+		d.Case, d.CaseDriver = d.CPU, "cpu"
 	}
 
 	if d.CPU < c.MinPct {
@@ -178,6 +191,7 @@ func runDaemon(chip Fans) error {
 	current := map[string]int{}
 	zero := map[string]int{}
 	notified := map[string]bool{}
+	var calibCache tableCache
 	lastMode, lastFailsafe := "", ""
 
 	logf("fan control started (%s)", chip.Describe())
@@ -201,8 +215,17 @@ func runDaemon(chip Fans) error {
 				return release(chip, bios, current)
 			}
 
+			// A calibration drives the fans; after it the speeds are set from scratch.
+			if calibPaused() {
+				// Keep reporting the case temperature for the web page.
+				d := Decide(c, s)
+				st.CaseTemp, st.CaseFrom = d.CaseTemp, d.CaseFrom
+				clear(current)
+				return nil
+			}
+
 			d := Decide(c, s)
-			st.Failsafe, st.CaseTemp, st.CaseFrom = d.Failsafe, d.CaseTemp, d.CaseFrom
+			st.Failsafe, st.CaseTemp, st.CaseFrom, st.CaseDriver = d.Failsafe, d.CaseTemp, d.CaseFrom, d.CaseDriver
 			if d.Failsafe != lastFailsafe {
 				if d.Failsafe != "" {
 					logf("emergency: %s, all fans at 100%%", d.Failsafe)
@@ -235,13 +258,14 @@ func runDaemon(chip Fans) error {
 		}
 
 		// Stalled fans: driven but no tachometer pulses.
+		calib := calibCache.get(calibPath)
 		_ = withLock(func() error {
 			for _, ch := range chip.Outputs() {
 				rpm, err := chip.RPM(ch)
 				if err != nil {
 					continue
 				}
-				if rpm == 0 && current[ch.ID] >= 20 {
+				if rpm == 0 && current[ch.ID] >= stallStart(calib, ch.ID) {
 					zero[ch.ID]++
 				} else {
 					zero[ch.ID] = 0
