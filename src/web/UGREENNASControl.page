@@ -59,8 +59,9 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
         <div class="unc-nav-group" data-i18n="nav.group_cockpit">Cockpit</div>
         <button type="button" class="active" data-nav="overview"><span class="unc-ico" data-unc-icon="home"></span><span data-i18n="nav.overview">Übersicht</span></button>
         <button type="button" data-nav="case"><span class="unc-ico" data-unc-icon="box"></span><span data-i18n="nav.case">Gehäuse</span></button>
+        <button type="button" data-nav="sensors"><span class="unc-ico" data-unc-icon="thermo"></span><span data-i18n="nav.sensors">Sensoren</span></button>
         <div class="unc-nav-group" data-fan-only data-i18n="nav.group_fans">Lüfter</div>
-        <button type="button" data-nav="curves" data-fan-only><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfterkurven</span></button>
+        <button type="button" data-nav="curves" data-fan-only><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfter</span></button>
         <button type="button" data-nav="safety" data-fan-only><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
         <div class="unc-nav-group" data-i18n="nav.group_leds">LEDs</div>
         <button type="button" data-nav="led:overview"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.led_overview">LED-Übersicht</span></button>
@@ -78,21 +79,13 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 
 <header class="unc-head">
     <div>
-        <h1><span id="unc-title" data-i18n="nav.overview">Übersicht</span> <span class="unc-badge" id="unc-online" data-i18n="head.connecting">Verbinde…</span> <span class="unc-badge night" id="unc-night" data-i18n="head.night" hidden>Nachtmodus</span></h1>
+        <h1><span id="unc-title" data-i18n="nav.overview">Übersicht</span> <span class="unc-pill is-lg" id="unc-online" data-i18n="head.connecting">Verbinde…</span> <span class="unc-pill is-lg is-violet" id="unc-night" data-i18n="head.night" hidden>Nachtmodus</span></h1>
         <p id="unc-subtitle"></p>
     </div>
     <div class="unc-banners" id="unc-banners"></div>
 </header>
 
-<div class="unc-warning" id="unc-chip-error" hidden>
-    <span class="unc-ico" data-unc-icon="alert"></span>
-    <div>
-        <strong data-i18n="warn.chip">Kein Lüfter-Chip gefunden.</strong>
-        <span id="unc-chip-error-text"></span>
-    </div>
-</div>
-
-<div class="unc-warning" id="unc-failsafe" hidden>
+<div class="unc-note is-warn is-box is-icon" id="unc-failsafe" hidden>
     <span class="unc-ico" data-unc-icon="alert"></span>
     <div>
         <strong data-i18n="warn.failsafe">Notfall: alle Lüfter laufen auf 100 %.</strong>
@@ -100,7 +93,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
     </div>
 </div>
 
-<div class="unc-warning" id="unc-stalled" hidden>
+<div class="unc-note is-warn is-box is-icon" id="unc-stalled" hidden>
     <span class="unc-ico" data-unc-icon="alert"></span>
     <div>
         <strong data-i18n="warn.stalled">Ein Lüfter dreht sich nicht.</strong>
@@ -111,43 +104,30 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 <!-- ================= Übersicht ================= -->
 
 <section class="unc-view active" data-view="overview">
-    <div class="unc-cockpit">
-        <div class="unc-stage unc-hero-stage">
-            <div class="unc-hero-head"><b id="unc-hero-model">UGREEN NAS</b><span id="unc-hero-sub"></span></div>
+    <div class="unc-ov">
+        <article class="unc-card unc-ov-case">
+            <div data-unc="cardhead" data-unc-title="ov.case" data-unc-ico="box"></div>
             <div class="unc-hero" id="unc-hero"></div>
-            <div class="unc-hero-foot" id="unc-hero-foot"></div>
-        </div>
+            <div class="unc-ov-foot" id="unc-ov-foot"></div>
+        </article>
 
-        <article class="unc-card unc-cc fan">
-            <h3><i></i><span data-i18n="fans.title">Lüfter</span></h3>
-            <div class="unc-fans" id="unc-fans"></div>
-            <p class="unc-muted unc-follow" id="unc-follow"></p>
-            <h3 class="unc-cc-sub"><span data-i18n="mode.title">Lüftermodus</span></h3>
+        <article class="unc-card unc-ov-cool">
+            <div data-unc="cardhead" data-unc-title="ov.cooling" data-unc-ico="fan"></div>
+            <div class="unc-fantiles" id="unc-fans"></div>
+            <div class="unc-heat" id="unc-heat"></div>
             <div class="unc-effects" id="unc-modes"></div>
-            <p class="unc-hint" id="unc-mode-hint"></p>
+            <p class="unc-muted unc-mode-hint" id="unc-mode-hint"></p>
+            <div class="unc-follow" id="unc-follow"></div>
         </article>
 
-        <article class="unc-card unc-cc cpu">
-            <h3><i></i><span data-i18n="tile.cpu">Prozessor</span></h3>
-            <div id="unc-cc-cpu"></div>
-        </article>
-        <article class="unc-card unc-cc ram">
-            <h3><i></i><span data-i18n="tile.ram">Arbeitsspeicher</span></h3>
-            <div id="unc-cc-ram"></div>
-        </article>
-        <article class="unc-card unc-cc net">
-            <h3><i></i><span data-i18n="tile.net">Netzwerk</span></h3>
-            <div id="unc-cc-net"></div>
+        <article class="unc-card unc-ov-compute">
+            <div data-unc="cardhead" data-unc-title="ov.compute" data-unc-ico="chip"></div>
+            <div id="unc-ov-compute"></div>
         </article>
 
-        <article class="unc-card unc-cc tmp">
-            <h3><i></i><span data-i18n="temps.title">Temperaturen</span></h3>
-            <div class="unc-temps" id="unc-temps"></div>
-        </article>
-        <article class="unc-card unc-cc led" id="unc-cc-led-card" hidden>
-            <h3><i></i><span data-i18n="led.title">LEDs</span></h3>
-            <div id="unc-cc-led"></div>
-            <button type="button" class="unc-btn small" data-nav="led:overview"><span data-i18n="led.open">LED-Einstellungen</span></button>
+        <article class="unc-card unc-ov-net">
+            <div data-unc="cardhead" data-unc-title="ov.network" data-unc-ico="net"></div>
+            <div id="unc-ov-net"></div>
         </article>
     </div>
 </section>
@@ -156,58 +136,127 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 
 <section class="unc-view" data-view="case">
     <article class="unc-card">
-        <div class="unc-card-head">
-            <h2 data-i18n="case.drives">Laufwerke</h2>
-            <button type="button" class="unc-btn small" data-nav="led:drives" data-led-only hidden><span data-i18n="case.drives_leds">Schacht-LEDs &amp; Identifizieren</span></button>
+        <div data-unc="cardhead" data-unc-title="case.drives" data-unc-ico="drives">
+            <span data-unc="btn" data-unc-label="case.drives_leds" data-unc-ico="drives" data-unc-small data-nav="led:drives" data-led-only hidden></span>
         </div>
         <div class="unc-drive-list" id="unc-drive-list"></div>
     </article>
 
     <article class="unc-card">
-        <h2 data-i18n="case.rear">Rückseite</h2>
+        <div data-unc="cardhead" data-unc-title="case.rear" data-unc-ico="rear">
+            <span data-unc="btn" data-unc-label="case.fan_settings" data-unc-ico="curve" data-unc-small data-nav="curves" data-fan-only hidden></span>
+        </div>
         <div class="unc-stage" id="unc-rear"></div>
     </article>
 
     <article class="unc-card">
-        <h2 data-i18n="case.inside">Innenraum</h2>
-        <div class="unc-board" id="unc-inside"></div>
-        <p class="unc-hint" id="unc-inside-hint" data-i18n="case.inside_hint">Die M.2-Plätze werden am PCIe-Anschluss erkannt: die zwei Plätze auf dem Mainboard hängen direkt an der CPU, jede weitere SSD sitzt auf einer Karte im PCIe-Steckplatz. Welcher Platz „1“ und „2“ ist, ist eine Vermutung.</p>
+        <div data-unc="cardhead" data-unc-title="case.inside" data-unc-ico="board"></div>
+        <div class="unc-inside" id="unc-inside"></div>
+        <p class="unc-note" id="unc-inside-hint" data-i18n="case.inside_hint">Die M.2-Plätze werden am PCIe-Anschluss erkannt: die zwei Plätze auf dem Mainboard hängen direkt an der CPU, jede weitere SSD sitzt auf einer Karte im PCIe-Steckplatz. Welcher Platz „1“ und „2“ ist, ist eine Vermutung.</p>
     </article>
+</section>
+
+<!-- ================= Sensoren ================= -->
+
+<section class="unc-view" data-view="sensors">
+    <div class="unc-sn" id="unc-sensors"></div>
 </section>
 
 <!-- ================= Lüfterkurven ================= -->
 
 <section class="unc-view" data-view="curves">
     <article class="unc-card">
-        <div class="unc-curves">
-            <div class="unc-curve" data-curve="cpu">
-                <h3 data-i18n="curves.cpu">CPU-Lüfter</h3>
-                <small class="unc-muted" data-i18n="curves.cpu_source">folgt der CPU-Temperatur</small>
-                <svg class="unc-chart" viewBox="0 0 320 200" data-chart></svg>
-                <div class="unc-points" data-points></div>
+        <div class="unc-fantiles" id="unc-now"></div>
+
+        <div class="unc-block">
+            <div data-unc="sechead" data-unc-title="mode.title"></div>
+            <div class="unc-effects unc-effects-row" id="unc-modes-fans"></div>
+            <p class="unc-muted" id="unc-mode-note"></p>
+        </div>
+
+        <div class="unc-block" id="unc-curves-block">
+            <div data-unc="sechead" data-unc-id="unc-curves-title">
+                <span data-unc="btn" data-unc-label="curves.customize" data-unc-ico="pen" id="unc-customize"></span>
             </div>
-            <div class="unc-curve" data-curve="case">
-                <h3 data-i18n="curves.case">Gehäuselüfter</h3>
-                <small class="unc-muted" data-i18n="curves.case_source">folgen der wärmsten Festplatte oder NVMe</small>
-                <svg class="unc-chart" viewBox="0 0 320 200" data-chart></svg>
-                <div class="unc-points" data-points></div>
+            <p class="unc-muted" id="unc-curves-note"></p>
+
+            <div class="unc-flow" id="unc-flow">
+                <div class="unc-stepper" id="unc-stepper" role="tablist" aria-labelledby="unc-curves-title">
+                    <button type="button" class="unc-stepper-tab" role="tab" id="unc-t-measure" data-step="measure" aria-controls="unc-p-measure" aria-selected="false" tabindex="-1">
+                        <span class="unc-stepper-head"><span class="unc-step-no"><span class="unc-step-num">1</span><span class="unc-ico" data-unc-icon="check"></span></span></span>
+                        <span class="unc-step-title" data-i18n="flow.measure">Lüfter messen</span>
+                        <span class="unc-step-sum" id="unc-sum-measure"></span>
+                    </button>
+                    <button type="button" class="unc-stepper-tab" role="tab" id="unc-t-min" data-step="min" aria-controls="unc-p-min" aria-selected="false" tabindex="-1">
+                        <span class="unc-stepper-head"><span class="unc-step-no"><span class="unc-step-num">2</span><span class="unc-ico" data-unc-icon="check"></span></span></span>
+                        <span class="unc-step-title" data-i18n="flow.min">Niedrigste Lüfterdrehzahl</span>
+                        <span class="unc-step-sum" id="unc-sum-min"></span>
+                    </button>
+                    <button type="button" class="unc-stepper-tab" role="tab" id="unc-t-curves" data-step="curves" aria-controls="unc-p-curves" aria-selected="false" tabindex="-1">
+                        <span class="unc-stepper-head"><span class="unc-step-no"><span class="unc-step-num">3</span><span class="unc-ico" data-unc-icon="check"></span></span></span>
+                        <span class="unc-step-title" data-i18n="flow.curves">Kurven</span>
+                        <span class="unc-step-sum" id="unc-sum-curves"></span>
+                    </button>
+                </div>
+
+                <div class="unc-step-panel" id="unc-p-measure" data-panel="measure" role="tabpanel" aria-labelledby="unc-t-measure">
+                    <div id="unc-measure"></div>
+                </div>
+
+                <div class="unc-step-panel" id="unc-p-min" data-panel="min" role="tabpanel" aria-labelledby="unc-t-min">
+                    <div id="unc-step-min-body"></div>
+                </div>
+
+                <div class="unc-step-panel" id="unc-p-curves" data-panel="curves" role="tabpanel" aria-labelledby="unc-t-curves">
+                    <div class="unc-curve-tools" id="unc-curve-tools" role="group" aria-labelledby="unc-start-label">
+                        <span class="unc-curve-tools-label" id="unc-start-label" data-i18n="flow.start_label">Ausgehen von</span>
+                        <span data-unc="btn" data-unc-label="mode.quiet" data-preset="quiet"></span>
+                        <span data-unc="btn" data-unc-label="mode.standard" data-preset="standard"></span>
+                        <span data-unc="btn" data-unc-label="mode.performance" data-preset="performance"></span>
+                        <span class="unc-muted unc-curve-tools-hint" data-i18n="flow.start_hint">Kopiert die Kurven in den Editor. Gespeichert wird erst mit „Speichern“.</span>
+                    </div>
+                    <div class="unc-curves">
+                        <div class="unc-curve unc-curve-cpu" data-curve="cpu">
+                            <h3 class="unc-sec" data-i18n="curves.cpu">CPU-Lüfter</h3>
+                            <small class="unc-muted unc-curve-src" data-i18n="curves.cpu_source">folgt der CPU-Temperatur</small>
+                            <svg class="unc-chart" viewBox="0 0 320 200" data-chart></svg>
+                            <div class="unc-points" data-points></div>
+                            <p class="unc-note is-warn" data-curve-warn data-i18n="curves.warn_top" hidden>Diese Kurve erreicht nie 100 %; die Notfall-Grenze ist die einzige Absicherung.</p>
+                            <div class="unc-mix-cpu" id="unc-mix-cpu"><strong id="unc-mix-cpu-title"></strong><small id="unc-mix-cpu-hint"></small></div>
+                        </div>
+                        <div class="unc-curve" data-curve="case">
+                            <h3 class="unc-sec" id="unc-case-title">Gehäuselüfter</h3>
+                            <small class="unc-muted unc-curve-src" id="unc-case-src"></small>
+                            <svg class="unc-chart" viewBox="0 0 320 200" data-chart></svg>
+                            <div class="unc-points" data-points></div>
+                            <p class="unc-note is-warn" data-curve-warn data-i18n="curves.warn_top" hidden>Diese Kurve erreicht nie 100 %; die Notfall-Grenze ist die einzige Absicherung.</p>
+                            <span data-unc="switch" data-unc-input="unc-case-cpu" data-unc-title="curves.mix" data-unc-hint="curves.mix_hint" data-unc-cls="unc-mix"></span>
+                            <p class="unc-note is-violet" id="unc-mix-now" hidden></p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="unc-form unc-curve-from">
-            <label for="unc-curve-preset" data-i18n="curves.load">Mit einer Vorlage beginnen</label>
-            <select id="unc-curve-preset">
-                <option value="" data-i18n="curves.preset_pick" selected>Auswählen…</option>
-                <option value="quiet" data-i18n="mode.quiet">Leise</option>
-                <option value="standard" data-i18n="mode.standard">Standard</option>
-                <option value="performance" data-i18n="mode.performance">Leistung</option>
-            </select>
+        <div class="unc-block" id="unc-limits-block">
+            <div data-unc="sechead" data-unc-title="curves.limits"></div>
+            <div id="unc-limits-body">
+                <div class="unc-limits">
+                    <div class="unc-curve-min-card">
+                        <div class="unc-form unc-curve-min">
+                            <label for="unc-curve-min" data-i18n="safety.min">Niedrigste Lüfterdrehzahl</label>
+                            <div data-unc="range" data-unc-input="unc-curve-min" data-unc-min="10" data-unc-max="60" data-unc-value="25" data-unc-unit="%"></div>
+                        </div>
+                        <p class="unc-muted" data-i18n="curves.min_hint">Kein Lüfter läuft langsamer, auch wenn eine Kurve weniger vorgibt.</p>
+                        <div class="unc-min-measured" id="unc-min-measured"></div>
+                    </div>
+                </div>
+                <div id="unc-case-src-link"></div>
+            </div>
         </div>
 
-        <div class="unc-savebar" data-savebar="curves">
-            <span class="unc-savestate" data-i18n="save.clean">Alles gespeichert</span>
-            <button type="button" class="unc-btn" data-discard="curves" disabled><span data-i18n="save.discard">Verwerfen</span></button>
-            <button type="button" class="unc-btn primary" id="unc-curves-save" disabled><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="common.save">Speichern</span></button>
+        <div class="unc-savedock">
+            <div data-unc="savebar" data-unc-name="curves" data-unc-save="unc-curves-save"></div>
         </div>
     </article>
 </section>
@@ -216,55 +265,64 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 
 <section class="unc-view" data-view="safety">
     <article class="unc-card">
-        <div class="unc-form">
-            <label for="unc-min" data-i18n="safety.min">Mindestdrehzahl</label>
-            <div class="unc-inline">
-                <input type="range" id="unc-min" min="10" max="60" step="1" value="25">
-                <output class="unc-value" id="unc-min-value">25 %</output>
+        <div data-unc="cardhead" data-unc-title="safety.emergency" data-unc-ico="shield"></div>
+
+        <div class="unc-lims">
+            <div class="unc-lim">
+                <span data-unc="glyph" data-unc-ico="chip"></span>
+                <div class="unc-lim-main">
+                    <label for="unc-cpu-crit" data-i18n="safety.row_cpu">CPU</label>
+                    <small class="unc-lim-now" id="unc-live-cpu"></small>
+                    <span id="unc-meter-cpu"></span>
+                </div>
+                <div data-unc="range" data-unc-input="unc-cpu-crit" data-unc-min="70" data-unc-max="105" data-unc-value="90" data-unc-unit="°C"></div>
             </div>
 
-            <label for="unc-cpu-crit" data-i18n="safety.cpu_crit">CPU-Notfall ab</label>
-            <div class="unc-inline">
-                <input type="range" id="unc-cpu-crit" min="70" max="105" step="1" value="90">
-                <output class="unc-value" id="unc-cpu-crit-value">90 °C</output>
+            <div class="unc-lim">
+                <span data-unc="glyph" data-unc-ico="drives"></span>
+                <div class="unc-lim-main">
+                    <label for="unc-disk-crit" data-i18n="safety.row_disk">Festplatten</label>
+                    <small class="unc-lim-now" id="unc-live-disk"></small>
+                    <span id="unc-meter-disk"></span>
+                </div>
+                <div data-unc="range" data-unc-input="unc-disk-crit" data-unc-min="40" data-unc-max="70" data-unc-value="55" data-unc-unit="°C"></div>
             </div>
 
-            <label for="unc-disk-crit" data-i18n="safety.disk_crit">Festplatten-Notfall ab</label>
-            <div class="unc-inline">
-                <input type="range" id="unc-disk-crit" min="40" max="70" step="1" value="55">
-                <output class="unc-value" id="unc-disk-crit-value">55 °C</output>
-            </div>
-
-            <label for="unc-nvme-offset" data-i18n="safety.nvme_offset">NVMe-Abzug</label>
-            <div class="unc-inline">
-                <input type="range" id="unc-nvme-offset" min="0" max="40" step="1" value="15">
-                <output class="unc-value" id="unc-nvme-offset-value">15 °C</output>
+            <div class="unc-lim">
+                <span data-unc="glyph" data-unc-ico="m2"></span>
+                <div class="unc-lim-main">
+                    <span class="unc-lim-name" data-i18n="safety.row_nvme">NVMe</span>
+                    <small class="unc-lim-now" id="unc-live-nvme"></small>
+                    <span id="unc-meter-nvme"></span>
+                </div>
+                <div data-unc="range" data-unc-input="unc-nvme-crit" data-unc-value="70" data-unc-unit="°C" data-unc-derived="unc-nvme-derived"></div>
             </div>
         </div>
 
-        <p class="unc-hint" data-i18n="safety.hint">Wird die CPU- oder eine Festplatten-Grenze erreicht oder ist die CPU-Temperatur nicht lesbar, laufen alle Lüfter auf 100 %. NVMe-SSDs vertragen mehr Wärme als Festplatten; für die Gehäuselüfter zählen sie deshalb mit diesem Abzug.</p>
+        <p class="unc-note" data-i18n="safety.hint">Auch eine CPU-Temperatur, die sich nicht lesen lässt, schaltet alle Lüfter auf 100 %.</p>
+    </article>
 
-        <div class="unc-ignore">
-            <strong data-i18n="safety.ignore_title">Laufwerke ausnehmen</strong>
-            <p class="unc-muted" data-i18n="safety.ignore_hint">Diese Laufwerke bestimmen weder die Drehzahl der Gehäuselüfter noch lösen sie den Festplatten-Notfall aus, zum Beispiel eine externe SSD, die von sich aus warm läuft.</p>
-            <div class="unc-ignore-list" id="unc-ignore-list"></div>
+    <article class="unc-card">
+        <div data-unc="cardhead" data-unc-title="safety.nvme_offset" data-unc-ico="m2" data-unc-title-id="unc-nvme-offset-label"></div>
+        <p class="unc-muted" data-i18n="safety.nvme_why">NVMe-Laufwerke laufen wärmer als Festplatten, darum zählen sie um so viele Grad kühler.</p>
+        <div class="unc-eq-row">
+            <div class="unc-eq" id="unc-nvme-eq"></div>
+            <div data-unc="range" data-unc-input="unc-nvme-offset" data-unc-min="0" data-unc-max="40" data-unc-value="15" data-unc-unit="°C" data-unc-labelledby="unc-nvme-offset-label"></div>
         </div>
+    </article>
 
-        <label class="unc-switch-row">
-            <span class="unc-switch">
-                <input type="checkbox" id="unc-stall-notify">
-                <span></span>
-            </span>
-            <span>
-                <strong data-i18n="safety.stall">Unraid-Benachrichtigung, wenn ein Lüfter steht</strong>
-                <small data-i18n="safety.stall_hint">Wenn ein angesteuerter Lüfter 16 Sekunden lang 0 U/min meldet.</small>
-            </span>
-        </label>
+    <article class="unc-card">
+        <div data-unc="cardhead" data-unc-title="safety.stall_title" data-unc-ico="bell"></div>
+        <span data-unc="switch" data-unc-input="unc-stall-notify" data-unc-title="safety.stall" data-unc-hint="safety.stall_hint"></span>
+    </article>
 
-        <div class="unc-savebar" data-savebar="safety">
-            <span class="unc-savestate" data-i18n="save.clean">Alles gespeichert</span>
-            <button type="button" class="unc-btn" data-discard="safety" disabled><span data-i18n="save.discard">Verwerfen</span></button>
-            <button type="button" class="unc-btn primary" id="unc-safety-save" disabled><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="common.save">Speichern</span></button>
+    <article class="unc-card">
+        <div data-unc="cardhead" data-unc-title="safety.ignore_title" data-unc-ico="drives"></div>
+        <p class="unc-muted" data-i18n="safety.ignore_hint">Angehakte Laufwerke zählen weder für die Gehäuselüfter noch für die Notfall-Grenzen, zum Beispiel eine externe SSD, die von sich aus warm läuft.</p>
+        <div class="unc-ignore-list" id="unc-ignore-list"></div>
+
+        <div class="unc-savedock">
+            <div data-unc="savebar" data-unc-name="safety" data-unc-save="unc-safety-save"></div>
         </div>
     </article>
 </section>
@@ -273,18 +331,9 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 
 <section class="unc-view" data-view="settings">
     <article class="unc-card" data-fan-model hidden>
-        <h2 data-i18n="fanctl.title">Lüftersteuerung</h2>
-        <label class="unc-switch-row" id="unc-fan-row">
-            <span class="unc-switch">
-                <input type="checkbox" id="unc-fan-enabled">
-                <span></span>
-            </span>
-            <span>
-                <strong data-i18n="fanctl.switch">Lüftersteuerung dieses Plugins einschalten</strong>
-                <small id="unc-fan-state"></small>
-            </span>
-        </label>
-        <p class="unc-hint" data-i18n="fanctl.hint">Ausschalten, wenn ein anderes Plugin oder Skript die Lüfter steuert. Dann fasst dieses Plugin den Lüfter-Chip nicht an, und die Lüfter bekommen die Werte des BIOS zurück.</p>
+        <div data-unc="cardhead" data-unc-title="fanctl.title" data-unc-ico="fan"></div>
+        <span data-unc="switch" data-unc-input="unc-fan-enabled" data-unc-title="fanctl.switch" data-unc-hint-id="unc-fan-state" id="unc-fan-row"></span>
+        <p class="unc-note" data-i18n="fanctl.hint">Ausschalten, wenn ein anderes Plugin oder Skript die Lüfter steuert. Dann fasst dieses Plugin den Lüfter-Chip nicht an, und die Lüfter bekommen die Werte des BIOS zurück.</p>
     </article>
 
     <article class="unc-card" data-nofan-model hidden>
@@ -293,7 +342,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
     </article>
 
     <article class="unc-card">
-        <h2 data-i18n="settings.title">Oberfläche</h2>
+        <div data-unc="cardhead" data-unc-title="settings.title" data-unc-ico="gear"></div>
         <div class="unc-form">
             <label for="unc-language" data-i18n="language.label">Sprache der Oberfläche</label>
             <select id="unc-language">
@@ -310,7 +359,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
                 <option value="auto" data-i18n="theme.auto">Wie Unraid</option>
             </select>
         </div>
-        <p class="unc-hint" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel).</p>
+        <p class="unc-note" data-i18n="theme.hint">„Wie Unraid“ richtet sich nach dem Farbschema deiner Unraid-Oberfläche (hell oder dunkel).</p>
     </article>
 </section>
 
@@ -318,18 +367,18 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 
 <section class="unc-view" data-view="about">
     <article class="unc-card">
-        <h2 data-i18n="system.title">System</h2>
+        <div data-unc="cardhead" data-unc-title="system.title" data-unc-ico="info"></div>
         <dl class="unc-facts" id="unc-system"></dl>
     </article>
 
     <article class="unc-card" id="unc-models-card">
         <details class="unc-fold" id="unc-models-fold">
-            <summary><h2 data-i18n="models.title">Unterstützte Modelle</h2></summary>
+            <summary data-unc="cardhead" data-unc-tag="summary" data-unc-title="models.title" data-unc-ico="box"></summary>
             <p class="unc-muted" data-i18n="models.intro">Alle UGREEN-NAS-Modelle und was das Plugin für sie kann.</p>
             <div id="unc-models"></div>
 
             <div class="unc-confirm" id="unc-confirm">
-                <h3 data-i18n="models.confirm_title">Mein Gerät bestätigen</h3>
+                <div data-unc="sechead" data-unc-title="models.confirm_title"></div>
                 <p class="unc-muted" data-i18n="models.confirm_intro">Du hast das Plugin ausprobiert? Hake an, was bei dir funktioniert, und schick es als GitHub-Issue ab: so wissen wir, was auf deinem Modell läuft.</p>
                 <div class="unc-confirm-list" id="unc-confirm-list"></div>
                 <label class="unc-confirm-comment">
@@ -337,9 +386,9 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
                     <textarea id="unc-confirm-text" rows="2" maxlength="600"></textarea>
                 </label>
                 <div class="unc-actions">
-                    <button type="button" class="unc-btn primary" id="unc-confirm-send"><span class="unc-ico" data-unc-icon="check"></span><span data-i18n="models.confirm_button">Als GitHub-Issue öffnen</span></button>
+                    <span data-unc="btn" data-unc-label="models.confirm_button" data-unc-ico="check" data-unc-tone="primary" id="unc-confirm-send"></span>
                 </div>
-                <p class="unc-hint" data-i18n="models.confirm_privacy">Es öffnet sich ein vorausgefülltes GitHub-Issue. Erst wenn du dort auf „Submit“ klickst, wird etwas gesendet. Im Text stehen Modell, Plugin-, Unraid- und Kernel-Version und deine Häkchen, keine Seriennummern, IP-Adressen oder Laufwerksnamen.</p>
+                <p class="unc-note" data-i18n="models.confirm_privacy">Es öffnet sich ein vorausgefülltes GitHub-Issue. Erst wenn du dort auf „Submit“ klickst, wird etwas gesendet. Im Text stehen Modell, Plugin-, Unraid- und Kernel-Version und deine Häkchen, keine Seriennummern, IP-Adressen oder Laufwerksnamen.</p>
             </div>
         </details>
     </article>
@@ -351,9 +400,9 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
                 <h2>UGREEN NAS Control</h2>
                 <p class="unc-muted" data-i18n="about.tagline">Lüfter- und LED-Steuerung und Systeminfo für UGREEN-NAS unter Unraid</p>
                 <div class="unc-about-badges">
-                    <span class="unc-badge online">v<span id="unc-version"></span></span>
-                    <span class="unc-badge" data-i18n="about.license_badge">MIT-Lizenz</span>
-                    <span class="unc-badge">DX · DXP · iDX</span>
+                    <span class="unc-pill"><span>v<span id="unc-version"></span></span></span>
+                    <span class="unc-pill" data-i18n="about.license_badge">MIT-Lizenz</span>
+                    <span class="unc-pill">DX · DXP · iDX</span>
                 </div>
             </div>
         </div>
@@ -381,26 +430,17 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 <section class="unc-view" data-view="led">
     <div id="unc-led-head">
         <article class="unc-card unc-led-switch-card" id="unc-led-switch-card">
-            <label class="unc-switch-row" id="unc-led-row">
-                <span class="unc-switch">
-                    <input type="checkbox" id="unc-led-enabled">
-                    <span></span>
-                </span>
-                <span>
-                    <strong data-i18n="leds.switch">Front-LEDs mit diesem Plugin steuern</strong>
-                    <small id="unc-led-state"></small>
-                </span>
-            </label>
+            <span data-unc="switch" data-unc-input="unc-led-enabled" data-unc-title="leds.switch" data-unc-hint-id="unc-led-state" id="unc-led-row"></span>
 
-            <p class="unc-hint" id="unc-led-limited" hidden></p>
-            <p class="unc-hint unc-untested" id="unc-led-untested" hidden></p>
-            <p class="unc-hint" id="unc-led-blocker" hidden></p>
+            <p class="unc-note" id="unc-led-limited" hidden></p>
+            <p class="unc-note is-warn" id="unc-led-untested" hidden></p>
+            <p class="unc-note" id="unc-led-blocker" hidden></p>
 
             <div class="unc-import" id="unc-led-import" hidden>
                 <strong data-i18n="leds.import_title">Einstellungen von UGREEN LED Control übernehmen</strong>
                 <p class="unc-muted" data-i18n="leds.import_text">Die Einstellungen des Plugins UGREEN LED Control wurden gefunden (Farben, Effekte, Statusmodus, Nachtmodus). Du kannst sie hier übernehmen; die jetzigen Einstellungen dieses Teils werden vorher als leds.cfg.bak gesichert.</p>
-                <button type="button" class="unc-btn" id="unc-led-import-btn"><span class="unc-ico" data-unc-icon="reset"></span><span data-i18n="leds.import_btn">Einstellungen übernehmen</span></button>
-                <p class="unc-hint" data-i18n="leds.import_after">Danach kannst du UGREEN LED Control unter Plugins deinstallieren: die eingebaute LED-Steuerung ersetzt es.</p>
+                <span data-unc="btn" data-unc-label="leds.import_btn" data-unc-ico="reset" id="unc-led-import-btn"></span>
+                <p class="unc-note" data-i18n="leds.import_after">Danach kannst du UGREEN LED Control unter Plugins deinstallieren: die eingebaute LED-Steuerung ersetzt es.</p>
             </div>
 
             <p class="unc-muted unc-fineprint" data-i18n="leds.hint">Beim Ausschalten bleiben die LEDs im letzten Zustand, bis der Strom getrennt wird.</p>
