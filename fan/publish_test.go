@@ -82,12 +82,15 @@ func TestReadUpdates(t *testing.T) {
 	writeFile(t, filepath.Join(fresh, "uptodate.plg"), plg("1.0"))
 	writeFile(t, filepath.Join(boot, "nofresh.plg"), plg("1.0"))
 	docker := filepath.Join(root, "docker.json")
-	writeFile(t, docker, `{"lscr.io/plex:latest":{"status":"false"},"mosquitto:latest":{"status":"true"}}`)
+	writeFile(t, docker, `{"lscr.io/plex:latest":{"status":"false"},"library/redis:latest":{"status":"false"},"mosquitto:latest":{"status":"true"},"x/y:1":{"status":"undef"}}`)
 
-	got := readUpdates(boot, fresh, docker)
+	osFile := filepath.Join(root, "result.json")
+	writeFile(t, osFile, `{"version":"7.3.5","isNewer":true,"params":{"current_version":"7.3.4"}}`)
+	got := readUpdates(boot, fresh, docker, osFile)
 	want := []Update{
+		{Kind: "system", Name: "Unraid OS", From: "7.3.4", To: "7.3.5"},
 		{Kind: "plugin", Name: "ugreen-nas-control", File: "ugreen-nas-control.plg", From: "3.5", To: "3.6"},
-		{Kind: "system", Name: "Unraid OS", File: "unRAIDServer.plg", From: "7.3.0", To: "7.3.1"},
+		{Kind: "container", Name: "redis:latest", To: "new image"},
 		{Kind: "container", Name: "lscr.io/plex:latest", To: "new image"},
 	}
 	if len(got) != len(want) {
@@ -97,6 +100,30 @@ func TestReadUpdates(t *testing.T) {
 		if got[i] != want[i] {
 			t.Errorf("update %d: got %+v, want %+v", i, got[i], want[i])
 		}
+	}
+}
+
+func TestReadOSUpdate(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "result.json")
+	writeFile(t, p, `{"version":"7.3.4","isNewer":false,"params":{"current_version":"7.3.4"}}`)
+	if _, ok := readOSUpdate(p); ok {
+		t.Fatal("isNewer false must give no update")
+	}
+	if _, ok := readOSUpdate(filepath.Join(dir, "none")); ok {
+		t.Fatal("a missing file must give no update")
+	}
+	writeFile(t, p, "not json")
+	if _, ok := readOSUpdate(p); ok {
+		t.Fatal("garbage must give no update")
+	}
+	// Without the result of Unraid's check, an installed unRAIDServer.plg still tells.
+	boot, fresh := filepath.Join(dir, "boot"), filepath.Join(dir, "fresh")
+	plg := func(v string) string { return "<!ENTITY version   \"" + v + "\">\n" }
+	writeFile(t, filepath.Join(boot, "unRAIDServer.plg"), plg("7.3.0"))
+	writeFile(t, filepath.Join(fresh, "unRAIDServer.plg"), plg("7.3.1"))
+	if u := readUpdates(boot, fresh, filepath.Join(dir, "none"), filepath.Join(dir, "none")); len(u) != 1 || u[0].Kind != "system" || u[0].To != "7.3.1" {
+		t.Fatalf("fallback: %+v", u)
 	}
 }
 

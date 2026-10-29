@@ -28,6 +28,7 @@ var (
 	pluginsBoot  = envOr("UGREEN_PLUGINS_BOOT", "/boot/config/plugins")
 	pluginsFresh = envOr("UGREEN_PLUGINS_FRESH", "/tmp/plugins")
 	dockerStatus = envOr("UGREEN_DOCKER_STATUS", "/var/lib/docker/unraid-update-status.json")
+	unraidCheck  = envOr("UGREEN_UNRAID_CHECK", "/tmp/unraidcheck/result.json")
 	procNetDev   = envOr("UGREEN_PROC_NET_DEV", "/proc/net/dev")
 	powerdownBin = envOr("UGREEN_POWERDOWN", "/usr/local/sbin/powerdown")
 	pluginBin    = envOr("UGREEN_PLUGIN_BIN", "/usr/local/sbin/plugin")
@@ -232,11 +233,35 @@ func versionLess(a, b string) bool {
 	return false
 }
 
+// readOSUpdate reads the result of Unraid's own check for a new Unraid OS (isNewer), which it keeps in
+// /tmp/unraidcheck/result.json.
+func readOSUpdate(path string) (Update, bool) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return Update{}, false
+	}
+	var r struct {
+		Version string `json:"version"`
+		IsNewer bool   `json:"isNewer"`
+		Params  struct {
+			Current string `json:"current_version"`
+		} `json:"params"`
+	}
+	if json.Unmarshal(b, &r) != nil || !r.IsNewer || r.Version == "" {
+		return Update{}, false
+	}
+	return Update{Kind: "system", Name: "Unraid OS", From: r.Params.Current, To: r.Version}, true
+}
+
 // readUpdates finds the updates Unraid already knows of: a plugin whose freshly downloaded copy (in /tmp/plugins,
 // put there by Unraid's own check) has a higher version than the installed one, and the containers Unraid marked
 // as outdated. It checks nothing itself and downloads nothing.
-func readUpdates(boot, fresh, dockerFile string) []Update {
+func readUpdates(boot, fresh, dockerFile, osFile string) []Update {
 	out := []Update{}
+	osKnown := false
+	if u, ok := readOSUpdate(osFile); ok {
+		out, osKnown = append(out, u), true
+	}
 	files, _ := filepath.Glob(filepath.Join(boot, "*.plg"))
 	sort.Strings(files)
 	for _, f := range files {
@@ -248,6 +273,9 @@ func readUpdates(boot, fresh, dockerFile string) []Update {
 		name := strings.TrimSuffix(base, ".plg")
 		kind := "plugin"
 		if name == "unRAIDServer" {
+			if osKnown {
+				continue
+			}
 			kind, name = "system", "Unraid OS"
 		}
 		out = append(out, Update{Kind: kind, Name: name, File: base, From: local, To: remote})
@@ -265,7 +293,7 @@ func readUpdates(boot, fresh, dockerFile string) []Update {
 			for _, n := range names {
 				// "true": up to date, "false": a newer image exists.
 				if st[n].Status == "false" {
-					out = append(out, Update{Kind: "container", Name: n, To: "new image"})
+					out = append(out, Update{Kind: "container", Name: strings.TrimPrefix(n, "library/"), To: "new image"})
 				}
 			}
 		}
@@ -577,7 +605,7 @@ func runPublish() error {
 	prefix := "ugreen-nas/" + cfg.Name + "/"
 	col := &collector{cfgPath: configPath, statusFn: collectLive}
 	cmdr := &commander{cfg: cfg, run: execRun, delay: time.Second,
-		updates: func() []Update { return readUpdates(pluginsBoot, pluginsFresh, dockerStatus) }}
+		updates: func() []Update { return readUpdates(pluginsBoot, pluginsFresh, dockerStatus, unraidCheck) }}
 
 	client := &mqttClient{
 		addr: fmt.Sprintf("%s:%d", cfg.Host, cfg.Port), useTLS: cfg.TLS, user: cfg.User, pass: cfg.Pass,
@@ -634,7 +662,7 @@ func runPublish() error {
 		send("state", col.state(now), true)
 		if now.Sub(slowAt) >= time.Minute || slowAt.IsZero() {
 			slowAt = now
-			send("updates", readUpdates(pluginsBoot, pluginsFresh, dockerStatus), true)
+			send("updates", readUpdates(pluginsBoot, pluginsFresh, dockerStatus, unraidCheck), true)
 		}
 		send("notifications", readNotifications(notifyDir, now), true)
 		lastMu.Unlock()
