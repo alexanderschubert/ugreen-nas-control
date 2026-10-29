@@ -1801,11 +1801,11 @@
             rear: [],
             noInside: true
         }],
-        // DXP2800 GT: the same chassis in black with a champagne front frame; one 10G LAN port. Drawn after the
+        // DXP2800 GT: the same chassis in black with a grille like the DXP4800 GT; one 10G LAN port. Drawn after the
         // product photos. No inside view, no fan control.
         [/^DXP2800 GT/, {
             front: [['usbc', '10G'], ['usba', '10G']],
-            gold: true,
+            gt: true,
             rear2800: true,
             lan: 'LAN 10G',
             dc: 'DC 12V',
@@ -1899,11 +1899,11 @@
                     <span class="speeds">${speeds}</span>
                     <span class="spacer"></span>
                     ${ports}
-                    <b class="brand">${model.gold ? escapeHtml(hw.model) : 'UGREEN'}</b>
+                    <b class="brand">UGREEN</b>
                 </div>`;
 
         q(target).innerHTML = `
-            <div class="unc-nas ${model.gold ? 'gold' : ''}" style="--bays:${(hw.bays || []).length || 6}">
+            <div class="unc-nas" style="--bays:${(hw.bays || []).length || 6}">
                 <div class="unc-nas-bays ${model.screen ? 'with-screen' : ''}">${(hw.bays || []).map(bayHtml).join('')}${model.screen ? '<div class="unc-nscreen" aria-hidden="true"><i></i><b></b></div>' : ''}</div>${strip}
             </div>`;
         applyLeds(q(target));
@@ -2182,7 +2182,7 @@
         }
 
         if (model.rear2800) {
-            q(target).innerHTML = rear2800Html(hw, model.lan, model.dc, model.gold);
+            q(target).innerHTML = rear2800Html(hw, model.lan, model.dc, model.gt);
             return;
         }
 

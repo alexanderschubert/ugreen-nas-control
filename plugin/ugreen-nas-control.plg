@@ -26,7 +26,7 @@
 <CHANGES>
 
 ### 4.0
-- DXP2800 GT: front and rear view after the product photos (champagne front plate, two bays with the LEDs below them, USB-C and USB-A at the front; the back with the grille of the DXP4800 GT (ribbed bezel, dot mesh, dotted lettering, the fan behind it when the NAS reports one), HDMI, USB 3.2, two USB 2.0, 10G LAN, reset and the power inlet). Fan control stays off for this model
+- DXP2800 GT: front and rear view after the product photos (two bays with the LEDs below them, USB-C and USB-A at the front; the back with the grille of the DXP4800 GT (ribbed bezel, dot mesh, dotted lettering, the fan behind it when the NAS reports one), HDMI, USB 3.2, two USB 2.0, 10G LAN, reset and the power inlet). Fan control stays off for this model
 
 ### 3.9
 - Rear views with fan control (DXP6800 Pro): the fan labels ("Case fan 1 · 900 rpm") are in front of the mesh and readable in both themes
@@ -311,7 +311,7 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>b603ac0254db021bc08d09cff0064195</MD5>
+<MD5>8a33dfea7d100276953aee2329e1dd19</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
@@ -321,7 +321,7 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>f4e6e8ee744c4af4eec16ef73e01d29a</MD5>
+<MD5>d38c50289f1792acfc93329fa96b02a7</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">

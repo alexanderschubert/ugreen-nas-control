@@ -1557,20 +1557,6 @@
     letter-spacing: .18em;
 }
 
-/* DXP2800 GT: black body, champagne front plate with the model name in yellow, after the product photo. */
-.unc-nas.gold {
-    background: linear-gradient(180deg, #e0cba9, #b99a6c 10%, #8f734d);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .45);
-}
-
-.unc-nas.gold .unc-nas-front { color: #3a2c18; }
-.unc-nas.gold .unc-nas-front .speeds { color: #2a1f10; }
-.unc-nas.gold .unc-nas-front .brand { color: #f3d437; font-size: 11px; letter-spacing: .12em; text-shadow: 0 1px 0 rgba(0, 0, 0, .25); }
-.unc[data-theme="light"] .unc-nas.gold .unc-nas-front .brand { color: #fff3b0; text-shadow: 0 1px 1px rgba(60, 40, 0, .6); }
-.unc-nas.gold .unc-pled { background: #3a2c18; }
-.unc-nas.gold .unc-pled.power { background: #fff; }
-.unc-nas.gold .unc-pled.lan.on { background: #22c55e; }
-
 .unc-pled {
     flex: none;
     width: 16px;
