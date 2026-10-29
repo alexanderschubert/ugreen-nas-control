@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "3.9">
+<!ENTITY version   "4.0">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 4.0
+- DXP2800 GT: front and rear view after the product photos (two bays with the LEDs below them, USB-C and USB-A at the front; the back with the grille of the DXP4800 GT (ribbed bezel, dot mesh, dotted lettering, the fan behind it when the NAS reports one), HDMI, USB 3.2, two USB 2.0, 10G LAN, reset and the power inlet). Fan control stays off for this model
 
 ### 3.9
 - Rear views with fan control (DXP6800 Pro): the fan labels ("Case fan 1 · 900 rpm") are in front of the mesh and readable in both themes
@@ -308,7 +311,7 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>df63ec0e2a4fcbbce7dda4737ea3a038</MD5>
+<MD5>8a33dfea7d100276953aee2329e1dd19</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
@@ -318,7 +321,7 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>67a0b6c7a953ace51aa8859572327798</MD5>
+<MD5>d38c50289f1792acfc93329fa96b02a7</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">
