@@ -472,10 +472,10 @@
         const show = [];
 
         if (data?.ok) {
-            if (!ledPage) {
+            // A model without fan control shows no fan controller chip, found or not: the Settings page says so.
+            if (!ledPage && (!modelName() || fanKnown())) {
                 if (data.chip) show.push([t('banner.connected'), chipName(data.chip), true]);
-                // A model without fan control is no fault: the Settings page says so.
-                else if (data.chip_error && fanKnown()) show.push([t('warn.chip'), data.chip_error, false]);
+                else if (data.chip_error) show.push([t('warn.chip'), data.chip_error, false]);
             }
             // A single missed probe is not "not found": see ledControllerState().
             const controller = ledControllerState();
