@@ -705,7 +705,7 @@
         ['DX', 'DX4700 / Plus', /^DX4700/, 'reported', '', false],
         // DXP: 2 bays to 8 bays, by size
         ['DXP', 'DXP2800', /^DXP2800$/, 'reported', 'fr', false],
-        ['DXP', 'DXP2800 GT', /^DXP2800 GT/, 'untested', '', false],
+        ['DXP', 'DXP2800 GT', /^DXP2800 GT/, 'untested', 'fr', false],
         ['DXP', 'DXP480T Plus', /^DXP480T/, 'power', '', false],
         ['DXP', 'DXP4800 / Plus / Pro', /^DXP4800( Plus| Pro)?$/, 'confirmed', 'fr', false],
         ['DXP', 'DXP4800 GT', /^DXP4800.*GT/, 'confirmed', 'full', true],
@@ -1801,6 +1801,17 @@
             rear: [],
             noInside: true
         }],
+        // DXP2800 GT: the same chassis in black with a champagne front frame; one 10G LAN port. Drawn after the
+        // product photos. No inside view, no fan control.
+        [/^DXP2800 GT/, {
+            front: [['usbc', '10G'], ['usba', '10G']],
+            gold: true,
+            rear2800: true,
+            lan: 'LAN 10G',
+            dc: 'DC 12V',
+            rear: [],
+            noInside: true
+        }],
         // iDX6011 and iDX6011 Pro: six bays and a small display at the front, the ports like the DXP6800 Pro's;
         // the back after a photo (PCIe slot, mesh, vent, power inlet). No inside view, no fan control.
         [/^iDX6011( Pro)?$/, {
@@ -1830,7 +1841,7 @@
     const modelName = () => state.hw?.model || state.data?.info?.model || '';
     const fanKnown = () => /^(DXP6800|DXP4800.*GT)/.test(modelName());
     const fanOff = () => state.data?.settings?.fan_control === false;
-    const caseKnown = () => fanKnown() || /^(DXP4800( Plus| Pro)?|DXP8800 Plus|DXP2800|iDX6011( Pro)?)$/.test(modelName());
+    const caseKnown = () => fanKnown() || /^(DXP4800( Plus| Pro)?|DXP8800 Plus|DXP2800( GT)?|iDX6011( Pro)?)$/.test(modelName());
 
     const caseModel = hw => (CASE_MODELS.find(([re]) => re.test(hw.model || '')) || [null, CASE_DEFAULT])[1];
 
@@ -1888,11 +1899,11 @@
                     <span class="speeds">${speeds}</span>
                     <span class="spacer"></span>
                     ${ports}
-                    <b class="brand">UGREEN</b>
+                    <b class="brand">${model.gold ? escapeHtml(hw.model) : 'UGREEN'}</b>
                 </div>`;
 
         q(target).innerHTML = `
-            <div class="unc-nas" style="--bays:${(hw.bays || []).length || 6}">
+            <div class="unc-nas ${model.gold ? 'gold' : ''}" style="--bays:${(hw.bays || []).length || 6}">
                 <div class="unc-nas-bays ${model.screen ? 'with-screen' : ''}">${(hw.bays || []).map(bayHtml).join('')}${model.screen ? '<div class="unc-nscreen" aria-hidden="true"><i></i><b></b></div>' : ''}</div>${strip}
             </div>`;
         applyLeds(q(target));
@@ -2059,7 +2070,7 @@
 
     // The back of the DXP2800 after a photo: a tall body, the mesh with the magnetic dust filter on top, below it
     // HDMI, USB 3.2, two USB 2.0, the one 2.5G LAN port, reset and the DC inlet.
-    function rear2800Html(hw) {
+    function rear2800Html(hw, lan = 'LAN 2.5G', dc = t('case.dc')) {
         const k = rearKit(hw);
 
         return `
@@ -2074,9 +2085,9 @@
                 ${k.port(13, 87.5, 'hdmi', 'HDMI')}
                 ${k.port(28.8, 87.5, 'usba', 'USB3.2')}
                 <div class="r-abs r-usb2" style="left:42.4%;top:86%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
-                ${k.lan(0, 61, 86.5, 'LAN 2.5G')}
+                ${k.lan(0, 61, 86.5, lan)}
                 ${k.port(76, 87, 'reset', 'RESET')}
-                ${k.port(88, 87.5, 'dc', t('case.dc'))}
+                ${k.port(88, 87.5, 'dc', dc)}
             </div>`;
     }
 
@@ -2171,7 +2182,7 @@
         }
 
         if (model.rear2800) {
-            q(target).innerHTML = rear2800Html(hw);
+            q(target).innerHTML = rear2800Html(hw, model.lan, model.dc);
             return;
         }
 

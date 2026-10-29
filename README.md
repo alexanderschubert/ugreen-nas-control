@@ -55,7 +55,7 @@ Every UGREEN NASync model and what the plugin does for it (the same table is on 
 | DX4700 / Plus | reported by users | – | – |
 | **DXP series** | | | |
 | DXP2800 | reported by users | front, rear | – |
-| DXP2800 GT | untested | – | – |
+| DXP2800 GT | untested | front, rear | – |
 | DXP480T Plus | power LED only | – | – |
 | DXP4800 / Plus / Pro | confirmed | front, rear | – |
 | DXP4800 GT | confirmed | front, rear, inside | yes |
@@ -79,7 +79,7 @@ Verified: tested by the author or by miskcoo. Confirmed or reported: users saw i
 
 On any other model the plugin does not touch the fan controller (the fan pages are not shown). System info and temperatures still work, as they only read.
 
-The **case view** (front, rear, drives) exists for more models. The DXP4800 / Plus / Pro, the DXP2800 and the iDX6011 / Pro are drawn after
+The **case view** (front, rear, drives) exists for more models. The DXP4800 / Plus / Pro, the DXP2800 / GT and the iDX6011 / Pro are drawn after
 photos; the DXP8800 Plus as a row of ports after the reviews' port lists. The M.2 slots of those models are not mapped yet, so they have no inside view.
 
 **Confirm your model:** on the About page, in *Supported models*, *Confirm my device* lets you tick what works on your NAS (LEDs, bay order, case view, fan

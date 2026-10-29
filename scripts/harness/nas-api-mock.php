@@ -5,7 +5,7 @@ $flag = '/boot/config/plugins/ugreen-nas-control/led.enabled';
 // docker exec ugreen-fake sh -c 'echo "iDX6011 Pro" > /tmp/model' to try another model
 $model = is_file('/tmp/model') ? trim(file_get_contents('/tmp/model')) : 'DXP6800 Pro';
 $known = (bool) preg_match('/^(DXP6800|DXP4800.*GT)/', $model);
-$family = (bool) preg_match('/^(DXP4800( Plus| Pro)?|DXP8800 Plus|DXP2800|iDX6011( Pro)?)$/', $model);
+$family = (bool) preg_match('/^(DXP4800( Plus| Pro)?|DXP8800 Plus|DXP2800( GT)?|iDX6011( Pro)?)$/', $model);
 $m = $_SERVER['REQUEST_METHOD'];
 // The lowest fan speed and the CPU help switch are the settings the mock keeps (the "min" action).
 function valid_min_pct($value) { $min = filter_var($value, FILTER_VALIDATE_INT); return $min === false || $min < 10 || $min > 60 ? null : $min; }
@@ -46,7 +46,7 @@ if (($_GET['action'] ?? '') === 'hardware') {
         ['bay'=>6,'present'=>false,'hdd'=>false]];
     echo json_encode(['ok'=>true,'model'=>$model,'memory'=>[['locator'=>'D0','size_mb'=>32768,'type'=>'DDR5','speed_mt'=>5600,'configured_mt'=>4800,'manufacturer'=>'Micron','part_number'=>'CT32G56C46S5'],['locator'=>'D1','size_mb'=>32768,'type'=>'DDR5','speed_mt'=>5600,'configured_mt'=>4800,'manufacturer'=>'Micron','part_number'=>'CT32G56C46S5']],
       'nvme'=>[['id'=>'nvme3','model'=>'Samsung SSD 990 PRO 2TB','size_bytes'=>2e12,'slot'=>($family ? 'm2' : 'm2-1'),'pci'=>'x','temp'=>44,'role'=>'cache','boot'=>false],['id'=>'nvme1','model'=>'WD Red SN700 1000GB','size_bytes'=>1e12,'slot'=>($family ? 'm2' : 'system'),'pci'=>'y','temp'=>38,'role'=>'','boot'=>true]],
-      'bays'=>$family ? ($model === 'DXP8800 Plus' ? array_merge($bays, [['bay'=>7,'present'=>false,'hdd'=>false],['bay'=>8,'present'=>false,'hdd'=>false]]) : ($model === 'DXP2800' ? array_slice($bays, 0, 2) : (strpos($model, 'iDX6011') === 0 ? $bays : array_slice($bays, 0, 4)))) : ($known ? $bays : []),'net'=>$family ? [['name'=>'eth0','link'=>true,'speed_mbit'=>2500,'max_mbit'=>2500],['name'=>'eth1','link'=>false,'speed_mbit'=>0,'max_mbit'=>10000]] : [['name'=>'eth0','link'=>true,'speed_mbit'=>10000,'max_mbit'=>10000],['name'=>'eth1','link'=>false,'speed_mbit'=>0,'max_mbit'=>10000]]]); exit;
+      'bays'=>$family ? ($model === 'DXP8800 Plus' ? array_merge($bays, [['bay'=>7,'present'=>false,'hdd'=>false],['bay'=>8,'present'=>false,'hdd'=>false]]) : (strpos($model, 'DXP2800') === 0 ? array_slice($bays, 0, 2) : (strpos($model, 'iDX6011') === 0 ? $bays : array_slice($bays, 0, 4)))) : ($known ? $bays : []),'net'=>$family ? [['name'=>'eth0','link'=>true,'speed_mbit'=>2500,'max_mbit'=>2500],['name'=>'eth1','link'=>false,'speed_mbit'=>0,'max_mbit'=>10000]] : [['name'=>'eth0','link'=>true,'speed_mbit'=>10000,'max_mbit'=>10000],['name'=>'eth1','link'=>false,'speed_mbit'=>0,'max_mbit'=>10000]]]); exit;
 }
 $old = '/boot/config/plugins/ugreen-led-control/leds.cfg';
 $imp = is_file($old) && @file_get_contents($old) !== @file_get_contents('/boot/config/plugins/ugreen-nas-control/leds.cfg');
