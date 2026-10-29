@@ -28,6 +28,7 @@
 ### 3.4
 - Models without fan control (all but DXP6800 Pro and DXP4800 GT): no fan card, no "fan mode" tile and no "fan controller not usable" warning on the overview any more; Settings explains that there is no fan control for the model and no switch is needed
 - DXP8800 Plus: the rear view shows its two fans side by side
+- Case view of the DXP4800 family, DXP4800 GT, DXP2800 and DXP8800 Plus: the LEDs sit below the bays as on the DXP6800 Pro (no separate LED strip next to the LAN LED any more)
 
 ### 3.3
 - Overview: a "Night mode" badge next to "Online" while the night mode has the LEDs dimmed or off (the badge is back); the night-mode hint in the LEDs card now follows changes of the schedule without a reload
@@ -291,7 +292,7 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>53e6f860ecda388b103a32b4c5a0a334</MD5>
+<MD5>3c8e7b97100520fd3874f2b81465bd6a</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">

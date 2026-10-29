@@ -951,7 +951,8 @@
     // Sockets per model as [drawing, label]; rear labels are i18n keys, a LAN port is ['lan', index of
     // the interface] in the order it sits on the panel.
     // pcie: the model has a PCIe slot. Any model not listed is drawn like the DXP6800 Pro.
-    // strip: front strip with a power button (LED inside) and one LED per LAN / bay, the model name below.
+    // strip: front strip with a power button and one LED per LAN / bay (no model uses it now: all have the bay LEDs
+    // below the bays like the DXP6800 Pro).
     // fan: the rear fan behind its dust filter. hint: i18n key of the note below the inside view.
     const CASE_DEFAULT = {
         front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
@@ -970,7 +971,6 @@
             front: [['sd', 'SD'], ['usbc', '10G'], ['usba', 'USB3.2']],
             rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0], ['reset', 'case.reset'], ['dc', 'case.dc']],
             pcie: false,
-            strip: true,
             fan: true
         }],
         // DXP4800, DXP4800 Plus and DXP4800 Pro: one chassis, drawn after a photo of the Plus. The slots of the
@@ -981,8 +981,7 @@
             front: [['usbc', '10G'], ['usba', '10G']],
             rear2800: true,
             rear: [],
-            noInside: true,
-            strip: true
+            noInside: true
         }],
         // iDX6011 and iDX6011 Pro: six bays and a small display at the front, the ports like the DXP6800 Pro's;
         // the back after a photo (PCIe slot, mesh, vent, power inlet). No inside view, no fan control.
@@ -999,15 +998,13 @@
             front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
             rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0]],
             noInside: true,
-            strip: true,
             fan: 2
         }],
         [/^DXP4800( Plus| Pro)?$/, {
             front: [['sd', 'SD'], ['usbc', '10G'], ['usba', '10G']],
             rear4800: true,
             rear: [],
-            noInside: true,
-            strip: true
+            noInside: true
         }]
     ];
 
