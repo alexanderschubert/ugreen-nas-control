@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "3.4">
+<!ENTITY version   "3.5">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,16 @@
 >
 
 <CHANGES>
+
+### 3.5
+- Fans: "Measure fans" runs every fan through 10 to 100 % (about 6 minutes, started on the Fans page, the daemon pauses meanwhile) and stores the rpm per speed. The curves then show a real rpm axis and the point table the rpm of each point. A short CPU burst no longer stops the measurement (4 checks in a row above 80 °C; 95 °C and above stops at once; the hottest reading goes to the syslog)
+- Fans: the Custom curve is set up in three steps (measure, lowest fan speed, curves), starting from Quiet, Standard or Performance; a floating save bar with Discard; "Case fans help the CPU" (the case fans never run slower than the CPU curve asks for; off by default); the minimum speed moved here from Safety
+- Quiet mode: the CPU curve starts at 15 % and is up to 5 points lower between about 55 and 85 °C (at the default minimum speed of 25 % the difference is smaller); the other modes are unchanged
+- Safety: all fans run at 100 % when the hottest NVMe SSD minus the NVMe offset reaches the disk limit (70 °C with the defaults), with the usual alert; the page shows the headroom to each limit
+- New Sensors page: the detected controllers and every reading by part with its source, the Safety limit and the fan it drives (sleeping disks are not woken up)
+- Overview regrouped (case and drives, cooling, processor and memory, network); the dashboard tile has a compact summary with fan mode, rpm, hottest temperature and alerts
+- Models without fan control show no fan controller chip in the title row
+- Scripts: install-dev.sh installs into a staging folder first, plg-hashes.py reports what it could not hash and exits 0 after a normal refresh, the test harness listens on localhost only
 
 ### 3.4
 - Models without fan control (all but DXP6800 Pro and DXP4800 GT): no fan card, no "fan mode" tile and no "fan controller not usable" warning on the overview any more; Settings explains that there is no fan control for the model and no switch is needed
@@ -242,22 +252,22 @@
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>268d5722e03cc00a69c6899db1b693fe</MD5>
+<MD5>891327cfe73ecb634e79db1cee6680c2</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
 <URL>&gitURL;/src/web/api.php</URL>
-<MD5>d2d748d12020aa30b1c30548ed35a5c5</MD5>
+<MD5>b02f42a1f3828c6e14092b3b56b57a9e</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASControl.page">
 <URL>&gitURL;/src/web/UGREENNASControl.page</URL>
-<MD5>72734fbef542a37ad9e70ba9370003b0</MD5>
+<MD5>270dea8e8789051f86156f2df63b16e7</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASDashboard.page">
 <URL>&gitURL;/src/web/UGREENNASDashboard.page</URL>
-<MD5>148deecaec32aab30797be80e32b7de7</MD5>
+<MD5>0325d830e7c43409bd0be6d51742b007</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/images/ugreen-nas-control.png">
@@ -283,17 +293,17 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>b3188e1a58188b3267d9ddfe9b2e5ebb</MD5>
+<MD5>98f5f51c25daa91fa723dc5567de81bd</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>4579a548bb75c16792b891b823e9e8db</MD5>
+<MD5>d8f90e991d7a73b83ddfc7250602d1ed</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>308b374dbc9da56c4a11b1b33e6c7f3c</MD5>
+<MD5>19d3da5bead50011fb3f5cf15623c827</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">
@@ -303,7 +313,7 @@
 
 <FILE Name="&srcDIR;/js/dash.js">
 <URL>&gitURL;/src/web/js/dash.js</URL>
-<MD5>02359267b2acccd8a0cf89b2b6be6c7d</MD5>
+<MD5>994564c01283f5bc8a282f758ed198e9</MD5>
 </FILE>
 
 <!-- LED part (the code of UGREEN LED Control, maintained here now), off until the switch is on -->

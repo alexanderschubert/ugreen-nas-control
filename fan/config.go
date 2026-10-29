@@ -20,7 +20,7 @@ type Curve []Point
 
 // Fan modes as in UGOS; "bios" leaves the fans as the BIOS set them.
 var presets = map[string][2]string{
-	"quiet":       {"50:20,65:30,75:50,85:80,92:100", "35:20,40:25,45:40,50:70,55:100"},
+	"quiet":       {"50:15,65:25,75:45,85:80,92:100", "35:20,40:25,45:40,50:70,55:100"},
 	"standard":    {"45:25,60:35,70:55,80:80,88:100", "30:25,38:30,44:50,50:80,55:100"},
 	"performance": {"40:35,55:50,65:70,75:90,85:100", "30:35,36:45,42:65,48:90,52:100"},
 	"full":        {"0:100", "0:100"},
@@ -28,14 +28,16 @@ var presets = map[string][2]string{
 
 // Config is the saved settings file: key="value" lines, as in the LED plugin.
 type Config struct {
-	Mode        string
-	CPUCurve    Curve
-	CaseCurve   Curve
-	MinPct      int
-	CPUCrit     int
-	DiskCrit    int
-	NVMeOffset  int
-	StallNotify bool
+	Mode      string
+	CPUCurve  Curve
+	CaseCurve Curve
+	MinPct    int
+	// CaseFollowsCPU: the case fans also follow the CPU curve (the higher of the two wins).
+	CaseFollowsCPU bool
+	CPUCrit        int
+	DiskCrit       int
+	NVMeOffset     int
+	StallNotify    bool
 	// Drives (Unraid names such as "cache" or "disk2", NVMe as "nvme1") that neither drive the case fans nor
 	// trigger the disk emergency rule, e.g. an external SSD that runs hot by itself.
 	IgnoreDrives map[string]bool
@@ -112,6 +114,7 @@ func LoadConfig(path string) Config {
 	c.StallNotify = v["stall_notify"] != "0"
 	c.IgnoreDrives = parseDriveList(v["ignore_drives"])
 	c.FanControl = v["fan_control"] != "0"
+	c.CaseFollowsCPU = v["case_follows_cpu"] == "1"
 
 	return c
 }

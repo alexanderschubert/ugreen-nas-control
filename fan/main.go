@@ -38,6 +38,7 @@ func usage() {
   set <fan|cpu|case|all> <0-100>
                       set a fan speed by hand (the daemon overrides it)
   restore             write back the fan settings the BIOS made
+  calibrate           measure rpm per speed for every fan, about 4 minutes (the daemon must run)
   daemon              run the fan curves until SIGTERM
 `)
 	os.Exit(2)
@@ -122,6 +123,7 @@ func main() {
 		if fanOn {
 			addChipStatus(out, &sensors)
 		}
+		out["calibration"] = readCalibStatus()
 
 		if b, err := os.ReadFile(statePath); err == nil {
 			var st State
@@ -167,6 +169,16 @@ func main() {
 			fail(err)
 		}
 		fmt.Printf("%d fan(s) at %d%%.\n", len(picked), pct)
+
+	case "calibrate":
+		chip, err := openChip()
+		if err != nil {
+			fail(err)
+		}
+		if err := runCalibrate(chip); err != nil {
+			fail(err)
+		}
+		fmt.Println("Fan speeds measured.")
 
 	case "restore":
 		b, err := os.ReadFile(biosPath)

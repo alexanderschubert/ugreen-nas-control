@@ -23,11 +23,19 @@ like the fan settings of UGOS. No kernel module, so Unraid updates don't break i
   drives, the LAN chips)
 - **Case view**: the drives as cards (bay, role, size, temperature), the rear with the ports and the LAN link speeds, and, on the
   DXP6800 Pro and DXP4800 GT, the inside with the M.2 modules, the RAM sticks, the system slot and the PCIe slot; light and dark
-- **Temperatures**: CPU package and cores, mainboard, the fan controller's own sensors, the LAN chips, every NVMe SSD (with its extra sensors) and
-  every disk, read from Unraid, so sleeping disks are never woken up
+- **Temperatures** (Sensors page): CPU package and hottest core, mainboard, the iGPU, the fan controller's own sensors, the LAN chips, every NVMe SSD
+  (with its extra sensors) and every disk, read from Unraid, so sleeping disks are never woken up; each one shows whether it steers the fans
+  and which limit applies
 - **Fans** (DXP6800 Pro, DXP4800 GT): live speed of the CPU fan and the case fans; modes BIOS (no control), Quiet, Standard, Performance,
-  Full speed, or your own curves; the CPU fan follows the CPU, the case fans the hottest disk or NVMe
-- **Safety**: minimum speed, all fans at 100 % when the CPU or a disk gets too hot or the CPU temperature can't be read, drives you
+  Full speed, or your own curves; the CPU fan follows the CPU, the case fans the hottest disk or NVMe. **Minimum fan speed** (10–60 %) is set on
+  the Fans page. **Case fans help cool the CPU** (switch on the Fans page, works in every mode with curves): the case fans run at least as fast
+  as the CPU curve asks for at the current CPU temperature
+- **Fan measuring**: runs every fan through 10 to 100 % in 12 steps and records the rpm (about 4 minutes, the other fans hold 50 %). Expect noise: the
+  fans run very slowly at times and at full speed at times, and the curves pause meanwhile. It aborts and hands all fans back at 100 % when the CPU passes
+  80 °C, a drive or NVMe gets too hot, the CPU temperature can't be read or the daemon stops. The result (`fan_rpm.json`) puts
+  real rpm next to the curve points and shows the lowest speed at which each fan still turns
+- **Safety**: all fans at 100 % when the CPU or a disk gets too hot or the CPU temperature can't be read, and the **NVMe emergency**: the same when the
+  hottest NVMe that isn't ignored, minus the NVMe offset (15 °C), reaches the disk limit (55 °C), i.e. 70 °C with the defaults. Also: drives you
   choose that must not drive the case fans (an external SSD, say), an Unraid notification when a fan stops, and the BIOS values back when
   the plugin stops or is removed. **Fan control can be switched off** under Settings for people whose fans are run by another plugin: then the
   plugin doesn't touch the fan chip at all
@@ -112,8 +120,9 @@ Settings: **Settings → UGREEN NAS Control**. The page has a sidebar; the page 
 | --- | --- | --- |
 | Cockpit | Overview | the front with the bays, fans and fan mode, processor, memory, network, all temperatures, LED summary |
 | Cockpit | Case | drives in detail (with a link to the bay LEDs), rear, inside |
-| Fans | Fan curves | the two curves; pick a preset or edit the points, then *Save* (an unsaved change is marked, *Discard* undoes it) |
-| Fans | Safety | minimum speed, emergency limits, NVMe offset, drives to ignore for the case fans, fan-stopped notification; *Save* like the curves |
+| Cockpit | Sensors | all temperatures with their limits, and which one steers the CPU fan and the case fans |
+| Fans | Fans | the two curves with the minimum fan speed and *Case fans help cool the CPU*; pick a preset or *Customize*, then *Save* (an unsaved change is marked, *Discard* undoes it). Custom curves are three steps: 1 *Measure fans* (optional), 2 lowest fan speed, 3 the curve points (2–8 per curve, temperature and speed) |
+| Fans | Safety | emergency limits, NVMe offset, drives to ignore for the case fans, fan-stopped notification; *Save* like the curves |
 | LEDs | LED overview | the LED switch, mode, system and drive LEDs, preview (the other LED entries appear once it is on) |
 | LEDs | Drive status, Night mode, Alerts & shutdown | bay assignment with *Identify* and status display; night mode; Unraid alerts and the shutdown signal |
 | System | Settings | the fan control switch (on the two models with fan control), interface language and colour scheme |
