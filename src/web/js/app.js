@@ -346,7 +346,8 @@
 
         renderTitle();
 
-        q('#unc-chip-error').hidden = !data.chip_error;
+        // A model without fan control is no fault: the Settings page says so.
+        q('#unc-chip-error').hidden = !data.chip_error || !fanKnown();
         q('#unc-chip-error-text').textContent = data.chip_error || '';
 
         const daemon = data.running ? data.daemon : null;
@@ -372,6 +373,8 @@
         const data = state.data;
         const fans = data.fans || [];
 
+        // No fan card on a model without fan control: there is nothing to show or to set.
+        q('.unc-cc.fan').hidden = Boolean(modelName()) && !fanKnown();
         q('.unc-cc.fan').classList.toggle('fan-off', fanKnown() && fanOff());
         if (fanKnown() && fanOff()) {
             q('#unc-fans').innerHTML = `<p class="unc-muted">${escapeHtml(t('fanctl.off_note'))}</p>`;
@@ -890,6 +893,7 @@
         // Off: the fan pages and the fan card are out of the way; the switch stays under Settings.
         qa('[data-fan-only]').forEach(el => { el.hidden = !fanKnown() || fanOff(); });
         qa('[data-fan-model]').forEach(el => { el.hidden = !fanKnown(); });
+        qa('[data-nofan-model]').forEach(el => { el.hidden = fanKnown() || !modelName(); });
         renderFanSwitch();
     }
 
@@ -947,7 +951,8 @@
     // Sockets per model as [drawing, label]; rear labels are i18n keys, a LAN port is ['lan', index of
     // the interface] in the order it sits on the panel.
     // pcie: the model has a PCIe slot. Any model not listed is drawn like the DXP6800 Pro.
-    // strip: front strip with a power button (LED inside) and one LED per LAN / bay, the model name below.
+    // strip: front strip with a power button and one LED per LAN / bay (no model uses it now: all have the bay LEDs
+    // below the bays like the DXP6800 Pro).
     // fan: the rear fan behind its dust filter. hint: i18n key of the note below the inside view.
     const CASE_DEFAULT = {
         front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
@@ -962,12 +967,14 @@
     };
 
     const CASE_MODELS = [
+        // DXP4800 GT: the chassis of the DXP4800 Plus (mesh filter with the fan behind it, the ports in one row below),
+        // but two 10G LAN ports.
         [/^DXP4800 GT/, {
             front: [['sd', 'SD'], ['usbc', '10G'], ['usba', 'USB3.2']],
-            rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0], ['reset', 'case.reset'], ['dc', 'case.dc']],
-            pcie: false,
-            strip: true,
-            fan: true
+            rear4800: true,
+            lanLabels: ['LAN 10G', 'LAN 10G'],
+            rear: [],
+            pcie: false
         }],
         // DXP4800, DXP4800 Plus and DXP4800 Pro: one chassis, drawn after a photo of the Plus. The slots of the
         // M.2 SSDs are not known, so there is no inside view; no fan control either.
@@ -977,8 +984,7 @@
             front: [['usbc', '10G'], ['usba', '10G']],
             rear2800: true,
             rear: [],
-            noInside: true,
-            strip: true
+            noInside: true
         }],
         // iDX6011 and iDX6011 Pro: six bays and a small display at the front, the ports like the DXP6800 Pro's;
         // the back after a photo (PCIe slot, mesh, vent, power inlet). No inside view, no fan control.
@@ -989,21 +995,18 @@
             rear: [],
             noInside: true
         }],
-        // DXP8800 Plus: eight bays; front and rear after the ports the reviews list (not after a photo), so a plain row
-        // of sockets like the GT's. No inside view, no fan control.
+        // DXP8800 Plus: eight bays; the back after a photo (rear8800Html). No inside view, no fan control.
         [/^DXP8800 Plus$/, {
             front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
-            rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0]],
-            noInside: true,
-            strip: true,
-            fan: true
+            rear8800: true,
+            rear: [],
+            noInside: true
         }],
         [/^DXP4800( Plus| Pro)?$/, {
             front: [['sd', 'SD'], ['usbc', '10G'], ['usba', '10G']],
             rear4800: true,
             rear: [],
-            noInside: true,
-            strip: true
+            noInside: true
         }]
     ];
 
@@ -1188,7 +1191,7 @@
 
     // The back of the DXP4800 family after a photo of the Plus: a square body, one big mesh with the UGREEN lettering
     // and the fan behind it, below it HDMI, USB 3.2, two USB 2.0, the two LAN ports, reset and the DC inlet.
-    function rear4800Html(hw) {
+    function rear4800Html(hw, lanLabels = ['LAN 10G', 'LAN 2.5G']) {
         // LAN 1 is the 10G port, LAN 2 the 2.5G one; the kernel's eth0 / eth1 can be either way round, so the
         // port that supports more is LAN 1 (when ethtool didn't tell, they stay in the kernel's order).
         const ordered = hw.net.slice().sort((a, b) => (b.max_mbit || 0) - (a.max_mbit || 0));
@@ -1214,7 +1217,7 @@
                 ${port(15.4, 86.5, 'hdmi', 'HDMI')}
                 ${port(28.7, 86.5, 'usba', 'USB3.2')}
                 <div class="r-abs r-usb2" style="left:43.8%;top:85%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
-                ${lan(1, 56, 'LAN 2.5G')}${lan(0, 72.7, 'LAN 10G')}
+                ${lan(1, 56, lanLabels[1])}${lan(0, 72.7, lanLabels[0])}
                 ${port(81, 85.5, 'reset', 'RESET')}
                 ${port(88.2, 86, 'dc', t('case.dc'))}
             </div>`;
@@ -1284,6 +1287,31 @@
             </div>`;
     }
 
+    // The back of the DXP8800 Plus after a photo: a wide body, one big mesh with the UGREEN lettering and two fans
+    // behind it, the PCIe slot with its handle on the left, below it HDMI, USB 3.2, two USB 2.0, two 10G LAN ports,
+    // reset and the power inlet.
+    function rear8800Html(hw) {
+        const k = rearKit(hw);
+
+        return `
+            <div class="unc-rear6800 unc-rear8800">
+                <div class="r-body"></div>
+                ${k.screw(3.1, 5.3)}${k.screw(49.7, 5.3)}${k.screw(96.5, 5.3)}${k.screw(5.1, 89)}${k.screw(49.7, 89)}${k.screw(94.6, 89)}
+                <div class="r-blende">
+                    <div class="r-fans">${['', ''].map(() => `<div class="r-fan"><span class="unc-fan-icon">${REAR_FAN_SVG}</span></div>`).join('')}</div>
+                    <div class="r-mesh"></div>
+                    ${BRAND_SVG}
+                </div>
+                <div class="r-pcie"><b>PCIE</b><i></i></div>
+                ${k.port(12.4, 80, 'hdmi', 'HDMI')}
+                ${k.port(19.5, 80, 'usba', 'USB3.2')}
+                <div class="r-abs r-usb2" style="left:26%;top:80%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
+                ${k.lan(0, 33.1, 80, 'LAN 1')}${k.lan(1, 40.4, 80, 'LAN 2')}
+                ${k.port(46.2, 80, 'reset', 'RESET')}
+                <div class="r-abs r-ac" style="left:68.5%;top:80%">${SOCKET.ac}<b>POWER</b></div>
+            </div>`;
+    }
+
     function renderRear(hw, target = '#unc-rear') {
         const lan = n => {
             const p = hw.net[n];
@@ -1305,7 +1333,7 @@
         }
 
         if (model.rear4800) {
-            q(target).innerHTML = rear4800Html(hw);
+            q(target).innerHTML = rear4800Html(hw, model.lanLabels);
             return;
         }
 
@@ -1319,9 +1347,14 @@
             return;
         }
 
+        if (model.rear8800) {
+            q(target).innerHTML = rear8800Html(hw);
+            return;
+        }
+
         q(target).innerHTML = `
             <div class="unc-nas-rear">
-                ${model.fan ? `<div class="unc-rear-fan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg></div>` : ''}
+                ${model.fan ? `<div class="unc-rear-fans">${Array.from({ length: Number(model.fan) || 1 }, () => `<div class="unc-rear-fan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg></div>`).join('')}</div>` : ''}
                 <div class="unc-rear-ports">
                     ${model.rear.map(([kind, label]) => kind === 'lan' ? lan(label) : socket(kind, t(label))).join('')}
                 </div>
@@ -1735,7 +1768,7 @@
             [t('dash.disk'), hottest >= 0 ? deg(hottest) : ''],
             [t('system.uptime'), data.info?.uptime ? uptime(data.info.uptime) : '']
         ];
-        if (fanOff()) items.splice(0, 2);
+        if (fanOff() || !fanKnown()) items.splice(0, 2);
         if (ledsOn() && state.ledMode) items.splice(1, 0, [t('led.title'), ledModeText()]);
         items.splice(0, items.length, ...items.filter(([, value]) => value));
 

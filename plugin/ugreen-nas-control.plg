@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "3.3">
+<!ENTITY version   "3.4">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,12 @@
 >
 
 <CHANGES>
+
+### 3.4
+- Models without fan control (all but DXP6800 Pro and DXP4800 GT): no fan card, no "fan mode" tile and no "fan controller not usable" warning on the overview any more; Settings explains that there is no fan control for the model and no switch is needed
+- DXP8800 Plus: the rear view drawn after a photo of the device: one wide mesh with the UGREEN lettering and the two fans behind it, the PCIe slot, HDMI, USB 3.2, two USB 2.0, the two LAN ports, reset and the power inlet
+- DXP4800 GT: the rear view is the chassis of the DXP4800 Plus (mesh with the fan behind it, the ports in one row, two 10G LAN ports)
+- Case view of the DXP4800 family, DXP4800 GT, DXP2800 and DXP8800 Plus: the LEDs sit below the bays as on the DXP6800 Pro (no separate LED strip next to the LAN LED any more)
 
 ### 3.3
 - Overview: a "Night mode" badge next to "Online" while the night mode has the LEDs dimmed or off (the badge is back); the night-mode hint in the LEDs card now follows changes of the schedule without a reload
@@ -246,7 +252,7 @@
 
 <FILE Name="&srcDIR;/UGREENNASControl.page">
 <URL>&gitURL;/src/web/UGREENNASControl.page</URL>
-<MD5>8e105f6cc5174f93f8f6b76f7af1685d</MD5>
+<MD5>72734fbef542a37ad9e70ba9370003b0</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASDashboard.page">
@@ -277,17 +283,17 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>d0b9bb3a1ac9541d674d94bae80dc3e6</MD5>
+<MD5>b3188e1a58188b3267d9ddfe9b2e5ebb</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>b507b2a66d5e950a91190c592bd691b6</MD5>
+<MD5>4579a548bb75c16792b891b823e9e8db</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>29d17e49219a13ae3a8e4fa369522463</MD5>
+<MD5>308b374dbc9da56c4a11b1b33e6c7f3c</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">

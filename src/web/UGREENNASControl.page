@@ -287,6 +287,11 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
         <p class="unc-hint" data-i18n="fanctl.hint">Ausschalten, wenn ein anderes Plugin oder Skript die Lüfter steuert. Dann fasst dieses Plugin den Lüfter-Chip nicht an, und die Lüfter bekommen die Werte des BIOS zurück.</p>
     </article>
 
+    <article class="unc-card" data-nofan-model hidden>
+        <h2 data-i18n="fanctl.title">Lüftersteuerung</h2>
+        <p class="unc-hint" data-i18n="fanctl.unsupported">Für dieses Modell gibt es keine Lüftersteuerung (bekannt nur beim DXP6800 Pro und DXP4800 GT). Das Plugin fasst den Lüfter-Chip nicht an, die Lüfter laufen wie vom BIOS eingestellt. Ein Schalter ist deshalb nicht nötig.</p>
+    </article>
+
     <article class="unc-card">
         <h2 data-i18n="settings.title">Oberfläche</h2>
         <div class="unc-form">

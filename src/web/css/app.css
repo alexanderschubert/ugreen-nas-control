@@ -1452,7 +1452,23 @@
     text-align: center;
 }
 
-/* Rear fan behind its dust filter (DXP4800 GT). */
+/* A hidden card stays hidden whatever display the layout gives it. */
+.unc-card[hidden] {
+    display: none;
+}
+
+/* Rear fans behind their dust filter (DXP4800 GT: one, DXP8800 Plus: two side by side). */
+.unc-rear-fans {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.unc-rear-fans .unc-rear-fan {
+    flex: 1;
+    margin-bottom: 0;
+}
+
 .unc-rear-fan {
     display: grid;
     place-items: center;
@@ -2948,6 +2964,25 @@
 }
 
 .unc-ledrow { isolation: isolate; }
+
+/* The back of the DXP8800 Plus (after a photo): wide, one big mesh with two fans behind it, PCIe slot at the left. */
+.unc-rear6800.unc-rear8800 {
+    max-width: 760px;
+    aspect-ratio: 565 / 305;
+    font-size: clamp(6px, 1.5cqi, 11px);
+}
+
+.unc-rear8800 .r-blende { left: 12.7%; top: 9.8%; width: 74.7%; height: 58.4%; padding: 2.4%; border-radius: 2.6cqi; }
+.unc-rear8800 .r-pcie { left: 2.2%; top: 45%; width: 5.2%; height: 36%; }
+.unc-rear8800 .r-pcie b { padding: .8cqi 0; }
+.unc-rear8800 .r-fan .unc-fan-icon { width: 24cqi; height: 24cqi; }
+.unc-rear8800 .r-brand { width: 30%; }
+.unc-rear8800 .r-screw { width: 2cqi; height: 2cqi; }
+.unc-rear8800 .r-hdmi svg { width: 5.4cqi; }
+.unc-rear8800 .r-usba svg, .unc-rear8800 .r-usb2 svg { width: 4cqi; }
+.unc-rear8800 .r-lan svg { width: 6cqi; }
+.unc-rear8800 .r-reset svg { width: 1.6cqi; }
+.unc-rear8800 .r-ac svg { width: 8cqi; }
 
 /* The back of the DXP4800 family (after a photo of the DXP4800 Plus): square, one big mesh, the ports in one row. */
 .unc-rear6800.unc-rear4800 {
