@@ -34,7 +34,8 @@ def main():
     binaries = dict(b.split('=', 1) for b in args.binary)
     with open(args.plg) as f:
         text = f.read()
-    problems = []
+    problems = []  # could not be hashed
+    stale = []  # hash differs from the plg
 
     def replace(match):
         head, url, tail = match.group(1), match.group(2), match.group(3)
@@ -59,25 +60,27 @@ def main():
             problems.append(f'{url}: cannot read {path}: {e.strerror}')
             return match.group(0)
         if old != new:
-            problems.append(f'{url}: plg has {old}, file is {new}')
+            stale.append(f'{url}: plg has {old}, file is {new}')
         return f'{head}<MD5>{new}</MD5>\n{tail}'
 
     updated, count = FILE_RE.subn(replace, text)
 
     if args.check:
-        for p in problems:
+        for p in problems + stale:
             print(p, file=sys.stderr)
-        if problems:
+        if problems or stale:
             print('Run scripts/plg-hashes.py without --check and commit the result.', file=sys.stderr)
             return 1
         print(f'All {count} downloads match their MD5.')
         return 0
 
-    # The hashes that could be computed are still written; the exit code says the rest is stale.
+    # The hashes that could be computed are still written; the exit code says which could not be.
     with open(args.plg, 'w') as f:
         f.write(updated)
     for p in problems:
         print(p, file=sys.stderr)
+    for p in stale:
+        print(f'updated: {p}')
     print(f'{count} downloads hashed.')
     return 1 if problems else 0
 
