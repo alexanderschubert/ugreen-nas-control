@@ -16,12 +16,12 @@
   <polygon points="32,35 58,21 58,45 32,59" fill="#aab1ba"/>
   <g transform="matrix(.8 .43 -.8 .43 32 21)">
     <circle r="9" fill="#2a323d"/>
-    <g transform="scale(.62)" fill="#fff"><use xlink:href="#fan" href="#fan"/><circle r="4"/></g>
+    <g transform="scale(.54)" fill="#fff"><use xlink:href="#fan" href="#fan"/><circle r="4"/></g>
   </g>
   <g transform="matrix(1 .577 0 1 6 21)">
-    <rect x="3" y="14" width="5" height="4.500" rx="1.500" fill="#ff3b30"/>
-    <rect x="9.500" y="14" width="5" height="4.500" rx="1.500" fill="#ffd60a"/>
-    <rect x="16" y="14" width="5" height="4.500" rx="1.500" fill="#34c759"/>
-    <rect x="22.500" y="14" width="5" height="4.500" rx="1.500" fill="#0a84ff"/>
+    <rect x="1.750" y="14" width="4.500" height="4.500" rx="1.500" fill="#ff3b30"/>
+    <rect x="7.750" y="14" width="4.500" height="4.500" rx="1.500" fill="#ffd60a"/>
+    <rect x="13.750" y="14" width="4.500" height="4.500" rx="1.500" fill="#34c759"/>
+    <rect x="19.750" y="14" width="4.500" height="4.500" rx="1.500" fill="#0a84ff"/>
   </g>
 </svg>
