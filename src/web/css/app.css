@@ -20,6 +20,11 @@
     --unc-cpu: #a78bfa;
     --unc-radius: 12px;
 
+    /* The device housing, shared by the front (.unc-nas) and the DXP4800 rear. */
+    --unc-case-bg: linear-gradient(180deg, #4a5058, #2a2f36 8%, #1b1f24);
+    --unc-case-shadow: 0 14px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .2);
+    --unc-case-recess: #090b0e;
+
     /* One spacing scale for the whole app (the same in .unc and .ulc, so NAS and LED cards line up). */
     --sp-1: 4px;
     --sp-2: 8px;
@@ -1424,8 +1429,8 @@
 .unc-nas {
     padding: 10px 10px 8px;
     border-radius: 12px;
-    background: linear-gradient(180deg, #4a5058, #2a2f36 8%, #1b1f24);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .2);
+    background: var(--unc-case-bg);
+    box-shadow: var(--unc-case-shadow);
 }
 
 .unc-nas-bays {
@@ -1790,6 +1795,9 @@
  */
 
 .unc[data-theme="light"] {
+    --unc-case-bg: linear-gradient(180deg, #f6f8fa, #e1e6eb 8%, #d2d8de);
+    --unc-case-shadow: 0 14px 30px rgba(20, 30, 45, .18), inset 0 1px 0 #fff;
+    --unc-case-recess: #aeb6bf;
     --unc-bg: #f4f6f9;
     --unc-side: #eaeef3;
     --unc-card: #ffffff;
@@ -1920,16 +1928,11 @@
         linear-gradient(180deg, #eef2f6, #dfe5ec);
 }
 
-.unc[data-theme="light"] .unc-nas {
-    background: linear-gradient(180deg, #f6f8fa, #e1e6eb 8%, #d2d8de);
-    box-shadow: 0 14px 30px rgba(20, 30, 45, .18), inset 0 1px 0 #fff;
-}
-
 .unc[data-theme="light"] .unc-nas-rear {
     background:
         repeating-linear-gradient(90deg, rgba(0, 0, 0, .02) 0 2px, transparent 2px 6px),
-        linear-gradient(180deg, #f6f8fa, #e1e6eb 8%, #d2d8de);
-    box-shadow: 0 14px 30px rgba(20, 30, 45, .18), inset 0 1px 0 #fff;
+        var(--unc-case-bg);
+    box-shadow: var(--unc-case-shadow);
 }
 
 .unc[data-theme="light"] .unc-nas-bays,
@@ -2562,7 +2565,7 @@
     --bd-text2: #6b7684;
 }
 
-/* The rear in light mode: silver housing like the front; the fan recess, the sockets and the power box stay dark. */
+/* The rear in light mode: silver housing like the front with a grey fan grille; only the sockets and the power box stay dark. */
 .unc[data-theme="light"] .unc-rear6800 { color: #46505c; }
 
 .unc[data-theme="light"] .unc-rear6800 .r-body {
@@ -2579,6 +2582,26 @@
 .unc[data-theme="light"] .unc-rear6800 .r-abs em { color: #5f6b78; }
 .unc[data-theme="light"] .unc-rear6800 .r-lan.up em { color: #15803d; }
 .unc[data-theme="light"] .unc-rear6800 .r-pcie b { background: #bcc4cd; color: #2d3642; }
+
+/* The fan grille: a grey mesh like the single rear fan tile, not a black slab on the silver housing. */
+.unc[data-theme="light"] .unc-rear6800 .r-blende {
+    background: #c6ccd3;
+    box-shadow: inset 0 0 0 .5cqi #aeb6bf, inset 0 .4cqi 1cqi rgba(20, 30, 45, .2);
+}
+
+.unc[data-theme="light"] .unc-rear6800 .r-mesh {
+    background:
+        repeating-linear-gradient(135deg, transparent 0 3px, rgba(60, 72, 86, .2) 3px 5px),
+        repeating-linear-gradient(45deg, rgba(60, 72, 86, .11) 0 2px, transparent 2px 4px),
+        rgba(198, 204, 211, .4);
+}
+
+/* The fan outline stays as a faint line; a stalled fan keeps its red outline on .r-fan. */
+.unc[data-theme="light"] .unc-rear6800 .r-fan .unc-fan-icon { color: #9aa4af; }
+.unc[data-theme="light"] .unc-rear6800 .r-fan .unc-fan-icon svg { stroke-width: .55; }
+.unc[data-theme="light"] .unc-rear6800 .r-fan .unc-fan-icon svg .ring { stroke-width: .8; }
+.unc[data-theme="light"] .unc-rear6800 .r-fan small { color: #3b4552; }
+.unc[data-theme="light"] .unc-rear6800 .r-brand text { fill: #3a424b; stroke: #3a424b; stroke-width: .8; stroke-dasharray: none; }
 
 /* ---------- Case: the drives as cards ---------- */
 
@@ -2701,24 +2724,126 @@
 .unc-rear8800 .r-reset svg { width: 1.6cqi; }
 .unc-rear8800 .r-ac svg { width: 8cqi; }
 
-/* The back of the DXP4800 family (after a photo of the DXP4800 Plus): square, one big mesh, the ports in one row. */
+/* The back of the DXP4800 family, measured on the product photo (housing 1:1, grille frame 83.5 % wide, ports in one row
+   under it, screws in the housing corners). The housing look comes from the front view (--unc-case-*). */
 .unc-rear6800.unc-rear4800 {
     max-width: 520px;
-    aspect-ratio: 505 / 522;
+    aspect-ratio: 940 / 955;
     font-size: clamp(6px, 1.9cqi, 11px);
 }
 
-.unc-rear4800 .r-blende { left: 12%; top: 6.9%; width: 76%; height: 72%; padding: 2.8%; border-radius: 3cqi; }
-.unc-rear4800 .r-fans { grid-template-columns: minmax(0, 1fr); inset: 6%; }
-.unc-rear4800 .r-fan .unc-fan-icon { width: 46cqi; height: 46cqi; }
-.unc-rear4800 .r-brand { width: 36%; }
-.unc-rear4800 .r-screw { width: 2.6cqi; height: 2.6cqi; }
-.unc-rear4800 .r-hdmi svg { width: 9cqi; }
-.unc-rear4800 .r-usba svg { width: 7cqi; }
+.unc-rear6800.unc-rear4800 .r-body,
+.unc[data-theme="light"] .unc-rear6800.unc-rear4800 .r-body {
+    inset: 0 0 1.5% 0;
+    border-radius: 4.8cqi;
+    background: var(--unc-case-bg);
+    box-shadow: var(--unc-case-shadow);
+}
+
+.unc-rear4800 .r-screw,
+.unc[data-theme="light"] .unc-rear4800 .r-screw {
+    width: 3.6cqi;
+    height: 3.6cqi;
+    background: radial-gradient(circle at 50% 50%, #07090b 0 45%, #1c2025 70%, #2c3138);
+    box-shadow: inset 0 .15cqi .3cqi rgba(0, 0, 0, .8), 0 .12cqi 0 rgba(255, 255, 255, .12);
+}
+
+.unc[data-theme="light"] .unc-rear4800 .r-screw {
+    background: radial-gradient(circle at 50% 50%, #6b7480 0 45%, #9aa3ad 70%, #b4bcc6);
+    box-shadow: inset 0 .15cqi .3cqi rgba(20, 30, 45, .5), 0 .12cqi 0 rgba(255, 255, 255, .8);
+}
+
+/* The grille frame: a ribbed bezel (radial ribs) around the mesh. */
+.unc-rear6800.unc-rear4800 .r-blende {
+    left: 8.3%;
+    top: 4.3%;
+    width: 83.5%;
+    height: 77%;
+    padding: 0;
+    border-radius: 8.5cqi;
+    background:
+        repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, .09) 0 .35deg, rgba(0, 0, 0, .4) .35deg .9deg),
+        linear-gradient(135deg, #2a2e33, #15181b);
+    box-shadow: inset 0 0 0 .35cqi #30353b, inset 0 .5cqi 1.4cqi rgba(0, 0, 0, .75), 0 .12cqi 0 rgba(255, 255, 255, .1);
+}
+
+.unc[data-theme="light"] .unc-rear6800.unc-rear4800 .r-blende {
+    background:
+        repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, .45) 0 .35deg, rgba(40, 52, 66, .22) .35deg .9deg),
+        linear-gradient(135deg, #c9cfd6, #b3bbc4);
+    box-shadow: inset 0 0 0 .35cqi #aeb6bf, inset 0 .5cqi 1.4cqi rgba(20, 30, 45, .3), 0 .12cqi 0 rgba(255, 255, 255, .8);
+}
+
+/* The mesh sits in the frame with a rim; the fan is drawn faintly under it. */
+.unc-rear4800 .r-fans {
+    inset: 4.1% 5.1%;
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: 5.9cqi;
+    background: var(--unc-case-recess);
+}
+
+.unc[data-theme="light"] .unc-rear4800 .r-fans { background: #c6ccd3; }
+
+.unc-rear4800 .r-fan .unc-fan-icon,
+.unc[data-theme="light"] .unc-rear4800 .r-fan .unc-fan-icon {
+    width: 46cqi;
+    height: 46cqi;
+    opacity: .3;
+}
+
+.unc-rear4800 .r-fan small { bottom: -3cqi; z-index: 2; }
+/* A stalled fan's red outline and label come up in front of the mesh. */
+.unc-rear4800 .r-fan.stalled { z-index: 2; }
+.unc-rear6800.unc-rear4800 .r-brand { z-index: 3; }
+
+.unc-rear6800.unc-rear4800 .r-mesh {
+    inset: 4.1% 5.1%;
+    border-radius: 5.9cqi;
+    background:
+        radial-gradient(circle, rgba(255, 255, 255, .13) 0 .55px, transparent .8px) 0 0 / 3px 3px,
+        radial-gradient(circle, rgba(255, 255, 255, .13) 0 .55px, transparent .8px) 1.5px 1.5px / 3px 3px,
+        rgba(24, 27, 31, .72);
+    box-shadow: inset 0 0 0 .3cqi rgba(255, 255, 255, .16), inset 0 .5cqi 1.2cqi rgba(0, 0, 0, .7);
+}
+
+.unc[data-theme="light"] .unc-rear6800.unc-rear4800 .r-mesh {
+    background:
+        radial-gradient(circle, rgba(40, 52, 66, .3) 0 .55px, transparent .8px) 0 0 / 3px 3px,
+        radial-gradient(circle, rgba(40, 52, 66, .3) 0 .55px, transparent .8px) 1.5px 1.5px / 3px 3px,
+        rgba(198, 204, 211, .6);
+    box-shadow: inset 0 0 0 .3cqi rgba(255, 255, 255, .7), inset 0 .5cqi 1.2cqi rgba(20, 30, 45, .25);
+}
+
+/* Perforated lettering, 53.6 % of the frame wide, centred in the mesh. */
+.unc-rear6800.unc-rear4800 .r-brand,
+.unc[data-theme="light"] .unc-rear6800.unc-rear4800 .r-brand {
+    width: 53.6%;
+    height: auto;
+    color: #8a9099;
+}
+
+.unc[data-theme="light"] .unc-rear6800.unc-rear4800 .r-brand { color: #66707b; }
+.unc-rear4800 .r-brand circle { fill: currentColor; }
+.unc[data-theme="light"] .unc-rear4800 .r-brand text { fill: url(#unc-dots); stroke: none; }
+
+/* Ports sit on their top edge; labels like the front view. */
+.unc-rear4800 .r-abs { transform: translateX(-50%); gap: .7cqi; }
+.unc-rear4800 .r-abs b, .unc-rear4800 .r-abs em { line-height: 1.1; }
+.unc-rear4800 .r-lan { gap: .5cqi; }
+.unc-rear4800 .r-lan em { font-size: .74em; }
+.unc-rear4800 .r-abs b { color: #8f99a4; }
+.unc-rear4800 .r-abs em { color: #6f7882; }
+.unc-rear4800 .r-lan.up em { color: #4ade80; }
+.unc[data-theme="light"] .unc-rear4800 .r-abs b { color: #26303a; }
+.unc[data-theme="light"] .unc-rear4800 .r-abs em { color: #5b6672; }
+.unc[data-theme="light"] .unc-rear4800 .r-lan.up em { color: #15803d; }
+.unc-rear4800 .r-hdmi svg { width: 9.4cqi; }
+.unc-rear4800 .r-usba svg { width: 7.9cqi; }
 .unc-rear4800 .r-usb2 svg { width: 7cqi; }
-.unc-rear4800 .r-lan svg { width: 8.6cqi; }
-.unc-rear4800 .r-reset svg { width: 2.6cqi; }
-.unc-rear4800 .r-dc svg { width: 5.4cqi; }
+.unc-rear4800 .r-usb2 { gap: .8cqi; }
+.unc-rear4800 .r-lan svg { width: 8cqi; }
+.unc-rear4800 .r-reset svg { width: 1.8cqi; }
+.unc-rear4800 .r-dc svg { width: 4.6cqi; }
 
 /* The display of the iDX6011 (Pro), right of the bays: a narrow dark glass with a few coloured lines. */
 .unc-nas-bays.with-screen { grid-template-columns: repeat(var(--bays, 6), minmax(0, 1fr)) minmax(0, .62fr); }

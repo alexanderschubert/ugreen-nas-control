@@ -1972,17 +1972,20 @@
             </div>`;
     }
 
+    // The UGREEN lettering of the DXP4800 family: perforated like the real one (the letters are filled with a dot grid).
+    const BRAND_DOTS_SVG = '<svg class="r-brand dots" viewBox="0 0 560 130" aria-label="UGREEN"><defs><pattern id="unc-dots" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="2.7"/></pattern></defs><text x="280" y="115" text-anchor="middle" font-family="Helvetica Neue, Arial, sans-serif" font-size="140" font-weight="500" textLength="540" lengthAdjust="spacingAndGlyphs" fill="url(#unc-dots)">UGREEN</text></svg>';
+
     // The back of the DXP4800 family after a photo of the Plus: a square body, one big mesh with the UGREEN lettering
     // and the fan behind it, below it HDMI, USB 3.2, two USB 2.0, the two LAN ports, reset and the DC inlet.
     function rear4800Html(hw, lanLabels = ['LAN 10G', 'LAN 2.5G']) {
         // LAN 1 is the 10G port, LAN 2 the 2.5G one; the kernel's eth0 / eth1 can be either way round, so the
         // port that supports more is LAN 1 (when ethtool didn't tell, they stay in the kernel's order).
         const ordered = hw.net.slice().sort((a, b) => (b.max_mbit || 0) - (a.max_mbit || 0));
-        const lan = (n, x, label) => {
+        const lan = (n, x, y, label) => {
             const p = ordered[n];
             const up = Boolean(p && p.link);
 
-            return `<div class="r-abs r-lan ${up ? 'up' : ''}" style="left:${x}%;top:85%">
+            return `<div class="r-abs r-lan ${up ? 'up' : ''}" style="left:${x}%;top:${y}%">
                 ${rj45(up, p ? p.speed_mbit : 0)}<b>${label}</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
         };
         const port = (x, y, kind, label, cls = '') => `<div class="r-abs r-${cls || kind}" style="left:${x}%;top:${y}%">${SOCKET[kind]}<b>${label}</b></div>`;
@@ -1991,18 +1994,18 @@
         return `
             <div class="unc-rear6800 unc-rear4800">
                 <div class="r-body"></div>
-                ${screw(4.6, 4.8)}${screw(95.6, 4.8)}${screw(4.6, 93.7)}${screw(95.6, 93.7)}
+                ${screw(5.1, 5.3)}${screw(94.8, 5.3)}${screw(5.1, 93.3)}${screw(94.8, 93.3)}
                 <div class="r-blende">
-                    <div class="r-fans"><div class="r-fan"><span class="unc-fan-icon">${REAR_FAN_SVG}</span></div></div>
+                    <div class="r-fans">${rearFansHtml(1)}</div>
                     <div class="r-mesh"></div>
-                    <svg class="r-brand" viewBox="0 0 190 40" aria-label="UGREEN"><text x="95" y="31" text-anchor="middle" font-family="Arial Black, Helvetica, Arial, sans-serif" font-size="37" font-weight="900" fill="rgba(255,255,255,.1)" stroke="#e9edf1" stroke-width="1.2" stroke-dasharray="1 2.2">UGREEN</text></svg>
+                    ${BRAND_DOTS_SVG}
                 </div>
-                ${port(15.4, 86.5, 'hdmi', 'HDMI')}
-                ${port(28.7, 86.5, 'usba', 'USB3.2')}
-                <div class="r-abs r-usb2" style="left:43.8%;top:85%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
-                ${lan(1, 56, lanLabels[1])}${lan(0, 72.7, lanLabels[0])}
-                ${port(81, 85.5, 'reset', 'RESET')}
-                ${port(88.2, 86, 'dc', t('case.dc'))}
+                ${port(16, 87.5, 'hdmi', 'HDMI')}
+                ${port(29.1, 87.5, 'usba', 'USB3.2')}
+                <div class="r-abs r-usb2" style="left:42.9%;top:83.9%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
+                ${lan(1, 56.8, 84.6, lanLabels[1])}${lan(0, 70.7, 84.6, lanLabels[0])}
+                ${port(79, 86.5, 'reset', 'RESET')}
+                ${port(86.5, 87.1, 'dc', t('case.dc'))}
             </div>`;
     }
 
