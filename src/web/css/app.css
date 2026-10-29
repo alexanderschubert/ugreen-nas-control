@@ -17,6 +17,7 @@
     --unc-green: #22c55e;
     --unc-amber: #f59e0b;
     --unc-red: #ef4444;
+    --unc-cpu: #a78bfa;
     --unc-radius: 12px;
 
     /* One spacing scale for the whole app (the same in .unc and .ulc, so NAS and LED cards line up). */
@@ -112,18 +113,6 @@
     color: var(--unc-muted);
 }
 
-.unc-soon {
-    margin-left: 6px;
-    padding: 1px 7px;
-    border-radius: 999px;
-    background: rgba(245, 158, 11, .14);
-    color: var(--unc-amber);
-    font-size: 11px;
-    font-style: normal;
-    font-weight: 600;
-    vertical-align: middle;
-}
-
 /* ---------- Sidebar ---------- */
 
 .unc-side {
@@ -180,9 +169,11 @@
 
 /* ---------- Main ---------- */
 
+/* Judged by the width of the content area, not of the window: the sidebar and Unraid's own frame take a share. */
 .unc-main {
+    container: uncmain / inline-size;
     min-width: 0;
-    padding: 24px 26px 30px;
+    padding: 18px 22px 22px;
 }
 
 .unc-head {
@@ -191,7 +182,7 @@
     gap: 18px;
     align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .unc-head h1 {
@@ -199,133 +190,22 @@
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 700;
     letter-spacing: -.01em;
 }
 
 .unc-head p {
-    margin-top: 6px;
+    margin-top: 3px;
     color: #b4bec9;
-    font-size: 15px;
-}
-
-.unc-badge {
-    padding: 2px 12px;
-    border: 1px solid #3b4652;
-    border-radius: 8px;
-    color: var(--unc-muted);
     font-size: 14px;
-    font-weight: 600;
-}
-
-.unc-badge.online {
-    border-color: rgba(34, 197, 94, .7);
-    background: rgba(34, 197, 94, .12);
-    color: #4ade80;
-}
-
-.unc-badge.night {
-    border-color: rgba(167, 139, 250, .6);
-    background: rgba(124, 58, 237, .15);
-    color: #c4b5fd;
-}
-
-.unc-badge.alert {
-    border-color: rgba(239, 68, 68, .7);
-    background: rgba(239, 68, 68, .15);
-    color: #fca5a5;
-}
-
-.unc-badge[hidden] {
-    display: none;
-}
-
-.unc-badge.offline {
-    border-color: rgba(239, 68, 68, .6);
-    background: rgba(239, 68, 68, .1);
-    color: #fca5a5;
-}
-
-.unc-banner {
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    padding: 12px 22px 12px 14px;
-    border: 1px solid rgba(34, 197, 94, .45);
-    border-radius: 12px;
-    background: rgba(20, 83, 45, .35);
-}
-
-.unc-banner[hidden] {
-    display: none;
 }
 
 .unc-banners {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 6px;
     justify-content: flex-end;
-}
-
-.unc-banner.bad {
-    border-color: rgba(239, 68, 68, .5);
-    background: rgba(127, 29, 29, .3);
-}
-
-.unc-banner.bad .unc-banner-icon {
-    background: var(--unc-red);
-    color: #2b0606;
-}
-
-.unc-banner.bad small {
-    color: #fca5a5;
-}
-
-.unc-banner-icon {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: var(--unc-green);
-    color: #04210f;
-}
-
-.unc-banner-icon svg {
-    stroke-width: 3;
-}
-
-.unc-banner strong {
-    display: block;
-}
-
-.unc-banner small {
-    color: #b7e4c7;
-}
-
-.unc-warning {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 18px;
-    padding: 14px 16px;
-    border: 1px solid rgba(245, 158, 11, .5);
-    border-radius: var(--unc-radius);
-    background: rgba(120, 70, 0, .22);
-    color: #fde8c4;
-}
-
-.unc-warning[hidden] {
-    display: none;
-}
-
-.unc-warning svg {
-    color: var(--unc-amber);
-}
-
-.unc-warning strong {
-    display: block;
-    color: #fff;
 }
 
 /* ---------- Views & grid ---------- */
@@ -342,19 +222,6 @@
     margin-top: var(--card-gap);
 }
 
-.unc-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: var(--card-gap);
-    align-items: start;
-}
-
-.unc-col {
-    display: grid;
-    gap: var(--card-gap);
-    min-width: 0;
-}
-
 .unc-card {
     padding: var(--card-pad);
     border: 1px solid var(--unc-border);
@@ -367,17 +234,13 @@
     font-weight: 650;
 }
 
-.unc-later {
-    opacity: .75;
-}
-
 /* ---------- General settings ---------- */
 
 .unc-switch-row {
     display: flex;
     gap: 16px;
     align-items: center;
-    margin-bottom: 18px;
+    margin: 0;
     cursor: pointer;
 }
 
@@ -387,7 +250,14 @@
 }
 
 .unc-switch-row small {
+    display: block;
+    margin-top: var(--sp-1);
     color: var(--unc-muted);
+    line-height: 1.4;
+}
+
+.unc-switch-row + .unc-switch-row {
+    margin-top: var(--sp-1);
 }
 
 .unc-disabled {
@@ -443,19 +313,6 @@
     outline-offset: 2px;
 }
 
-.unc-slider-row {
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) auto;
-    gap: 14px;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.unc-slider-row > div > span {
-    display: block;
-    margin-bottom: 8px;
-}
-
 .unc-value {
     min-width: 76px;
     padding: 7px 12px;
@@ -463,21 +320,6 @@
     border-radius: 8px;
     background: var(--unc-card-2);
     text-align: center;
-}
-
-.unc-field-row {
-    display: grid;
-    grid-template-columns: var(--label-w) minmax(0, 1fr);
-    gap: var(--sp-4);
-    align-items: center;
-}
-
-.unc-field-row[hidden] {
-    display: none;
-}
-
-.unc-field-row label {
-    font-weight: 600;
 }
 
 .unc select {
@@ -500,11 +342,6 @@
 
 .unc input[type="time"]:focus-visible {
     border-color: var(--unc-accent);
-}
-
-.unc-form .unc-inline.disabled {
-    opacity: .45;
-    pointer-events: none;
 }
 
 .unc select:disabled {
@@ -555,20 +392,6 @@
     border: 3px solid #fff;
     border-radius: 50%;
     background: var(--unc-accent);
-}
-
-.unc-hint {
-    margin: 14px 0 0;
-    padding: 10px 12px;
-    border-left: 3px solid var(--unc-accent);
-    border-radius: 6px;
-    background: rgba(47, 124, 246, .1);
-    color: #c3d6f5;
-    font-size: 13px;
-}
-
-.unc-hint[hidden] {
-    display: none;
 }
 
 /* ---------- Mode tiles ---------- */
@@ -637,27 +460,20 @@
     align-items: center;
 }
 
-.unc-inline {
+/* rangeField: the slider takes the room, its value sits in a box */
+.unc-range {
     display: flex;
     gap: 14px;
     align-items: center;
+    min-width: 0;
 }
 
-.unc-inline .unc-value {
-    min-width: 124px;
+.unc-range input[type="range"] { flex: 1; min-width: 0; }
+.unc-range > .unc-lim-derived { flex: 1; min-width: 0; }
+
+.unc-range .unc-value {
+    min-width: 84px;
     white-space: nowrap;
-}
-
-.unc-palette {
-    display: flex;
-    gap: 6px;
-}
-
-.unc-palette span {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--c);
 }
 
 /* ---------- Buttons ---------- */
@@ -701,9 +517,324 @@
 }
 
 .unc .unc-btn:disabled {
-    opacity: .5;
+    opacity: .45;
     cursor: default;
 }
+
+/* ---------- Components (renderers in app.js, "Components"): one block each, variants by modifier class ---------- */
+
+/* cardHead: icon, title, actions */
+.unc-card-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3) var(--sp-4);
+    align-items: center;
+    justify-content: space-between;
+}
+
+.unc-card-head h2 {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 0;
+}
+
+.unc-card-head h2 .unc-ico {
+    color: var(--unc-muted);
+}
+
+.unc-card > .unc-card-head {
+    margin-bottom: var(--sp-3);
+}
+
+/* pill: tones ok warn bad accent violet, plain without; lg for the title row; disc puts the icon in a filled circle.
+   .unc .unc-pill outweighs the button reset above. */
+.unc .unc-pill {
+    --tone: var(--unc-muted);
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    padding: 1px 9px;
+    border: 1px solid var(--unc-border);
+    border-radius: 999px;
+    color: var(--tone);
+    font-size: 11.5px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.unc .unc-pill.is-ok { --tone: var(--unc-green); }
+.unc .unc-pill.is-warn { --tone: var(--unc-amber); }
+.unc .unc-pill.is-bad { --tone: var(--unc-red); }
+.unc .unc-pill.is-accent { --tone: var(--unc-accent); }
+.unc .unc-pill.is-violet { --tone: var(--unc-cpu); }
+
+.unc .unc-pill:is(.is-ok, .is-warn, .is-bad, .is-accent, .is-violet) {
+    border-color: color-mix(in srgb, var(--tone) 55%, transparent);
+    background: color-mix(in srgb, var(--tone) 12%, transparent);
+}
+
+.unc .unc-pill.is-lg {
+    padding: 2px 12px;
+    font-size: 14px;
+}
+
+.unc .unc-pill small {
+    font-size: 11px;
+    font-weight: 500;
+    opacity: .8;
+}
+
+.unc .unc-pill svg {
+    width: 12px;
+    height: 12px;
+}
+
+.unc .unc-pill.is-disc {
+    padding: 3px 12px 3px 5px;
+    font-size: 12px;
+}
+
+.unc .unc-pill.is-disc .unc-ico {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--tone);
+    color: #fff;
+}
+
+.unc .unc-pill.is-disc svg {
+    stroke-width: 3;
+}
+
+.unc button.unc-pill {
+    color: var(--unc-text);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.unc button.unc-pill .unc-ico {
+    color: var(--unc-accent);
+}
+
+.unc button.unc-pill:hover {
+    border-color: var(--unc-accent);
+}
+
+/* note: info (default), warn, bad, violet; box is a panel, icon puts an icon before the content */
+.unc-note {
+    --tone: var(--unc-accent);
+    display: grid;
+    gap: var(--sp-2);
+    padding: 8px 12px;
+    border-left: 3px solid var(--tone);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--tone) 10%, transparent);
+    color: color-mix(in srgb, var(--tone) 45%, var(--unc-text));
+    font-size: 13px;
+}
+
+.unc * + .unc-note {
+    margin-top: 14px;
+}
+
+.unc-note.is-warn { --tone: var(--unc-amber); }
+.unc-note.is-bad { --tone: var(--unc-red); }
+.unc-note.is-violet { --tone: var(--unc-cpu); }
+
+.unc-note p,
+.unc-note ul {
+    margin: 0;
+}
+
+.unc-note ul {
+    padding-left: 18px;
+}
+
+.unc-note.is-box {
+    padding: 12px 14px;
+    border: 1px solid var(--unc-border);
+    border-left: 3px solid var(--tone);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--tone) 7%, var(--unc-card-2));
+    color: var(--unc-text);
+}
+
+.unc-note.is-bad strong {
+    color: var(--unc-red);
+}
+
+.unc-note.is-icon {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--sp-3);
+}
+
+.unc-note.is-icon .unc-ico {
+    color: var(--tone);
+}
+
+.unc-note.is-icon strong {
+    display: block;
+}
+
+/* emptyText */
+.unc-empty {
+    color: var(--unc-muted);
+}
+
+.unc-empty.is-center {
+    padding: 40px 10px;
+    text-align: center;
+}
+
+/* meter: a thin bar for fan power and temperatures */
+.unc-meter {
+    display: block;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .08);
+    overflow: hidden;
+}
+
+.unc-meter > span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--unc-accent);
+    transition: width .4s;
+}
+
+.unc-meter.is-warn > span { background: var(--unc-amber); }
+.unc-meter.is-bad > span { background: var(--unc-red); }
+
+/* fanTile: the grid holds one per fan */
+.unc-fantiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--sp-3);
+}
+
+.unc-fantile {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px var(--sp-3);
+    align-items: center;
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--unc-border);
+    border-radius: 10px;
+    background: var(--unc-card-2);
+}
+
+.unc .unc-fantile .unc-fan-icon svg {
+    width: 36px;
+    height: 36px;
+}
+
+.unc-fantile-text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    font-size: 13px;
+}
+
+.unc-fantile-text strong {
+    font-size: 15px;
+}
+
+.unc-fantile-text span {
+    color: var(--unc-muted);
+}
+
+.unc-fantile-text em {
+    color: var(--unc-amber);
+    font-size: 12px;
+    font-style: normal;
+}
+
+.unc-fantile-val {
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    color: var(--unc-muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.unc-fantile-val b {
+    color: var(--unc-text);
+    font-size: 22px;
+    font-weight: 650;
+    line-height: 1.1;
+}
+
+.unc-fantile-val b small {
+    color: var(--unc-muted);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.unc-fantile > .unc-meter {
+    grid-column: 1 / -1;
+    height: 4px;
+}
+
+.unc-fantile.stopped .unc-fan-icon,
+.unc-fantile.stopped .unc-fantile-val b {
+    color: var(--unc-red);
+}
+
+.unc-fantile.stopped > .unc-meter > span {
+    background: var(--unc-red);
+}
+
+/* linkRow: links (and a pill) at the foot of a card */
+.unc-links {
+    display: flex;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+}
+
+/* glyph: a small muted icon before a label; lg in rows, warn for an alert */
+.unc-glyph {
+    display: inline-flex;
+    flex: none;
+    margin-right: 6px;
+    color: var(--unc-muted);
+    vertical-align: -3px;
+}
+
+.unc .unc-glyph svg {
+    width: 15px;
+    height: 15px;
+}
+
+.unc .unc-glyph.is-lg svg,
+.unc .unc-glyph.is-lg .unc-fan-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.unc-glyph.is-warn {
+    color: var(--unc-amber);
+}
+
+/* tempBadge: colour only when warm or hot; na (also a sleeping drive) is muted */
+.unc-t {
+    font-size: 13px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.unc-t.warm { color: var(--unc-amber); }
+.unc-t.hot { color: var(--unc-red); }
+.unc-t.na { color: var(--unc-muted); font-weight: 500; }
 
 /* ---------- Facts ---------- */
 
@@ -794,31 +925,6 @@
     color: var(--unc-red);
 }
 
-.unc-card > .unc-follow {
-    margin: 14px 0 0;
-}
-
-.unc-effects + .unc-hint {
-    margin-top: 14px;
-}
-
-/* A bar for fan power and temperatures. */
-.unc-meter {
-    display: block;
-    height: 6px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, .08);
-    overflow: hidden;
-}
-
-.unc-meter > span {
-    display: block;
-    height: 100%;
-    border-radius: inherit;
-    background: var(--unc-accent);
-    transition: width .4s;
-}
-
 /* ---------- Temperatures ---------- */
 
 .unc-temps {
@@ -833,10 +939,11 @@
     align-items: center;
 }
 
+/* A sensor name wraps instead of being cut off; the model sits under it. */
 .unc-temp > span:first-child {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
 }
 
 .unc-temp strong {
@@ -864,11 +971,6 @@
     color: var(--unc-red);
 }
 
-.unc-temp.standby strong {
-    color: var(--unc-muted);
-    font-weight: 500;
-}
-
 /* ---------- Curves ---------- */
 
 .unc-curves {
@@ -879,25 +981,24 @@
 
 .unc-curve {
     display: grid;
-    gap: 8px;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 6px;
+    align-items: baseline;
     align-content: start;
     min-width: 0;
-    padding: 14px;
+    padding: 12px 14px;
     border: 1px solid var(--unc-border);
     border-radius: 10px;
     background: var(--unc-card-2);
 }
 
-.unc-curve h3 {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 650;
-}
+.unc-curve > :not(h3):not(.unc-curve-src) { grid-column: 1 / -1; }
 
 .unc svg.unc-chart {
+    display: block;
     width: 100%;
-    max-width: 460px;
-    height: auto;
+    height: 200px;
     stroke: none;
     stroke-width: 1;
 }
@@ -911,16 +1012,76 @@
     font-size: 10px;
 }
 
+.unc-chart .axis.hint { font-style: italic; }
+
 .unc-chart .curve {
     fill: none;
     stroke: var(--unc-accent);
     stroke-width: 2.5;
 }
 
+.unc-chart .cpuline {
+    stroke: var(--unc-cpu);
+    stroke-width: 1.5;
+    stroke-dasharray: 2 3;
+}
+
+.unc-chart .cpu-text {
+    fill: var(--unc-cpu);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.unc-chart .cpuwins {
+    fill: var(--unc-cpu);
+    fill-opacity: .22;
+}
+
 .unc-chart .point {
     fill: var(--unc-card);
     stroke: var(--unc-accent);
     stroke-width: 2;
+}
+
+.unc-chart .minband {
+    fill: rgba(245, 158, 11, .08);
+}
+
+.unc-chart .minline {
+    stroke: var(--unc-amber);
+    stroke-width: 1.5;
+    stroke-dasharray: 6 3;
+}
+
+.unc-chart .crit {
+    stroke: var(--unc-red);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 3;
+}
+
+.unc-chart .crit-text {
+    fill: var(--unc-red);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.unc-chart .tick {
+    stroke: var(--unc-muted);
+}
+
+.unc-chart .min-text {
+    fill: var(--unc-amber);
+    font-weight: 600;
+    font-size: 10px;
+}
+
+.unc-chart .curve.clipped {
+    opacity: .4;
+    stroke-dasharray: 4 3;
+}
+
+.unc-chart .point.clipped {
+    stroke-opacity: .5;
 }
 
 .unc-chart .now {
@@ -940,14 +1101,30 @@
 
 .unc-points {
     display: grid;
-    gap: 6px;
+    gap: 4px;
 }
 
 .unc-point {
     display: grid;
-    grid-template-columns: 18px minmax(0, 1fr) 16px minmax(0, 1fr);
-    gap: 8px;
+    grid-template-columns: 34px repeat(3, minmax(0, 1fr));
+    gap: 6px 10px;
     align-items: center;
+}
+
+.unc-point-head { color: var(--unc-muted); font-size: 11px; }
+.unc-point-head span { padding: 0 10px; }
+.unc-point-head span:last-child { padding: 0; }
+
+.unc-rpm small {
+    display: block;
+    font-size: 11px;
+    opacity: .8;
+}
+
+.unc-rpm {
+    color: var(--unc-muted);
+    font-size: 12px;
+    white-space: nowrap;
 }
 
 .unc-point label {
@@ -959,8 +1136,9 @@
 
 .unc .unc-point input {
     width: 100%;
+    max-width: 160px;
     min-width: 0;
-    padding: 7px 10px;
+    padding: 5px 10px;
     border: 1px solid var(--unc-border);
     border-radius: 8px;
     background: var(--unc-card);
@@ -981,17 +1159,28 @@
     overflow: visible;
 }
 
+/* Flat like Unraid's own tiles: no cards, sections divided by a hairline. */
 .unc-dash .unc-fans {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px 16px;
 }
 
 .unc-dash .unc-fan {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-    gap: 4px;
-    padding: 10px 6px;
-    text-align: center;
+    grid-template-columns: 26px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.unc-dash .unc-fan > div { gap: 0; }
+
+.unc-dash .unc-fan > div > small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.35;
 }
 
 .unc-dash .unc-fan-icon svg {
@@ -1000,23 +1189,76 @@
 }
 
 .unc-dash .unc-fan-rpm {
-    font-size: 17px;
+    font-size: 16px;
+    line-height: 1.3;
 }
 
-/* Unraid's light theme gives the tile a light background: the rows get their own dark card, like the fan cards. */
+.unc-dash .unc-fan-rpm small { font-size: 12px; }
+
 .unc-dash .unc-temps,
 .unc-dash .unc-bays-box {
     margin-top: 10px;
-    padding: 10px 12px;
-    border: 1px solid var(--unc-border);
-    border-radius: 10px;
-    background: var(--unc-card);
+    padding-top: 10px;
+    border-top: 1px solid var(--unc-border);
     color: var(--unc-text);
 }
 
-.unc-dash .unc-temps { gap: 6px; }
+.unc-dash .unc-temps {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 8px 16px;
+}
+
+.unc-dash .unc-temp {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 8px;
+}
+
+.unc-dash .unc-temp .unc-meter {
+    grid-column: 1 / -1;
+    height: 4px;
+}
 
 .unc-dash .unc-bays-box[hidden] { display: none; }
+
+.unc-dash .unc-bays-head {
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.unc-dash .unc-bays-head strong { flex: none; }
+
+.unc-dash .unc-bays-head small {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Chips and LED bars share one width, so each bar sits under its bay. */
+.unc-dash .unc-chips,
+.unc-dash .unc-ledrow { gap: 4px; }
+
+.unc-dash .unc-chip {
+    flex: 0 1 56px;
+    height: 26px;
+}
+
+.unc-dash .unc-chip.ico {
+    flex-direction: row;
+    gap: 4px;
+}
+
+.unc-dash .unc-chip.ico b { font-size: 11px; }
+
+.unc-dash .unc-ledline { margin-top: 8px; }
+.unc-dash .unc-ledline .unc-bays-head { margin-bottom: 4px; }
+.unc-dash .unc-ledrow i {
+    flex: 0 1 56px;
+    height: 6px;
+}
+
+/* Collapsed tile: only the header shows, with the essentials in it. Expanded, the rows below say it all. */
+#unc-dash-tile:has(.openclose.fa-chevron-up) .unc-dash-sum { display: none; }
 
 .unc-bays-head {
     display: flex;
@@ -1050,24 +1292,6 @@
 .unc-chip.hot { border-color: #ef4444; background: #5a1a1a; }
 .unc-chip.standby { border-color: #2f4a3a; background: #1a2620; color: var(--unc-muted); }
 .unc-chip.empty { border: 1px dashed var(--unc-border); background: transparent; color: var(--unc-muted); }
-
-.unc-bay-detail {
-    display: grid;
-    align-content: start;
-    min-height: 82px;
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid var(--unc-border);
-    font-size: 12px;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
-}
-
-.unc-bays-box[data-nvme] .unc-bay-detail { min-height: 60px; }
-
-.unc-bay-detail span { display: block; }
-.unc-bay-detail span:first-child:not(.unc-muted) { font-weight: 700; }
-.unc-bay-detail span:nth-child(n+3) { color: var(--unc-muted); }
 
 /* ---------- Case: drive list ---------- */
 
@@ -1153,14 +1377,6 @@
     color: #fca5a5;
 }
 
-/* ---------- Responsive ---------- */
-
-@media (max-width: 1280px) {
-    .unc-grid {
-        grid-template-columns: minmax(0, 1fr);
-    }
-}
-
 @media (max-width: 900px) {
     .unc {
         grid-template-columns: minmax(0, 1fr);
@@ -1185,93 +1401,17 @@
         flex: none;
     }
 
-    .unc-main {
-        padding: 18px 16px 24px;
-    }
 }
 
 @media (max-width: 560px) {
-    .unc-form,
-    .unc-field-row,
-    .unc-facts {
+    .unc-form, .unc-facts {
         grid-template-columns: minmax(0, 1fr);
     }
 }
 
-/* ---------- Case: tiles, front, rear, inside ---------- */
-
-.unc-tiles {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 14px;
-    margin-bottom: 18px;
-}
-
-.unc-tile {
-    display: grid;
-    gap: 4px;
-    padding: 14px 16px;
-    border: 1px solid var(--unc-border);
-    border-radius: var(--unc-radius);
-    background: var(--unc-card);
-    border-top: 3px solid var(--unc-accent);
-    min-width: 0;
-}
-
-.unc-tile.ram { border-top-color: #a855f7; }
-.unc-tile.drives { border-top-color: var(--unc-amber); }
-.unc-tile.nvme { border-top-color: #14b8a6; }
-.unc-tile.net { border-top-color: var(--unc-green); }
-
-.unc-tile small {
-    color: var(--unc-muted);
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    font-size: 11px;
-}
-
-.unc-tile strong {
-    font-size: 17px;
-    font-weight: 650;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.unc-tile span {
-    color: var(--unc-muted);
-    font-size: 12px;
-    min-height: 17px;
-}
-
-.unc-model,
-.unc-meta {
-    color: var(--unc-muted);
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.unc-slot small {
-    color: var(--unc-muted);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-}
-
-.unc-t {
-    margin-top: auto;
-    font-size: 13px;
-    font-weight: 650;
-}
-
-.unc-t.ok { color: var(--unc-green); }
-.unc-t.warm { color: var(--unc-amber); }
-.unc-t.hot { color: var(--unc-red); }
-.unc-t.standby { color: var(--unc-muted); font-weight: 500; }
-
 .unc-stage {
+    display: grid;
+    justify-items: center;
     padding: 22px 26px 18px;
     border: 1px solid var(--unc-border);
     border-radius: var(--unc-radius);
@@ -1470,6 +1610,7 @@
 }
 
 .unc-rear-fan {
+    position: relative;
     display: grid;
     place-items: center;
     height: 150px;
@@ -1529,6 +1670,7 @@
 .unc-socket.rj45.up em { color: var(--unc-green); font-weight: 650; }
 
 .unc-socket.usb2x2 svg { width: 34px; }
+.unc-socket.sd svg { width: 48px; }
 .unc-socket.dc svg { width: 40px; }
 .unc-socket.reset svg { width: 22px; }
 
@@ -1554,83 +1696,6 @@
     padding: 18px 22px;
     border-radius: 8px;
     background: #090b0e;
-}
-
-.unc-board {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-    padding: 16px;
-    border: 2px solid #1f5136;
-    border-radius: 14px;
-    background: linear-gradient(180deg, #11231a, #0d1914);
-}
-
-.unc-board.no-pcie { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-.unc-board-col {
-    display: grid;
-    gap: 12px;
-    align-content: start;
-    min-width: 0;
-}
-
-.unc-slot {
-    display: grid;
-    gap: 4px;
-    padding: 10px 12px;
-    border: 1px solid #2f6b49;
-    border-radius: 8px;
-    background: #0a120e;
-    min-width: 0;
-}
-
-.unc-slot.empty {
-    border-style: dashed;
-    color: var(--unc-muted);
-}
-
-.unc-slot.ram { border-left: 4px solid #a855f7; }
-.unc-slot.m2 { border-left: 4px solid #14b8a6; }
-.unc-slot.pcie { border-left: 4px solid var(--unc-accent); }
-
-.unc-slot > strong {
-    font-size: 15px;
-}
-
-.unc-slot > span {
-    color: var(--unc-muted);
-    font-size: 12px;
-}
-
-.unc-ssd {
-    display: grid;
-    gap: 2px;
-    padding: 8px 10px;
-    border-radius: 6px;
-    background: #121a16;
-    min-width: 0;
-}
-
-.unc-ssd strong {
-    font-size: 13px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.unc-ssd span {
-    color: var(--unc-muted);
-    font-size: 12px;
-}
-
-.unc-ssd .unc-t {
-    margin-top: 0;
-}
-
-@media (max-width: 1100px) {
-    .unc-board,
-    .unc-board.no-pcie { grid-template-columns: minmax(0, 1fr); }
 }
 
 
@@ -1660,11 +1725,6 @@
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 10px;
-}
-
-.unc-about-badges .unc-badge {
-    padding: 1px 10px;
-    font-size: 12px;
 }
 
 .unc-about-links {
@@ -1719,53 +1779,7 @@
 
 /* ---------- Case: smaller front, icons ---------- */
 
-.unc-stage { display: grid; justify-items: center; }
 .unc-stage .unc-nas { width: 100%; max-width: min(640px, calc(var(--bays, 6) * 100px + 120px)); }
-
-.unc-tile { position: relative; }
-
-.unc-tile-ico {
-    position: absolute;
-    top: 12px;
-    right: 14px;
-    width: 22px;
-    height: 22px;
-    color: var(--unc-muted);
-    opacity: .7;
-}
-
-.unc-tile-ico svg,
-.unc-slot-ico svg {
-    width: 100%;
-    height: 100%;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.unc-slot-head {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.unc-slot-ico {
-    display: inline-block;
-    flex: none;
-    width: 20px;
-    height: 20px;
-    margin-right: 6px;
-    vertical-align: -4px;
-}
-
-.unc-slot-head .unc-slot-ico { margin-right: 0; width: 22px; height: 22px; }
-.unc-slot.ram .unc-slot-head { color: #c084fc; }
-.unc-slot.m2 .unc-slot-head { color: #2dd4bf; }
-.unc-slot.pcie .unc-slot-head { color: #60a5fa; }
-.unc-slot-head small { color: var(--unc-muted); }
-.unc-ssd .unc-slot-ico { color: #2dd4bf; width: 16px; height: 16px; vertical-align: -3px; margin-right: 6px; }
 
 /* ---------- Light theme ----------
  * data-theme="light" on .unc (System → Appearance). Variables first, then the
@@ -1786,6 +1800,7 @@
     --unc-green: #15803d;
     --unc-amber: #b45309;
     --unc-red: #dc2626;
+    --unc-cpu: #6d28d9;
 
     color-scheme: light;
 }
@@ -1818,58 +1833,6 @@
     color: #46515d;
 }
 
-.unc[data-theme="light"] .unc-badge {
-    border-color: #c3cbd5;
-}
-
-.unc[data-theme="light"] .unc-badge.online {
-    border-color: rgba(22, 163, 74, .6);
-    background: rgba(34, 197, 94, .12);
-    color: #15803d;
-}
-
-.unc[data-theme="light"] .unc-badge.night {
-    border-color: rgba(124, 58, 237, .5);
-    background: rgba(124, 58, 237, .1);
-    color: #6d28d9;
-}
-
-.unc[data-theme="light"] .unc-badge.alert,
-.unc[data-theme="light"] .unc-badge.offline {
-    border-color: rgba(220, 38, 38, .55);
-    background: rgba(239, 68, 68, .1);
-    color: #b91c1c;
-}
-
-.unc[data-theme="light"] .unc-banner {
-    border-color: rgba(22, 163, 74, .45);
-    background: rgba(34, 197, 94, .12);
-}
-
-.unc[data-theme="light"] .unc-banner small {
-    color: #166534;
-}
-
-/* A bad state keeps its red box in the light theme too (the rule above would paint it green). */
-.unc[data-theme="light"] .unc-banner.bad {
-    border-color: rgba(220, 38, 38, .5);
-    background: rgba(239, 68, 68, .1);
-}
-
-.unc[data-theme="light"] .unc-banner.bad small {
-    color: #991b1b;
-}
-
-.unc[data-theme="light"] .unc-warning {
-    border-color: rgba(217, 119, 6, .5);
-    background: rgba(245, 158, 11, .14);
-    color: #6b3f00;
-}
-
-.unc[data-theme="light"] .unc-warning strong {
-    color: #1b232c;
-}
-
 .unc[data-theme="light"] .unc-switch span {
     background: #c3cbd5;
 }
@@ -1890,11 +1853,6 @@
 .unc[data-theme="light"] input[type="range"]::-moz-range-thumb {
     border-color: #fff;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, .2);
-}
-
-.unc[data-theme="light"] .unc-hint {
-    background: rgba(47, 124, 246, .08);
-    color: #1e3a8a;
 }
 
 .unc[data-theme="light"] .unc-meter {
@@ -1984,7 +1942,7 @@
 }
 
 .unc[data-theme="light"] .unc-nbay .info.ok { color: #26303a; }
-.unc[data-theme="light"] .unc-nbay .info.warm { color: #9a4a00; }
+.unc[data-theme="light"] .unc-nbay .info.warm { color: #6b2f00; }
 .unc[data-theme="light"] .unc-nbay .info.hot { color: #b91c1c; }
 .unc[data-theme="light"] .unc-nbay .size { color: #5b6672; }
 .unc[data-theme="light"] .unc-nbay .role { color: #26303a; }
@@ -2039,291 +1997,207 @@
 .unc[data-theme="light"] .unc-socket em { color: #26303a; }
 .unc[data-theme="light"] .unc-socket.rj45.up em { color: #166534; }
 
-.unc[data-theme="light"] .unc-board {
-    border-color: #aeb6bf;
-    background: #c6cdd4;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .10);
-}
+/* ---------- Overview: case and drives, cooling, compute, network ---------- */
 
-.unc[data-theme="light"] .unc-slot {
-    border-color: #8f99a4;
-    background: #eef1f4;
-}
-
-.unc[data-theme="light"] .unc-slot.empty {
-    border-color: #aeb6bf;
-    background: #d9dee3;
-}
-
-.unc[data-theme="light"] .unc-slot.ram { border-left-color: #a855f7; }
-.unc[data-theme="light"] .unc-slot.m2 { border-left-color: #14b8a6; }
-.unc[data-theme="light"] .unc-slot.pcie { border-left-color: var(--unc-accent); }
-
-.unc[data-theme="light"] .unc-slot.ram .unc-slot-head { color: #7e22ce; }
-.unc[data-theme="light"] .unc-slot.m2 .unc-slot-head { color: #0f766e; }
-.unc[data-theme="light"] .unc-slot.pcie .unc-slot-head { color: #1d4ed8; }
-
-.unc[data-theme="light"] .unc-ssd { background: #dfe4e9; }
-.unc[data-theme="light"] .unc-ssd .unc-slot-ico { color: #0f766e; }
-
-/* ---------- Overview: cockpit ---------- */
-
-.unc-cockpit {
+.unc-ov {
     display: grid;
-    /* The model in the middle is a little narrower, the fans on the right get room. */
-    grid-template-columns: 248px minmax(0, 1fr) minmax(0, 1.05fr);
-    gap: 16px;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: var(--card-gap);
     align-items: stretch;
 }
 
-/* The cards share the column's height, so no column ends with a gap. */
-.unc-ccol {
+.unc-ov.no-cool { grid-template-columns: minmax(0, 1fr); }
+
+.unc-ov > .unc-card {
     display: flex;
     flex-direction: column;
-    gap: 14px;
     min-width: 0;
-}
-
-.unc-ccol > .unc-cc { flex: 1 1 auto; }
-
-.unc-card.unc-cc {
     padding: var(--card-pad-tight);
 }
 
-.unc-cc h3 {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin: 0 0 10px;
-    color: var(--unc-muted);
-    font-size: 12px;
-    font-weight: 650;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-}
-
-.unc-cc h3 i {
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-    background: var(--unc-accent);
-}
-
-.unc-cc.ram h3 i { background: #a855f7; }
-.unc-cc.net h3 i { background: var(--unc-green); }
-.unc-cc.fan h3 i { background: #60a5fa; }
-.unc-cc.tmp h3 i { background: var(--unc-amber); }
-.unc-cc.ssd h3 i { background: #14b8a6; }
-
-.unc-big {
-    font-size: 30px;
-    font-weight: 700;
-    line-height: 1.1;
-}
-
-.unc-big small {
-    margin-left: 4px;
-    color: var(--unc-muted);
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.unc-sub {
-    margin: 2px 0;
-    color: var(--unc-muted);
-    font-size: 12px;
-}
-
-.unc-cc .unc-meter { margin: 8px 0 6px; }
-.unc-cc .unc-meter > span { background: var(--unc-green); }
-.unc-cc .unc-meter.warm > span { background: var(--unc-amber); }
-.unc-cc .unc-meter.hot > span { background: var(--unc-red); }
-.unc-cc .unc-meter.net > span { background: var(--unc-green); }
-
-.unc-ccrow {
-    display: flex;
-    gap: 10px;
-    align-items: baseline;
-    justify-content: space-between;
-    margin: 6px 0;
-    font-size: 13px;
-}
-
-.unc-ccrow > span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.unc-ccrow b { font-weight: 600; white-space: nowrap; }
-.unc-ccrow b.up { color: var(--unc-green); }
-.unc-ccrow .unc-t { margin-top: 0; }
-
-.unc-dimms {
-    display: flex;
-    gap: 6px;
-    margin: 8px 0;
-}
-
-.unc-dimms span {
-    flex: 1;
-    padding: 4px 0;
-    border: 1px solid #6b3fb3;
-    border-radius: 4px;
-    background: rgba(168, 85, 247, .16);
-    font-size: 11px;
-    text-align: center;
-}
-
-.unc-dimms span.empty {
-    border: 1px dashed var(--unc-border);
-    background: transparent;
-    color: var(--unc-muted);
-}
-
-/* The fans: tiles side by side, big enough to see them turn. */
-.unc-cc .unc-fans { grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 10px; }
-.unc-cc .unc-fan { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 6px; padding: 14px 8px 12px; text-align: center; }
-.unc-cc .unc-fan > div { justify-items: center; width: 100%; }
-.unc-cc .unc-fan-icon svg { width: 40px; height: 40px; }
-.unc-cc .unc-fan strong { font-size: 13px; line-height: 1.2; }
-.unc-cc .unc-fan small { font-size: 11px; }
-.unc-cc .unc-fan-rpm { font-size: 22px; }
-.unc-cc .unc-fan-rpm small { display: block; }
-.unc-cc .unc-fan .unc-meter { width: 100%; }
-.unc-cc .unc-follow { margin: 8px 0 0; font-size: 12px; }
-.unc-cc .unc-temp { grid-template-columns: minmax(0, 1fr) 54px; gap: 6px 10px; }
-.unc-cc .unc-temp .unc-meter { grid-column: 1 / -1; grid-row: 2; }
-
-/* The middle: the detected model, big. */
-.unc-hero-stage {
-    display: flex;
-    flex-direction: column;
-    padding: 20px 22px 16px;
-}
-
-.unc-hero-head {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 14px;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 14px;
-}
-
-.unc-hero-head b {
-    font-size: 26px;
-    letter-spacing: .02em;
-}
-
-.unc-hero-head span {
-    color: var(--unc-muted);
-    font-size: 13px;
-}
 
 .unc-hero {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     justify-content: center;
-    perspective: 1400px;
-    min-height: 220px;
+    min-height: 180px;
     padding: 4px 0;
 }
 
 .unc-hero > * { width: 100%; }
 
 /* The case is shown straight, front on. */
-.unc-hero-stage .unc-nas { max-width: calc(var(--bays, 6) * 105px + 120px); margin: 0 auto; }
-
-.unc-hero .unc-board { grid-template-columns: minmax(0, 1fr); }
-.unc-hero .unc-nas-rear { margin: 0 auto; }
-
-.unc-hero-tabs {
-    display: flex;
-    gap: 6px;
-    margin-top: 16px;
-}
-
-.unc .unc-hero-tabs button {
-    padding: 6px 14px;
-    border: 1px solid var(--unc-border);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--unc-muted);
-    font: 600 13px inherit;
-    cursor: pointer;
-}
-
-.unc .unc-hero-tabs button.active {
-    border-color: var(--unc-accent);
-    background: var(--unc-accent);
-    color: #fff;
-}
-
-.unc-under {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-    gap: 16px;
-    margin-top: 16px;
-    align-items: stretch;
-}
-
-/* Judged by the width of the content area, not of the window: the sidebar and Unraid's own frame take a share. */
-.unc-main { container: uncmain / inline-size; }
+.unc-hero .unc-nas { max-width: calc(var(--bays, 6) * 105px + 120px); margin: 0 auto; container-type: inline-size; }
 
 @container uncmain (max-width: 1000px) {
-    .unc-cockpit { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-    .unc-hero-stage { grid-column: 1 / -1; grid-row: 1; }
-}
-
-@media (max-width: 1100px) {
-    .unc-under { grid-template-columns: minmax(0, 1fr); }
+    .unc-ov, .unc-ov.no-cool { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .unc-ov-case, .unc-ov-cool { grid-column: 1 / -1; }
 }
 
 @container uncmain (max-width: 640px) {
-    .unc-cockpit { grid-template-columns: minmax(0, 1fr); }
+    .unc-ov, .unc-ov.no-cool { grid-template-columns: minmax(0, 1fr); }
+    .unc-m2 { gap: 6px 14px; }
 }
 
-.unc-hero-foot {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 18px;
-}
-
-.unc-pill {
+/* Under the front view: the SSDs with one temperature each, the drive details link, the LED chip. */
+.unc-ov-foot {
     display: grid;
-    gap: 1px;
-    padding: 7px 12px;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--unc-border);
+    font-size: 13px;
+}
+
+.unc-m2 { display: flex; flex-wrap: wrap; gap: 6px 22px; }
+
+/* statChip: label with icon and a value; inline by default */
+.unc-stat { display: inline-flex; gap: 6px; align-items: center; min-width: 0; }
+.unc-stat .unc-glyph { margin: 0 6px 0 0; }
+.unc-stat small em { font-style: normal; opacity: .75; }
+.unc-stat.is-stack { display: grid; gap: 1px; align-items: start; }
+.unc-stat.is-stack.is-end { justify-items: end; }
+.unc-stat.is-stack.is-lg .unc-t { font-size: 20px; font-weight: 650; }
+.unc-stat.is-row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.unc-stat.is-row .unc-glyph { margin-right: 6px; }
+.unc-stat.is-row > small { color: var(--unc-text); font-size: inherit; }
+.unc-stat.is-row small em { color: var(--unc-muted); font-size: 11px; opacity: 1; }
+.unc-ov .unc-links { margin-top: auto; padding-top: 10px; }
+.unc-ov-foot .unc-links { margin-top: 0; padding-top: 0; }
+
+/* The temperatures that drive the curves: plain figures, colour only when warm or hot. */
+.unc-heat {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px 16px;
+    margin: 18px 0 16px;
+    padding: 12px 0;
+    border-block: 1px solid var(--unc-border);
+}
+
+.unc-heat:empty { display: none; }
+
+/* The mode buttons: icon and name, the description is the tooltip. */
+.unc-ov-cool .unc-effects { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.unc-ov-cool .unc-effect { min-height: 58px; padding: 8px 4px; gap: 5px; align-content: center; align-items: center; }
+.unc-ov-cool .unc-effect small { display: none; }
+.unc-ov-cool .unc-effect svg { width: 20px; height: 20px; }
+.unc .unc-mode-hint { margin: 12px 0 0; font-size: 12px; }
+.unc-follow { margin-top: auto; }
+
+/* Fan control off: only the note stays; the mode buttons would change nothing. */
+.unc-ov-cool.fan-off .unc-effects,
+.unc-ov-cool.fan-off #unc-mode-hint { display: none; }
+
+/* Compute and Network. */
+#unc-ov-compute,
+#unc-ov-net { display: flex; flex-direction: column; flex: 1 1 auto; gap: 8px; font-size: 13px; }
+.unc-ov-compute p { margin: 0; }
+.unc-ov-ram { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+
+.unc-dimms { display: inline-flex; gap: 4px; }
+
+.unc-dimms > span {
+    padding: 2px 8px;
     border: 1px solid var(--unc-border);
-    border-radius: 10px;
+    border-radius: 4px;
+    background: var(--unc-card-2);
+    font-size: 11px;
+}
+
+.unc-dimms > span.empty { border-style: dashed; background: transparent; color: var(--unc-muted); }
+
+.unc-ports { display: grid; gap: 8px; }
+
+.unc-ports > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 56px;
+    gap: 12px;
+    align-items: baseline;
+}
+
+.unc-ports > div > .unc-t { justify-self: end; }
+
+/* ---------- Sensors page ---------- */
+
+/* Case, Inside: memory and SSD slots as lists of sensor rows */
+.unc-inside { display: grid; gap: var(--sp-4); }
+
+.unc-sn { display: grid; gap: var(--card-gap); }
+
+.unc-sn-devs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--card-gap);
+}
+
+.unc-sn-dev {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+    padding: 14px 16px;
+    border: 1px solid var(--unc-border);
+    border-radius: var(--unc-radius);
     background: var(--unc-card);
 }
 
-.unc-pill small {
+.unc-sn-dev > div { display: grid; gap: 2px; min-width: 0; }
+.unc-sn-dev small { font-size: 12px; overflow-wrap: anywhere; }
+.unc-sn-dev strong { font-size: 15px; font-weight: 650; }
+
+.unc-sn-devico {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--unc-card-2);
     color: var(--unc-muted);
-    font-size: 10px;
-    letter-spacing: .06em;
-    text-transform: uppercase;
 }
 
-.unc-pill b {
-    font-size: 13px;
-    font-weight: 650;
+.unc-sn-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 32px;
+}
+
+.unc-sn-list.one { grid-template-columns: minmax(0, 1fr); }
+
+.unc-sn-row {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) auto auto;
+    gap: 4px 12px;
+    align-items: center;
+    padding: 9px 0;
+    border-top: 1px solid var(--unc-border);
+}
+
+.unc-sn-name { display: grid; min-width: 0; }
+.unc-sn-name strong { font-size: 14px; font-weight: 600; }
+.unc-sn-name small { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+
+.unc-sn-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.unc-sn-badges:empty { display: none; }
+
+.unc-sn-vals { display: flex; gap: 18px; justify-content: flex-end; }
+.unc-sn-vals .unc-stat { min-width: 64px; }
+.unc-sn-vals .unc-stat small { font-size: 11px; }
+.unc-sn-vals .unc-t { font-size: 15px; }
+.unc-sn-row .unc-glyph { margin: 0; }
+
+@container uncmain (max-width: 760px) {
+    .unc-sn-list { grid-template-columns: minmax(0, 1fr); }
+    .unc-sn-row { grid-template-columns: 22px minmax(0, 1fr) auto; }
+    .unc-sn-badges { grid-column: 2 / -1; grid-row: 2; justify-content: flex-start; }
+    .unc-sn-row.multi .unc-sn-vals { grid-column: 2 / -1; grid-row: 3; justify-content: flex-start; }
+    .unc-sn-row.multi .unc-stat { justify-items: start; }
 }
 
 /* ---------- SSD use: the Unraid mark, pool and drive glyphs ---------- */
 
 .unc-mark { display: block; width: 100%; height: 100%; }
-
-.unc-use {
-    color: var(--unc-muted);
-    font-size: 11px;
-}
-
-.unc-use.boot { color: #f15a2c; font-weight: 650; }
 
 .unc-chip.ico {
     display: flex;
@@ -2346,53 +2220,6 @@
 .unc-chip.ico b { font-size: 10px; line-height: 1; }
 .unc-chip.ico.empty { color: var(--unc-muted); }
 
-/* ---------- Overview: more compact ---------- */
-
-.unc-view[data-view="overview"] .unc-card { padding: var(--card-pad-tight); }
-.unc-view[data-view="overview"] .unc-card h2 { margin-bottom: 10px; font-size: 15px; }
-
-.unc-cockpit { gap: var(--card-gap); }
-.unc-ccol { gap: 10px; }
-.unc-cc h3 { margin-bottom: 7px; }
-.unc-big { font-size: 26px; }
-.unc-hero-stage { padding: 14px 18px 12px; }
-.unc-hero-head { margin-bottom: 8px; }
-.unc-hero-head b { font-size: 22px; }
-.unc-hero { min-height: 180px; }
-.unc-hero-foot { margin-top: 12px; }
-.unc-hero-tabs { margin-top: 12px; }
-
-/* The fan mode as one row of buttons (the description is the tooltip), the facts in two columns. */
-.unc-under { gap: var(--card-gap); margin-top: var(--card-gap); }
-
-.unc-under .unc-effects {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 6px;
-}
-
-/* Icon and name sit in the middle of the tile, both ways (the description is the tooltip). */
-.unc-under .unc-effect { min-height: 74px; padding: 10px 6px; gap: 6px; align-content: center; align-items: center; }
-.unc-under .unc-effect small { display: none; }
-.unc-under .unc-effect svg { width: 20px; height: 20px; }
-.unc-under .unc-effects + .unc-hint { margin-top: 10px; padding: 8px 10px; font-size: 12px; }
-
-.unc-under .unc-facts {
-    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
-    gap: 6px 16px;
-    font-size: 13px;
-}
-
-.unc-under .unc-facts dd { overflow-wrap: anywhere; }
-
-.unc-main { padding: 18px 22px 22px; }
-.unc-head { margin-bottom: 14px; }
-.unc-head h1 { font-size: 24px; }
-.unc-head p { margin-top: 3px; font-size: 14px; }
-
-@media (max-width: 1100px) {
-    .unc-under .unc-facts { grid-template-columns: auto minmax(0, 1fr); }
-}
-
 /* ---------- Sidebar groups ---------- */
 
 .unc-nav-group {
@@ -2410,23 +2237,20 @@
     .unc-nav-group { display: none; }
 }
 
-/* ---------- LEDs live in the cockpit ---------- */
+/* ---------- LED strip of the dashboard tile ---------- */
 
 .unc-ledrow {
     display: flex;
     gap: 5px;
     margin: 10px 0 8px;
+    isolation: isolate;
 }
 
 .unc-ledrow i {
+    position: relative;
     flex: 1;
     height: 8px;
     border-radius: 4px;
-}
-
-.unc-cc .unc-btn.small {
-    padding: 5px 10px;
-    font-size: 12px;
 }
 
 .unc-ledline { margin-top: 10px; }
@@ -2444,17 +2268,6 @@
 }
 
 .unc-import p { margin: 6px 0 10px; }
-.unc-import .unc-hint { margin: 12px 0 0; }
-
-.unc-hint.unc-untested {
-    border-left-color: var(--unc-amber);
-    background: rgba(245, 158, 11, .1);
-}
-
-.unc-nocase {
-    padding: 40px 10px;
-    text-align: center;
-}
 
 /* "hidden" must win over the display of the sidebar buttons (LED pages, fans, case on other models). */
 .unc-nav button[hidden],
@@ -2469,24 +2282,23 @@
 
 /* The front strip keeps its order (LEDs left, ports right, lettering at the end) in the narrower model of the
    overview: nothing wraps or moves, everything in it scales with the width of the case. */
-.unc-hero-stage .unc-nas { container-type: inline-size; }
-
-.unc-hero-stage .unc-nas-front {
+.unc-hero .unc-nas-front {
     flex-wrap: nowrap;
     gap: 2.2cqi;
     padding: 2cqi 2.4cqi .6cqi;
     font-size: clamp(5px, 1.6cqi, 9px);
 }
 
-.unc-hero-stage .unc-nas-front .speeds { gap: 1.8cqi; font-size: clamp(6px, 2cqi, 11px); }
-.unc-hero-stage .unc-nas-front .brand { margin-left: .8cqi; font-size: clamp(7px, 2.4cqi, 13px); }
-.unc-hero-stage .unc-leds { gap: 1.8cqi; }
-.unc-hero-stage .unc-front-ports { gap: 2.4cqi; }
-.unc-hero-stage .unc-front-ports .unc-socket { min-width: 0; gap: 3px; }
-.unc-hero-stage .unc-front-ports .unc-socket svg { width: clamp(15px, 6.4cqi, 34px); }
-.unc-hero-stage .unc-front-ports .unc-socket small { font-size: clamp(5px, 1.5cqi, 10px); }
-.unc-hero-stage .unc-pled { width: clamp(9px, 3cqi, 16px); }
-.unc-hero-stage .unc-nas-model { font-size: clamp(7px, 2.4cqi, 12px); }
+.unc-hero .unc-nas-front .speeds { gap: 1.8cqi; font-size: clamp(6px, 2cqi, 11px); }
+.unc-hero .unc-nas-front .brand { margin-left: .8cqi; font-size: clamp(7px, 2.4cqi, 13px); }
+.unc-hero .unc-leds { gap: 1.8cqi; }
+.unc-hero .unc-front-ports { gap: 2.4cqi; }
+.unc-hero .unc-front-ports .unc-socket { min-width: 0; gap: 3px; }
+.unc-hero .unc-front-ports .unc-socket svg { width: clamp(15px, 6.4cqi, 34px); }
+.unc-hero .unc-front-ports .unc-socket.sd svg { width: clamp(20px, 8.6cqi, 46px); }
+.unc-hero .unc-front-ports .unc-socket small { font-size: clamp(5px, 1.5cqi, 10px); }
+.unc-hero .unc-pled { width: clamp(9px, 3cqi, 16px); }
+.unc-hero .unc-nas-model { font-size: clamp(7px, 2.4cqi, 12px); }
 
 /* ---------- Rear of the DXP6800 Pro, after a photo of the device ---------- */
 
@@ -2700,8 +2512,8 @@
     .unc-rear6800 .r-psu-blades { animation: none; }
 }
 
-/* The inside of the DXP6800 Pro is one drawing: no grid, no frame of the card layout. */
-.unc-board.board-svg {
+/* The inside of the DXP6800 Pro is one drawing. */
+.unc-inside.board-svg {
     display: block;
     padding: 0;
     border: 0;
@@ -2803,19 +2615,6 @@
     letter-spacing: .02em;
 }
 
-.unc-dcard .d-role {
-    padding: 2px 9px;
-    border-radius: 999px;
-    background: rgba(139, 150, 163, .18);
-    color: var(--unc-muted);
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.unc-dcard .d-role.array { background: rgba(47, 124, 246, .18); color: var(--unc-accent); }
-.unc-dcard .d-role.parity { background: rgba(168, 85, 247, .18); color: #a855f7; }
-.unc-dcard .d-role.pool { background: rgba(34, 197, 94, .18); color: #16a34a; }
-
 .unc-dcard .d-main {
     display: flex;
     align-items: center;
@@ -2861,97 +2660,13 @@
     gap: 10px;
 }
 
-/* ---------- Overview, second layout: the case big on top, hardware in one row, sensors below ---------- */
-
-.unc-cockpit {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: var(--card-gap);
-}
-
-.unc-cockpit > .unc-hero-stage { grid-column: span 7; }
-.unc-cockpit > .unc-cc.fan { grid-column: span 5; }
-.unc-cockpit > .unc-cc.cpu,
-.unc-cockpit > .unc-cc.ram,
-.unc-cockpit > .unc-cc.net { grid-column: span 4; }
-.unc-cockpit > .unc-cc.tmp { grid-column: span 8; }
-.unc-cockpit > .unc-cc.led { grid-column: span 4; }
-
-/* The fan mode sits right under the fans it changes; one row of buttons, the description is the tooltip. */
-.unc-cc .unc-cc-sub { margin-top: 16px; }
-
-.unc-cc .unc-effects {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-}
-
-.unc-cc .unc-effect { min-height: 64px; padding: 8px 4px; gap: 5px; align-content: center; align-items: center; }
-.unc-cc .unc-effect small { display: none; }
-.unc-cc .unc-effect svg { width: 20px; height: 20px; }
-.unc-cc .unc-effects + .unc-hint { margin-top: 10px; padding: 8px 10px; font-size: 12px; }
-
-/* The sensors in columns instead of one long list. */
-.unc-cockpit .unc-temps { gap: 16px; }
-
-.unc-tgrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 10px 24px;
-}
-
-.unc-tgroup h4 {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--unc-border);
-    color: var(--unc-muted);
-    font-size: 11px;
-    font-weight: 650;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-}
-
-.unc .unc-tgroup h4 svg { width: 15px; height: 15px; }
-
-.unc-temp > span:first-child { display: flex; align-items: center; gap: 7px; }
-.unc-temp-ico { display: inline-flex; flex: none; color: var(--unc-green); }
-.unc .unc-temp-ico svg { width: 15px; height: 15px; }
-.unc-temp.warm .unc-temp-ico { color: var(--unc-amber); }
-.unc-temp.hot .unc-temp-ico { color: var(--unc-red); }
-.unc-temp.standby .unc-temp-ico { color: var(--unc-muted); }
-
-@container uncmain (max-width: 1000px) {
-    .unc-cockpit > .unc-hero-stage,
-    .unc-cockpit > .unc-cc.fan,
-    .unc-cockpit > .unc-cc.tmp,
-    .unc-cockpit > .unc-cc.led { grid-column: 1 / -1; }
-    .unc-cockpit > .unc-cc.cpu,
-    .unc-cockpit > .unc-cc.ram { grid-column: span 6; }
-    .unc-cockpit > .unc-cc.net { grid-column: 1 / -1; }
-}
-
-@container uncmain (max-width: 640px) {
-    .unc-cockpit > .unc-cc.cpu,
-    .unc-cockpit > .unc-cc.ram,
-    .unc-cockpit > .unc-cc.net { grid-column: 1 / -1; }
-}
-
-/* The picture sits in the middle of its card when the fan card next to it is taller. */
-.unc-cockpit > .unc-hero-stage .unc-hero { flex: 1 1 auto; align-content: center; }
-
 /* Light mode, readable: text on the silver bays and the role labels were too pale (contrast under 3). */
 .unc[data-theme="light"] .unc-nbay .size,
 .unc[data-theme="light"] .unc-nbay .info.standby,
 .unc[data-theme="light"] .unc-nbay .info.empty { color: #36414d; }
-.unc[data-theme="light"] .unc-nbay .info.warm { color: #6b2f00; }
-.unc[data-theme="light"] .unc-dcard .d-role.array { color: #1e40af; }
-.unc[data-theme="light"] .unc-dcard .d-role.parity { color: #6b21a8; }
-.unc[data-theme="light"] .unc-dcard .d-role.pool { color: #166534; }
 
 /* An LED sits in a dark slot of its own: dimmed (status mode, standby) a white LED would vanish on silver or white. */
-.unc-nbay .bar,
-.unc-ledrow i { position: relative; }
+.unc-nbay .bar { position: relative; }
 
 .unc-nbay .bar::before,
 .unc-ledrow i::before {
@@ -3089,18 +2804,6 @@
     font-size: 12px;
 }
 
-/* ---------- Card heading with a button, save bar of the fan pages, sensor names ---------- */
-
-.unc-card-head {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-3) var(--sp-4);
-    align-items: center;
-    justify-content: space-between;
-}
-
-.unc-card-head h2 { margin: 0; }
-
 .unc-savebar {
     display: flex;
     flex-wrap: wrap;
@@ -3132,7 +2835,13 @@
     background: var(--unc-amber);
 }
 
-.unc .unc-btn:disabled { opacity: .45; cursor: default; }
+.unc-savebar.failed .unc-savestate {
+    color: var(--unc-red);
+}
+
+.unc-savebar.failed .unc-savestate::before {
+    background: var(--unc-red);
+}
 
 .unc-nav button.dirty::after {
     content: "";
@@ -3143,12 +2852,6 @@
     background: var(--unc-amber);
 }
 
-
-/* A sensor name wraps instead of being cut off; the model sits under it. */
-.unc-temp > span:first-child { align-items: flex-start; overflow: visible; white-space: normal; }
-.unc-temp-name { min-width: 0; overflow-wrap: anywhere; line-height: 1.3; }
-.unc-temp-name small { display: block; font-size: 11px; }
-.unc-temp-ico { margin-top: 2px; }
 
 /* Unraid lays out a dd as a column; a fact is running text with links in it. */
 .unc .unc-facts dd { display: block; }
@@ -3165,18 +2868,13 @@
 }
 
 :is(.unc-view > .unc-card, .unc-led-switch-card) > *,
-:is(.unc-view > .unc-card, .unc-led-switch-card) .unc-switch-row,
-:is(.unc-view > .unc-card, .unc-led-switch-card) .unc-hint {
+:is(.unc-view > .unc-card, .unc-led-switch-card) .unc-note {
     margin: 0;
 }
 
-:is(.unc-view > .unc-card, .unc-led-switch-card) > h2 {
-    margin-bottom: 0;
-}
-
 /* Helper text: tight under its heading or control. */
-:is(.unc-view > .unc-card, .unc-led-switch-card) > h2 + .unc-muted,
-:is(.unc-view > .unc-card, .unc-led-switch-card) > :is(.unc-form, .unc-inline, select) + :is(.unc-muted, .unc-hint) {
+:is(.unc-view > .unc-card, .unc-led-switch-card) > .unc-card-head + .unc-muted,
+:is(.unc-view > .unc-card, .unc-led-switch-card) > :is(.unc-form, .unc-range, select) + :is(.unc-muted, .unc-note) {
     margin-top: calc(var(--sp-2) - var(--sp-4));
 }
 
@@ -3184,77 +2882,24 @@
     gap: var(--sp-6);
 }
 
-.unc-switch-row {
-    margin: 0;
-}
-
-.unc-switch-row small {
-    display: block;
-    margin-top: var(--sp-1);
-    line-height: 1.4;
-}
-
-.unc-switch-row + .unc-switch-row {
-    margin-top: var(--sp-1);
-}
-
 /* The controls of a form row stop at one width on every page; labels may wrap, controls don't stretch. */
-.unc-form > :not(label),
-.unc-field-row > :not(label) {
+.unc-form > :not(label) {
     max-width: var(--control-w);
 }
 
-.unc-form > label,
-.unc-field-row > label {
+.unc-form > label, .unc-form > .unc-label {
     font-weight: 600;
     line-height: 1.3;
 }
 
-.unc-savebar {
-    margin-top: var(--sp-2);
-}
-
-.unc-savebar.failed .unc-savestate {
-    color: var(--unc-red);
-}
-
-.unc-savebar.failed .unc-savestate::before {
-    background: var(--unc-red);
-}
-
 @media (max-width: 560px) {
-    .unc-form > :not(label),
-    .unc-field-row > :not(label) { max-width: none; }
+    .unc-form > :not(label) { max-width: none; }
 }
 
 /* Unraid pads a dl; the rows of a fact list start at the card's rhythm. */
 .unc dl.unc-facts {
     padding: 0;
 }
-
-/* Drives that must not drive the case fans: one tickable chip per drive. */
-.unc-ignore { margin: 18px 0 14px; display: grid; gap: 8px; }
-.unc-ignore p { margin: 0; }
-.unc-ignore-list { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.unc-chipcheck {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    border: 1px solid var(--unc-border);
-    border-radius: 999px;
-    background: var(--unc-card-2);
-    cursor: pointer;
-}
-
-.unc-chipcheck:has(input:checked) { border-color: var(--unc-accent); background: rgba(47, 124, 246, .14); }
-.unc-chipcheck b { font-weight: 600; }
-
-/* Fan control off: the card keeps only its note; the mode buttons would change nothing. */
-.unc-cc.fan.fan-off .unc-cc-sub,
-.unc-cc.fan.fan-off #unc-modes,
-.unc-cc.fan.fan-off #unc-mode-hint { display: none; }
 
 /* Supported models: one row per model, the one running here highlighted. */
 .unc-models td, .unc-models th { white-space: normal; }
@@ -3265,16 +2910,11 @@
 
 /* A card that folds away: the heading is the summary, the arrow turns when it is open. */
 .unc-fold > summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
     cursor: pointer;
     list-style: none;
 }
 
 .unc-fold > summary::-webkit-details-marker { display: none; }
-.unc-fold > summary h2 { margin: 0; }
 
 .unc-fold > summary::after {
     content: "";
@@ -3307,8 +2947,321 @@
 
 /* "Confirm my device": ticks, a comment, one button. */
 .unc-confirm { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--unc-border); display: grid; gap: 10px; }
-.unc-confirm h3 { margin: 0; font-size: 15px; }
 .unc-confirm p { margin: 0; }
 .unc-confirm-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .unc-confirm-comment { display: grid; gap: 4px; font-size: 12px; color: var(--unc-muted); }
 .unc-confirm-comment textarea { width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--unc-border); border-radius: 8px; background: var(--unc-card-2); color: var(--unc-text); font: inherit; }
+
+.unc .unc-linkbtn,
+.unc button.unc-linkbtn {
+    all: unset;
+    color: var(--unc-accent);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.unc .unc-linkbtn:focus-visible { outline: 2px solid var(--unc-accent); outline-offset: 2px; }
+
+/* The save bar stays in view while the page scrolls. It floats (fixed, above Unraid's footer) as long as its place
+ * in the card is below the window; sticky does not work here, Unraid's page container clips. */
+.unc-view > .unc-card > .unc-savedock {
+    margin: 0 calc(var(--card-pad) * -1) calc(var(--card-pad) * -1);
+}
+
+.unc-savedock > .unc-savebar {
+    margin: 0;
+    padding: var(--sp-3) var(--card-pad);
+    border-radius: 0 0 var(--unc-radius) var(--unc-radius);
+    background: var(--unc-card);
+}
+
+.unc-savedock > .unc-savebar.float {
+    position: fixed;
+    z-index: 50;
+    border: 1px solid var(--unc-border);
+    border-radius: 0;
+    box-shadow: 0 -8px 16px -8px rgba(0, 0, 0, .4);
+}
+
+/* The toast leaves the save bar free. */
+.unc:has(.unc-view.active .unc-savebar) .unc-toast { bottom: 88px; }
+
+.unc-block { display: grid; gap: var(--sp-3); }
+.unc-block > *,
+.unc-block p { margin: 0; }
+
+.unc-sec { margin: 0; font-size: 15px; font-weight: 600; }
+
+.unc-sec-head {
+    display: flex;
+    min-height: 38px;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.unc .unc-btn[hidden],
+.unc-form[hidden],
+.unc-block[hidden] { display: none; }
+
+/* Mode picker on the Fans page: the Overview tiles, one row where it fits. */
+.unc-effects-row { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 899px) { .unc-effects-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.unc-effects-row .unc-effect { min-height: 64px; padding: 8px 4px; gap: 5px; align-content: center; align-items: center; }
+.unc-effects-row .unc-effect small { display: none; }
+.unc-effects-row .unc-effect svg { width: 20px; height: 20px; }
+
+.unc-block .unc-form { margin-top: var(--sp-1); }
+
+/* "For all curves": the setting sits in the same column grid as the curve cards above. */
+.unc-limits { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--card-gap); }
+.unc-curve-min-card {
+    display: grid;
+    gap: var(--sp-2);
+    align-content: start;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--unc-border);
+    border-radius: 10px;
+    background: var(--unc-card-2);
+}
+.unc-curve-min-card > * { margin: 0; }
+.unc-curve-min-card .unc-form { grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); margin: 0; }
+.unc-curve-min-card .unc-form > :not(label) { max-width: none; }
+
+/* Custom curves as a stepper: measure, lowest speed, curves. The tabs show each step's state, the panel below holds the
+   selected one. Outside Custom the stepper is gone and only the measure line and the curves remain. */
+.unc-flow { display: grid; gap: var(--sp-4); }
+.unc-flow:not(.on) { gap: var(--sp-5); }
+.unc-flow:not(.on) .unc-stepper,
+.unc-flow:not(.on) [data-panel="min"],
+.unc-flow:not(.on) .unc-curve-tools { display: none; }
+.unc-flow.on .unc-step-panel:not(.sel) { display: none; }
+.unc-flow.on .unc-curve-min-card label[for="unc-curve-min"] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.unc-stepper { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--unc-border); }
+.unc .unc-stepper-tab {
+    display: grid;
+    margin: 0 0 -1px;
+    padding: 0 var(--sp-3) 12px 0;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    align-content: start;
+    gap: 2px;
+}
+/* Unraid's global button:hover (gradient, white text) weighs as much as the reset above, so the states are pinned here;
+   only the underline below changes. */
+.unc button.unc-stepper-tab:hover,
+.unc button.unc-stepper-tab:focus,
+.unc button.unc-stepper-tab:active {
+    background: none;
+    color: inherit;
+    box-shadow: none;
+    text-transform: none;
+    letter-spacing: normal;
+}
+.unc .unc-stepper-tab:hover { border-bottom-color: rgba(47, 124, 246, .4); }
+.unc .unc-stepper-tab[aria-selected="true"] { border-bottom-color: var(--unc-accent); }
+.unc .unc-stepper-tab:focus-visible { outline: 2px solid var(--unc-accent); outline-offset: 4px; border-radius: 8px; }
+.unc-stepper-head { display: flex; margin-bottom: 8px; align-items: center; gap: 8px; }
+.unc-stepper-head::after { content: ""; flex: 1; height: 2px; border-radius: 1px; background: var(--unc-border); }
+.unc-stepper-tab:last-child .unc-stepper-head::after { display: none; }
+.unc-stepper-tab.done .unc-stepper-head::after { background: var(--unc-accent); }
+.unc-step-no {
+    display: grid;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 2px solid var(--unc-border);
+    border-radius: 50%;
+    background: var(--unc-card);
+    color: var(--unc-muted);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+}
+.unc-step-no .unc-ico { display: none; }
+.unc-step-no .unc-ico svg { width: 16px; height: 16px; stroke-width: 3; }
+.unc-stepper-tab[aria-selected="true"] .unc-step-no { border-color: var(--unc-accent); color: var(--unc-accent); box-shadow: 0 0 0 3px rgba(47, 124, 246, .22); }
+.unc-stepper-tab.warn .unc-step-no { border-color: var(--unc-amber); color: var(--unc-amber); }
+.unc-stepper-tab[aria-selected="true"].warn .unc-step-no { box-shadow: 0 0 0 3px rgba(245, 158, 11, .22); }
+.unc-stepper-tab.done .unc-step-no { border-color: var(--unc-accent); background: var(--unc-accent); color: #fff; }
+.unc-stepper-tab.done .unc-step-num { display: none; }
+.unc-stepper-tab.done .unc-step-no .unc-ico { display: flex; }
+.unc-step-title { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.unc-stepper-tab[aria-selected="true"] .unc-step-title { color: var(--unc-accent); }
+.unc-step-sum { color: var(--unc-muted); font-size: 13px; line-height: 1.35; }
+.unc-stepper-tab.warn .unc-step-sum,
+.unc-min-fans .is-warn { color: var(--unc-amber); }
+.unc-step-panel { min-width: 0; }
+.unc-curve-tools { display: flex; flex-wrap: wrap; margin-bottom: var(--sp-3); align-items: center; gap: var(--sp-2); }
+.unc-curve-tools[hidden] { display: none; }
+.unc-curve-tools .unc-btn { min-height: 32px; padding: 4px 12px; }
+.unc-curve-tools-label { font-size: 13px; font-weight: 600; }
+.unc-curve-tools-hint { margin-left: var(--sp-2); font-size: 13px; }
+@media (max-width: 899px) {
+    .unc-step-sum { display: none; }
+    .unc-step-title { font-size: 14px; }
+    .unc-curve-tools-hint { flex-basis: 100%; margin-left: 0; }
+}
+.unc-measure-bar { height: 6px; overflow: hidden; border-radius: 3px; background: var(--unc-border); }
+.unc-measure-bar i { display: block; height: 100%; border-radius: 3px; background: var(--unc-amber); transition: width .6s linear; }
+.unc-measure-line { margin: 0; font-size: 13px; }
+.unc-min-fans { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.unc-min-measured p { margin: 0; font-size: 13px; }
+.unc-curve-min-card .unc-min-measured { padding-top: var(--sp-2); border-top: 1px solid var(--unc-border); }
+@media (prefers-reduced-motion: reduce) {
+    .unc-measure-bar i { transition: none; }
+}
+
+/* The switch of the case card: sits under the chart, the live line spells out today's numbers. */
+.unc-curve .unc-mix { padding-top: var(--sp-2); border-top: 1px solid var(--unc-border); }
+
+/* CPU card footer: pinned to the bottom, level with the switch block of the case card. */
+.unc-curve-cpu { grid-template-rows: auto auto auto auto 1fr auto; }
+.unc-mix-cpu {
+    grid-row: 6;
+    display: grid;
+    gap: 2px;
+    padding-top: var(--sp-2);
+    border-top: 1px solid var(--unc-border);
+    font-size: 13px;
+}
+.unc-mix-cpu small { color: var(--unc-muted); font-size: 12px; }
+.unc-mix-cpu.on strong { color: var(--unc-cpu); }
+
+/* Preset curves are a preview: inputs and the switch stay readable but are not editable. */
+.unc-curves.readonly .unc-points input:disabled { opacity: .75; cursor: default; }
+.unc-switch-row.readonly { opacity: .7; }
+.unc-switch-row.readonly,
+.unc-switch-row.readonly input { cursor: default; }
+
+
+/* Rear fan: live speed under the grille, red when it stalled. */
+.unc-rear-fan small {
+    position: absolute;
+    bottom: 8px;
+    padding: 1px 10px;
+    border-radius: 999px;
+    background: rgba(9, 11, 14, .78);
+    color: #e6edf5;
+}
+.unc-rear-fan.stalled,
+.unc-rear6800 .r-fan.stalled { outline: 2px solid var(--unc-red); outline-offset: 2px; }
+.unc-rear-fan.stalled small,
+.unc-rear6800 .r-fan.stalled small { color: var(--unc-red); font-weight: 600; }
+
+/* Dashboard tile: emergency or stopped fan. */
+.unc-dash-warn {
+    margin: 0 0 8px;
+    padding: 6px 10px;
+    border-left: 3px solid var(--unc-red);
+    border-radius: 4px;
+    background: rgba(239, 68, 68, .12);
+    font-size: 12px;
+}
+.unc-dash-warn[hidden] { display: none; }
+.unc-dash-warn a { color: inherit; text-decoration: underline; cursor: pointer; }
+
+/* Both curve cards have a one-line source under the title, so the charts line up. */
+.unc-curve-src { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* chipCheck: a tickable chip; the circle fills when ticked. The box is the only mark, the input stays for keyboard and forms. */
+.unc-chipcheck {
+    position: relative;
+    display: inline-flex;
+    gap: var(--sp-3);
+    align-items: center;
+    padding: 6px 12px;
+    border: 1px solid var(--unc-border);
+    border-radius: 999px;
+    background: var(--unc-card-2);
+    cursor: pointer;
+}
+
+.unc-chipcheck:hover { border-color: var(--unc-muted); }
+.unc-chipcheck:has(input:checked) { border-color: var(--unc-accent); background: color-mix(in srgb, var(--unc-accent) 12%, var(--unc-card-2)); }
+.unc-chipcheck:has(input:focus-visible) { outline: 2px solid var(--unc-accent); outline-offset: 2px; }
+.unc-chipcheck input { position: absolute; opacity: 0; pointer-events: none; }
+
+.unc-chipcheck-box {
+    position: relative;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--unc-muted);
+    border-radius: 50%;
+}
+
+.unc-chipcheck input:checked + .unc-chipcheck-box { border-color: var(--unc-accent); background: var(--unc-accent); }
+
+.unc-chipcheck input:checked + .unc-chipcheck-box::after {
+    content: "";
+    position: absolute;
+    top: 1px;
+    left: 4px;
+    width: 4px;
+    height: 8px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.unc-chipcheck > span:last-child { display: flex; flex: 1; gap: var(--sp-3); align-items: center; min-width: 0; }
+.unc-chipcheck .unc-glyph { margin: 0; }
+
+/* Safety: one row per emergency limit: icon, name with the live temperature and a bar of temperature over limit, slider, value. */
+.unc-lims { display: grid; }
+
+.unc-lim {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: var(--sp-1) var(--sp-5);
+    align-items: center;
+    padding: var(--sp-4) 0;
+    border-top: 1px solid var(--unc-border);
+}
+
+.unc-lim:first-child { padding-top: 0; border-top: 0; }
+.unc-lim .unc-glyph { margin: 0; }
+.unc-lim-main { display: grid; gap: 2px; min-width: 0; }
+.unc-lim-main > :is(label, .unc-lim-name) { font-weight: 600; }
+.unc-lim-main label { cursor: pointer; }
+.unc-lim-main .unc-meter { margin-top: var(--sp-1); }
+.unc-lim-now, .unc-lim-derived { color: var(--unc-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.unc-lim-now.is-warn { color: var(--unc-amber); font-weight: 600; }
+.unc-value.is-derived { border-style: dashed; background: transparent; color: var(--unc-muted); }
+
+@container uncmain (max-width: 760px) {
+    .unc-lim { grid-template-columns: 22px minmax(0, 1fr); }
+    .unc-lim > .unc-range { grid-column: 2; grid-row: 2; }
+}
+
+/* Safety: the NVMe offset as a sum with today's numbers, the slider beside it. */
+.unc-eq-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-4) var(--sp-7); align-items: end; }
+
+@container uncmain (max-width: 760px) {
+    .unc-eq-row { grid-template-columns: minmax(0, 1fr); }
+}
+
+.unc-eq { display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-3); align-items: flex-end; }
+.unc-eq .unc-pill { margin-bottom: 3px; }
+.unc-eq-term { display: grid; }
+.unc-eq-term small { color: var(--unc-muted); font-size: 11px; }
+.unc-eq-term b { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.unc-eq-term.is-result b { color: var(--unc-accent); }
+.unc-eq-op { padding-bottom: 2px; color: var(--unc-muted); font-size: 18px; line-height: 1.3; }
+
+/* Safety: ignore drives, one tile per drive in a grid so the rows line up. */
+.unc-ignore-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-2); }
+.unc-ignore-list .unc-chipcheck { padding: 10px 14px; border-radius: 10px; }
+.unc-cc-name { display: grid; flex: 1; min-width: 0; }
+.unc-cc-name strong { font-size: 14px; font-weight: 600; }
+.unc-cc-name small { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.unc-cc-temp { flex: none; }

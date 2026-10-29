@@ -1,5 +1,6 @@
-// Dashboard tile: fan speeds, CPU / disk / NVMe temperatures, and the fan mode
-// (or an emergency) in the tile header.
+// Dashboard tile: fans with what drives them, CPU / disk / NVMe temperatures, drives, NVMe and LEDs.
+// The tile header carries the essentials (mode, fan speeds, hottest temperature, alerts), so they
+// stay visible when Unraid collapses the tile.
 (() => {
     'use strict';
 
@@ -67,31 +68,81 @@
         return `
             <div class="unc-temp ${level}">
                 <span>${escapeHtml(label)}</span>
-                <span class="unc-meter"><span style="width:${width}%"></span></span>
                 <strong>${value == null ? '–' : `${value} °C`}</strong>
+                <span class="unc-meter"><span style="width:${width}%"></span></span>
             </div>`;
+    }
+
+    const fanName = (fan, cases) => fan.role === 'cpu' ? t('fan.cpu') : cases.length === 1 ? t('fan.case_one') : t('fan.case', { n: cases.indexOf(fan) + 1 });
+
+    // CPU, disk and NVMe temperatures as [label, value, kind] (disk and NVMe only when present).
+    function temperatures(data) {
+        const s = data.sensors || {};
+        const rows = [[t('temps.cpu'), s.cpu, 'cpu']];
+        const disk = hottest((s.disks || []).filter(d => d.hdd).map(d => d.temp));
+        const nvme = hottest((s.nvme || []).map(n => n.temp));
+
+        if (disk != null) rows.push([t('dash.disk'), disk, 'disk']);
+        if (nvme != null) rows.push([t('dash.nvme'), nvme, 'nvme']);
+        return rows;
+    }
+
+    // What a fan follows right now and the speed that results, e.g. "CPU 51 °C → 13 %". Empty without a curve.
+    function fanDriver(fan, data, rows) {
+        const daemon = data.running ? data.daemon : null;
+        const target = daemon?.failsafe ? 100 : daemon?.targets?.[fan.id];
+        if (target == null) return '';
+
+        const temp = kind => rows.find(r => r[2] === kind)?.[1];
+        const from = fan.role === 'cpu' || daemon.case_driver === 'cpu' ? ['cpu', daemon.cpu_temp]
+            : daemon.case_from === 'disk' ? ['disk', daemon.case_temp]
+            : daemon.case_from === 'nvme' ? ['nvme', daemon.case_temp] : null;
+        const name = from && from[1] != null ? rows.find(r => r[2] === from[0])?.[0] : '';
+        const label = name && !daemon.failsafe ? `${name} ${from[1]} °C ` : '';
+
+        return `${label}→ ${target} %`;
     }
 
     function paint(root, data) {
         const fans = data.fans || [];
         const cases = fans.filter(f => f.role === 'case');
+        const rows = temperatures(data);
 
         root.querySelector('[data-fans]').innerHTML = fans.map(fan => `
             <div class="unc-fan ${fan.rpm === 0 ? 'stopped' : ''}" title="${escapeHtml(fan.error ? t('fan.error') : fan.pct == null ? t('fan.auto') : t('fan.speed', { pct: fan.pct }))}">
                 ${fanIcon(fan, FAN)}
-                <small class="unc-muted">${escapeHtml(fan.role === 'cpu' ? t('fan.cpu') : t('fan.case', { n: cases.indexOf(fan) + 1 }))}</small>
-                <span class="unc-fan-rpm">${fan.rpm > 0 ? `${fan.rpm} <small>${escapeHtml(t('fan.rpm'))}</small>` : escapeHtml(t('fan.stopped'))}</span>
+                <div>
+                    <small class="unc-muted">${escapeHtml(fanName(fan, cases))}</small>
+                    <span class="unc-fan-rpm">${fan.rpm > 0 ? `${fan.rpm} <small>${escapeHtml(t('fan.rpm'))}</small>` : escapeHtml(t('fan.stopped'))}</span>
+                    <small class="unc-muted">${escapeHtml(fanDriver(fan, data, rows))}</small>
+                </div>
             </div>`).join('');
 
-        const s = data.sensors || {};
-        const rows = [tempRow(t('temps.cpu'), s.cpu, 'cpu')];
-        const disk = hottest((s.disks || []).filter(d => d.hdd).map(d => d.temp));
-        const nvme = hottest((s.nvme || []).map(n => n.temp));
+        // An emergency or a stopped fan: a red line above the fans, linking to the Safety / Fans page.
+        const alerts = alertTexts(data);
+        const alert = root.querySelector('[data-alert]');
 
-        if (disk != null) rows.push(tempRow(t('dash.disk'), disk, 'disk'));
-        if (nvme != null) rows.push(tempRow(t('dash.nvme'), nvme, 'nvme'));
+        alert.hidden = !alerts.length;
+        alert.innerHTML = alerts.map(text => `<div>${escapeHtml(text)}</div>`).join('')
+            + (alerts.length ? `<a href="/Settings/UGREENNASControl">${escapeHtml(t('dash.settings'))}</a>` : '');
 
-        root.querySelector('[data-temps]').innerHTML = rows.join('');
+        root.querySelector('[data-temps]').innerHTML = rows.map(r => tempRow(...r)).join('');
+    }
+
+    // Names of the fans the daemon reports as stalled (0 rpm although driven).
+    function stalledNames(data) {
+        const fans = data.fans || [];
+        const cases = fans.filter(f => f.role === 'case');
+
+        return ((data.running ? data.daemon?.stalled : null) || []).map(id => fans.find(f => f.id === id)).filter(Boolean).map(f => fanName(f, cases));
+    }
+
+    // Emergency (fail-safe) and stopped fans, as texts.
+    function alertTexts(data) {
+        const daemon = data.running ? data.daemon : null;
+        const stalled = stalledNames(data);
+
+        return [daemon?.failsafe ? `${t('warn.failsafe')} ${t(`failsafe.${daemon.failsafe}`)}` : '', stalled.length ? t('stalled.text', { list: stalled.join(', ') }) : ''].filter(Boolean);
     }
 
     // Drive bays like the Disk Location plugin: one chip per bay, details on hover.
@@ -137,28 +188,30 @@
         return { icon: array ? GLYPH.drive : GLYPH.pool, text: ssdRoleText(ssd.role) };
     }
 
-    // A titled row of chips with a detail area below it (shared by the drive bays and the NVMe SSDs).
+    // A titled row of chips (shared by the drive bays and the NVMe SSDs). Hovering a chip puts its
+    // details into the subtitle.
     function paintChips(box, title, subtitle, chips) {
+        box.hidden = !chips.length;
         if (!chips.length) {
-            box.hidden = true;
+            box.innerHTML = '';
             return;
         }
 
-        box.hidden = false;
         box.innerHTML = `
-            <div class="unc-bays-head"><strong>${escapeHtml(title)}</strong><small class="unc-muted">${escapeHtml(subtitle)}</small></div>
-            <div class="unc-chips">${chips.join('')}</div>
-            <div class="unc-bay-detail" data-detail><span class="unc-muted">${escapeHtml(t('dash.hover'))}</span></div>`;
+            <div class="unc-bays-head"><strong>${escapeHtml(title)}</strong><small class="unc-muted" data-sub>${escapeHtml(subtitle)}</small></div>
+            <div class="unc-chips">${chips.join('')}</div>`;
 
-        // The details show below the row, inside the tile: a floating tooltip is cut off by the tile's edge.
-        const detail = box.querySelector('[data-detail]');
-        const hint = detail.innerHTML;
+        const sub = box.querySelector('[data-sub]');
+        const show = text => {
+            sub.textContent = text;
+            sub.title = text === subtitle ? '' : text;
+        };
         box.querySelectorAll('.unc-chip').forEach(chip => {
             chip.addEventListener('mouseenter', () => {
                 const lines = chip.dataset.lines ? JSON.parse(chip.dataset.lines) : [];
-                detail.innerHTML = lines.length ? lines.map(l => `<span>${escapeHtml(l)}</span>`).join('') : hint;
+                show(lines.length ? lines.join(' · ') : subtitle);
             });
-            chip.addEventListener('mouseleave', () => { detail.innerHTML = hint; });
+            chip.addEventListener('mouseleave', () => show(subtitle));
         });
     }
 
@@ -238,22 +291,19 @@
         return `<div class="unc-ledline"><div class="unc-bays-head"><strong>${escapeHtml(t('dash.leds'))}</strong><small class="unc-muted">${escapeHtml(mode)}</small></div><div class="unc-ledrow">${bars.join('')}</div></div>`;
     }
 
-    // The LED row goes in the box of the drives, also for models without known bays.
+    // The LED row goes under the drive chips, also for models without known bays.
     function paintLeds(root, hw, led) {
         const box = root.querySelector('[data-bays]');
         const html = ledLineHtml(led, hw);
 
         if (!box || !html) return;
-        if (box.hidden) {
-            box.hidden = false;
-            box.innerHTML = '<div data-detail hidden></div>';
-        }
-
-        box.querySelector('[data-detail]')?.insertAdjacentHTML('beforebegin', html);
+        box.hidden = false;
+        box.insertAdjacentHTML('beforeend', html);
         // Colour, brightness and animation come from the shared renderer (ledfx.js), from the state just read.
         box.querySelectorAll('.unc-ledrow i[data-led]').forEach(el => window.UNCLedFx.paint(el, led.leds[el.dataset.led], el.dataset.led, led.status));
     }
 
+    // The tile header: mode and alerts, and while the tile is collapsed the essentials (fan speeds, hottest temperature).
     function paintHeader(data) {
         const line = document.getElementById('unc-dash-state');
         if (!line) return;
@@ -265,15 +315,27 @@
             return;
         }
 
-        const failsafe = data.running && data.daemon?.failsafe;
-        line.append(t(`mode.${data.settings?.mode || 'standard'}`));
+        const part = (text, className = '') => {
+            const el = document.createElement('span');
+            el.className = className;
+            el.textContent = text;
+            line.append(el);
+        };
+        const rpm = (data.fans || []).map(f => f.rpm || 0);
+        const top = temperatures(data).reduce((max, r) => r[1] != null && (!max || r[1] > max[1]) ? r : max, null);
 
-        if (failsafe || data.chip_error) {
-            const alert = document.createElement('span');
-            alert.className = 'unc-dash-alert';
-            alert.textContent = ` · ${failsafe ? t('warn.failsafe') : t('warn.chip')}`;
-            line.append(alert);
-        }
+        const failsafe = data.running && data.daemon?.failsafe;
+
+        // A model without fan control has no fan mode and no fan-chip fault to show.
+        const model = data.info?.model || '';
+        const noFan = Boolean(model) && !/^(DXP6800|DXP4800.*GT)/.test(model);
+
+        if (!noFan) part(t(`mode.${data.settings?.mode || 'standard'}`));
+        if (failsafe || (data.chip_error && !noFan)) part(` · ${failsafe ? t('warn.failsafe') : t('warn.chip')}`, 'unc-dash-alert');
+        else if (stalledNames(data).length) part(` · ${stalledNames(data).join(', ')}: ${t('fan.stopped')}`, 'unc-dash-alert');
+        if (rpm.length) part(` · ${rpm.join(' / ')} ${t('fan.rpm')}`, 'unc-dash-sum');
+        if (top) part(` · ${top[0]} ${top[1]} °C`, 'unc-dash-sum');
+        if (line.firstChild?.textContent.startsWith(' · ')) line.firstChild.textContent = line.firstChild.textContent.slice(3);
     }
 
     async function load(root) {

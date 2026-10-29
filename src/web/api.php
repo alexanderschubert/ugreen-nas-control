@@ -59,6 +59,14 @@ function save_settings(array $changes): bool
     return file_put_contents($tmp, $content) !== false && rename($tmp, CONFIG_FILE);
 }
 
+// The lowest fan speed in %: an int from 10 to 60, else null.
+function valid_min_pct(mixed $value): ?int
+{
+    $min = filter_var($value, FILTER_VALIDATE_INT);
+
+    return $min === false || $min < 10 || $min > 60 ? null : $min;
+}
+
 // "40:30,60:50,..." with 2-8 points, temperatures 0-120 °C rising, speeds 0-100 %.
 function valid_curve(string $curve): bool
 {
@@ -141,6 +149,7 @@ if ($method === 'GET') {
         'nvme_offset' => (int)($config['nvme_offset'] ?? 15),
         'stall_notify' => ($config['stall_notify'] ?? '1') !== '0',
         'fan_control' => ($config['fan_control'] ?? '1') !== '0',
+        'case_follows_cpu' => ($config['case_follows_cpu'] ?? '0') === '1',
         'ignore_drives' => array_values(array_filter(array_map('trim', explode(',', $config['ignore_drives'] ?? '')), 'strlen')),
         'ui_lang' => $config['ui_lang'] ?? 'auto',
         'ui_theme' => $config['ui_theme'] ?? 'dark'
@@ -202,7 +211,27 @@ if ($action === 'curves') {
     }
 
     // Saving a curve switches to it.
-    if (!save_settings(['cpu_curve' => $cpu, 'case_curve' => $case, 'mode' => 'custom'])) {
+    $changes = ['cpu_curve' => $cpu, 'case_curve' => $case, 'mode' => 'custom'];
+
+    // The minimum speed is edited next to the curves as well; left alone when not sent.
+    if (isset($input['min_pct'])) {
+        $min = valid_min_pct($input['min_pct']);
+
+        if ($min === null) {
+            respond([
+                'ok' => false,
+                'error' => 'Invalid value for min_pct'
+            ], 400);
+        }
+
+        $changes['min_pct'] = $min;
+    }
+
+    if (isset($input['case_follows_cpu'])) {
+        $changes['case_follows_cpu'] = in_array($input['case_follows_cpu'], ['1', 1, true], true) ? '1' : '0';
+    }
+
+    if (!save_settings($changes)) {
         respond([
             'ok' => false,
             'error' => CONFIG_FILE . ' is not writable'
@@ -213,9 +242,35 @@ if ($action === 'curves') {
     respond(['ok' => true]);
 }
 
+// The lowest fan speed and the CPU help switch alone (a preset mode stays as it is; "curves" would switch to Custom).
+if ($action === 'min') {
+    $min = valid_min_pct($input['min_pct'] ?? null);
+
+    if ($min === null) {
+        respond([
+            'ok' => false,
+            'error' => 'Invalid value for min_pct'
+        ], 400);
+    }
+
+    $changes = ['min_pct' => $min];
+
+    if (isset($input['case_follows_cpu'])) {
+        $changes['case_follows_cpu'] = in_array($input['case_follows_cpu'], ['1', 1, true], true) ? '1' : '0';
+    }
+
+    if (!save_settings($changes)) {
+        respond([
+            'ok' => false,
+            'error' => CONFIG_FILE . ' is not writable'
+        ], 500);
+    }
+
+    respond(['ok' => true]);
+}
+
 if ($action === 'safety') {
     $limits = [
-        'min_pct' => [10, 60],
         'cpu_crit' => [70, 105],
         'disk_crit' => [40, 70],
         'nvme_offset' => [0, 40]
@@ -346,6 +401,43 @@ if ($action === 'fan_control') {
         respond([
             'ok' => false,
             'error' => $result['output']
+        ], 409);
+    }
+
+    respond(['ok' => true]);
+}
+
+// Measures the rpm of every fan at fixed speeds (about 4 minutes). The measurement runs in the background; the
+// progress and the table come with the status. The binary refuses to start twice or without a running daemon.
+if ($action === 'calibrate') {
+    if (!is_executable(FAN_TOOL)) {
+        respond([
+            'ok' => false,
+            'error' => 'The fan tool is missing or not executable'
+        ], 500);
+    }
+
+    // Output goes to a file so a refusal ("already running", no daemon) can be reported.
+    $log = tempnam(sys_get_temp_dir(), 'unc-calib');
+    if ($log === false) {
+        respond(['ok' => false, 'error' => 'Cannot create a temporary file'], 500);
+    }
+    $pid = (int)shell_exec('nohup ' . escapeshellarg(FAN_TOOL) . ' calibrate >' . escapeshellarg($log) . ' 2>&1 & echo $!');
+
+    // A start that is refused exits within a moment; one that runs stays up.
+    $alive = true;
+    for ($i = 0; $i < 10 && $alive; $i++) {
+        usleep(200000);
+        $alive = $pid > 0 && is_dir("/proc/{$pid}");
+    }
+
+    $output = trim((string)file_get_contents($log));
+    unlink($log);
+
+    if (!$alive) {
+        respond([
+            'ok' => false,
+            'error' => $output !== '' ? $output : 'The measurement did not start'
         ], 409);
     }
 

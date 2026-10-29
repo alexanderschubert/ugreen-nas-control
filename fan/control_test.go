@@ -307,3 +307,89 @@ func TestFanControlSwitch(t *testing.T) {
 		t.Error("on")
 	}
 }
+
+func TestDecideCaseFollowsCPU(t *testing.T) {
+	c := defaultConfig()
+	// CPU 70 °C -> cpu curve 55 %; disks 35 °C -> case curve 28 %.
+	s := Sensors{CPU: intp(70), Disks: []Disk{{Temp: intp(35)}}}
+
+	d := Decide(c, s)
+	if d.CPU != 55 || d.Case != 28 || d.CaseDriver != "case" {
+		t.Fatalf("off = %+v", d)
+	}
+
+	c.CaseFollowsCPU = true
+	d = Decide(c, s)
+	if d.Case != 55 || d.CaseDriver != "cpu" {
+		t.Fatalf("on, cpu curve higher = %+v", d)
+	}
+
+	// Hot disks: the case curve wins.
+	s.Disks = []Disk{{Temp: intp(50)}}
+	d = Decide(c, s)
+	if d.Case != 80 || d.CaseDriver != "case" {
+		t.Fatalf("on, case curve higher = %+v", d)
+	}
+
+	// Case below min_pct, CPU curve below too: min_pct still applies.
+	c.MinPct = 40
+	d = Decide(c, Sensors{CPU: intp(40), Disks: []Disk{{Temp: intp(30)}}})
+	if d.Case != 40 || d.CPU != 40 {
+		t.Fatalf("min = %+v", d)
+	}
+
+	// Emergency still wins.
+	d = Decide(c, Sensors{CPU: intp(95)})
+	if d.Failsafe != "cpu_hot" || d.Case != 100 {
+		t.Fatalf("failsafe = %+v", d)
+	}
+}
+
+func TestCaseFollowsCPUConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "fan.cfg")
+	if LoadConfig(path).CaseFollowsCPU {
+		t.Fatal("default must be off")
+	}
+	os.WriteFile(path, []byte("case_follows_cpu=\"1\"\n"), 0o644)
+	if !LoadConfig(path).CaseFollowsCPU {
+		t.Fatal("1 must turn it on")
+	}
+}
+
+func TestNVMeEmergency(t *testing.T) {
+	cpu, warm := 40, 35
+	c := defaultConfig() // disk_crit 55, nvme_offset 15: the NVMe trips at 70
+	at := func(n int) Sensors {
+		return Sensors{CPU: &cpu, NVMe: []Temp{{Name: "nvme0", Temp: &n}}, Disks: []Disk{{Name: "disk1", Temp: &warm}}}
+	}
+
+	if d := Decide(c, at(69)); d.Failsafe != "" {
+		t.Errorf("69 C minus the offset is below the limit: %+v", d)
+	}
+	d := Decide(c, at(70))
+	if d.Failsafe != "nvme_hot" || d.CPU != 100 || d.Case != 100 {
+		t.Errorf("70 C must trip the NVMe emergency: %+v", d)
+	}
+
+	// The offset moves the trip point, the disk limit too.
+	c.NVMeOffset = 0
+	if d := Decide(c, at(55)); d.Failsafe != "nvme_hot" {
+		t.Errorf("offset 0: %+v", d)
+	}
+
+	// An ignored NVMe never trips it.
+	c = defaultConfig()
+	c.IgnoreDrives = parseDriveList("nvme0")
+	if d := Decide(c, at(90)); d.Failsafe != "" {
+		t.Errorf("ignored NVMe: %+v", d)
+	}
+
+	// CPU and disk reasons keep their priority.
+	c = defaultConfig()
+	hot := 95
+	s := at(90)
+	s.CPU = &hot
+	if d := Decide(c, s); d.Failsafe != "cpu_hot" {
+		t.Errorf("cpu first: %+v", d)
+	}
+}
