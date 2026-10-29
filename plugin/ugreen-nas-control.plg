@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "3.7">
+<!ENTITY version   "3.8">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,12 @@
 >
 
 <CHANGES>
+
+### 3.8
+- Rear view of the DXP4800 GT redrawn after the product photo (ribbed bezel around a dot mesh, dot-matrix lettering, ports at the photo positions); the rear fan turns with its rpm (thanks j3n57h0m45)
+- Light theme: the fan grille of the rear views is grey instead of a black slab
+- The LAN sockets drawn in the rear view flicker with the traffic (since the last poll); no frame around linked ports any more
+- The small 18 px icon: LEDs and fan stay inside the drawing
 
 ### 3.7
 - Dashboard tile: with the colour scheme "Dark" or "Light" the tile has a background of its own again, in that scheme, whatever theme Unraid uses; "Same as Unraid" draws none and follows the dashboard (issue #91)
@@ -258,7 +264,7 @@
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>891327cfe73ecb634e79db1cee6680c2</MD5>
+<MD5>f60c2413022a7930e93ca87f219fcb00</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
@@ -283,7 +289,7 @@
 
 <FILE Name="&srcDIR;/icons/ugreen-nas-control.png">
 <URL>&gitURL;/src/web/icons/ugreen-nas-control.png</URL>
-<MD5>9e1d8e3a2d8d4f7fba454e4f064170d8</MD5>
+<MD5>e70ea5f18267d9c0e9c736616e0b25d2</MD5>
 </FILE>
 
 <!-- Unraid shows this short text under the plugin's name on the Plugins page -->
@@ -299,7 +305,7 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>ea149ccde344e1c5040b4b51afd7509d</MD5>
+<MD5>b9bcb88544c166d1f904622c582cf9bd</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
@@ -309,7 +315,7 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>19d3da5bead50011fb3f5cf15623c827</MD5>
+<MD5>67a0b6c7a953ace51aa8859572327798</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">
