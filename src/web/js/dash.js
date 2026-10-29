@@ -369,10 +369,9 @@
         }
     }
 
-    // "auto" follows Unraid: light when the page behind the plugin is light.
-    function resolveTheme(setting) {
-        if (setting === 'light' || setting === 'dark') return setting;
-
+    // The tile draws no background of its own, so it always follows the dashboard behind it (whatever the colour
+    // scheme of the settings page says): light when that page is light.
+    function resolveTheme() {
         for (let el = document.body; el; el = el.parentElement) {
             const match = getComputedStyle(el).backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?/);
             if (match && (match[4] === undefined || Number(match[4]) > 0.5)) {
@@ -387,7 +386,7 @@
         const root = document.getElementById('unc-dash');
         if (!root) return;
 
-        root.dataset.theme = resolveTheme(window.UGREEN_NAS_THEME);
+        root.dataset.theme = resolveTheme();
 
         const settings = document.getElementById('unc-dash-settings');
         if (settings) settings.title = t('dash.settings');
