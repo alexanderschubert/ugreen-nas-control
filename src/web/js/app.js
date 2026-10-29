@@ -992,13 +992,12 @@
             rear: [],
             noInside: true
         }],
-        // DXP8800 Plus: eight bays; front and rear after the ports the reviews list (not after a photo), so a plain row
-        // of sockets like the GT's. No inside view, no fan control.
+        // DXP8800 Plus: eight bays; the back after a photo (rear8800Html). No inside view, no fan control.
         [/^DXP8800 Plus$/, {
             front: [['sd', 'SD'], ['usbc', 'TB4'], ['usbc', 'TB4'], ['usba', '10G']],
-            rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0]],
-            noInside: true,
-            fan: 2
+            rear8800: true,
+            rear: [],
+            noInside: true
         }],
         [/^DXP4800( Plus| Pro)?$/, {
             front: [['sd', 'SD'], ['usbc', '10G'], ['usba', '10G']],
@@ -1285,6 +1284,31 @@
             </div>`;
     }
 
+    // The back of the DXP8800 Plus after a photo: a wide body, one big mesh with the UGREEN lettering and two fans
+    // behind it, the PCIe slot with its handle on the left, below it HDMI, USB 3.2, two USB 2.0, two 10G LAN ports,
+    // reset and the power inlet.
+    function rear8800Html(hw) {
+        const k = rearKit(hw);
+
+        return `
+            <div class="unc-rear6800 unc-rear8800">
+                <div class="r-body"></div>
+                ${k.screw(3.1, 5.3)}${k.screw(49.7, 5.3)}${k.screw(96.5, 5.3)}${k.screw(5.1, 89)}${k.screw(49.7, 89)}${k.screw(94.6, 89)}
+                <div class="r-blende">
+                    <div class="r-fans">${['', ''].map(() => `<div class="r-fan"><span class="unc-fan-icon">${REAR_FAN_SVG}</span></div>`).join('')}</div>
+                    <div class="r-mesh"></div>
+                    ${BRAND_SVG}
+                </div>
+                <div class="r-pcie"><b>PCIE</b><i></i></div>
+                ${k.port(12.4, 80, 'hdmi', 'HDMI')}
+                ${k.port(19.5, 80, 'usba', 'USB3.2')}
+                <div class="r-abs r-usb2" style="left:26%;top:80%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
+                ${k.lan(0, 33.1, 80, 'LAN 1')}${k.lan(1, 40.4, 80, 'LAN 2')}
+                ${k.port(46.2, 80, 'reset', 'RESET')}
+                <div class="r-abs r-ac" style="left:68.5%;top:80%">${SOCKET.ac}<b>POWER</b></div>
+            </div>`;
+    }
+
     function renderRear(hw, target = '#unc-rear') {
         const lan = n => {
             const p = hw.net[n];
@@ -1317,6 +1341,11 @@
 
         if (model.rear6011) {
             q(target).innerHTML = rear6011Html(hw);
+            return;
+        }
+
+        if (model.rear8800) {
+            q(target).innerHTML = rear8800Html(hw);
             return;
         }
 

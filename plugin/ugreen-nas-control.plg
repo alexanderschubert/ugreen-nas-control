@@ -27,7 +27,7 @@
 
 ### 3.4
 - Models without fan control (all but DXP6800 Pro and DXP4800 GT): no fan card, no "fan mode" tile and no "fan controller not usable" warning on the overview any more; Settings explains that there is no fan control for the model and no switch is needed
-- DXP8800 Plus: the rear view shows its two fans side by side
+- DXP8800 Plus: the rear view drawn after a photo of the device: one wide mesh with the UGREEN lettering and the two fans behind it, the PCIe slot, HDMI, USB 3.2, two USB 2.0, the two LAN ports, reset and the power inlet
 - Case view of the DXP4800 family, DXP4800 GT, DXP2800 and DXP8800 Plus: the LEDs sit below the bays as on the DXP6800 Pro (no separate LED strip next to the LAN LED any more)
 
 ### 3.3
@@ -282,7 +282,7 @@
 
 <FILE Name="&srcDIR;/css/app.css">
 <URL>&gitURL;/src/web/css/app.css</URL>
-<MD5>e58411e0f99014a10714ced5b87a0e85</MD5>
+<MD5>b3188e1a58188b3267d9ddfe9b2e5ebb</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/i18n.js">
@@ -292,7 +292,7 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>3c8e7b97100520fd3874f2b81465bd6a</MD5>
+<MD5>cb146d9d068729728edabade624ab0b0</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">
