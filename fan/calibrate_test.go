@@ -68,6 +68,28 @@ func TestCalibrateAbortsHot(t *testing.T) {
 	}
 }
 
+// A CPU burst of a few checks does not end the measurement; a long one or a very hot one does.
+func TestCalibrateIgnoresCPUBurst(t *testing.T) {
+	cb, _ := testCalibrator(t, 50)
+	reads := 0
+	cb.sensors = func() Sensors {
+		reads++
+		c := 50
+		if reads%10 == 3 || reads%10 == 4 {
+			c = 85
+		}
+		return Sensors{CPU: &c}
+	}
+	if _, reason := cb.run(); reason != "" {
+		t.Fatalf("a short burst stopped the run: %q", reason)
+	}
+
+	cb, _ = testCalibrator(t, 96)
+	if _, reason := cb.run(); reason != "cpu_hot" || cb.hotRuns != 1 {
+		t.Fatalf("very hot: reason %q after %d checks", reason, cb.hotRuns)
+	}
+}
+
 func TestCalibrateStop(t *testing.T) {
 	cb, chip := testCalibrator(t, 50)
 	stop := make(chan struct{})

@@ -28,6 +28,10 @@ const (
 	calibHold = 50
 	// The CPU may get this warm during a measurement, however high the configured emergency limit is.
 	calibCPUMax = 80
+	// A reading above calibCPUMax only stops the measurement after this many checks in a row (a CPU burst of a
+	// second or two is normal); at calibCPUHard and above it stops at once.
+	calibHotReads = 4
+	calibCPUHard  = 95
 
 	pauseFresh   = 15 * time.Second // the daemon stays off the fans this long after the last heartbeat
 	progressFree = 45 * time.Second // a "running" progress older than this means the measurement died
@@ -182,6 +186,8 @@ type calibrator struct {
 
 	settle, settleBig, gap time.Duration
 	check                  time.Duration // zero: calibCheck
+
+	hotRuns, peak int // checks in a row above the CPU ceiling; the hottest CPU reading of the run
 }
 
 // wait sleeps for d, checking the temperatures on the way; it gives the reason to stop, or "" after d.
@@ -238,17 +244,27 @@ func (cb *calibrator) unsafe() string {
 		return "daemon_stopped"
 	}
 	c, s := cb.cfg(), cb.sensors()
-	switch f := Decide(c, s).Failsafe; f {
+	reason := Decide(c, s).Failsafe
+	if s.CPU != nil {
+		cb.peak = max(cb.peak, *s.CPU)
+		if reason == "" && *s.CPU > calibCPUMax {
+			reason = "cpu_hot"
+		}
+	}
+	switch reason {
 	case "":
+		cb.hotRuns = 0
+		return ""
 	case "nvme_hot":
 		return "disk_hot"
-	default:
-		return f
+	case "cpu_hot":
+		cb.hotRuns++
+		if cb.hotRuns < calibHotReads && *s.CPU < calibCPUHard {
+			return ""
+		}
+		cb.logf("calibration: CPU too hot (%d checks in a row above the ceiling, hottest reading %d °C)", cb.hotRuns, cb.peak)
 	}
-	if *s.CPU > calibCPUMax {
-		return "cpu_hot"
-	}
-	return ""
+	return reason
 }
 
 func (cb *calibrator) setAll(pct int, only string) error {
