@@ -169,6 +169,25 @@ Settings are saved in `/boot/config/plugins/ugreen-nas-control/fan.cfg`.
 /usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-ctl stop|start|status
 ```
 
+## MQTT (for displays and Home Assistant)
+
+Off by default. With `mqtt_enabled="1"` in `fan.cfg` the plugin starts a small publisher (`ugreen-nas-fan publish`) that sends the status of the NAS to an MQTT broker. It only reads, the way the status page does, and never writes a fan register. There is no settings page for it yet; edit `fan.cfg` and run `ugreen-nas-ctl restart` (or `mqtt-start`).
+
+| Key | Meaning |
+|---|---|
+| `mqtt_enabled` | `1` to run the publisher |
+| `mqtt_host`, `mqtt_port` | broker (port 1883, or 8883 with TLS) |
+| `mqtt_tls` | `1` for TLS |
+| `mqtt_user`, `mqtt_pass` | login (the password stays in `fan.cfg` on the flash drive, like the other settings) |
+| `mqtt_name` | name in the topics, `ugreen-nas/<name>/` (default: the host name) |
+| `mqtt_interval` | seconds between two states, 2 to 60 (default 5) |
+| `mqtt_control` | `1` lets a display restart and shut down the NAS (off by default) |
+| `mqtt_control_updates` | `1` lets a display update plugins (off by default) |
+
+Topics below `ugreen-nas/<name>/`: `state` (temperatures, fans, bays, NVMe, network rates, alarms), `notifications` (Unraid's unread notifications), `updates` (updates Unraid already knows of), `availability` (`online`/`offline`), `cmd` (commands in) and `cmd_result` (answers out). The payloads are JSON.
+
+Commands are a fixed list: `reboot`, `shutdown` and `update` (a plugin that is on the updates list; containers and Unraid itself are refused). Each command carries a `ts` (at most 30 s old) and a unique `nonce`; repeated, late or too frequent commands are refused. Give the broker a user that may write `cmd` only where you want it, and keep the broker on your LAN.
+
 ## LEDs
 
 LED control is built in (`led/`: Go tool `i2c/`, backend and web under `src/`) and talks to the LED

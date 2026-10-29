@@ -167,5 +167,32 @@ UGREEN_FAN_CONFIG="$FANT/fan.cfg" UGREEN_NAS_FAN=/bin/false UGREEN_FAN_PIDFILE="
 check "fan control on: start probes the chip (and fails here)" "$([ "$on_rc" -ne 0 ] && echo ok)"
 rm -rf "$FANT"
 
+# The MQTT publisher: runs only with mqtt_enabled="1", apart from the fan daemon.
+PUBT="$(mktemp -d)"
+cat > "$PUBT/tool" <<'STUB'
+#!/bin/bash
+[ "$1" = publish ] && exec sleep 30
+exit 1
+STUB
+chmod +x "$PUBT/tool"
+pub() { UGREEN_FAN_CONFIG="$PUBT/fan.cfg" UGREEN_NAS_FAN="$PUBT/tool" UGREEN_FAN_PIDFILE="$PUBT/fan.pid" UGREEN_FAN_ERRLOG="$PUBT/err" UGREEN_PUB_PIDFILE="$PUBT/pub.pid" UGREEN_PUB_LOG="$PUBT/pub.log" bash "$CTL" "$@"; }
+printf 'mqtt_enabled="0"\nfan_control="0"\n' > "$PUBT/fan.cfg"
+pub mqtt-start >/dev/null 2>&1
+check "MQTT off: the publisher is not started" "$([ ! -e "$PUBT/pub.pid" ] && echo ok)"
+if command -v setsid >/dev/null; then
+    printf 'mqtt_enabled="1"\nfan_control="0"\n' > "$PUBT/fan.cfg"
+    pub start >/dev/null 2>&1; rc=$?
+    check "MQTT on, fan control off: start runs the publisher alone and succeeds" "$([ "$rc" -eq 0 ] && pub mqtt-status | grep -q running && echo ok)"
+    pub stop >/dev/null 2>&1
+    check "stop stops the publisher too" "$(! pub mqtt-status >/dev/null 2>&1 && echo ok)"
+    printf 'mqtt_enabled="1"\nfan_control="1"\n' > "$PUBT/fan.cfg"
+    pub start >/dev/null 2>&1; rc=$?
+    check "a fan daemon that fails does not stop the publisher, and start still reports it" "$([ "$rc" -ne 0 ] && pub mqtt-status | grep -q running && echo ok)"
+else
+    echo "skip MQTT start/stop checks: no setsid on this system"
+fi
+pub mqtt-stop >/dev/null 2>&1
+rm -rf "$PUBT"
+
 echo
 [ "$fails" -eq 0 ] && echo "All checks passed." || { echo "$fails failed."; exit 1; }

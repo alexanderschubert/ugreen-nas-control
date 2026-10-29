@@ -40,6 +40,7 @@ func usage() {
   restore             write back the fan settings the BIOS made
   calibrate           measure rpm per speed for every fan, about 4 minutes (the daemon must run)
   daemon              run the fan curves until SIGTERM
+  publish             send the status to an MQTT broker (settings: mqtt_* in fan.cfg), until SIGTERM
 `)
 	os.Exit(2)
 }
@@ -210,6 +211,11 @@ func main() {
 			fail(err)
 		}
 		if err := runDaemon(chip); err != nil {
+			fail(err)
+		}
+
+	case "publish":
+		if err := runPublish(); err != nil {
 			fail(err)
 		}
 
