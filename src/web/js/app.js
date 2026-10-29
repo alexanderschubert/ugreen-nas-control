@@ -967,11 +967,14 @@
     };
 
     const CASE_MODELS = [
+        // DXP4800 GT: the chassis of the DXP4800 Plus (mesh filter with the fan behind it, the ports in one row below),
+        // but two 10G LAN ports.
         [/^DXP4800 GT/, {
             front: [['sd', 'SD'], ['usbc', '10G'], ['usba', 'USB3.2']],
-            rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0], ['reset', 'case.reset'], ['dc', 'case.dc']],
-            pcie: false,
-            fan: true
+            rear4800: true,
+            lanLabels: ['LAN 10G', 'LAN 10G'],
+            rear: [],
+            pcie: false
         }],
         // DXP4800, DXP4800 Plus and DXP4800 Pro: one chassis, drawn after a photo of the Plus. The slots of the
         // M.2 SSDs are not known, so there is no inside view; no fan control either.
@@ -1188,7 +1191,7 @@
 
     // The back of the DXP4800 family after a photo of the Plus: a square body, one big mesh with the UGREEN lettering
     // and the fan behind it, below it HDMI, USB 3.2, two USB 2.0, the two LAN ports, reset and the DC inlet.
-    function rear4800Html(hw) {
+    function rear4800Html(hw, lanLabels = ['LAN 10G', 'LAN 2.5G']) {
         // LAN 1 is the 10G port, LAN 2 the 2.5G one; the kernel's eth0 / eth1 can be either way round, so the
         // port that supports more is LAN 1 (when ethtool didn't tell, they stay in the kernel's order).
         const ordered = hw.net.slice().sort((a, b) => (b.max_mbit || 0) - (a.max_mbit || 0));
@@ -1214,7 +1217,7 @@
                 ${port(15.4, 86.5, 'hdmi', 'HDMI')}
                 ${port(28.7, 86.5, 'usba', 'USB3.2')}
                 <div class="r-abs r-usb2" style="left:43.8%;top:85%">${SOCKET.usb2}<b>USB2.0</b>${SOCKET.usb2}<b>USB2.0</b></div>
-                ${lan(1, 56, 'LAN 2.5G')}${lan(0, 72.7, 'LAN 10G')}
+                ${lan(1, 56, lanLabels[1])}${lan(0, 72.7, lanLabels[0])}
                 ${port(81, 85.5, 'reset', 'RESET')}
                 ${port(88.2, 86, 'dc', t('case.dc'))}
             </div>`;
@@ -1330,7 +1333,7 @@
         }
 
         if (model.rear4800) {
-            q(target).innerHTML = rear4800Html(hw);
+            q(target).innerHTML = rear4800Html(hw, model.lanLabels);
             return;
         }
 
