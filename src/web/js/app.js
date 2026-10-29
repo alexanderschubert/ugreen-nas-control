@@ -346,7 +346,8 @@
 
         renderTitle();
 
-        q('#unc-chip-error').hidden = !data.chip_error;
+        // A model without fan control is no fault: the Settings page says so.
+        q('#unc-chip-error').hidden = !data.chip_error || !fanKnown();
         q('#unc-chip-error-text').textContent = data.chip_error || '';
 
         const daemon = data.running ? data.daemon : null;
@@ -372,6 +373,8 @@
         const data = state.data;
         const fans = data.fans || [];
 
+        // No fan card on a model without fan control: there is nothing to show or to set.
+        q('.unc-cc.fan').hidden = Boolean(modelName()) && !fanKnown();
         q('.unc-cc.fan').classList.toggle('fan-off', fanKnown() && fanOff());
         if (fanKnown() && fanOff()) {
             q('#unc-fans').innerHTML = `<p class="unc-muted">${escapeHtml(t('fanctl.off_note'))}</p>`;
@@ -890,6 +893,7 @@
         // Off: the fan pages and the fan card are out of the way; the switch stays under Settings.
         qa('[data-fan-only]').forEach(el => { el.hidden = !fanKnown() || fanOff(); });
         qa('[data-fan-model]').forEach(el => { el.hidden = !fanKnown(); });
+        qa('[data-nofan-model]').forEach(el => { el.hidden = fanKnown() || !modelName(); });
         renderFanSwitch();
     }
 
@@ -996,7 +1000,7 @@
             rear: [['hdmi', 'case.hdmi'], ['usba', 'case.usb32'], ['usb2x2', 'case.usb2'], ['lan', 1], ['lan', 0]],
             noInside: true,
             strip: true,
-            fan: true
+            fan: 2
         }],
         [/^DXP4800( Plus| Pro)?$/, {
             front: [['sd', 'SD'], ['usbc', '10G'], ['usba', '10G']],
@@ -1321,7 +1325,7 @@
 
         q(target).innerHTML = `
             <div class="unc-nas-rear">
-                ${model.fan ? `<div class="unc-rear-fan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg></div>` : ''}
+                ${model.fan ? `<div class="unc-rear-fans">${Array.from({ length: Number(model.fan) || 1 }, () => `<div class="unc-rear-fan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" class="ring"/><circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 1-7 4-7 2 0 3 2 2 4l-4 3.5M14 12c4 0 7 1 7 4 0 2-2 3-4 2l-3.5-4M12 14c0 4-1 7-4 7-2 0-3-2-2-4l4-3.5M10 12c-4 0-7-1-7-4 0-2 2-3 4-2l3.5 4"/></svg></div>`).join('')}</div>` : ''}
                 <div class="unc-rear-ports">
                     ${model.rear.map(([kind, label]) => kind === 'lan' ? lan(label) : socket(kind, t(label))).join('')}
                 </div>
@@ -1735,7 +1739,7 @@
             [t('dash.disk'), hottest >= 0 ? deg(hottest) : ''],
             [t('system.uptime'), data.info?.uptime ? uptime(data.info.uptime) : '']
         ];
-        if (fanOff()) items.splice(0, 2);
+        if (fanOff() || !fanKnown()) items.splice(0, 2);
         if (ledsOn() && state.ledMode) items.splice(1, 0, [t('led.title'), ledModeText()]);
         items.splice(0, items.length, ...items.filter(([, value]) => value));
 

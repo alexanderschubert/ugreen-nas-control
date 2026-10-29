@@ -1452,7 +1452,23 @@
     text-align: center;
 }
 
-/* Rear fan behind its dust filter (DXP4800 GT). */
+/* A hidden card stays hidden whatever display the layout gives it. */
+.unc-card[hidden] {
+    display: none;
+}
+
+/* Rear fans behind their dust filter (DXP4800 GT: one, DXP8800 Plus: two side by side). */
+.unc-rear-fans {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.unc-rear-fans .unc-rear-fan {
+    flex: 1;
+    margin-bottom: 0;
+}
+
 .unc-rear-fan {
     display: grid;
     place-items: center;
