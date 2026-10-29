@@ -301,3 +301,25 @@ func TestLayoutDXP2800AndIDX(t *testing.T) {
 		t.Errorf("iDX bays: %+v", hw.Bays)
 	}
 }
+
+func TestReadNetIO(t *testing.T) {
+	dir := t.TempDir()
+	old := sysDir
+	t.Cleanup(func() { sysDir = old })
+	sysDir = dir
+
+	for _, n := range []struct{ name, rx, tx string }{{"eth0", "1000\n", "2000\n"}, {"eth1", "x\n", "5\n"}, {"eth2", "7\n", "8\n"}, {"br0", "1\n", "1\n"}} {
+		nic := filepath.Join(dir, "class/net", n.name)
+		os.MkdirAll(filepath.Join(nic, "statistics"), 0o755)
+		if n.name != "br0" {
+			os.MkdirAll(filepath.Join(nic, "device"), 0o755)
+		}
+		os.WriteFile(filepath.Join(nic, "statistics/rx_bytes"), []byte(n.rx), 0o644)
+		os.WriteFile(filepath.Join(nic, "statistics/tx_bytes"), []byte(n.tx), 0o644)
+	}
+
+	got := ReadNetIO()
+	if len(got) != 2 || got[0] != (NetIO{"eth0", 1000, 2000}) || got[1] != (NetIO{"eth2", 7, 8}) {
+		t.Errorf("net_io %+v", got)
+	}
+}

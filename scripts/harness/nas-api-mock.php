@@ -53,6 +53,7 @@ $imp = is_file($old) && @file_get_contents($old) !== @file_get_contents('/boot/c
 echo json_encode(['ok'=>true,'running'=>true,'chip'=>'IT8613',
  'info'=>['model'=>$model,'bios'=>'1.0','bios_date'=>'01/01/2024','cpu'=>'12th Gen Intel(R) Core(TM) i5-1235U @ 2.50GHz','threads'=>12,'memory_kb'=>67108864,'kernel'=>'6.18.38-Unraid','unraid'=>'7.3.2','uptime'=>400000],
  'sensors'=>['cpu'=>54,'cpu_cores'=>[],'nvme'=>[['name'=>'nvme3','temp'=>44]],'gpu'=>51,'nvme_extra'=>[['name'=>'nvme1','label'=>'Sensor 1','temp'=>64],['name'=>'nvme1','label'=>'Sensor 2','temp'=>42]],'nic'=>[['iface'=>'eth0','label'=>'PHY','temp'=>66],['iface'=>'eth0','label'=>'MAC','temp'=>66],['iface'=>'eth1','label'=>'PHY','temp'=>64],['iface'=>'eth1','label'=>'MAC','temp'=>64]],'disks'=>[['name'=>'disk2','device'=>'sdd','temp'=>47,'standby'=>false,'hdd'=>true]],'board'=>30],
+ 'net_io'=>[['name'=>'eth0','rx'=>time()*40000000,'tx'=>time()*9000000],['name'=>'eth1','rx'=>time()*300000,'tx'=>time()*120000]],
  'presets'=>['quiet'=>['50:15,80:100','40:20,55:100'],'standard'=>['40:30,70:100','30:30,50:100'],'performance'=>['35:35,65:100','30:35,50:100']],
  'fans'=>is_file('/tmp/fanoff') ? [] : [['id'=>'fan2','role'=>'cpu','rpm'=>1500,'pct'=>40,'auto'=>false],['id'=>'fan3','role'=>'case','rpm'=>900,'pct'=>30,'auto'=>false],['id'=>'fan4','role'=>'case','rpm'=>880,'pct'=>30,'auto'=>false]],
  'calibration'=>['table'=>['time'=>1761555600,'fans'=>['fan2'=>[[10,700],[20,1300],[40,2100],[70,3200],[100,4100]],'fan3'=>[[10,190],[20,420],[40,820],[70,1300],[100,1680]]]],'progress'=>null],

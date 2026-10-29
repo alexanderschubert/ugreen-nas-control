@@ -369,7 +369,8 @@
         }
     }
 
-    // "auto" follows Unraid: light when the page behind the plugin is light.
+    // "Dark" and "Light" give the tile a background of its own in that scheme; "auto" (same as Unraid) draws none and is
+    // light when the dashboard behind it is light.
     function resolveTheme(setting) {
         if (setting === 'light' || setting === 'dark') return setting;
 
@@ -388,6 +389,7 @@
         if (!root) return;
 
         root.dataset.theme = resolveTheme(window.UGREEN_NAS_THEME);
+        root.classList.toggle('unc-dash-solid', window.UGREEN_NAS_THEME === 'light' || window.UGREEN_NAS_THEME === 'dark');
 
         const settings = document.getElementById('unc-dash-settings');
         if (settings) settings.title = t('dash.settings');
