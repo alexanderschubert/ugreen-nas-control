@@ -2404,7 +2404,9 @@
 .unc-rear6800 .r-fan small {
     position: absolute;
     bottom: -2.4cqi;
-    color: #8b96a3;
+    z-index: 2; /* in front of the mesh, which is drawn after the fans */
+    color: #aeb8c4;
+    text-shadow: 0 0 3px #0c0e11, 0 0 3px #0c0e11;
     white-space: nowrap;
 }
 
@@ -2625,7 +2627,7 @@
 .unc[data-theme="light"] .unc-rear6800 .r-fan .unc-fan-icon { color: #9aa4af; }
 .unc[data-theme="light"] .unc-rear6800 .r-fan .unc-fan-icon svg { stroke-width: .55; }
 .unc[data-theme="light"] .unc-rear6800 .r-fan .unc-fan-icon svg .ring { stroke-width: .8; }
-.unc[data-theme="light"] .unc-rear6800 .r-fan small { color: #3b4552; }
+.unc[data-theme="light"] .unc-rear6800 .r-fan small { color: #1f2833; font-weight: 600; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; }
 .unc[data-theme="light"] .unc-rear6800 .r-brand text { fill: #3a424b; stroke: #3a424b; stroke-width: .8; stroke-dasharray: none; }
 
 /* ---------- Case: the drives as cards ---------- */
