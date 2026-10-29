@@ -1655,6 +1655,8 @@
 
 .unc-socket.ac svg { width: 62px; }
 .unc-socket.hdmi svg { width: 54px; }
+/* Unraid styles every div.up as a framed box; our "up" only means a LAN link. */
+.unc div.up { border: 0; padding: 0; overflow: visible; }
 .unc-socket.rj45 svg { width: 62px; }
 .unc-socket.rj45.up svg .shell { stroke: #22c55e; }
 .unc-socket.rj45.up svg .led.link { fill: #22c55e; }
