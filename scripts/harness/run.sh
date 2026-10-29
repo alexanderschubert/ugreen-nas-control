@@ -41,7 +41,7 @@ case "${1:-start}" in
         mkdir -p "$WORK"
         sync_files
         docker rm -f "$NAME" >/dev/null 2>&1 || true
-        docker run -d --name "$NAME" -p 8780:8780 \
+        docker run -d --name "$NAME" -p 127.0.0.1:8780:8780 \
             -v "$PLUGIN:/usr/local/emhttp/plugins/ugreen-nas-control" \
             -v "$HERE:/h" php:8.3-cli bash /h/start.sh >/dev/null
         echo "http://localhost:8780/plugins/ugreen-nas-control/view.php"

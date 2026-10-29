@@ -32,7 +32,8 @@ def main():
 
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     binaries = dict(b.split('=', 1) for b in args.binary)
-    text = open(args.plg).read()
+    with open(args.plg) as f:
+        text = f.read()
     problems = []
 
     def replace(match):
@@ -52,7 +53,11 @@ def main():
             problems.append(f'{url}: unknown download source')
             return match.group(0)
 
-        new = md5(path)
+        try:
+            new = md5(path)
+        except OSError as e:
+            problems.append(f'{url}: cannot read {path}: {e.strerror}')
+            return match.group(0)
         if old != new:
             problems.append(f'{url}: plg has {old}, file is {new}')
         return f'{head}<MD5>{new}</MD5>\n{tail}'
@@ -68,11 +73,13 @@ def main():
         print(f'All {count} downloads match their MD5.')
         return 0
 
-    open(args.plg, 'w').write(updated)
+    # The hashes that could be computed are still written; the exit code says the rest is stale.
+    with open(args.plg, 'w') as f:
+        f.write(updated)
     for p in problems:
-        print(p)
+        print(p, file=sys.stderr)
     print(f'{count} downloads hashed.')
-    return 0
+    return 1 if problems else 0
 
 
 if __name__ == '__main__':
