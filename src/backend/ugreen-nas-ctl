@@ -10,6 +10,8 @@ FAN_TOOL="${UGREEN_NAS_FAN:-$HERE/ugreen-nas-fan}"
 PIDFILE="${UGREEN_FAN_PIDFILE:-/var/run/ugreen-nas-control.pid}"
 ERRLOG="${UGREEN_FAN_ERRLOG:-/var/run/ugreen-nas-control.err}"
 FAN_CFG="${UGREEN_FAN_CONFIG:-/boot/config/plugins/ugreen-nas-control/fan.cfg}"
+PUB_PIDFILE="${UGREEN_PUB_PIDFILE:-/var/run/ugreen-nas-control-mqtt.pid}"
+PUB_LOG="${UGREEN_PUB_LOG:-/var/log/ugreen-nas-control-mqtt.log}"
 
 LED_DIR="${UGREEN_LED_DIR:-$HERE/../led/backend}"
 LED_CTL="${UGREEN_LED_CTL:-$LED_DIR/ugreen-led-ctl}"
@@ -28,7 +30,9 @@ usage() {
     cat <<USAGE
 Usage:
   ugreen-nas-ctl start|stop|restart|status   fan daemon (also runs in mode "bios",
-                                             where it only watches)
+                                             where it only watches) and, if switched on, the MQTT publisher
+  ugreen-nas-ctl mqtt-start|mqtt-stop|mqtt-status
+                                             the MQTT publisher alone (mqtt_enabled="1" in fan.cfg)
   ugreen-nas-ctl led-status                  LED part as JSON: enabled, supported, conflict
   ugreen-nas-ctl led-enable|led-disable      switch the LED part on or off
   ugreen-nas-ctl led-import                  take over the settings of UGREEN LED Control
@@ -218,7 +222,7 @@ fan_off() {
     [ "$(sed -n 's/^fan_control="\(.*\)"$/\1/p' "$FAN_CFG" 2>/dev/null | tail -n 1)" = 0 ]
 }
 
-start() {
+fan_start() {
     local probe
 
     if fan_off; then
@@ -251,7 +255,7 @@ start() {
 }
 
 # The daemon writes the BIOS fan settings back on SIGTERM; wait for that.
-stop() {
+fan_stop() {
     local pid
     local i
 
@@ -268,10 +272,77 @@ stop() {
     echo "Fan daemon stopped."
 }
 
+# The MQTT publisher (ugreen-nas-fan publish): runs only with mqtt_enabled="1" in fan.cfg, apart from the
+# fan daemon, so it also runs where the fans are not controlled.
+pub_enabled() {
+    [ "$(sed -n 's/^mqtt_enabled="\(.*\)"$/\1/p' "$FAN_CFG" 2>/dev/null | tail -n 1)" = 1 ]
+}
+
+pub_running() {
+    [ -f "$PUB_PIDFILE" ] && kill -0 "$(cat "$PUB_PIDFILE" 2>/dev/null)" 2>/dev/null
+}
+
+pub_start() {
+    pub_enabled || return 0
+    pub_running && return 0
+
+    : > "$PUB_LOG" 2>/dev/null
+    setsid "$FAN_TOOL" publish </dev/null >>"$PUB_LOG" 2>&1 &
+    echo $! > "$PUB_PIDFILE"
+
+    # It ends at once without a host in the settings.
+    sleep 0.5
+    if ! pub_running; then
+        rm -f "$PUB_PIDFILE"
+        echo "ERROR: MQTT publisher did not start: $(tail -n 1 "$PUB_LOG" 2>/dev/null)" >&2
+        return 1
+    fi
+
+    echo "MQTT publisher started."
+}
+
+pub_stop() {
+    local pid i
+
+    if pub_running; then
+        pid="$(cat "$PUB_PIDFILE")"
+        kill "$pid" 2>/dev/null
+        for i in $(seq 1 30); do
+            kill -0 "$pid" 2>/dev/null || break
+            sleep 0.1
+        done
+    fi
+    rm -f "$PUB_PIDFILE"
+}
+
+# The publisher's failure must not stop the fans from starting, nor the other way round.
+start() {
+    local rc=0
+
+    fan_start || rc=$?
+    pub_start || true
+    return $rc
+}
+
+stop() {
+    pub_stop
+    fan_stop
+}
+
 case "${1:-}" in
     start) start ;;
     stop) stop ;;
     restart) stop >/dev/null; start ;;
+    mqtt-start) pub_start ;;
+    mqtt-stop) pub_stop; echo "MQTT publisher stopped." ;;
+    mqtt-status)
+        if pub_running; then
+            echo "running (pid $(cat "$PUB_PIDFILE"))"
+        else
+            echo "stopped"
+            exit 3
+        fi
+        ;;
     status)
         if running; then
             echo "running (pid $(cat "$PIDFILE"))"
