@@ -415,16 +415,24 @@ func readBays(s Sensors, l layout) []Bay {
 	return bays
 }
 
-func readNet() []NetPort {
+// netPaths lists the sysfs dirs of the physical NICs.
+func netPaths() []string {
 	paths, _ := filepath.Glob(filepath.Join(sysDir, "class", "net", "e*"))
 	sort.Strings(paths)
 
-	var ports []NetPort
+	var nics []string
 	for _, p := range paths {
 		// Bridges, bonds and VLANs have no device behind them.
-		if _, err := os.Stat(filepath.Join(p, "device")); err != nil {
-			continue
+		if _, err := os.Stat(filepath.Join(p, "device")); err == nil {
+			nics = append(nics, p)
 		}
+	}
+	return nics
+}
+
+func readNet() []NetPort {
+	var ports []NetPort
+	for _, p := range netPaths() {
 		port := NetPort{Name: filepath.Base(p)}
 		if n, ok := readInt(filepath.Join(p, "speed")); ok && n > 0 {
 			port.Link, port.SpeedMbit = readString(filepath.Join(p, "carrier")) == "1", n
@@ -433,6 +441,26 @@ func readNet() []NetPort {
 		ports = append(ports, port)
 	}
 	return ports
+}
+
+// NetIO holds the byte counters of one NIC since boot; the UI turns two samples into a rate.
+type NetIO struct {
+	Name string `json:"name"`
+	Rx   uint64 `json:"rx"`
+	Tx   uint64 `json:"tx"`
+}
+
+// ReadNetIO reads two sysfs counters per physical NIC. NICs without readable counters are left out.
+func ReadNetIO() []NetIO {
+	out := []NetIO{}
+	for _, p := range netPaths() {
+		rx, err1 := strconv.ParseUint(readString(filepath.Join(p, "statistics", "rx_bytes")), 10, 64)
+		tx, err2 := strconv.ParseUint(readString(filepath.Join(p, "statistics", "tx_bytes")), 10, 64)
+		if err1 == nil && err2 == nil {
+			out = append(out, NetIO{Name: filepath.Base(p), Rx: rx, Tx: tx})
+		}
+	}
+	return out
 }
 
 var linkModeRe = regexp.MustCompile(`(\d+)base`)

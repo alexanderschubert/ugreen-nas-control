@@ -1720,8 +1720,42 @@
         ac: '<svg viewBox="0 0 56 34"><rect x="2" y="2" width="52" height="30" rx="3" class="shell"/><rect x="14" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="34" y="8" width="8" height="12" rx="1" class="tongue"/><rect x="24" y="22" width="8" height="6" rx="1" class="tongue"/></svg>'
     };
 
-    const rj45 = (link, speed) => `
-        <svg viewBox="0 0 56 52" class="rj ${link ? 'up' : ''}">
+    // Traffic level of a NIC (0 idle, 1 any, 2 from 1 MB/s, 3 from 50 MB/s), from the byte counters of the status poll.
+    const netPrev = new Map();
+    const netAct = new Map();
+    const NET_ACT_STEPS = [50e6, 1e6, 1];
+
+    function updateNetAct(list) {
+        const now = Date.now();
+
+        for (const n of Array.isArray(list) ? list : []) {
+            const prev = netPrev.get(n.name);
+
+            if (prev && now - prev.t < 1000) continue; // the same response again (shared poll): keep the level
+            netPrev.set(n.name, { rx: n.rx, tx: n.tx, t: now });
+            if (!prev || n.rx < prev.rx || n.tx < prev.tx) {
+                netAct.set(n.name, 0); // first sample or counter reset
+                continue;
+            }
+            const rate = (n.rx - prev.rx + n.tx - prev.tx) / ((now - prev.t) / 1000);
+            const i = NET_ACT_STEPS.findIndex(min => rate >= min);
+
+            netAct.set(n.name, i < 0 ? 0 : 3 - i);
+        }
+    }
+
+    // Sets the level on drawn sockets that render() left in place; redrawn ones get it from rj45().
+    function paintNetAct() {
+        qa('.rj[data-nic]').forEach(el => {
+            const level = netAct.get(el.dataset.nic) || 0;
+
+            el.classList.remove('act-1', 'act-2', 'act-3');
+            if (level) el.classList.add(`act-${level}`);
+        });
+    }
+
+    const rj45 = (link, speed, nic = '') => `
+        <svg viewBox="0 0 56 52" class="rj ${link ? 'up' : ''}${netAct.get(nic) ? ` act-${netAct.get(nic)}` : ''}"${nic ? ` data-nic="${escapeHtml(nic)}"` : ''}>
             <rect x="2" y="2" width="52" height="48" rx="3" class="shell"/>
             <rect x="9" y="14" width="38" height="28" rx="2" class="tongue"/>
             <path d="M14 14v8M20 14v8M26 14v8M32 14v8M38 14v8M44 14v8" class="pins"/>
@@ -1939,7 +1973,7 @@
             const up = Boolean(p && p.link);
 
             return `<div class="r-abs r-lan ${up ? 'up' : ''}" style="left:${n ? 39.9 : 32.7}%;top:82%">
-                ${rj45(up, p ? p.speed_mbit : 0)}<b>LAN 10G</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
+                ${rj45(up, p ? p.speed_mbit : 0, p ? p.name : '')}<b>LAN 10G</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
         };
         const port = (x, y, kind, label, cls = '') => `<div class="r-abs r-${cls || kind}" style="left:${x}%;top:${y}%">${SOCKET[kind]}<b>${label}</b></div>`;
         const dots = r => `<circle r="${r}" fill="none" stroke="#8a939e" stroke-width="2.7" stroke-linecap="round" stroke-dasharray="0.1 ${(2 * Math.PI * r / Math.round(2 * Math.PI * r / 6.5)).toFixed(2)}"/>`;
@@ -1986,7 +2020,7 @@
             const up = Boolean(p && p.link);
 
             return `<div class="r-abs r-lan ${up ? 'up' : ''}" style="left:${x}%;top:${y}%">
-                ${rj45(up, p ? p.speed_mbit : 0)}<b>${label}</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
+                ${rj45(up, p ? p.speed_mbit : 0, p ? p.name : '')}<b>${label}</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
         };
         const port = (x, y, kind, label, cls = '') => `<div class="r-abs r-${cls || kind}" style="left:${x}%;top:${y}%">${SOCKET[kind]}<b>${label}</b></div>`;
         const screw = (x, y) => `<i class="r-screw" style="left:${x}%;top:${y}%"></i>`;
@@ -2015,7 +2049,7 @@
             const up = Boolean(p && p.link);
 
             return `<div class="r-abs r-lan ${up ? 'up' : ''}" style="left:${x}%;top:${y}%">
-                ${rj45(up, p ? p.speed_mbit : 0)}<b>${label}</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
+                ${rj45(up, p ? p.speed_mbit : 0, p ? p.name : '')}<b>${label}</b><em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em></div>`;
         },
         port: (x, y, kind, label, cls = '') => `<div class="r-abs r-${cls || kind}" style="left:${x}%;top:${y}%">${SOCKET[kind]}<b>${label}</b></div>`,
         screw: (x, y) => `<i class="r-screw" style="left:${x}%;top:${y}%"></i>`
@@ -2118,7 +2152,7 @@
             const label = `${t('case.lan', { n: n + 1 })}${p ? ` · ${p.name}` : ''}`;
             return `
                 <div class="unc-socket rj45 ${up ? 'up' : ''}">
-                    ${rj45(up, p ? p.speed_mbit : 0)}
+                    ${rj45(up, p ? p.speed_mbit : 0, p ? p.name : '')}
                     <small>${escapeHtml(label)}</small>
                     <em>${escapeHtml(up ? speedText(p.speed_mbit) : t('case.no_link'))}</em>
                 </div>`;
@@ -2785,7 +2819,9 @@
         }
         if (seq !== loadSeq) return;
         state.data = data;
+        updateNetAct(data?.net_io);
         render();
+        paintNetAct();
     }
 
     /*

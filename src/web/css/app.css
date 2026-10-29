@@ -2471,6 +2471,22 @@
 .unc-rear6800 .r-lan.up svg .led.link { fill: #22c55e; }
 .unc-rear6800 .r-lan.up svg .led.act { fill: #f59e0b; }
 
+/* LAN traffic: the green link LED of every drawn RJ45 flickers while data flows, like on the real port (levels set by app.js, see updateNetAct). */
+@keyframes unc-lan-act {
+    0%, 100% { opacity: 1; }
+    18% { opacity: .15; }
+    34% { opacity: 1; }
+    52% { opacity: .15; }
+    62% { opacity: 1; }
+    80% { opacity: .15; }
+}
+.unc svg.rj.up.act-1 .led.link { animation: unc-lan-act 1.2s steps(1, end) infinite; }
+.unc svg.rj.up.act-2 .led.link { animation: unc-lan-act .5s steps(1, end) infinite; }
+.unc svg.rj.up.act-3 .led.link { animation: unc-lan-act .2s steps(1, end) infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .unc svg.rj.up[class*="act-"] .led.link { animation: none; filter: brightness(1.35) drop-shadow(0 0 1.5px #22c55e); }
+}
+
 .unc-rear6800 .r-hdmi svg { width: 6.2cqi; }
 .unc-rear6800 .r-usba svg { width: 4.8cqi; }
 .unc-rear6800 .r-usb2 svg { width: 4.8cqi; }

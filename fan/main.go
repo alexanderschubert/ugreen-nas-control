@@ -113,7 +113,7 @@ func main() {
 
 	case "status":
 		sensors := ReadSensors()
-		out := map[string]any{"ok": true, "info": ReadInfo(), "sensors": &sensors, "presets": presets}
+		out := map[string]any{"ok": true, "info": ReadInfo(), "sensors": &sensors, "presets": presets, "net_io": ReadNetIO()}
 
 		// Switched off: not a single read of the fan chip, another plugin may be using it. The temperatures
 		// from sysfs and Unraid are still reported.
