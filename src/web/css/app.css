@@ -1159,6 +1159,15 @@
     overflow: visible;
 }
 
+/* Colour scheme "Dark" / "Light": the tile brings its own background, whatever theme the dashboard has. */
+.unc.unc-dash.unc-dash-solid {
+    margin: 4px 0 2px;
+    padding: 10px 12px;
+    border: 1px solid var(--unc-border);
+    border-radius: 8px;
+    background: var(--unc-bg);
+}
+
 /* Flat like Unraid's own tiles: no cards, sections divided by a hairline. */
 .unc-dash .unc-fans {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
