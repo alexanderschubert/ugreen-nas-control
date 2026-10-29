@@ -246,13 +246,13 @@
 
 <FILE Name="&srcDIR;/backend/ugreen-nas-ctl">
 <URL>&gitURL;/src/backend/ugreen-nas-ctl</URL>
-<MD5>a5557bbbddb2730b4a9abc918c69a8ee</MD5>
+<MD5>a224e951c1c59bd5cf8002873e5da44a</MD5>
 </FILE>
 
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>891327cfe73ecb634e79db1cee6680c2</MD5>
+<MD5>50f6684cbd4fe36ee853072d26b5d700</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
