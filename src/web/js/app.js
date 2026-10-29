@@ -2070,17 +2070,17 @@
 
     // The back of the DXP2800 after a photo: a tall body, the mesh with the magnetic dust filter on top, below it
     // HDMI, USB 3.2, two USB 2.0, the one 2.5G LAN port, reset and the DC inlet.
-    function rear2800Html(hw, lan = 'LAN 2.5G', dc = t('case.dc')) {
+    function rear2800Html(hw, lan = 'LAN 2.5G', dc = t('case.dc'), gt = false) {
         const k = rearKit(hw);
 
         return `
-            <div class="unc-rear6800 unc-rear2800">
+            <div class="unc-rear6800 unc-rear2800 ${gt ? 'unc-rear4800' : ''}">
                 <div class="r-body"></div>
                 ${k.screw(8, 4.6)}${k.screw(92, 4.6)}${k.screw(8, 94)}${k.screw(92, 94)}
                 <div class="r-blende">
-                    <div class="r-fans"><div class="r-fan"><span class="unc-fan-icon">${REAR_FAN_SVG}</span></div></div>
+                    <div class="r-fans">${gt ? rearFansHtml(1) : `<div class="r-fan"><span class="unc-fan-icon">${REAR_FAN_SVG}</span></div>`}</div>
                     <div class="r-mesh"></div>
-                    ${BRAND_SVG}
+                    ${gt ? BRAND_DOTS_SVG : BRAND_SVG}
                 </div>
                 ${k.port(13, 87.5, 'hdmi', 'HDMI')}
                 ${k.port(28.8, 87.5, 'usba', 'USB3.2')}
@@ -2182,7 +2182,7 @@
         }
 
         if (model.rear2800) {
-            q(target).innerHTML = rear2800Html(hw, model.lan, model.dc);
+            q(target).innerHTML = rear2800Html(hw, model.lan, model.dc, model.gold);
             return;
         }
 

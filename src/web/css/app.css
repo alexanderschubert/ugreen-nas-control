@@ -2932,6 +2932,20 @@
 .unc-rear2800 .r-screw { width: 4cqi; height: 4cqi; }
 .unc-rear2800 .r-hdmi svg { width: 12cqi; }
 .unc-rear2800 .r-usba svg, .unc-rear2800 .r-usb2 svg { width: 10cqi; }
+/* The GT's back has the grille of the DXP4800 GT (ribbed bezel, dot mesh, dotted lettering) in the tall body. */
+.unc-rear6800.unc-rear2800.unc-rear4800 {
+    max-width: 300px;
+    aspect-ratio: 205 / 325;
+    font-size: clamp(6px, 3cqi, 11px);
+}
+
+.unc-rear6800.unc-rear2800.unc-rear4800 .r-body,
+.unc[data-theme="light"] .unc-rear6800.unc-rear2800.unc-rear4800 .r-body { border-radius: 4cqi; }
+.unc-rear6800.unc-rear2800.unc-rear4800 .r-blende { left: 9.3%; top: 6.4%; width: 81.9%; height: 59.8%; border-radius: 7cqi; }
+.unc-rear2800.unc-rear4800 .r-fan .unc-fan-icon,
+.unc[data-theme="light"] .unc-rear2800.unc-rear4800 .r-fan .unc-fan-icon { width: 52cqi; height: 52cqi; }
+.unc-rear2800.unc-rear4800 .r-abs { transform: translate(-50%, -50%); gap: .35cqi; }
+.unc-rear2800.unc-rear4800 .r-screw { width: 3.4cqi; height: 3.4cqi; }
 .unc-rear2800 .r-lan svg { width: 13cqi; }
 .unc-rear2800 .r-reset svg { width: 4cqi; }
 .unc-rear2800 .r-dc svg { width: 8cqi; }
