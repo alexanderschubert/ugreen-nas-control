@@ -40,6 +40,7 @@ func usage() {
   restore             write back the fan settings the BIOS made
   calibrate           measure rpm per speed for every fan, about 4 minutes (the daemon must run)
   daemon              run the fan curves until SIGTERM
+  cs201x              DXP2800 GT only: read the chip and its fan registers, writes nothing to a fan (JSON)
   publish             send the status to an MQTT broker (settings: mqtt_* in fan.cfg), until SIGTERM
 `)
 	os.Exit(2)
@@ -111,6 +112,27 @@ func main() {
 			out[k] = v
 		}
 		printJSON(out)
+
+	case "cs201x":
+		model := productName()
+		if !isDXP2800GT(model) {
+			fail(fmt.Errorf("%q is not a DXP2800 GT", model))
+		}
+		p, err := openPorts()
+		if err != nil {
+			fail(err)
+		}
+		defer p.Close()
+		var rd CS201xReading
+		err = withLock(func() (err error) { rd, err = ProbeCS201x(p, model); return })
+		out := map[string]any{"ok": err == nil, "read": rd}
+		if err != nil {
+			out["error"] = err.Error()
+		}
+		printJSON(out)
+		if err != nil {
+			os.Exit(1)
+		}
 
 	case "status":
 		sensors := ReadSensors()
