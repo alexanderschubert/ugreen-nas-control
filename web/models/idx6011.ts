@@ -25,7 +25,7 @@ export default {
     verified: {
         leds: {
             status: 'expected',
-            note: 'Bay order (Pro: bays 3-4 on the Intel controller, plain iDX6011 and iDX6012: bays 5-6) follows the MIT-licensed plugins noodlemctwoodle/unraid-ugreen-idx6011-pro and omgapuppy/unraid-ugreen-idx6011-led-fan; not checked on a device with this plugin, use Identify to confirm. LED chip 0xc5b2.'
+            note: 'Bay order (Pro: bays 3-4 on the Intel controller, plain iDX6011 and iDX6012: bays 5-6) follows the MIT-licensed plugins noodlemctwoodle/unraid-ugreen-idx6011-pro and omgapuppy/unraid-ugreen-idx6011-led-fan; not checked on a device with this plugin, use Identify to confirm. LED chip 0xc5b2. The Pro has a second LAN LED (register 2, `netdev2` in ugreen-led-i2c, from the driver UGREEN ships); the plugin pages do not show it yet.'
         },
         fans: {
             status: 'expected',

@@ -19,7 +19,7 @@ export default {
         leds: {
             status: 'community',
             by: 'users',
-            note: 'Reported working by users. Boards from December 2025 (V1.2, rev 251215) use LED chip 0xc5b2, which ignores the write protocol used here (miskcoo issue 128): LEDs do not work there yet.'
+            note: 'Reported working by users. Boards from December 2025 (V1.2, rev 251215) use LED chip 0xc5b2, which ignores the DX/DXP write frame (miskcoo issue 128). The driver UGREEN ships serves this model with the frame without LED ID, so the plugin now tries that frame when the first one is not acknowledged; not yet tried on a V1.2 board.'
         },
         fans: {
             status: 'expected',
@@ -34,6 +34,6 @@ export default {
         'https://github.com/miskcoo/ugreen_leds_controller/issues/128',
         'https://github.com/IT-Kuny/UGREEN-DXP-FAN-NAS-Driver'
     ],
-    note: 'Two bays, two M.2 slots, one 2.5G LAN port. The V1.2 board (December 2025) has a new LED chip that does not work with this plugin yet.',
+    note: 'Two bays, two M.2 slots, one 2.5G LAN port. The V1.2 board (December 2025) has a new LED chip: the plugin falls back to the frame UGREEN ships for it, waiting for a report from a V1.2 owner.',
     shots: true
 } satisfies Model;
