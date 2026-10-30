@@ -1745,3 +1745,15 @@ main:focus {
         margin: 0;
     }
 }
+.src-points {
+    max-width: 64ch;
+    margin: 14px 0;
+    padding-left: 1.2em;
+    color: var(--muted);
+}
+.src-points li {
+    margin: 8px 0;
+}
+.src-points b {
+    color: var(--text);
+}

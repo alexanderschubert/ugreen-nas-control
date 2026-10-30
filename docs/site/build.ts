@@ -26,7 +26,10 @@ import {
     ROOT_URL,
     SITE_STREAM,
     SITE_URL,
+    SOURCES,
+    STRIP,
     SUBLINE,
+    WATCHDOG,
     checkText
 } from './content';
 import { ISLAND_SCRIPT, island } from './islands';
@@ -303,7 +306,7 @@ function caseText(listed: Model[]): string {
 </section>`;
 }
 
-/** The headline block for the hardware watchdog (backend/internal/fan/ec_watchdog.go): feeds a timer the BIOS armed, never arms it. */
+/** The block for the hardware watchdog (backend/internal/fan/ec_watchdog.go): pets a timer that is running, never arms it. */
 function watchdog(listed: Model[]): string {
     const dog = listed.filter(m => m.fan?.watchdog);
     if (!dog.length) return '';
@@ -313,17 +316,27 @@ function watchdog(listed: Model[]): string {
     return `<section class="band feature wdt" id="watchdog" aria-labelledby="watchdog-h">
   <div class="feature-text">
     <span class="wdt-ico" aria-hidden="true">${icon('shield', 28)}</span>
-    <h2 id="watchdog-h">Keep the hardware watchdog on.</h2>
-    <p class="sub">UGREEN boxes ship with a hardware watchdog. Leave it armed in the BIOS: the plugin feeds it, and if the system freezes, the hardware reboots the box.</p>
-    <p>The plugin only feeds a watchdog the BIOS armed. It never arms one itself, and it clears the timer when it stops, so stopping or uninstalling never triggers a reset.</p>
+    <h2 id="watchdog-h">${esc(WATCHDOG.title)}</h2>
+    <p class="sub">${esc(WATCHDOG.sub)}</p>
+    <p>${esc(WATCHDOG.body)}</p>
+    <p class="lim">${esc(WATCHDOG.other)}</p>
     <p class="evline"><b>Built for the ${esc(who)}.</b> <a href="#models">See the matrix</a></p>
     <p class="acts"><a class="textlink" data-demo-link data-page="overview" data-view="" href="./demo/?model=${gt.id}&page=overview">See the Watchdog card in the demo</a></p>
   </div>
   <ol class="wdt-steps" aria-label="How the watchdog works">
-    <li>${icon('shield', 24)}<b>Leave it on in the BIOS</b><span>The hardware timer stays armed. No more switching it off.</span></li>
-    <li>${icon('refresh', 24)}<b>The plugin feeds it</b><span>A small service resets the timer on a steady beat while the system is alive.</span></li>
-    <li>${icon('reset', 24)}<b>A frozen box reboots itself</b><span>The beat stops, the hardware resets the box. Back up on its own.</span></li>
+    ${WATCHDOG.steps.map(([i, h, t]) => `<li>${icon(i, 24)}<b>${esc(h)}</b><span>${esc(t)}</span></li>`).join('')}
   </ol>
+</section>`;
+}
+
+/** Where the hardware facts come from; links to the file-by-file list in docs/third-party.md. */
+function sources(): string {
+    return `<section class="band casetext" id="sources" aria-labelledby="sources-h">
+  <h2 id="sources-h">${esc(SOURCES.title)}</h2>
+  <p class="sub">${esc(SOURCES.sub)}</p>
+  <ul class="src-points">${SOURCES.points.map(([h, t]) => `<li><b>${esc(h)}.</b> ${esc(t)}</li>`).join('')}</ul>
+  <p class="acts"><a class="textlink" href="${GITHUB}/blob/main/docs/third-party.md#ugreen-open-source-drivers">${esc(SOURCES.link)}</a></p>
+  <p class="foot-note">${esc(SOURCES.note)}</p>
 </section>`;
 }
 
@@ -337,7 +350,7 @@ function sections(listed: Model[]): string {
             title: 'Fan curves you read in rpm.',
             sub: 'Quiet, Standard, Performance, Full speed or your own curve.',
             body: `One click measures real rpm at every speed. Too hot? Every fan goes to 100 percent. Plugin stops? BIOS values take over. ${NUM[probe] ?? probe} more models get a probe wizard that maps their fan chips. Bring yours.`,
-            extra: `<p class="mini-h">Watchdog</p><p class="lim">If the BIOS arms the EC watchdog, the plugin keeps it fed. It never arms it.</p>${evidence(dog.map(m => ({ model: m.name, check: m.fan?.watchdog as Check })))}`,
+            extra: `<p class="mini-h">Watchdog</p><p class="lim">If the EC watchdog is running, the plugin keeps it fed. It never arms it.</p>${evidence(dog.map(m => ({ model: m.name, check: m.fan?.watchdog as Check })))}`,
             cta: { label: 'Try the fan curves', page: 'fans' },
             cap: 'fans',
             flip: true,
@@ -506,9 +519,10 @@ function landing(listed: Model[]): string {
   </div>
 </section>
 <section class="band strip" aria-label="What the plugin does">
-  <ul><li><b>Fans. LEDs. Case view.</b><span>One plugin drives all of it.</span></li><li><b>No kernel module.</b><span>No rebuild after Unraid updates.</span></li><li><b>Real UI. Real code.</b><span>The boxes on this page are the plugin itself.</span></li></ul>
+  <ul>${STRIP.map(([h, t]) => `<li><b>${esc(h)}</b><span>${esc(t)}</span></li>`).join('')}</ul>
 </section>
 ${watchdog(listed)}
+${sources()}
 ${caseText(listed)}
 ${sections(listed)}
 ${support(listed, rel)}
