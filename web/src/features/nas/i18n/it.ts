@@ -1,6 +1,8 @@
 import { inputsIt } from './parts/inputs.it';
 import { historyIt } from './parts/history.it';
 import { scheduleIt } from './parts/schedule.it';
+import { panelIt } from './parts/panel.it';
+import { powerIt } from './parts/power.it';
 import { toolsIt } from './parts/tools.it';
 import type { Key } from './en';
 
@@ -454,5 +456,7 @@ export const it: Record<Key, string> = {
     ...inputsIt,
     ...historyIt,
     ...scheduleIt,
-    ...toolsIt
+    ...toolsIt,
+    ...panelIt,
+    ...powerIt
 };

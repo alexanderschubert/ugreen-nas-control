@@ -1,6 +1,8 @@
 import { inputsNl } from './parts/inputs.nl';
 import { historyNl } from './parts/history.nl';
 import { scheduleNl } from './parts/schedule.nl';
+import { panelNl } from './parts/panel.nl';
+import { powerNl } from './parts/power.nl';
 import { toolsNl } from './parts/tools.nl';
 import type { Key } from './en';
 
@@ -454,5 +456,7 @@ export const nl: Record<Key, string> = {
     ...inputsNl,
     ...historyNl,
     ...scheduleNl,
-    ...toolsNl
+    ...toolsNl,
+    ...panelNl,
+    ...powerNl
 };

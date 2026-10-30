@@ -74,6 +74,7 @@ export const fr: Record<Key, string> = {
 
     'led.power': 'LED d’alimentation',
     'led.netdev': 'LED réseau',
+    'led.netdev2': 'Deuxième LED réseau',
     'led.bay': 'Baie {n}',
 
     'bays.title': 'Attribution et état',

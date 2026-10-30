@@ -56,7 +56,7 @@ if (!pageAvailable(findModel(modelId), page)) page = 'overview';
 
 const prefs = (): { ui_lang?: string; ui_theme?: string } => JSON.parse(store.getItem(`${KEY}prefs`) ?? '{}');
 
-for (const series of ['DX', 'DXP', 'iDX']) {
+for (const series of ['DH', 'DX', 'DXP', 'iDX']) {
     const group = document.createElement('optgroup');
     group.label = `${series} series`;
     for (const m of MODELS.filter(x => x.series === series)) group.append(new Option(m.name, m.id));

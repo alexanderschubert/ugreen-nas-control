@@ -12,10 +12,13 @@ require_once __DIR__ . '/include/fan_inputs.php';
 require_once __DIR__ . '/include/fan_profile.php';
 require_once __DIR__ . '/include/fan_probe.php';
 require_once __DIR__ . '/include/fan_backlight.php';
+require_once __DIR__ . '/include/panel.php';
+require_once __DIR__ . '/include/power_ac.php';
 
 const PLUGIN_DIR = '/usr/local/emhttp/plugins/ugreen-nas-control';
 const FAN_TOOL = PLUGIN_DIR . '/backend/ugreen-nas-fan';
 const CTL = PLUGIN_DIR . '/backend/ugreen-nas-ctl';
+const NAS_BIN = PLUGIN_DIR . '/backend/ugreen-nas';
 
 // Saved settings, read by the fan daemon every 2 seconds.
 const CONFIG_FILE = '/boot/config/plugins/ugreen-nas-control/fan.cfg';
@@ -231,6 +234,15 @@ if ($method === 'GET') {
     }
     if ($action === 'fan_backlight') {
         fan_backlight_get();
+    }
+    if ($action === 'cs201x_read') {
+        cs201x_read();
+    }
+    if ($action === 'panel_buttons') {
+        panel_buttons();
+    }
+    if ($action === 'power_ac_get') {
+        power_ac_get();
     }
 
     if ($action !== 'status') {
@@ -474,6 +486,18 @@ if ($action === 'fan_probe_forget') {
 }
 if ($action === 'fan_backlight') {
     fan_backlight_set($input);
+}
+if ($action === 'cs201x_confirm') {
+    cs201x_confirm($input);
+}
+if ($action === 'cs201x_forget') {
+    cs201x_forget();
+}
+if ($action === 'panel_beep') {
+    panel_beep($input);
+}
+if ($action === 'power_ac_set') {
+    power_ac_set($input);
 }
 
 if ($action === 'fan_v2') {

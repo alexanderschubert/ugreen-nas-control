@@ -74,6 +74,7 @@ export const nl: Record<Key, string> = {
 
     'led.power': 'Voedings-LED',
     'led.netdev': 'Netwerk-LED',
+    'led.netdev2': 'Tweede netwerk-LED',
     'led.bay': 'Bay {n}',
 
     'bays.title': 'Indeling en status',

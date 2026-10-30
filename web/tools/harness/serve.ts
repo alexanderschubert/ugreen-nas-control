@@ -13,7 +13,8 @@ import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rm
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import type { Lang } from '../../src/core/i18n';
-import { fanSamples, hardware, ledOutputs, status } from '../../models/fixture';
+import { hardware, ledOutputs } from '../../models/fixture';
+import { shape, withVariants } from '../../demo/variants';
 import { fanHistory } from '../../demo/fixture-history';
 import { loadModels } from '../../models/index';
 
@@ -88,8 +89,9 @@ function hook(): void {
 }
 
 export async function startHarness(modelId: string, opts: HarnessOptions = {}): Promise<Harness> {
-    const model = (await loadModels()).find(m => m.id === modelId);
-    if (!model) throw new Error(`unknown model "${modelId}"; known: ${(await loadModels()).map(m => m.id).join(', ')}`);
+    const known = withVariants(await loadModels());
+    const model = known.find(m => m.id === modelId);
+    if (!model) throw new Error(`unknown model "${modelId}"; known: ${known.map(m => m.id).join(', ')}`);
 
     const dir = mkdtempSync(join(tmpdir(), `unc-harness-${model.id}-`));
     const fsRoot = join(dir, 'root');
@@ -123,10 +125,14 @@ export async function startHarness(modelId: string, opts: HarnessOptions = {}): 
 
     const here = import.meta.dir;
     const born = opts.now ?? Math.floor(Date.now() / 1000);
+    const shaped = shape(model);
     const fixture = {
         hardware: hardware(model),
-        status: status(model),
-        fan: fanSamples(model),
+        status: shaped.status,
+        fan: shaped.fan,
+        panel: shaped.panel,
+        ...(shaped.powerAc ? { power_ac: shaped.powerAc } : {}),
+        ...(shaped.cs201x ? { cs201x: shaped.cs201x } : {}),
         history: { born, frozen: opts.now !== undefined, '1h': fanHistory(model, born, '1h'), '24h': fanHistory(model, born, '24h') }
     };
     writeFileSync(join(plugin, 'fixture.json'), JSON.stringify(fixture));

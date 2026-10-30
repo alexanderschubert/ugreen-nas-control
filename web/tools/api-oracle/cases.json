@@ -159,6 +159,60 @@
           }
         },
         {
+          "args": ["power-on-ac", "set"],
+          "out": {
+            "ok": true,
+            "model": "DXP4800 Plus",
+            "set": "last",
+            "mode": "last",
+            "readable": true,
+            "raw": { "f2": 244, "f4": 230 },
+            "settable": ["on", "off", "last"],
+            "source": "it8613",
+            "verified": true,
+            "last_set": { "mode": "last", "time": 1759999000 }
+          }
+        },
+        {
+          "args": ["power-on-ac"],
+          "out": {
+            "ok": true,
+            "model": "DXP4800 Plus",
+            "mode": "off",
+            "readable": true,
+            "raw": { "f2": 208, "f4": 96 },
+            "settable": ["on", "off", "last"],
+            "source": "it8613",
+            "last_set": null
+          }
+        },
+        {
+          "args": ["cs201x", "forget"],
+          "out": { "ok": true }
+        },
+        {
+          "args": ["cs201x", "confirm"],
+          "out": {
+            "ok": true,
+            "map": {
+              "version": 1,
+              "model": "DXP2800 GT",
+              "chip": "CS201x"
+            }
+          }
+        },
+        {
+          "args": ["cs201x"],
+          "out": {
+            "ok": true,
+            "read": {
+              "model": "DXP2800 GT",
+              "chip_id": "0x2012",
+              "host_ec": "active"
+            }
+          }
+        },
+        {
           "args": ["input-test"],
           "out": {
             "ok": true,
@@ -192,6 +246,15 @@
         },
         {
           "args": ["led-import"]
+        }
+      ],
+      "nas": [
+        {
+          "args": ["panel", "buttons"],
+          "out": "model: DXP4800 Plus (vendor source, not yet confirmed on hardware)\npower released, reset held\n"
+        },
+        {
+          "args": ["panel", "beep"]
         }
       ]
     },
@@ -578,6 +641,117 @@
       "api": "nas",
       "query": { "action": "fan_backlight" },
       "fan": [{ "args": ["backlight"], "out": { "ok": false, "error": "i2c failed" } }]
+    },
+    { "id": "nas.cs201x_read.ok", "api": "nas", "query": { "action": "cs201x_read" } },
+    {
+      "id": "nas.cs201x_read.refused-json-409",
+      "api": "nas",
+      "query": { "action": "cs201x_read" },
+      "fan": [{ "args": ["cs201x"], "code": 1, "out": { "ok": false, "error": "\"DXP4800 Plus\" is not a DXP2800 GT" } }]
+    },
+    {
+      "id": "nas.cs201x_read.refused-plain-409",
+      "api": "nas",
+      "query": { "action": "cs201x_read" },
+      "fan": [{ "args": ["cs201x"], "code": 1, "err": "ERROR: cannot open /dev/port\n" }]
+    },
+    { "id": "nas.cs201x_confirm.default-both", "api": "nas", "body": { "action": "cs201x_confirm" } },
+    { "id": "nas.cs201x_confirm.one-fan", "api": "nas", "body": { "action": "cs201x_confirm", "fans": "fan3" } },
+    { "id": "nas.cs201x_confirm.two-fans", "api": "nas", "body": { "action": "cs201x_confirm", "fans": "fan1,fan3" } },
+    { "id": "nas.cs201x_confirm.empty-is-default", "api": "nas", "body": { "action": "cs201x_confirm", "fans": "" } },
+    { "id": "nas.cs201x_confirm.bad-fan", "api": "nas", "body": { "action": "cs201x_confirm", "fans": "fan2" } },
+    { "id": "nas.cs201x_confirm.duplicate", "api": "nas", "body": { "action": "cs201x_confirm", "fans": "fan1,fan1" } },
+    { "id": "nas.cs201x_confirm.injection", "api": "nas", "body": { "action": "cs201x_confirm", "fans": "fan1;reboot" } },
+    { "id": "nas.cs201x_confirm.array", "api": "nas", "body": { "action": "cs201x_confirm", "fans[]": "fan1" } },
+    {
+      "id": "nas.cs201x_confirm.refused-409",
+      "api": "nas",
+      "body": { "action": "cs201x_confirm", "fans": "fan1" },
+      "fan": [
+        {
+          "args": ["cs201x", "confirm"],
+          "code": 1,
+          "out": { "ok": false, "map": null, "error": "fan1 reads no rpm: nothing connected, or the fan is stopped" }
+        }
+      ]
+    },
+    { "id": "nas.cs201x_forget.ok", "api": "nas", "body": { "action": "cs201x_forget" } },
+    {
+      "id": "nas.cs201x_forget.refused-409",
+      "api": "nas",
+      "body": { "action": "cs201x_forget" },
+      "fan": [{ "args": ["cs201x", "forget"], "code": 1, "err": "ERROR: \"DXP4800 Plus\" is not a DXP2800 GT\n" }]
+    },
+    { "id": "nas.power_ac_get.ok", "api": "nas", "query": { "action": "power_ac_get" } },
+    {
+      "id": "nas.power_ac_get.refused-json-409",
+      "api": "nas",
+      "query": { "action": "power_ac_get" },
+      "fan": [{ "args": ["power-on-ac"], "code": 1, "out": { "ok": false, "error": "this model has no power-on setting this tool can reach" } }]
+    },
+    {
+      "id": "nas.power_ac_get.refused-plain-409",
+      "api": "nas",
+      "query": { "action": "power_ac_get" },
+      "fan": [{ "args": ["power-on-ac"], "code": 1, "err": "ERROR: open /dev/mem: permission denied\n" }]
+    },
+    { "id": "nas.power_ac_set.on", "api": "nas", "body": { "action": "power_ac_set", "mode": "on" } },
+    { "id": "nas.power_ac_set.off", "api": "nas", "body": { "action": "power_ac_set", "mode": "off" } },
+    { "id": "nas.power_ac_set.last", "api": "nas", "body": { "action": "power_ac_set", "mode": "last" } },
+    { "id": "nas.power_ac_set.missing-mode", "api": "nas", "body": { "action": "power_ac_set" } },
+    { "id": "nas.power_ac_set.bad-mode", "api": "nas", "body": { "action": "power_ac_set", "mode": "unknown" } },
+    { "id": "nas.power_ac_set.upper-case", "api": "nas", "body": { "action": "power_ac_set", "mode": "ON" } },
+    { "id": "nas.power_ac_set.injection", "api": "nas", "body": { "action": "power_ac_set", "mode": "on;reboot" } },
+    { "id": "nas.power_ac_set.array", "api": "nas", "body": { "action": "power_ac_set", "mode[]": "on" } },
+    {
+      "id": "nas.power_ac_set.rival-409",
+      "api": "nas",
+      "body": { "action": "power_ac_set", "mode": "on" },
+      "fan": [
+        {
+          "args": ["power-on-ac", "set", "on"],
+          "code": 1,
+          "out": { "ok": false, "error": "FanCtrl Plus controls the fans too; switch one of the two off first" }
+        }
+      ]
+    },
+    { "id": "nas.panel_buttons.ok", "api": "nas", "query": { "action": "panel_buttons" } },
+    {
+      "id": "nas.panel_buttons.power-not-readable",
+      "api": "nas",
+      "query": { "action": "panel_buttons" },
+      "nas": [
+        {
+          "args": ["panel", "buttons"],
+          "out": "model: iDX6011 (vendor source, not yet confirmed on hardware)\npower: not readable by address\npower released, reset released\n"
+        }
+      ]
+    },
+    {
+      "id": "nas.panel_buttons.refused-409",
+      "api": "nas",
+      "query": { "action": "panel_buttons" },
+      "nas": [{ "args": ["panel", "buttons"], "code": 1, "err": "ERROR: no button map for model \"DXP6800 Ultra\"\n" }]
+    },
+    {
+      "id": "nas.panel_buttons.no-state-500",
+      "api": "nas",
+      "query": { "action": "panel_buttons" },
+      "nas": [{ "args": ["panel", "buttons"], "out": "model: DXP4800 Plus (x)\n" }]
+    },
+    { "id": "nas.panel_buttons.tool-missing-500", "api": "nas", "query": { "action": "panel_buttons" }, "missing": ["ugreen-nas"] },
+    { "id": "nas.panel_beep.default", "api": "nas", "body": { "action": "panel_beep" } },
+    { "id": "nas.panel_beep.ms", "api": "nas", "body": { "action": "panel_beep", "ms": "2000" } },
+    { "id": "nas.panel_beep.min", "api": "nas", "body": { "action": "panel_beep", "ms": "20" } },
+    { "id": "nas.panel_beep.too-short", "api": "nas", "body": { "action": "panel_beep", "ms": "19" } },
+    { "id": "nas.panel_beep.too-long", "api": "nas", "body": { "action": "panel_beep", "ms": "2001" } },
+    { "id": "nas.panel_beep.leading-zero", "api": "nas", "body": { "action": "panel_beep", "ms": "0200" } },
+    { "id": "nas.panel_beep.text", "api": "nas", "body": { "action": "panel_beep", "ms": "long" } },
+    {
+      "id": "nas.panel_beep.refused-409",
+      "api": "nas",
+      "body": { "action": "panel_beep" },
+      "nas": [{ "args": ["panel", "beep"], "code": 1, "err": "ERROR: no beeper known for model \"DXP4800 GT\"\n" }]
     },
     { "id": "nas.mode.quiet-new-file", "api": "nas", "body": { "action": "mode", "value": "quiet" } },
     {

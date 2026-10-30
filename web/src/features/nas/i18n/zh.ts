@@ -1,6 +1,8 @@
 import { inputsZh } from './parts/inputs.zh';
 import { historyZh } from './parts/history.zh';
 import { scheduleZh } from './parts/schedule.zh';
+import { panelZh } from './parts/panel.zh';
+import { powerZh } from './parts/power.zh';
 import { toolsZh } from './parts/tools.zh';
 import type { Key } from './en';
 
@@ -442,5 +444,7 @@ export const zh: Record<Key, string> = {
     ...inputsZh,
     ...historyZh,
     ...scheduleZh,
-    ...toolsZh
+    ...toolsZh,
+    ...panelZh,
+    ...powerZh
 };

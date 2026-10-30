@@ -3,7 +3,8 @@
 // (NAS) and web/plugin/led/api.php (LED). Writes change a state that is kept per model in the given store (localStorage
 // in the demo), so the UI behaves like on the NAS. No DOM here: web/demo/api.test.ts runs it against the PHP harness.
 import { createFan, type Reply } from './fan';
-import { hardware, ledOutputs, NET_IO_RATES, status } from '../models/fixture';
+import { hardware, ledOutputs, NET_IO_RATES } from '../models/fixture';
+import { shape } from './variants';
 import { LANGS } from '../src/core/i18n';
 import type { Model } from '../models/schema';
 
@@ -132,9 +133,8 @@ export function createDemo(model: Model, store: Store, opts: DemoOptions = {}) {
     const setPref = (k: string, v: string) => store.setItem(PREFS, JSON.stringify({ ...prefs(), [k]: v }));
 
     const fan = createFan(model, { nas: state.nas, persist, now });
-    const baseStatus = status(model);
+    const baseStatus = shape(model).status;
     // A model without a usable fan chip (probe model, no fan control) has no fans, no daemon and no chip temperatures.
-    const baseFans = (baseStatus as { fans?: { id: string; pct: number; rpm: number }[] }).fans ?? [];
     const led = ledOutputs(model);
 
     // Slow waves, a different phase per name: the same input gives the same number.
@@ -158,6 +158,13 @@ export function createDemo(model: Model, store: Store, opts: DemoOptions = {}) {
         delete (s as Obj).scenarios;
         const overlay = opts.scenario ? scenarios?.[opts.scenario] : undefined;
         if (overlay) merge(s, overlay);
+        // DXP2800 GT after "Confirm fans": the chip answers with its fans, the reason for the missing chip is gone.
+        const confirmed = fan.confirmed();
+        if (confirmed) {
+            delete (s as Obj).chip_error;
+            Object.assign(s, confirmed);
+        }
+        const baseFans = (confirmed?.fans ?? (baseStatus as { fans?: unknown }).fans ?? []) as { id: string; pct: number; rpm: number }[];
         for (const k of NAS_KEYS) if (k in state.nas) s.settings[k] = state.nas[k];
         if (s.settings.fan_config) s.settings.fan_config = fan.config(s.settings);
         if (s.fan_caps) s.fan_caps = fan.caps();

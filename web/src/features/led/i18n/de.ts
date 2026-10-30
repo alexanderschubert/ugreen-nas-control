@@ -74,6 +74,7 @@ export const de: Record<Key, string> = {
 
     'led.power': 'Power LED',
     'led.netdev': 'Netzwerk LED',
+    'led.netdev2': 'Zweite Netzwerk-LED',
     'led.bay': 'Schacht {n}',
 
     'bays.title': 'Zuordnung & Status',

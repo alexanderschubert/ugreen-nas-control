@@ -72,6 +72,7 @@ export const en = {
 
     'led.power': 'Power LED',
     'led.netdev': 'Network LED',
+    'led.netdev2': 'Second network LED',
     'led.bay': 'Bay {n}',
 
     'bays.title': 'Assignment & status',

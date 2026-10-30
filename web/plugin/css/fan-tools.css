@@ -64,3 +64,10 @@
 }
 
 .unc-fanslot-ov:has(> .unc-fanmod:not([hidden])) { margin-top: var(--card-gap); }
+
+/* Fans page of a model with readings only (fan_caps.kind readonly): the tiles and the note, no modes, curves or limits. */
+.unc-view.is-readonly .unc-block,
+.unc-view.is-readonly .unc-savedock { display: none; }
+
+/* Front panel and CS201x cards. */
+.unc-fanmod .unc-facts { margin: 0; }

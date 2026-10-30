@@ -15,7 +15,7 @@ interface Rule {
 }
 
 const dir = '/var/run/unc-oracle';
-const names: Record<string, string> = { 'ugreen-nas-fan': 'fan', 'ugreen-nas-ctl': 'ctl', 'ugreen-led-ctl': 'led' };
+const names: Record<string, string> = { 'ugreen-nas-fan': 'fan', 'ugreen-nas-ctl': 'ctl', 'ugreen-led-ctl': 'led', 'ugreen-nas': 'nas' };
 const tool = names[basename(process.argv[1] ?? '')] ?? 'unknown';
 const args = process.argv.slice(2);
 const stdin = args.includes('--stdin') ? await Bun.stdin.text() : undefined;

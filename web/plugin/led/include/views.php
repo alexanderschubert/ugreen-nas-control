@@ -57,6 +57,7 @@
                     <option value="both" data-i18n="group.target_both">Power- und Netzwerk-LED</option>
                     <option value="power" data-i18n="led.power">Power-LED</option>
                     <option value="netdev" data-i18n="led.netdev">Netzwerk-LED</option>
+                    <option value="netdev2" data-led="netdev2" data-i18n="led.netdev2" hidden>Zweite Netzwerk-LED</option>
                 </select>
             </div>
             <div class="ulc-effects" data-effects="system"></div>

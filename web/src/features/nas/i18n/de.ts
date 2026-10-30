@@ -1,6 +1,8 @@
 import { inputsDe } from './parts/inputs.de';
 import { historyDe } from './parts/history.de';
 import { scheduleDe } from './parts/schedule.de';
+import { panelDe } from './parts/panel.de';
+import { powerDe } from './parts/power.de';
 import { toolsDe } from './parts/tools.de';
 import type { Key } from './en';
 
@@ -455,5 +457,7 @@ export const de: Record<Key, string> = {
     ...inputsDe,
     ...historyDe,
     ...scheduleDe,
-    ...toolsDe
+    ...toolsDe,
+    ...panelDe,
+    ...powerDe
 };

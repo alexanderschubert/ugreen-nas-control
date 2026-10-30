@@ -72,6 +72,7 @@ export const zh: Record<Key, string> = {
 
     'led.power': '电源 LED',
     'led.netdev': '网络 LED',
+    'led.netdev2': '第二个网络 LED',
     'led.bay': '盘位 {n}',
 
     'bays.title': '分配与状态',

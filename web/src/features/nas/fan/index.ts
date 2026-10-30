@@ -7,3 +7,6 @@ import './probe';
 import './watchdog';
 import './backlight';
 import './history';
+import './cs201x';
+import './power-ac';
+import './panel';

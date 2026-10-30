@@ -1,6 +1,8 @@
 import { inputsFr } from './parts/inputs.fr';
 import { historyFr } from './parts/history.fr';
 import { scheduleFr } from './parts/schedule.fr';
+import { panelFr } from './parts/panel.fr';
+import { powerFr } from './parts/power.fr';
 import { toolsFr } from './parts/tools.fr';
 import type { Key } from './en';
 
@@ -456,5 +458,7 @@ export const fr: Record<Key, string> = {
     ...inputsFr,
     ...historyFr,
     ...scheduleFr,
-    ...toolsFr
+    ...toolsFr,
+    ...panelFr,
+    ...powerFr
 };

@@ -248,7 +248,7 @@ if ($method === 'GET') {
         case 'led':
             $led = $_GET['led'] ?? '';
 
-            if (!is_string($led) || !preg_match('/^(power|netdev|disk[1-8])$/D', $led)) {
+            if (!is_string($led) || !preg_match('/^(power|netdev2?|disk[1-8])$/D', $led)) {
                 respond([
                     'ok' => false,
                     'error' => 'Invalid LED',
@@ -590,7 +590,7 @@ if ($method === 'POST') {
         $speed = filter_var($input['speed'] ?? null, FILTER_VALIDATE_INT);
 
         foreach ($fxLeds as $led) {
-            if (!preg_match('/^(power|netdev|disk[1-8])$/D', $led)) {
+            if (!preg_match('/^(power|netdev2?|disk[1-8])$/D', $led)) {
                 respond([
                     'ok' => false,
                     'error' => 'Invalid LED',
@@ -707,7 +707,7 @@ if ($method === 'POST') {
     $leds = explode(',', (string) ($input['led'] ?? ''));
 
     foreach ($leds as $led) {
-        if (!preg_match('/^(power|netdev|disk[1-8])$/D', $led)) {
+        if (!preg_match('/^(power|netdev2?|disk[1-8])$/D', $led)) {
             respond([
                 'ok' => false,
                 'error' => 'Invalid LED',

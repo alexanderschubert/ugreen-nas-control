@@ -1,6 +1,8 @@
 import { inputsEn } from './parts/inputs.en';
 import { historyEn } from './parts/history.en';
 import { scheduleEn } from './parts/schedule.en';
+import { panelEn } from './parts/panel.en';
+import { powerEn } from './parts/power.en';
 import { toolsEn } from './parts/tools.en';
 
 export const en = {
@@ -450,7 +452,9 @@ export const en = {
     ...inputsEn,
     ...historyEn,
     ...scheduleEn,
-    ...toolsEn
+    ...toolsEn,
+    ...panelEn,
+    ...powerEn
 } as const;
 
 export type Key = keyof typeof en;

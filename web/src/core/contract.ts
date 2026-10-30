@@ -12,12 +12,18 @@ import type {
     FanProfileSourcesResponse
 } from './contract-fan-inputs';
 import type {
+    Cs201xConfirmResponse,
+    Cs201xReadResponse,
     FanBacklightResponse,
     FanBacklightSetResponse,
     FanCaps,
     FanProbeConfirmResponse,
     FanProbeStatusResponse,
     FanProbeTachsResponse,
+    PanelBeepResponse,
+    PanelButtonsResponse,
+    PowerAcMode,
+    PowerAcResponse,
     Watchdog
 } from './contract-fan-probe';
 import type { FanScheduleResponse } from './contract-fan-schedule';
@@ -219,7 +225,8 @@ export interface Conflict {
     kind: 'plugin' | 'module' | 'hwmon' | 'daemon';
     id: string;
     name: string;
-    controls: ('fan' | 'led')[];
+    /** watchdog: a module that owns the IT8613E watchdog (it87_wdt); never a rival, never blocks. */
+    controls: ('fan' | 'led' | 'watchdog')[];
     /** block: a rival writer is running, this plugin yields; warn: installed or loaded only. */
     severity: 'block' | 'warn';
     detail?: string;
@@ -352,6 +359,9 @@ export interface NasGet {
     fan_probe_status: FanProbeStatusResponse;
     fan_probe_tachs: FanProbeTachsResponse;
     fan_backlight: FanBacklightResponse;
+    cs201x_read: Cs201xReadResponse;
+    panel_buttons: PanelButtonsResponse;
+    power_ac_get: PowerAcResponse;
 }
 
 type Flag = '0' | '1';
@@ -378,6 +388,11 @@ export interface NasPost {
     fan_probe_confirm: { [output: `map[pwm${number}]`]: 'cpu' | 'case' };
     fan_probe_forget: Record<string, never>;
     fan_backlight: { pct: number };
+    /** fans=fan1,fan3 (any of them, comma separated); absent = both */
+    cs201x_confirm: { fans?: string };
+    cs201x_forget: Record<string, never>;
+    panel_beep: { ms?: number };
+    power_ac_set: { mode: PowerAcMode };
 }
 
 /** Answers of POSTs that carry more than {ok: true}. */
@@ -387,6 +402,9 @@ export interface NasPostReply {
     fan_profile_apply: FanProfileApplyResponse;
     fan_probe_confirm: FanProbeConfirmResponse;
     fan_backlight: FanBacklightSetResponse;
+    cs201x_confirm: Cs201xConfirmResponse;
+    panel_beep: PanelBeepResponse;
+    power_ac_set: PowerAcResponse;
 }
 
 /* ---------- LED: web/plugin/led/api.php ---------- */

@@ -89,3 +89,59 @@ function fan_probe_forget(): never
 
     respond(['ok' => true]);
 }
+
+// The DXP2800 GT has a Chipsea CS201x, not an IT8613E (`cs201x`: backend/internal/fan/cs201x.go). The tool prints JSON on
+// stdout, also for a refusal ({"ok":false,"error":...} with exit 1).
+function cs201x_json(array $args): array
+{
+    $result = run(FAN_TOOL, $args);
+    $data = json_decode($result['output'], true);
+
+    if (is_array($data) && ($data['ok'] ?? false) === true) {
+        return $data;
+    }
+
+    $error = is_array($data) ? (string) ($data['error'] ?? '') : '';
+
+    respond(['ok' => false, 'error' => $error !== '' ? $error : fan_tool_error($result['message'])], 409);
+}
+
+// GET cs201x_read: what the chip reports (chip id, revision, fans, temperatures, watchdog). Reads only.
+function cs201x_read(): never
+{
+    respond(cs201x_json(['cs201x']));
+}
+
+// "fan1", "fan3" or "fan1,fan3" (each once) -> ['fan1', ...]; [] when empty (the tool then takes both); null otherwise.
+function cs201x_fans(mixed $value): ?array
+{
+    if ($value === null || $value === '') {
+        return [];
+    }
+
+    if (!is_string($value) || preg_match('/^(fan1|fan3)(,(fan1|fan3))?$/D', $value) !== 1) {
+        return null;
+    }
+
+    $ids = explode(',', $value);
+
+    return count($ids) === count(array_unique($ids)) ? $ids : null;
+}
+
+// POST cs201x_confirm fans=fan1,fan3 (optional): switch fan control on for these fans.
+function cs201x_confirm(array $input): never
+{
+    $ids = cs201x_fans($input['fans'] ?? null);
+
+    if ($ids === null) {
+        respond(['ok' => false, 'error' => 'Invalid fans'], 400);
+    }
+
+    respond(cs201x_json(array_merge(['cs201x', 'confirm'], $ids)));
+}
+
+// POST cs201x_forget: delete the confirmed fans; fan control is off again.
+function cs201x_forget(): never
+{
+    respond(cs201x_json(['cs201x', 'forget']));
+}
