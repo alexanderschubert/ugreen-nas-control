@@ -39,7 +39,7 @@ Effort without proof of demand. Support stays in the Unraid forum thread and Git
 
 ## iDX6011 Pro touch LCD dashboard
 
-Declined for now. Driving the front LCD needs an EFI entry, an i915 overlay and a disabled BIOS watchdog (otherwise the box resets about every 2 minutes); that is too fragile for a plugin that runs as root on a NAS. Only the EC backlight (register 0xA5) is in scope. Source: noodlemctwoodle/unraid-ugreen-idx6011-pro README and src/panel/backlight.h, see [competition.md](competition.md).
+Declined for now. Driving the front LCD needs an EFI entry, an i915 overlay and a disabled BIOS watchdog (otherwise the box resets about every 2 minutes); that is too fragile for a plugin that runs as root on a NAS. Only the EC backlight (register 0xA5) is in scope. Source: noodlemctwoodle/unraid-ugreen-idx6011-pro README and src/panel/backlight.h, see [competition.md](competition.md). UGREEN's own drivers (`drivers/ugreen`@c75c5ab, [third-party.md](third-party.md#ugreen-open-source-drivers)) contain no display, touch or graphics code, only the backlight (`ug_it55pro_functions.c:636-711`), so they do not change this. Revisit only if UGREEN publishes the panel software.
 
 ## Unraid API or guessed manifest formats as Unraid 8 plugin host
 
