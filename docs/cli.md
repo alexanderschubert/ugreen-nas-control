@@ -21,6 +21,14 @@ Talks to the fan chip, runs the curves every 2 s, reads sensors. Subcommands: `i
 
 `status` prints sensors, chip state, presets and the daemon's state file (`/var/run/ugreen-nas-control.json`).
 
+`cs201x` (DXP2800 GT only):
+
+- no argument: reads chip id, 16-bit revision, host interface state, fans, temperatures (cpu = NTC2, board = NTC4, unsigned), the temperature input registers and the watchdog registers (counter read twice, 1.5 s apart). Writes only the Super-I/O unlock and device select.
+- `confirm [fan1] [fan3]`: switches fan control on for the named fans (default both; fan1 = cpu, fan3 = case) by saving `fan_map.json` (`chip: CS201x`). With the host interface on, a fan that reads 0 rpm is refused. Reads only.
+- `forget`: removes the map; fan control is off again.
+
+Without the map the daemon does not start on this model.
+
 ## ugreen-nas-ctl
 
 - `start`, `stop`, `restart`, `status`: the fan daemon (pid file, error log).
