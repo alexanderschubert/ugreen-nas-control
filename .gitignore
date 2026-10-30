@@ -3,4 +3,11 @@
 *.pre-stable
 .DS_Store
 ._*
-build/
+node_modules/
+result
+
+# Build output and generated files (scripts/generated.ts). The few tracked generated files are in .gitattributes.
+.build/
+
+# Claude Code: local state and skills stay out of git
+/.claude/
