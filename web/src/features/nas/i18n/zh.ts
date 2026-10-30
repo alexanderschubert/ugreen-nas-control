@@ -1,4 +1,5 @@
 import { inputsZh } from './parts/inputs.zh';
+import { historyZh } from './parts/history.zh';
 import { scheduleZh } from './parts/schedule.zh';
 import { toolsZh } from './parts/tools.zh';
 import type { Key } from './en';
@@ -439,6 +440,7 @@ export const zh: Record<Key, string> = {
     'dash.disk': '硬盘',
     'dash.nvme': 'NVMe',
     ...inputsZh,
+    ...historyZh,
     ...scheduleZh,
     ...toolsZh
 };

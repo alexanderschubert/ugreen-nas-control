@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import type { Lang } from '../../src/core/i18n';
 import { fanSamples, hardware, ledOutputs, status } from '../../models/fixture';
+import { fanHistory } from '../../demo/fixture-history';
 import { loadModels } from '../../models/index';
 
 const root = resolve(import.meta.dir, '../../..');
@@ -44,6 +45,8 @@ export interface HarnessOptions {
     oldRef?: string | undefined;
     requestLog?: boolean | undefined;
     inject?: string | undefined;
+    /** Unix seconds: freezes the fan history to this moment (it otherwise moves with the clock). */
+    now?: number | undefined;
 }
 
 // The plugin's PHP reads Unraid's absolute paths; in the temp tree they live under <dir>/root.
@@ -119,7 +122,13 @@ export async function startHarness(modelId: string, opts: HarnessOptions = {}): 
     }
 
     const here = import.meta.dir;
-    const fixture = { hardware: hardware(model), status: status(model), fan: fanSamples(model) };
+    const born = opts.now ?? Math.floor(Date.now() / 1000);
+    const fixture = {
+        hardware: hardware(model),
+        status: status(model),
+        fan: fanSamples(model),
+        history: { born, frozen: opts.now !== undefined, '1h': fanHistory(model, born, '1h'), '24h': fanHistory(model, born, '24h') }
+    };
     writeFileSync(join(plugin, 'fixture.json'), JSON.stringify(fixture));
     writeFileSync(join(plugin, 'api.php'), rewrite(readFileSync(join(here, 'api-fixture.php'), 'utf8'), fsRoot));
     writeFileSync(join(plugin, 'view.php'), rewrite(readFileSync(join(here, 'view.php'), 'utf8'), fsRoot));

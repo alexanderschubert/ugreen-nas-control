@@ -2248,6 +2248,103 @@
       }
     ]
   },
+  "nas.fan_history.default-1h": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "running": true,
+      "range": "1h",
+      "step": 10,
+      "t": [1759999990, 1760000000]
+    },
+    "raw": "{\"ok\":true,\"running\":true,\"range\":\"1h\",\"step\":10,\"t\":[1759999990,1760000000]}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["history", "1h"]
+      }
+    ]
+  },
+  "nas.fan_history.range-24h": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "running": true,
+      "range": "24h",
+      "step": 60
+    },
+    "raw": "{\"ok\":true,\"running\":true,\"range\":\"24h\",\"step\":60}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["history", "24h"]
+      }
+    ]
+  },
+  "nas.fan_history.range-invalid-400": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid range"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid range\"}",
+    "calls": []
+  },
+  "nas.fan_history.range-array-400": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid range"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid range\"}",
+    "calls": []
+  },
+  "nas.fan_history.daemon-stopped": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "running": false
+    },
+    "raw": "{\"ok\":true,\"running\":false}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["history", "1h"]
+      }
+    ]
+  },
+  "nas.fan_history.tool-garbage": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "no history"
+    },
+    "raw": "{\"ok\":false,\"error\":\"no history\"}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["history", "1h"]
+      }
+    ]
+  },
   "nas.fan_probe_status.ok": {
     "status": 200,
     "headers": {

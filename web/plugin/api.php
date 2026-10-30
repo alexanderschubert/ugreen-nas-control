@@ -7,6 +7,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/include/lang.php';
 require_once __DIR__ . '/include/fan_v2.php';
 require_once __DIR__ . '/include/fan_schedule.php';
+require_once __DIR__ . '/include/fan_history.php';
 require_once __DIR__ . '/include/fan_inputs.php';
 require_once __DIR__ . '/include/fan_profile.php';
 require_once __DIR__ . '/include/fan_probe.php';
@@ -220,6 +221,9 @@ if ($method === 'GET') {
     }
     if ($action === 'fan_schedule') {
         fan_schedule_respond();
+    }
+    if ($action === 'fan_history') {
+        fan_history_respond();
     }
     if ($action === 'fan_probe_status') {
         fan_probe_status();

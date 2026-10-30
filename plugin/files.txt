@@ -20,6 +20,7 @@ web/plugin/README.md                             README.md                      
 web/plugin/include/lang.php                      include/lang.php                           644
 web/plugin/include/fan_v2.php                    include/fan_v2.php                         644
 web/plugin/include/fan_schedule.php              include/fan_schedule.php                   644
+web/plugin/include/fan_history.php               include/fan_history.php                    644
 web/plugin/include/fan_inputs.php                include/fan_inputs.php                     644
 web/plugin/include/fan_profile.php               include/fan_profile.php                    644
 web/plugin/include/fan_probe.php                 include/fan_probe.php                      644
@@ -27,6 +28,7 @@ web/plugin/include/fan_backlight.php             include/fan_backlight.php      
 web/plugin/css/app.css                           css/app.css                                644
 web/plugin/css/fan-inputs.css                    css/fan-inputs.css                         644
 web/plugin/css/fan-schedule.css                  css/fan-schedule.css                       644
+web/plugin/css/fan-history.css                   css/fan-history.css                        644
 web/plugin/css/fan-tools.css                     css/fan-tools.css                          644
 .build/plugin/js/i18n.js                            js/i18n.js                                 644
 .build/plugin/js/app.js                             js/app.js                                  644

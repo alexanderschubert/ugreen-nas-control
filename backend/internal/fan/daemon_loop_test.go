@@ -54,6 +54,8 @@ func runLoop(t *testing.T, cfg string, clock time.Time, rivals []conflict.Confli
 	}
 	set(&configPath, "fan.cfg")
 	set(&statePath, "state.json")
+	defer func(old string) { historyPath = old }(historyPath)
+	historyPath = ""
 	set(&biosPath, "bios")
 	set(&lockPath, "lock")
 	set(&calibPath, "fan_rpm.json")

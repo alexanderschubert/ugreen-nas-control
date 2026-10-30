@@ -43,6 +43,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 <link rel="stylesheet" href="<?autov('/plugins/ugreen-nas-control/css/app.css')?>">
 <link rel="stylesheet" href="<?autov('/plugins/ugreen-nas-control/css/fan-inputs.css')?>">
 <link rel="stylesheet" href="<?autov('/plugins/ugreen-nas-control/css/fan-schedule.css')?>">
+<link rel="stylesheet" href="<?autov('/plugins/ugreen-nas-control/css/fan-history.css')?>">
 <link rel="stylesheet" href="<?autov('/plugins/ugreen-nas-control/css/fan-tools.css')?>">
 <?php if ($unc_led_on): ?>
 <link rel="stylesheet" href="<?autov('/plugins/ugreen-nas-control/led/css/app.css')?>">
@@ -68,6 +69,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
         <button type="button" data-nav="sensors"><span class="unc-ico" data-unc-icon="thermo"></span><span data-i18n="nav.sensors">Sensoren</span></button>
         <div class="unc-nav-group" data-fan-only data-i18n="nav.group_fans">Lüfter</div>
         <button type="button" data-nav="curves" data-fan-only><span class="unc-ico" data-unc-icon="curve"></span><span data-i18n="nav.curves">Lüfter</span></button>
+        <button type="button" data-nav="history" data-fan-only><span class="unc-ico" data-unc-icon="activity"></span><span data-i18n="nav.history">Verlauf</span></button>
         <button type="button" data-nav="safety" data-fan-only><span class="unc-ico" data-unc-icon="shield"></span><span data-i18n="nav.safety">Sicherheit</span></button>
         <div class="unc-nav-group" data-i18n="nav.group_leds">LEDs</div>
         <button type="button" data-nav="led:overview"><span class="unc-ico" data-unc-icon="bulb"></span><span data-i18n="nav.led_overview">LED-Übersicht</span></button>
@@ -261,6 +263,10 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
         </div>
     </article>
     <div class="unc-fanslot" data-fan-slot="curves"></div>
+</section>
+
+<section class="unc-view" data-view="history">
+    <div class="unc-fanslot" data-fan-slot="history"></div>
 </section>
 
 <section class="unc-view" data-view="safety">

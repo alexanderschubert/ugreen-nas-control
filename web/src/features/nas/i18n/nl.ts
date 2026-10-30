@@ -1,4 +1,5 @@
 import { inputsNl } from './parts/inputs.nl';
+import { historyNl } from './parts/history.nl';
 import { scheduleNl } from './parts/schedule.nl';
 import { toolsNl } from './parts/tools.nl';
 import type { Key } from './en';
@@ -451,6 +452,7 @@ export const nl: Record<Key, string> = {
     'dash.disk': 'Schijf',
     'dash.nvme': 'NVMe',
     ...inputsNl,
+    ...historyNl,
     ...scheduleNl,
     ...toolsNl
 };

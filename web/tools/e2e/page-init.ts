@@ -2,9 +2,10 @@
 // observable: fixed clock that only moves when a test says so, no animations, errors / console errors / toasts /
 // confirm() / window.open() recorded, in-flight fetches counted, and a DOM dump for the snapshots.
 // Written as a normal function so it is type-checked; `pageInit` is its source text.
+declare const __E2E_NOW__: number;
 function init(): void {
     const w = window as any;
-    const T0 = Date.parse('2026-10-29T11:00:00Z');
+    const T0 = __E2E_NOW__;
     let offset = 0;
     const RealDate = Date;
     class FixedDate extends RealDate {
@@ -181,4 +182,6 @@ function init(): void {
     };
 }
 
-export const pageInit = `(${init.toString()})()`;
+/** The page clock at load, unix seconds; the harness freezes its history to the same moment. */
+export const E2E_NOW = Date.parse('2026-10-29T11:00:00Z') / 1000;
+export const pageInit = `(${init.toString()})()`.replace('__E2E_NOW__', String(E2E_NOW * 1000));

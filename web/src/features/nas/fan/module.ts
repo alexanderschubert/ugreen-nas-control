@@ -6,7 +6,7 @@ import type { NasGet, NasPost, NasPostReply, StatusResponse } from '../../../cor
 import type * as ui from '../ui/components';
 import type { t, tEnum, tRaw } from '../text';
 
-export type FanHost = 'overview' | 'curves' | 'settings';
+export type FanHost = 'overview' | 'curves' | 'history' | 'settings';
 
 export interface FanCtx {
     readonly el: HTMLElement;

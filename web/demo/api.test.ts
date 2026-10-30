@@ -114,3 +114,34 @@ test('fan actions: v2 settings, probe flow and backlight keep their state', asyn
     expect(call(idx, 'POST', 'action=fan_backlight&pct=101').status).toBe(400);
     expect(call(gt, 'POST', 'action=fan_backlight&pct=30').status).toBe(409);
 });
+
+// Time-dependent, so not in the READS comparison: the harness (PHP) and the demo give the same shape for both ranges.
+test('fan_history: same shape from the harness and the demo, bad range refused', async () => {
+    const model = (await loadModels()).find(m => m.id === 'dxp6800-pro')!;
+    const harness = await startHarness(model.id);
+    try {
+        const demo = createDemo(model, memory());
+        for (const range of ['1h', '24h']) {
+            const query = `action=fan_history&range=${range}`;
+            const real = (await (await fetch(`${harness.base}/plugins/ugreen-nas-control/api.php?${query}`)).json()) as any;
+            const mine = demo.handle('GET', '/plugins/ugreen-nas-control/api.php', new URLSearchParams(query), new URLSearchParams()).json as any;
+            const shape = (h: any) => ({
+                keys: Object.keys(h).sort(),
+                series: Object.keys(h.series[0]).sort(),
+                fans: h.fans,
+                drivers: h.drivers,
+                points: h.t.length,
+                step: h.step,
+                lengths: h.series.map((s: any) => [s.pct, s.rpm, s.temp, s.drv, s.mods].map(a => a.length))
+            });
+            expect(shape(mine)).toEqual(shape(real));
+            expect(Math.abs(mine.now - real.now)).toBeLessThan(120);
+        }
+        const bad = await fetch(`${harness.base}/plugins/ugreen-nas-control/api.php?action=fan_history&range=7d`);
+        expect(bad.status).toBe(400);
+        const mine = demo.handle('GET', '/x/api.php', new URLSearchParams('action=fan_history&range=7d'), new URLSearchParams());
+        expect(mine.status).toBe(400);
+    } finally {
+        harness.stop();
+    }
+}, 60000);

@@ -379,6 +379,7 @@ function main(root: HTMLElement): void {
         sensors: 'sub.sensors',
         curves: 'curves.intro',
         safety: 'safety.intro',
+        history: 'hist.sub',
         'led:overview': 'leds.intro',
         'led:drives': 'sub.led_drives',
         'led:schedules': 'sub.led_schedules',
@@ -404,7 +405,7 @@ function main(root: HTMLElement): void {
     function renderBanners() {
         const data = state.data;
         const nav = state.nav;
-        const fanPage = nav === 'curves' || nav === 'safety';
+        const fanPage = nav === 'curves' || nav === 'safety' || nav === 'history';
         const ledPage = nav.startsWith('led:');
         const show: [text: string, sub: string][] = [];
 
@@ -3249,7 +3250,7 @@ function main(root: HTMLElement): void {
 
         // Polling cost: the NAS runs a process per request, so each resource has its own pace and only
         // runs on the views that show it (hidden/idle tabs: see UNCPoll). The fan daemon itself refreshes every 2 s.
-        const LIVE = ['overview', 'case', 'curves', 'sensors'];
+        const LIVE = ['overview', 'case', 'curves', 'history', 'sensors'];
         const decor = () => state.view === 'case' || state.view === 'overview' || state.view === 'sensors';
 
         polls.status = window.UNCPoll.every(

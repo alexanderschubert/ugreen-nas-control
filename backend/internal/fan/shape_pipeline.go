@@ -37,7 +37,9 @@ type tickIn struct {
 
 type Plan struct {
 	Decision
-	Out         map[string]int
+	Out map[string]int
+	// Drive says, per fan, what set its speed this tick (recorded by the history).
+	Drive       map[string]Drive
 	QuietActive bool
 	Job         string
 	Cap         *int
@@ -48,7 +50,7 @@ type Plan struct {
 func (k *controller) step(ctx context.Context, t tickIn) Plan {
 	c := t.Cfg
 	d := Decide(c, t.Sens)
-	p := Plan{Decision: d, Out: map[string]int{}}
+	p := Plan{Decision: d, Out: map[string]int{}, Drive: map[string]Drive{}}
 	emergency := d.Failsafe != ""
 
 	jobName, job := "", Job{Mode: "off"}
@@ -72,10 +74,15 @@ func (k *controller) step(ctx context.Context, t tickIn) Plan {
 		}
 
 		target := 100
-		if !emergency {
-			target = k.curveTarget(ctx, t, d, id, role, g, &missing)
+		var cr curveResult
+		if emergency {
+			cr = emergencyDrive(d, t.Sens, c)
+		} else {
+			cr = k.curveTarget(ctx, t, d, id, role, g, &missing)
+			target = cr.Target
 			k.held[id] = target
 		}
+		drive := cr.Drive
 
 		sp := ShapeParams{
 			Deadband: g.Deadband, StartPct: g.StartPct, StartMS: g.StartMS, MinRun: g.MinRun,
@@ -87,49 +94,74 @@ func (k *controller) step(ctx context.Context, t tickIn) Plan {
 		out, st := Shape(st, target, sp, t.Dt, emergency)
 
 		if !emergency {
+			if out != target {
+				drive.Mods |= ModShape
+			}
 			if role == "case" && job.Mode != "off" {
-				out = ApplyJob(out, job)
+				if after := ApplyJob(out, job); after != out {
+					drive.Mods |= jobMod[jobName]
+					out = after
+				}
 			}
 			if quiet && (c.Quiet.Scope == "all" || role == "case") {
 				jb := job
 				if role != "case" {
 					jb = Job{Mode: "off"}
 				}
-				out = ApplyQuiet(out, c.Quiet.Cap, g.MinRun, jb)
+				if after := ApplyQuiet(out, c.Quiet.Cap, g.MinRun, jb); after != out {
+					drive.Mods |= ModQuiet
+					out = after
+				}
 			}
 			st.Current = out // the ramps start from what was written
 		}
 		k.shape[id] = st
 		p.Out[id] = out
+		p.Drive[id] = drive
 	}
 	p.Missing = dedupe(missing)
 	return p
 }
 
+// curveResult is the curve's answer for one fan: the target, and what produced it.
+type curveResult struct {
+	Target int
+	Drive  Drive
+}
+
 // curveTarget: temperature of the fan's input through its curve, with the global minimum and case_follows_cpu.
-func (k *controller) curveTarget(ctx context.Context, t tickIn, d Decision, id, role string, g Group, missing *[]string) int {
+// The Drive names the input that gave the temperature (the history shows it) and a raised minimum speed.
+func (k *controller) curveTarget(ctx context.Context, t tickIn, d Decision, id, role string, g Group, missing *[]string) curveResult {
 	c := t.Cfg
 	var temp float64
 	hasTemp := true
+	var drive Drive
 	switch {
 	case g.Input.Kind != "":
 		var ok bool
-		if temp, ok = t.In.Read(ctx, g.Input); !ok {
+		if temp, ok = t.In.Read(ctx, g.Input); ok {
+			drive = inputDrive(t.In, g.Input, t.Sens, c, temp)
+		} else {
 			*missing = append(*missing, g.Input.String())
+			drive.Mods |= ModMissing
 			switch g.OnMissing {
 			case "hold":
 				if h, ok := k.held[id]; ok {
-					return h
+					drive.Source = SrcHold
+					return curveResult{h, drive}
 				}
 				fallthrough
 			case "curve_low":
 				temp = -1
+				drive.Source = SrcMissing
 			default: // fallback: the default input
 				temp, hasTemp = autoTemp(d, t.Sens, role)
+				drive = autoDrive(d, t.Sens, c, role, temp, hasTemp, drive.Mods)
 			}
 		}
 	default:
 		temp, hasTemp = autoTemp(d, t.Sens, role)
+		drive = autoDrive(d, t.Sens, c, role, temp, hasTemp, 0)
 	}
 	if !hasTemp {
 		temp = -1 // all disks asleep and no NVMe: the lowest point of the curve
@@ -138,15 +170,21 @@ func (k *controller) curveTarget(ctx context.Context, t tickIn, d Decision, id, 
 
 	if role == "case" && c.CaseFollowsCPU {
 		if cpu, ok := autoTemp(d, t.Sens, "cpu"); ok {
-			target = max(target, c.CPU.Curve.At(cpu))
+			if want := c.CPU.Curve.At(cpu); want > target {
+				target = want
+				drive = Drive{Source: SrcCPU, Temp: &cpu, Mods: drive.Mods}
+			}
 		}
 	}
 	// allow_off: a curve that says 0 may stop the fan; the global minimum applies otherwise. Job floors, quiet caps
 	// (never below min_run) and the emergency are applied after this and still win.
 	if g.AllowOff && target == 0 {
-		return 0
+		return curveResult{0, drive}
 	}
-	return max(target, c.MinPct)
+	if target < c.MinPct {
+		drive.Mods |= ModFloor
+	}
+	return curveResult{max(target, c.MinPct), drive}
 }
 
 func autoTemp(d Decision, s Sensors, role string) (float64, bool) {

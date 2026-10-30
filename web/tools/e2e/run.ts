@@ -19,7 +19,7 @@ import { loadModels } from '../../models/index';
 import { format } from '../../../scripts/format';
 import { type ApiRequest, startHarness } from '../harness/serve';
 import { Session, type StepRecord, VIEWPORT } from './driver';
-import { pageInit } from './page-init';
+import { E2E_NOW, pageInit } from './page-init';
 import { type Ctx, SCENARIOS } from './scenarios';
 
 process.env.TZ = 'Europe/Berlin';
@@ -83,7 +83,7 @@ const JOB_LIMIT_MS = 180000;
 async function runJob(job: Job, view: Bun.WebView): Promise<Result> {
     const started = Date.now();
     const scenario = SCENARIOS.find(s => s.id === job.scenario)!;
-    const h = await startHarness(job.ctx.id, { js: job.variant, oldRef, requestLog: true, inject: pageInit });
+    const h = await startHarness(job.ctx.id, { js: job.variant, oldRef, requestLog: true, inject: pageInit, now: E2E_NOW });
     const session = new Session(view, h);
     let crash: string | undefined;
     try {

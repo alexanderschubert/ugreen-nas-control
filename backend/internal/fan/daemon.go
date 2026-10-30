@@ -230,6 +230,8 @@ func runDaemon(chip Fans) error {
 	probe := newJobProbe()
 	lastStep := time.Time{}
 	lastJob, lastQuiet := "", false
+	hist := NewHistory(outputIDs(chip.Outputs()), now())
+	defer serveHistory(historyPath, hist, logf)()
 
 	logf("fan control started (%s)", chip.Describe())
 
@@ -255,6 +257,12 @@ func runDaemon(chip Fans) error {
 		}
 
 		rivals := conflict.Blocking(detectConflicts(), conflict.Fan)
+		drives := map[string]Drive{} // what drove each fan this tick, for the history
+		driveAll := func(src string) {
+			for _, ch := range chip.Outputs() {
+				drives[ch.ID] = Drive{Source: src}
+			}
+		}
 
 		err := withLock(func() error {
 			// Feed the EC watchdog if the BIOS armed it, on every path below (also while yielding to a rival, in bios
@@ -262,6 +270,7 @@ func runDaemon(chip Fans) error {
 			petWatchdog(pet, chip, now(), logf)
 			if len(rivals) > 0 {
 				yield(&y, c, s, rivals, &st, logf)
+				driveAll(SrcRival)
 				clear(current)
 				k.reset()
 				return nil
@@ -271,6 +280,7 @@ func runDaemon(chip Fans) error {
 			// "bios": hand the fans back and only watch.
 			if c.Mode == "bios" {
 				k.reset()
+				driveAll(SrcBIOS)
 				return release(chip, bios, current)
 			}
 
@@ -279,6 +289,7 @@ func runDaemon(chip Fans) error {
 				// Keep reporting the case temperature for the web page. Shaping, jobs and quiet hours rest too.
 				d := Decide(c, s)
 				st.CaseTemp, st.CaseFrom = d.CaseTemp, d.CaseFrom
+				driveAll(SrcCalibration)
 				clear(current)
 				k.reset()
 				lastStep = time.Time{}
@@ -301,6 +312,7 @@ func runDaemon(chip Fans) error {
 				Now: at, Dt: dt, Jobs: jobs, IDs: outputIDs(chip.Outputs()),
 			})
 			d := plan.Decision
+			drives = plan.Drive
 			st.Failsafe, st.CaseTemp, st.CaseFrom, st.CaseDriver = d.Failsafe, d.CaseTemp, d.CaseFrom, d.CaseDriver
 			st.InputsMissing, st.QuietActive, st.Job, st.Cap = plan.Missing, plan.QuietActive, plan.Job, plan.Cap
 			if d.Failsafe != lastFailsafe {
@@ -345,9 +357,11 @@ func runDaemon(chip Fans) error {
 		}
 
 		calib := calibCache.get(calibPath)
+		sample := Sample{At: now(), CPU: s.CPU, CaseTemp: st.CaseTemp, Fans: map[string]FanSample{}}
 		_ = withLock(func() error {
 			for _, ch := range chip.Outputs() {
 				rpm, err := chip.RPM(ch)
+				sample.Fans[ch.ID] = fanSample(chip, ch, rpm, err == nil, current, drives[ch.ID])
 				if err != nil {
 					continue
 				}
@@ -372,6 +386,7 @@ func runDaemon(chip Fans) error {
 			return nil
 		})
 
+		hist.Record(sample)
 		if b, err := json.Marshal(st); err == nil {
 			_ = fsx.WriteFile(statePath, b, 0o644)
 		}
@@ -395,6 +410,21 @@ func runDaemon(chip Fans) error {
 		case <-ticker.C:
 		}
 	}
+}
+
+// fanSample is one fan for the history: the speed the daemon wrote, or what the chip reports while the daemon does not
+// drive it (BIOS mode, a rival, a calibration); -1 where unknown.
+func fanSample(chip Fans, ch Channel, rpm int, rpmOK bool, current map[string]int, d Drive) FanSample {
+	f := FanSample{Pct: -1, RPM: -1, Drive: d}
+	if rpmOK {
+		f.RPM = rpm
+	}
+	if pct, ok := current[ch.ID]; ok {
+		f.Pct = pct
+	} else if duty, auto, err := chip.PWM(ch); err == nil && (!auto || chip.AutoDutyKnown()) {
+		f.Pct = dutyToPercent(duty, chip.MaxDuty())
+	}
+	return f
 }
 
 func notify(id string) {

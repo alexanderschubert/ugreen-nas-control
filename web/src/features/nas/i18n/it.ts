@@ -1,4 +1,5 @@
 import { inputsIt } from './parts/inputs.it';
+import { historyIt } from './parts/history.it';
 import { scheduleIt } from './parts/schedule.it';
 import { toolsIt } from './parts/tools.it';
 import type { Key } from './en';
@@ -451,6 +452,7 @@ export const it: Record<Key, string> = {
     'dash.disk': 'Disco',
     'dash.nvme': 'NVMe',
     ...inputsIt,
+    ...historyIt,
     ...scheduleIt,
     ...toolsIt
 };

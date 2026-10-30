@@ -1,6 +1,7 @@
 // The fan actions of api.php (inputs, schedule, profiles, v2 settings, probe, backlight) for the in-browser demo; the
 // answers follow web/tools/harness/api-fixture.php. Their state lives under `nas.fan` of the model's saved state.
 import { fanCaps, fanConfig, fanSamples } from '../models/fixture';
+import { fanHistory } from './fixture-history';
 import type { Model } from '../models/schema';
 
 type Obj = Record<string, any>;
@@ -268,6 +269,11 @@ export function createFan(model: Model, host: FanHost) {
                 case 'fan_schedule': {
                     const q = config(settings).quiet;
                     return ok({ quiet: { ...q, active: false }, job: { mover: false, parity: false, active: '' }, cap: null });
+                }
+                case 'fan_history': {
+                    const range = query.get('range') ?? '1h';
+                    if (range !== '1h' && range !== '24h') return fail('Invalid range');
+                    return { status: 200, json: fanHistory(model, Math.floor(host.now() / 1000), range) };
                 }
                 case 'fan_profile_sources':
                     return ok({ sources: samples.sources });

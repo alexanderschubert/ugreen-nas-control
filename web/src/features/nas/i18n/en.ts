@@ -1,4 +1,5 @@
 import { inputsEn } from './parts/inputs.en';
+import { historyEn } from './parts/history.en';
 import { scheduleEn } from './parts/schedule.en';
 import { toolsEn } from './parts/tools.en';
 
@@ -447,6 +448,7 @@ export const en = {
     'dash.disk': 'Disk',
     'dash.nvme': 'NVMe',
     ...inputsEn,
+    ...historyEn,
     ...scheduleEn,
     ...toolsEn
 } as const;

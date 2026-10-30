@@ -37,6 +37,7 @@ func usage() {
 
   probe               fan controller found? (JSON)
   status              fans, temperatures and system info (JSON)
+  history [1h|24h]    fan speeds, temperatures and what drove them, kept in the daemon's RAM (JSON)
   info                system info only, no hardware access (JSON)
   conflicts           other fan and LED tools that can drive the same chips (JSON, read only)
   hardware            RAM, NVMe, disk bays, network ports; read only (JSON)
@@ -116,6 +117,9 @@ func Main() {
 
 	case "conflicts":
 		printJSON(conflictList())
+
+	case "history":
+		historyCommand(os.Args[2:])
 
 	case "hardware":
 		printJSON(ReadHardware())

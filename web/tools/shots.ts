@@ -64,6 +64,29 @@ export const PAGES: Page[] = [
             quiet.dispatchEvent(new Event('change', { bubbles: true }));
         })()`
     },
+    { id: 'history', nav: 'history', applies: fixtureHasChip, wait: `document.querySelector('.unc-hist-svg polyline')` },
+    {
+        id: 'history-24h',
+        nav: 'history',
+        applies: fixtureHasChip,
+        prepare: `document.querySelector('[data-range="24h"]').click()`,
+        wait: `document.querySelector('[data-range="24h"]').getAttribute('aria-pressed') === 'true' && document.querySelector('.unc-hist-svg polyline')`
+    },
+    {
+        // The tooltip of the second fan, 24 h, at a point where something limits the speed.
+        id: 'history-tip',
+        nav: 'history',
+        applies: fixtureHasChip,
+        prepare: `(async () => {
+            document.querySelector('[data-range="24h"]').click();
+            const end = Date.now() + 8000;
+            while (!document.querySelector('.unc-hist-fan:nth-of-type(2) .unc-hist-svg polyline') && Date.now() < end) await new Promise(r => setTimeout(r, 100));
+            const plot = document.querySelector('.unc-hist-fan:nth-of-type(2) .unc-hist-plot');
+            const box = plot.getBoundingClientRect();
+            plot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: box.left + box.width * 0.62, clientY: box.top + 120 }));
+        })()`,
+        wait: `document.querySelector('.unc-hist-tip:not([hidden])')`
+    },
     { id: 'safety', nav: 'safety', applies: fixtureHasChip },
     { id: 'sensors', nav: 'sensors', applies: () => true },
     { id: 'leds', nav: 'led:overview', applies: m => m.led !== 'none' },

@@ -6,3 +6,4 @@ import './profiles';
 import './probe';
 import './watchdog';
 import './backlight';
+import './history';

@@ -495,6 +495,40 @@
       "query": { "action": "fan_schedule" },
       "fan": [{ "args": ["status"], "code": 1, "err": "no status\n" }]
     },
+    {
+      "id": "nas.fan_history.default-1h",
+      "api": "nas",
+      "query": { "action": "fan_history" },
+      "fan": [{ "args": ["history", "1h"], "out": { "ok": true, "running": true, "range": "1h", "step": 10, "t": [1759999990, 1760000000] } }]
+    },
+    {
+      "id": "nas.fan_history.range-24h",
+      "api": "nas",
+      "query": { "action": "fan_history", "range": "24h" },
+      "fan": [{ "args": ["history", "24h"], "out": { "ok": true, "running": true, "range": "24h", "step": 60 } }]
+    },
+    {
+      "id": "nas.fan_history.range-invalid-400",
+      "api": "nas",
+      "query": { "action": "fan_history", "range": "7d" }
+    },
+    {
+      "id": "nas.fan_history.range-array-400",
+      "api": "nas",
+      "query": "action=fan_history&range[]=1h"
+    },
+    {
+      "id": "nas.fan_history.daemon-stopped",
+      "api": "nas",
+      "query": { "action": "fan_history" },
+      "fan": [{ "args": ["history"], "out": { "ok": true, "running": false } }]
+    },
+    {
+      "id": "nas.fan_history.tool-garbage",
+      "api": "nas",
+      "query": { "action": "fan_history" },
+      "fan": [{ "args": ["history"], "code": 1, "err": "no history\n" }]
+    },
     { "id": "nas.fan_probe_status.ok", "api": "nas", "query": { "action": "fan_probe_status" } },
     {
       "id": "nas.fan_probe_status.ok-false",

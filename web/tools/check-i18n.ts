@@ -22,6 +22,7 @@ import { nl as nasNl } from '../src/features/nas/i18n/nl';
 import { zh as nasZh } from '../src/features/nas/i18n/zh';
 import { placeholderMismatches } from '../src/core/tables';
 import { inputsEn } from '../src/features/nas/i18n/parts/inputs.en';
+import { historyEn } from '../src/features/nas/i18n/parts/history.en';
 import { scheduleEn } from '../src/features/nas/i18n/parts/schedule.en';
 import { toolsEn } from '../src/features/nas/i18n/parts/tools.en';
 
@@ -65,7 +66,7 @@ const sets: Set[] = [
 ];
 
 // Module parts: one file per language next to the en part. A key also written in en.ts would silently win or lose in the spread.
-const PARTS: Record<string, Record<string, string>> = { inputs: inputsEn, schedule: scheduleEn, tools: toolsEn };
+const PARTS: Record<string, Record<string, string>> = { history: historyEn, inputs: inputsEn, schedule: scheduleEn, tools: toolsEn };
 const partDir = join(root, 'web/src/features/nas/i18n/parts');
 const baseKeys = new Set([...readFileSync(join(root, 'web/src/features/nas/i18n/en.ts'), 'utf8').matchAll(/^ {4}'([\w.-]+)':/gm)].map(m => m[1] as string));
 const partOwner = new Map<string, string>();

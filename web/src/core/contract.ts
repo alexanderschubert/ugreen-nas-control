@@ -21,6 +21,7 @@ import type {
     Watchdog
 } from './contract-fan-probe';
 import type { FanScheduleResponse } from './contract-fan-schedule';
+import type { FanHistoryResponse } from './contract-fan-history';
 
 export type ApiFailure = { ok: false; error: string };
 export type ApiOk = { ok: true };
@@ -346,6 +347,7 @@ export interface NasGet {
     hardware: HardwareResponse;
     fan_inputs: FanInputsResponse;
     fan_schedule: FanScheduleResponse;
+    fan_history: FanHistoryResponse;
     fan_profile_sources: FanProfileSourcesResponse;
     fan_probe_status: FanProbeStatusResponse;
     fan_probe_tachs: FanProbeTachsResponse;

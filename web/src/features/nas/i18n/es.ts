@@ -1,4 +1,5 @@
 import { inputsEs } from './parts/inputs.es';
+import { historyEs } from './parts/history.es';
 import { scheduleEs } from './parts/schedule.es';
 import { toolsEs } from './parts/tools.es';
 import type { Key } from './en';
@@ -440,6 +441,7 @@ export const es: Record<Key, string> = {
     'dash.disk': 'Disco',
     'dash.nvme': 'NVMe',
     ...inputsEs,
+    ...historyEs,
     ...scheduleEs,
     ...toolsEs
 };

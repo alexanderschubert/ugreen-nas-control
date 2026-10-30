@@ -129,6 +129,20 @@ function fan_profile_valid_key(string $key): bool
     return fan_v2_known($key) || in_array($key, array_merge(FAN_V1_INT, FAN_V1_BOOL, FAN_V1_TEXT, ['ignore_drives']), true);
 }
 
+// The history was generated when the harness started; it moves on with the clock, in whole minutes (the steps of both ranges).
+function fan_history_shifted(array $h): array
+{
+    if (!($h['running'] ?? false)) {
+        return $h;
+    }
+    $shift = ($GLOBALS['fx']['history']['frozen'] ?? false) ? 0 : intdiv(time() - (int) $GLOBALS['fx']['history']['born'], 60) * 60;
+    $h['now'] += $shift;
+    $h['since'] += $shift;
+    $h['t'] = array_map(fn(int $t): int => $t + $shift, $h['t']);
+
+    return $h;
+}
+
 function fan_get(string $action, array $fan, array $status, array $state): void
 {
     $settings = $status['settings'];
@@ -149,6 +163,13 @@ function fan_get(string $action, array $fan, array $status, array $state): void
             // no break
         case 'fan_schedule':
             out(['ok' => true, 'quiet' => $cfg['quiet'] + ['active' => false], 'job' => ['mover' => false, 'parity' => false, 'active' => ''], 'cap' => null]);
+            // no break
+        case 'fan_history':
+            $range = $_GET['range'] ?? '1h';
+            if (!in_array($range, ['1h', '24h'], true)) {
+                out(['ok' => false, 'error' => 'Invalid range'], 400);
+            }
+            out(fan_history_shifted($GLOBALS['fx']['history'][$range]));
             // no break
         case 'fan_profile_sources':
             out(['ok' => true, 'sources' => $fan['sources']]);
