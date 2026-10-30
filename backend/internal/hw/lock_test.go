@@ -3,6 +3,8 @@ package hw
 import (
 	"path/filepath"
 	"testing"
+
+	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
 )
 
 func TestLockPathResolution(t *testing.T) {
@@ -10,8 +12,13 @@ func TestLockPathResolution(t *testing.T) {
 	if got := LockPath(); got != DefaultLockPath {
 		t.Errorf("default: %q", got)
 	}
+	// The env override is honoured in testhooks builds only; release builds keep the default.
+	envWant := DefaultLockPath
+	if testenv.Enabled {
+		envWant = "/tmp/x.lock"
+	}
 	t.Setenv(LockEnv, "/tmp/x.lock")
-	if got := LockPath(); got != "/tmp/x.lock" {
+	if got := LockPath(); got != envWant {
 		t.Errorf("env: %q", got)
 	}
 	restore := SetLockPath("/tmp/y.lock")
@@ -19,7 +26,7 @@ func TestLockPathResolution(t *testing.T) {
 		t.Errorf("override: %q", got)
 	}
 	restore()
-	if got := LockPath(); got != "/tmp/x.lock" {
+	if got := LockPath(); got != envWant {
 		t.Errorf("restored: %q", got)
 	}
 }

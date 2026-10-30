@@ -7,6 +7,7 @@ import (
 
 	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
 	cs "github.com/alexanderschubert/ugreen-nas-control/internal/hw/cs201x"
+	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
 )
 
 // The fan tool, the LED backend (cs201x) and the front panel must lock the same file, with and without the env var.
@@ -18,6 +19,9 @@ func TestLockPathSameAsOtherUsers(t *testing.T) {
 		t.Setenv(hw.LockEnv, env)
 		if cs.LockPath() != hw.LockPath() {
 			t.Errorf("env %q: cs201x %q, hw %q", env, cs.LockPath(), hw.LockPath())
+		}
+		if env != "" && !testenv.Enabled {
+			continue // release build: the env override is ignored on purpose
 		}
 		if env == "" {
 			if hw.LockPath() != hw.DefaultLockPath {
