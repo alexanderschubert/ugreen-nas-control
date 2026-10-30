@@ -14,12 +14,12 @@ export default {
     led: 'bays',
     caseView: 'front-rear',
     caseVariant: 'rear4800',
-    fan: { chip: 'ITE IT8613E', fans: { fan2: 'cpu', fan3: 'case' }, kind: 'probe' },
+    fan: { chip: 'ITE IT8613E', fans: { fan3: 'case' }, kind: 'probe' },
     verified: {
         leds: { status: 'community', by: 'users', note: 'LED support confirmed by users of the DXP4800 family.' },
         fans: {
             status: 'expected',
-            note: 'Same IT8613E as the DXP6800 Pro, header wiring not known: the fan probe finds which output drives which fan and fan control stays off until you confirm its result. Not run on this model yet.'
+            note: "Same IT8613E as the DXP6800 Pro, header wiring not known: the fan probe finds which output drives which fan and fan control stays off until you confirm its result. Not run on this model yet. UGREEN's own driver drives only header 3 here, no cpu fan output."
         },
         case: { status: 'expected', note: 'The rear is drawn after the Plus and shows two LAN ports; this model has one 2.5G port.' },
         sensors: { status: 'expected' }

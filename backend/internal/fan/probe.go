@@ -78,7 +78,7 @@ type ProbeProposal struct {
 	Chip    string        `json:"chip"`
 	Time    int64         `json:"time"`
 	Outputs []ProbeOutput `json:"outputs"`
-	// Expected is what reports for the model say; Agrees compares it with the finding (nil: nothing reported).
+	// Expected is what UGREEN's drivers and reports for the model say; Agrees compares it with the finding (nil: nothing reported).
 	Expected string `json:"expected,omitempty"`
 	Agrees   *bool  `json:"agrees,omitempty"`
 }
@@ -289,24 +289,19 @@ func compareHint(model string, outs []ProbeOutput) (string, *bool) {
 	if !ok {
 		return "", nil
 	}
-	var pwms, tachs []string
+	var found, want, pwms []string
 	for _, o := range outs {
 		if o.Status == "mapped" {
-			pwms, tachs = append(pwms, o.PWM), append(tachs, o.Tach)
+			found = append(found, o.PWM+":"+o.Tach)
 		}
 	}
-	var text string
-	var agrees bool
-	switch {
-	case len(h.PWMs) > 0:
-		text = "outputs " + joinIDs(h.PWMs)
-		agrees = slices.Equal(sortedCopy(pwms), sortedCopy(h.PWMs))
-	case len(h.Tachs) > 0:
-		text = "a fan on " + joinIDs(h.Tachs)
-		agrees = slices.Equal(sortedCopy(tachs), sortedCopy(h.Tachs))
+	for _, w := range h.Wiring {
+		want, pwms = append(want, w.PWM+":"+w.Tach), append(pwms, w.PWM)
 	}
-	return text, &agrees
+	return "outputs " + joinIDs(pwms), ptr(slices.Equal(sortedCopy(found), sortedCopy(want)))
 }
+
+func ptr[T any](v T) *T { return &v }
 
 func sortedCopy(s []string) []string {
 	c := slices.Clone(s)

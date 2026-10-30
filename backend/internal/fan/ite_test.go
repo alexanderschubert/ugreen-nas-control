@@ -162,3 +162,14 @@ func TestPercentDuty(t *testing.T) {
 		}
 	}
 }
+
+func TestRPMFromCountNoReading(t *testing.T) {
+	for _, c := range []int{0, 0xffff, 0x0fff} {
+		if r := rpmFromCount(c); r != 0 {
+			t.Errorf("count 0x%x = %d rpm, want 0", c, r)
+		}
+	}
+	if r := rpmFromCount(0x0fff - 1); r == 0 {
+		t.Error("neighbouring count must still read")
+	}
+}

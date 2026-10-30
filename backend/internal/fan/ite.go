@@ -37,7 +37,9 @@ const (
 )
 
 // IT8613E channels as wired on the DXP6800 Pro, where each PWM output was
-// raised on its own to see which fan follows. Headers 1 and 5 are unused.
+// raised on its own to see which fan follows. Headers 1 and 5 are unused. Header 4's control register is
+// unconfirmed: we use 0x7f, UGREEN's driver names 0x1e (ug_it86x-cpufan.c:82-83@c75c5ab; its tach 0x80/0x81 and duty
+// 0x7b agree with ours). Not changed until read on a device.
 var it8613Channels = []Channel{
 	{ID: "fan2", TachLow: 0x0e, TachHigh: 0x19, Duty: 0x6b, Ctrl: 0x16},
 	{ID: "fan3", TachLow: 0x0f, TachHigh: 0x1a, Duty: 0x73, Ctrl: 0x17},
@@ -139,8 +141,9 @@ func (c *Chip) RPM(ch Channel) (int, error) {
 	return rpmFromCount(int(hi)<<8 | int(lo)), nil
 }
 
+// rpmFromCount: 0, 0xffff and 0x0fff are "no reading" (ug_it86x-sio.c:226-233@c75c5ab treats all three as 0 rpm).
 func rpmFromCount(count int) int {
-	if count == 0 || count == 0xffff {
+	if count == 0 || count == 0xffff || count == 0x0fff {
 		return 0
 	}
 	return 1350000 / (2 * count)

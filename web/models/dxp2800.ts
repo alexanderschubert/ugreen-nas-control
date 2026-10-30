@@ -23,7 +23,7 @@ export default {
         },
         fans: {
             status: 'expected',
-            note: 'Same IT8613E as the DXP6800 Pro, header wiring not known: the fan probe finds which output drives which fan and fan control stays off until you confirm its result. Not run on this model yet. One fan was reported on tach 3 (1726 rpm), none on tach 2.'
+            note: "Same IT8613E as the DXP6800 Pro, header wiring not known: the fan probe finds which output drives which fan and fan control stays off until you confirm its result. Not run on this model yet. One fan was reported on tach 3 (1726 rpm), none on tach 2; UGREEN's own driver also drives only header 3."
         },
         case: { status: 'expected', note: 'Drawn after photos, not compared on a device.' },
         sensors: { status: 'expected' }

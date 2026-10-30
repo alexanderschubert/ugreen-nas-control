@@ -35,8 +35,8 @@ func FanKind(model string) string {
 func isIdxPro(model string) bool { return chip.IdxLayout(model) == "idx-pro" }
 
 // isProbeModel: the IT8613E models without a known header map. The IT8613E at 0xa30 on the DXP2800 shows a fan
-// on tach 3 and none on tach 2; the DXP4800 Plus uses outputs 2 and 3 (see probeHints). The rest follows the
-// same board family; nothing is assumed, the probe decides.
+// on tach 3 and none on tach 2; UGREEN's drivers name the expected wiring (see probeHints), which the probe
+// checks; nothing is assumed, the probe decides. DX4600/DX4700 stay out: a source comment is the only evidence.
 func isProbeModel(model string) bool {
 	switch model {
 	case "DXP2800", "DXP4800", "DXP4800 Plus", "DXP4800 Pro", "DXP8800 Plus":
@@ -45,17 +45,40 @@ func isProbeModel(model string) bool {
 	return false
 }
 
-// probeHint is what community reports say about a model; the probe compares its result with it, never trusts it.
-// Sources (facts only, nothing copied): IT-Kuny/UGREEN-DXP-FAN-NAS-Driver README:262 (GPL-3.0; DXP2800: IT8613E at
-// 0xa30, fan2 0 rpm, fan3 1726 rpm) and smashah/ugreen-dxp-fan-cli (DXP4800 Plus drives pwm2 and pwm3).
+// probeHint is the wiring the probe expects for a model; the probe compares its result with it, never trusts it.
+// Sources (facts only, nothing copied): UGREEN's own GPL-2.0-only fan drivers (ug_it86x-cpufan.c:221-275,
+// ug_it86x-sio.c:234-236@c75c5ab: which header is driven as cpu and as case fan per DMI name; the code never shows
+// that the fan on header N is the one read on tach N, only the author's rpm samples at ug_it86x-cpufan.c:48-73 agree)
+// and the community reports IT-Kuny/UGREEN-DXP-FAN-NAS-Driver README:262 (GPL-3.0; DXP2800: IT8613E at 0xa30, fan2
+// 0 rpm, fan3 1726 rpm) and smashah/ugreen-dxp-fan-cli (DXP4800 Plus drives pwm2 and pwm3). A strong hint, not proof
+// of the physical wiring: fan control of these models stays off until a probe result is confirmed.
+//
+// Header 4 is unconfirmed: UGREEN's driver names 0x1e as its control register (ug_it86x-cpufan.c:82-83@c75c5ab), we
+// write 0x7f (it8613Headers). Until a device settles it, no new model gets to write header 4 (isProbeModel).
 type probeHint struct {
-	PWMs  []string // outputs that should move a fan
-	Tachs []string // tach inputs that should read a fan
+	Wiring []FanMapOutput // ID is left empty: the probe's ids come from allocateIDs
+}
+
+func hintOutputs(roles ...string) []FanMapOutput {
+	// roles are "header:role", e.g. "3:case".
+	out := make([]FanMapOutput, 0, len(roles))
+	for _, r := range roles {
+		out = append(out, FanMapOutput{Role: r[2:], PWM: "pwm" + r[:1], Tach: "fan" + r[:1]})
+	}
+	return out
 }
 
 var probeHints = map[string]probeHint{
-	"DXP2800":      {Tachs: []string{"fan3"}},
-	"DXP4800 Plus": {PWMs: []string{"pwm2", "pwm3"}},
+	"DXP2800": {hintOutputs("3:case")},
+	// ug_it86x-cpufan.c:221-226,265: header 3 only; tach 2 is read but no PWM 2 is written.
+	"DXP4800":      {hintOutputs("3:case")},
+	"DXP4800 Plus": {hintOutputs("2:cpu", "3:case")},
+	"DXP4800 Pro":  {hintOutputs("2:cpu", "3:case")},
+	// ug_it86x-cpufan.c:227-235,265-270,441-451: both case headers get the same duty.
+	"DXP8800 Plus": {hintOutputs("2:cpu", "3:case", "4:case")},
+	// Not a probe model (header 4, no model file with fans): hint only. cpu on header 3, case on 2 and 4
+	// (ug_it86x-cpufan.c:236-243,271-275@c75c5ab).
+	"DXP480T Plus": {hintOutputs("3:cpu", "2:case", "4:case")},
 }
 
 // Fan floor of the probe models: the driver never writes less, and the probe never drives below it. Case fans of

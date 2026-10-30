@@ -14,7 +14,7 @@ export default {
     led: 'bays',
     caseView: 'front-rear',
     caseVariant: 'rear8800',
-    fan: { chip: 'ITE IT8613E', fans: { fan2: 'cpu', fan3: 'case' }, kind: 'probe' },
+    fan: { chip: 'ITE IT8613E', fans: { fan2: 'cpu', fan3: 'case', fan4: 'case' }, kind: 'probe' },
     verified: {
         leds: {
             status: 'community',
@@ -24,7 +24,7 @@ export default {
         },
         fans: {
             status: 'expected',
-            note: 'Same IT8613E as the DXP6800 Pro, header wiring not known: the fan probe finds which output drives which fan and fan control stays off until you confirm its result. Not run on this model yet.'
+            note: "Same IT8613E as the DXP6800 Pro, header wiring not known: the fan probe finds which output drives which fan and fan control stays off until you confirm its result. Not run on this model yet. UGREEN's own driver expects cpu on header 2 and case fans on headers 3 and 4 (header 4 control register unconfirmed)."
         },
         case: { status: 'expected', note: 'Drawn as a row of ports from review port lists.' },
         sensors: { status: 'expected' }
