@@ -689,7 +689,7 @@ function main(root: HTMLElement): void {
         return t(led.warning === 'standalone' && !led.enabled ? 'system.ledctl_standalone' : 'system.ledctl_off');
     }
 
-    // Every UGREEN NASync model by series and what this plugin does for it: [series, model, test regex of the DMI name, LEDs, case view, fans].
+    // Every UGREEN NAS model by series and what this plugin does for it: [series, model, test regex of the DMI name, LEDs, case view, fans].
     // LEDs: verified | confirmed | reported (by users) | untested | power (power LED only) | none; case: full | fr | ''.
     type LedSupport = 'verified' | 'confirmed' | 'reported' | 'untested' | 'power' | 'none';
     const MODELS: [series: string, model: string, test: RegExp, leds: LedSupport, view: '' | 'fr' | 'full', fans: boolean][] = [
@@ -2149,26 +2149,30 @@ function main(root: HTMLElement): void {
     const TEMP_COLOURS: Record<string, string> = { ok: '#22c55e', warm: '#f59e0b', hot: '#ef4444' };
     const tempColour = (temp: number | null): string => TEMP_COLOURS[tempClass(temp, 'nvme')] || '#8b96a3';
 
-    function nvmeModule(L: number, H: number, ssd: Nvme): string {
+    function nvmeModule(L: number, H: number, ssd: Nvme, mirror = false): string {
         const name = String(ssd.model || ssd.id)
             .replace(/ SSD/, '')
             .replace(/\s+/g, ' ')
             .trim();
         const size = fmtSize(ssd.size_bytes);
-        const fs = Math.min(H * 0.2, (L * 0.4) / (Math.max(name.length, 1) * 0.58)).toFixed(1);
+        const fs = Math.min(H * 0.2, (L * (mirror ? 0.34 : 0.4)) / (Math.max(name.length, 1) * 0.58)).toFixed(1);
         const mark = ssd.boot
             ? `<rect x="${(L * 0.9 - 14).toFixed(1)}" y="${(H * 0.14).toFixed(1)}" width="14" height="14" rx="4" fill="#f15a2c"/><path d="M${(L * 0.9 - 10.5).toFixed(1)} ${(H * 0.14 + 3.5).toFixed(1)}v4.500a3.500 3.500 0 0 0 7 0V${(H * 0.14 + 3.5).toFixed(1)}" fill="none" stroke="#fff" stroke-width="1.800" stroke-linecap="round"/>`
             : '';
 
-        return `<rect width="${L}" height="${H}" rx="3" fill="#17394f" stroke="#2c6a8f" stroke-width="1.200"/>
+        // mirror: the connector sits on the right (the DXP4800 GT's slots); the drawing is flipped, the text is not.
+        const tx = mirror ? L * 0.16 + 2 : L * 0.42;
+        const flip = (inner: string): string => (mirror ? `<g transform="translate(${L} 0) scale(-1 1)">${inner}</g>` : inner);
+
+        return `${flip(`<rect width="${L}" height="${H}" rx="3" fill="#17394f" stroke="#2c6a8f" stroke-width="1.200"/>
             ${goldFingers(1, H * 0.12, L * 0.085, H * 0.76, 9, 4)}
             <rect x="${L * 0.095}" y="${H * 0.12}" width="2" height="${H * 0.76}" fill="#0f2535"/>
             <rect x="${L * 0.14}" y="${H * 0.26}" width="${L * 0.12}" height="${H * 0.48}" rx="1.500" fill="#2a2f36" stroke="#4a5460" stroke-width=".8"/>
             <rect x="${L * 0.28}" y="${H * 0.12}" width="${L * 0.11}" height="${H * 0.76}" rx="1.500" fill="#20252b" stroke="#3a424c" stroke-width=".8"/>
             <rect x="${L * 0.4}" y="${H * 0.16}" width="${L * 0.44}" height="${H * 0.68}" rx="2" fill="#f1f3f5"/>
-            <text x="${L * 0.42}" y="${H * 0.42}" fill="#14181d" font-size="${fs}" font-weight="800">${escapeHtml(name)}</text>
-            <text x="${L * 0.42}" y="${H * 0.68}" fill="#4a5460" font-size="${(H * 0.15).toFixed(1)}">${escapeHtml(size)}</text>
-            <circle cx="${L - 5}" cy="${H / 2}" r="${H * 0.17}" fill="#0b0d0f" stroke="#c9ced4" stroke-width="1.600"/>${mark}`;
+            <circle cx="${L - 5}" cy="${H / 2}" r="${H * 0.17}" fill="#0b0d0f" stroke="#c9ced4" stroke-width="1.600"/>${mark}`)}
+            <text x="${tx}" y="${H * 0.42}" fill="#14181d" font-size="${fs}" font-weight="800">${escapeHtml(name)}</text>
+            <text x="${tx}" y="${H * 0.68}" fill="#4a5460" font-size="${(H * 0.15).toFixed(1)}">${escapeHtml(size)}</text>`;
     }
 
     function ramModule(L: number, H: number, mod: Dimm): string {
@@ -2244,6 +2248,59 @@ function main(root: HTMLElement): void {
             </svg>`;
     }
 
+    // DXP4800 GT: the service panel on the underside (front at the left, as in the photos of the box): two SO-DIMM
+    // sockets side by side (RAM 1 nearer the front), two M.2 slots stacked (M.2-1 above M.2-2), connectors on the right.
+    function inside4800gtHtml(hw: Hardware): string {
+        const ssd = (slot: string): Nvme | undefined => hw.nvme.find(d => d.slot === slot);
+        const memory = hw.memory;
+        const ox = 270;
+        const oy = 40;
+        const ram = (x: number, mod: Dimm | undefined, n: number): string => {
+            const filled = Boolean(mod?.size_mb);
+            const socket = `<rect x="${x}" y="30" width="86" height="292" rx="5" style="fill:var(--bd-sock);stroke:var(--bd-sockedge)" stroke-width="2"/><rect x="${x + 40}" y="298" width="6" height="16" rx="2" style="fill:var(--bd-sock2)"/><rect x="${x - 8}" y="60" width="8" height="30" rx="2" fill="#aeb6bf"/><rect x="${x + 86}" y="60" width="8" height="30" rx="2" fill="#aeb6bf"/>`;
+            const body = mod && filled ? place(x + 2, 34, 286, true, ramModule(286, 82, mod)) : '';
+            const sub = mod && filled ? `${fmtRam(mod.size_mb)} ${mod.type || ''}`.trim() : t('case.empty');
+
+            return `${socket}${body}${boardText(x, 342, t('case.ram_slot', { n }))}<text x="${x}" y="356" style="fill:var(--bd-text2)" font-size="11">${escapeHtml(sub)}</text>`;
+        };
+        const m2 = (y: number, drive: Nvme | undefined, n: number): string => {
+            const label = t('in.m2', { n });
+            const silk = `<text x="160" y="${y - 6}" style="fill:var(--bd-text2)" font-size="10">M.2 NVMe · PCIe Gen3 ×2</text>`;
+            const connector = `<rect x="432" y="${y + 14}" width="8" height="38" rx="2" fill="#aeb6bf"/>`;
+            if (!drive) {
+                return `${silk}${connector}<rect x="160" y="${y}" width="270" height="66" rx="3" fill="none" style="stroke:var(--bd-sockedge)" stroke-width="2" stroke-dasharray="6 5"/>${boardText(24, y + 38, t('in.slot_empty', { label }))}`;
+            }
+            const role = drive.boot ? t('nvme.boot') : ssdRoleText(drive.role);
+            const roleText = role.length > 21 ? `${role.slice(0, 20)}…` : role;
+
+            return `${silk}${connector}<g transform="translate(160 ${y})">${nvmeModule(270, 66, drive, true)}</g>${tempBadge6800(24, y + 4, drive.temp)}${boardText(24, y + 38, label)}${roleText ? boardText(24, y + 52, roleText) : ''}`;
+        };
+
+        return `
+            <svg class="unc-board-svg" viewBox="0 0 1000 640" role="img" aria-label="${escapeHtml(t('case.inside'))}">
+                <defs>
+                    <pattern id="unc-ribs" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" style="fill:var(--bd-ribA)"/><rect width="8" height="3.5" style="fill:var(--bd-ribB)"/></pattern>
+                </defs>
+                <rect x="10" y="10" width="980" height="620" rx="26" style="fill:var(--bd-g2);stroke:var(--bd-edge)" stroke-width="3"/>
+                <rect x="60" y="64" width="64" height="20" rx="10" style="fill:var(--bd-sock)"/><rect x="60" y="556" width="64" height="20" rx="10" style="fill:var(--bd-sock)"/>
+                <rect x="876" y="64" width="64" height="20" rx="10" style="fill:var(--bd-sock)"/><rect x="876" y="556" width="64" height="20" rx="10" style="fill:var(--bd-sock)"/>
+                <text x="30" y="324" style="fill:var(--bd-text2)" font-size="15" font-weight="700" transform="rotate(-90 30 324)" text-anchor="middle">${escapeHtml(t('in.front'))}</text>
+                <text x="972" y="324" style="fill:var(--bd-text2)" font-size="15" font-weight="700" transform="rotate(90 972 324)" text-anchor="middle">${escapeHtml(t('case.rear'))}</text>
+                <rect x="${ox - 6}" y="${oy - 6}" width="452" height="572" rx="8" style="fill:var(--bd-plate);stroke:var(--bd-edge)" stroke-width="2"/>
+                <rect x="${ox}" y="${oy}" width="440" height="560" rx="4" fill="url(#unc-ribs)"/>
+                <g transform="translate(${ox} ${oy})">
+                    <circle cx="418" cy="22" r="8" fill="#b87333"/><circle cx="418" cy="330" r="8" fill="#b87333"/><circle cx="22" cy="14" r="7" style="fill:var(--bd-sock2)"/>
+                    ${ram(40, memory[0], 1)}
+                    ${ram(150, memory[1], 2)}
+                    ${m2(384, ssd('m2-1'), 1)}
+                    ${m2(476, ssd('m2-2'), 2)}
+                </g>
+                <rect x="760" y="190" width="170" height="260" rx="8" style="fill:var(--bd-sock);stroke:var(--bd-sockedge)" stroke-width="2"/>
+                <text x="845" y="232" style="fill:var(--bd-ink)" font-size="22" font-weight="900" text-anchor="middle" letter-spacing="2">UGREEN</text>
+                <g style="fill:var(--bd-sockedge)"><rect x="780" y="260" width="130" height="6" rx="3"/><rect x="780" y="280" width="110" height="6" rx="3"/><rect x="780" y="300" width="130" height="6" rx="3"/><rect x="800" y="340" width="90" height="90" rx="6"/></g>
+            </svg>`;
+    }
+
     function ssdSlotRow(name: string, ssd: Nvme | undefined): string {
         if (!ssd) return sensorRow({ ico: icon('m2'), name, vals: [{ label: '', text: t('case.empty'), level: 'na' }] });
 
@@ -2290,6 +2347,13 @@ function main(root: HTMLElement): void {
         const article = q(target).closest('article');
         if (article) article.hidden = Boolean(caseModel(hw).noInside);
         if (caseModel(hw).noInside) return;
+
+        if (caseModel(hw).inside4800gt) {
+            q(target).classList.add('board-svg');
+            setHint(q('#unc-inside-hint'), caseModel(hw).hint);
+            q(target).innerHTML = inside4800gtHtml(hw);
+            return;
+        }
 
         if (caseModel(hw).inside6800) {
             const hint = q('#unc-inside-hint');

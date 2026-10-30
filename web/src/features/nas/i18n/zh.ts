@@ -238,6 +238,8 @@ export const zh: Record<Key, string> = {
     'in.pcie_card': 'PCIe 卡',
     'in.dimm': 'SO-DIMM · {type}',
     'in.ram_empty': '内存 {n} · 空',
+    'in.front': '正面',
+    'case.inside_hint_gt': '底部检修盖板，正面在左侧。RAM 1 / RAM 2 与 M.2-1 / M.2-2 的编号为假设；如果你的机器不同，请提交 issue。',
     'in.slot_empty': '{label} · 空',
     'nvme.boot': 'Unraid 启动 SSD',
     'nvme.role': '存储池 SSD“{name}”',

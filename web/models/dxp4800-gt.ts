@@ -35,11 +35,11 @@ export default {
             note: 'CPU fan and case fan measured; the roles are not swapped.'
         },
         case: {
-            status: 'partial',
+            status: 'verified',
             by: 'maintainer (tower)',
             version: '3.6',
             date: '2026-10-29',
-            note: 'M.2 slot numbering and LAN 1 = eth0 are not confirmed.'
+            note: 'Inside view drawn from the service panel; RAM/M.2 slot numbering assumed, open an issue if your box differs.'
         },
         sensors: {
             status: 'verified',

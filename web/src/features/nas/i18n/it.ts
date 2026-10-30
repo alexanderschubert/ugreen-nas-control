@@ -244,6 +244,9 @@ export const it: Record<Key, string> = {
     'in.pcie_card': 'Scheda PCIe',
     'in.dimm': 'SO-DIMM · {type}',
     'in.ram_empty': 'RAM {n} · vuoto',
+    'in.front': 'Fronte',
+    'case.inside_hint_gt':
+        'Il pannello di servizio sul fondo, fronte a sinistra. La numerazione di RAM 1 / RAM 2 e M.2-1 / M.2-2 è presunta; se il tuo dispositivo è diverso, apri una issue.',
     'in.slot_empty': '{label} · vuoto',
     'nvme.boot': 'SSD di avvio Unraid',
     'nvme.role': 'SSD del pool «{name}»',

@@ -245,6 +245,9 @@ export const fr: Record<Key, string> = {
     'in.pcie_card': 'Carte PCIe',
     'in.dimm': 'SO-DIMM · {type}',
     'in.ram_empty': 'RAM {n} · vide',
+    'in.front': 'Avant',
+    'case.inside_hint_gt':
+        'La trappe de service sous le boîtier, avant à gauche. La numérotation de RAM 1 / RAM 2 et M.2-1 / M.2-2 est supposée ; ouvrez un ticket si votre appareil diffère.',
     'in.slot_empty': '{label} · vide',
     'nvme.boot': 'SSD de démarrage Unraid',
     'nvme.role': 'SSD du pool « {name} »',

@@ -244,6 +244,9 @@ export const de: Record<Key, string> = {
     'in.pcie_card': 'PCIe-Karte',
     'in.dimm': 'SO-DIMM · {type}',
     'in.ram_empty': 'RAM {n} · leer',
+    'in.front': 'Vorne',
+    'case.inside_hint_gt':
+        'Die Wartungsklappe an der Unterseite, vorne links. Die Nummerierung von RAM 1 / RAM 2 und M.2-1 / M.2-2 ist angenommen; bei einer anderen Belegung bitte ein Issue öffnen.',
     'in.slot_empty': '{label} · leer',
     'nvme.boot': 'Unraid-Boot-SSD',
     'nvme.role': 'Pool-SSD „{name}“',

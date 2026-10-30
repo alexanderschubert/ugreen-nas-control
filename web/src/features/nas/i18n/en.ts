@@ -242,6 +242,9 @@ export const en = {
     'in.pcie_card': 'PCIe card',
     'in.dimm': 'SO-DIMM · {type}',
     'in.ram_empty': 'RAM {n} · empty',
+    'in.front': 'Front',
+    'case.inside_hint_gt':
+        'The underside service panel, front at the left. RAM 1 / RAM 2 and M.2-1 / M.2-2 are numbered by assumption; open an issue if your box differs.',
     'in.slot_empty': '{label} · empty',
     'nvme.boot': 'Unraid boot SSD',
     'nvme.role': 'Pool SSD “{name}”',

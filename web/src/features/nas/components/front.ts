@@ -38,6 +38,7 @@ export interface CaseModel {
     rear8800?: boolean;
     lanLabels?: string[];
     inside6800?: boolean;
+    inside4800gt?: boolean;
     pcie?: boolean;
     sys?: boolean;
     hint?: Key;
@@ -75,7 +76,9 @@ export const CASE_MODELS: [RegExp, CaseModel][] = [
             rear4800: true,
             lanLabels: ['LAN 10G', 'LAN 10G'],
             rear: [],
-            pcie: false
+            pcie: false,
+            inside4800gt: true,
+            hint: 'case.inside_hint_gt'
         }
     ],
     // DXP4800, DXP4800 Plus and DXP4800 Pro: one chassis, drawn after a photo of the Plus. The slots of the

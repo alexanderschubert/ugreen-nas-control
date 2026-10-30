@@ -244,6 +244,9 @@ export const nl: Record<Key, string> = {
     'in.pcie_card': 'PCIe-kaart',
     'in.dimm': 'SO-DIMM · {type}',
     'in.ram_empty': 'RAM {n} · leeg',
+    'in.front': 'Voorkant',
+    'case.inside_hint_gt':
+        'Het serviceluik aan de onderkant, voorkant links. De nummering van RAM 1 / RAM 2 en M.2-1 / M.2-2 is aangenomen; wijkt jouw kast af, open dan een issue.',
     'in.slot_empty': '{label} · leeg',
     'nvme.boot': 'Unraid-boot-SSD',
     'nvme.role': 'Pool-SSD “{name}”',
