@@ -10,6 +10,8 @@ Prior work this project builds on; licenses and what is used follow below.
 - [noodlemctwoodle/unraid-ugreen-idx6011-pro](https://github.com/noodlemctwoodle/unraid-ugreen-idx6011-pro) and [omgapuppy/unraid-ugreen-idx6011-led-fan](https://github.com/omgapuppy/unraid-ugreen-idx6011-led-fan): iDX6011 bay order, EC registers, LED frames.
 - [flybrys/UGREEN-DXP4800GT-LED-Driver](https://github.com/flybrys/UGREEN-DXP4800GT-LED-Driver) and [EllipticSet/UGREEN-DXP4800Pro-LEDs](https://github.com/EllipticSet/UGREEN-DXP4800Pro-LEDs): LED controller buses.
 - [IT-Kuny/UGREEN-DXP-FAN-NAS-Driver](https://github.com/IT-Kuny/UGREEN-DXP-FAN-NAS-Driver) and [smashah/ugreen-dxp-fan-cli](https://github.com/smashah/ugreen-dxp-fan-cli): fan chips and PWM channels.
+- [UGREEN open-source drivers](https://github.com/ugreen-opensource) (`kernel-6.12` `drivers/ugreen`): register facts for fans, LEDs, watchdog, buttons and beeper (see UGREEN open-source drivers).
+- Geoff Davis, [UGREEN Published Their GPL Sources](https://geoffdavis.com/posts/ugreen-gpl-sources-verified/#the-part-nobody-asked-for-oem-hardware-drivers): requested the sources from UGREEN under the GPL, checked the release and pointed to the OEM hardware drivers in it.
 - UGREEN LED Control (Unraid plugin by ivolution): the Spanish LED texts.
 - UGREEN stock driver `ug_4800gt-sio.ko` (DXP4800 GT): where the EC watchdog registers were first derived from; the published source `ug_it55_4800gt_functions.c` now confirms them (see UGREEN open-source drivers). Design: pet-only, never arm ([watchdog.md](watchdog.md)).
 

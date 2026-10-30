@@ -112,7 +112,7 @@ Model missing or marked Expected? [Report it](docs/cli.md#report-a-model).
 ## Credits
 
 Maintainer: [Alexander Schubert](https://github.com/alexanderschubert). Contributor: [j3n57h0m45](https://github.com/j3n57h0m45) (DXP4800 GT support, UX overhaul, fan measuring, CI).
-Built on the work of [miskcoo](https://github.com/miskcoo/ugreen_leds_controller) and others: full list and licenses in [docs/third-party.md](docs/third-party.md).
+Built on the work of [miskcoo](https://github.com/miskcoo/ugreen_leds_controller), [UGREEN's published driver sources](https://github.com/ugreen-opensource), [Geoff Davis's review of them](https://geoffdavis.com/posts/ugreen-gpl-sources-verified/#the-part-nobody-asked-for-oem-hardware-drivers) and others: full list and licenses in [docs/third-party.md](docs/third-party.md).
 
 ## License
 
