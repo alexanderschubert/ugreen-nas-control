@@ -2,7 +2,7 @@
 
 <img src="web/assets/icon.svg" alt="" width="96">
 
-# Unraid on UGREEN. Done right.
+# Unraid on UGREEN. Fans, LEDs, watchdog. Done right.
 
 **Fans. LEDs. Live case view. Sensors. One plugin. No kernel module.**
 

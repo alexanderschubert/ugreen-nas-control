@@ -106,7 +106,7 @@ function modelChips(listed: Model[], selected = DEFAULT_MODEL): string {
 function trustLine(listed: Model[]): string {
     const names = listed.filter(m => overallStatus(m) === 'verified').map(m => m.name);
     const who = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : (names[0] ?? '');
-    return `<p class="trust">Free, MIT, open source. Unraid 7.2+.${who ? ` Verified on ${esc(who)}.` : ''}</p>`;
+    return `<p class="trust">Free, MIT, open source. Unraid 7.2+.${who ? ` LEDs, fans and case view verified on ${esc(who)}.` : ''}</p>`;
 }
 
 const SCRIPT = `
@@ -160,7 +160,7 @@ const streamBar = () => {
 function layout(o: { title: string; desc: string; rel: string; body: string; path: string; ld?: object; picker?: string; extraScript?: string }): string {
     const img = `${SITE_URL}social-preview.png`;
     const social = existsSync(join(built, 'social-preview.png'))
-        ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="UGREEN NAS Control: Unraid on UGREEN. Done right."><meta name="twitter:image" content="${img}">`
+        ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="UGREEN NAS Control: ${esc(HEADLINE)}"><meta name="twitter:image" content="${img}">`
         : '';
     const ld = o.ld ? `\n<script type="application/ld+json">${JSON.stringify(o.ld)}</script>` : '';
     return `<!doctype html>
