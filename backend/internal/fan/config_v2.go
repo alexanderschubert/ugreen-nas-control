@@ -12,7 +12,7 @@ import (
 // A file without cfg_version is v1: the keys below are ignored, so it decides exactly as it always did, and it is not
 // rewritten before the user saves from the v2 page (api.php then keeps it as fan.cfg.bak).
 //
-// Pipeline order (docs/architecture.md): inputs, curve, shape, job floor/boost, quiet cap, emergency override.
+// Pipeline order (docs/fan.md): inputs, curve, shape, job floor/boost, quiet cap, emergency override.
 
 const cfgVersion = 2
 

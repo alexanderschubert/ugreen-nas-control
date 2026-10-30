@@ -1,6 +1,10 @@
-# Declined
+# Decisions
 
-Ideas that were looked at and not taken. Reopen only with new facts.
+One open next step, then the ideas that were looked at and not taken. Reopen a declined idea only with new facts.
+
+## Open: one daemon (ugreend) that owns all hardware
+
+Today the fan daemon, the LED daemon and the PHP APIs reach the hardware through separate processes of the one `ugreen-nas` binary and take locks to avoid clashing. A single daemon, `ugreend`, would own the fan chip and the LED controller and answer a local API to the web UI and the CLIs. It maps to Unraid 8's declarative services ([unraid-8.md](unraid-8.md#preparation-we-can-do-now)). Needs verification on hardware (the DXP6800 Pro and the DXP4800 GT) before any code moves; `backend/internal/hw` and `backend/internal/led/chip` are the shared pieces it would build on.
 
 ## Rust rewrite of the Go tools
 
@@ -19,7 +23,7 @@ Needs conventional commits on squash titles and writes the `.plg` badly (entitie
 
 ## Next channel in Community Applications
 
-CA reviews every entry by hand and shows `PluginURL` as the update source; the next URL is a rolling prerelease asset. The next channel is published in the forum thread and the README. If it is ever wanted: a separate wrapper XML under `plugins/` with its own PluginURL and `<Beta>true</Beta>` (CA's own flag name).
+CA reviews every entry by hand and shows `PluginURL` as the update source; the next URL is a rolling build hosted on GitHub Pages ([releasing.md](releasing.md)). The next channel is published in the forum thread and the README. If it is ever wanted: a separate wrapper XML under `plugins/` with its own PluginURL and `<Beta>true</Beta>` (CA's own flag name).
 
 ## Biome, Prettier, tsc, Playwright
 
@@ -29,14 +33,14 @@ The frontend uses Bun for formatting (`bun fmt`), type checking (`bun check`), t
 
 Scripts and tools are TypeScript on Bun; there are no Python helpers. Icon PNGs are built from the SVGs in `web/assets/` by `just web-build` (see `web/assets/README.md`).
 
-## One daemon (ugreend) that owns all hardware
-
-Not done yet; next step. Today the fan daemon, the LED daemon and the PHP APIs reach the hardware through separate processes of the one `ugreen-nas` binary and take locks to avoid clashing. A single daemon, `ugreend`, would own the fan chip and the LED controller and answer a local API to the web UI and the CLIs. It maps to Unraid 8's declarative services. Needs verification on hardware (the DXP6800 Pro and the DXP4800 GT) before any code moves; `backend/internal/hw` and `backend/internal/led/chip` are the shared pieces it would build on.
-
 ## Paid ads, YouTube outreach, a Discord server
 
 Effort without proof of demand. Support stays in the Unraid forum thread and GitHub issues.
 
 ## iDX6011 Pro touch LCD dashboard
 
-Declined for now. Driving the front LCD needs an EFI entry, an i915 overlay and a disabled BIOS watchdog (otherwise the box resets about every 2 minutes); that is too fragile for a plugin that runs as root on a NAS. Only the EC backlight (register 0xA5) is in scope. Source: noodlemctwoodle/unraid-ugreen-idx6011-pro README and src/panel/backlight.h, see docs/competition.md.
+Declined for now. Driving the front LCD needs an EFI entry, an i915 overlay and a disabled BIOS watchdog (otherwise the box resets about every 2 minutes); that is too fragile for a plugin that runs as root on a NAS. Only the EC backlight (register 0xA5) is in scope. Source: noodlemctwoodle/unraid-ugreen-idx6011-pro README and src/panel/backlight.h, see [competition.md](competition.md).
+
+## Unraid API or guessed manifest formats as Unraid 8 plugin host
+
+The Unraid API (GraphQL, Nest) is not shown to be the Unraid 8 plugin path, and the manifest format is not public. Revisit when [unraid-8.md](unraid-8.md#what-is-known) lists official plugin docs.

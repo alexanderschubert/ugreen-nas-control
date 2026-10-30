@@ -1,9 +1,6 @@
 # ugreen-led-ctl: behaviour the Go port keeps
 
-The behaviour was frozen from the shell script `ugreen-led-ctl`, which no longer exists: `parity/testdata/golden/*.json` hold what it printed and left behind
-for each scenario (stdout, stderr, exit code, chip registers, state files, calls of the chip tool and the stubs), recorded before the script was deleted.
-The Go binary (`ugreen-led-ctl`, a name of `backend/cmd/ugreen-nas`) takes the same arguments, reads the same files, and must produce the same; `parity/` proves it
-(see the end). Where the Go port differs on purpose, the scenario says why and must keep differing (`intended`).
+The Go binary (`ugreen-led-ctl`, a name of `backend/cmd/ugreen-nas`) must print and leave behind what the goldens in `backend/internal/led/parity/testdata/golden/*.json` record for each scenario (stdout, stderr, exit code, chip registers, state files, calls of the chip tool and the stubs); `parity/` proves it (see the end). Where the Go port differs on purpose, the scenario says why and must keep differing (`intended`).
 
 The web UI (`web/plugin/led/api.php`) runs `ugreen-led-ctl <args> 2>&1` and uses the exit code, the JSON of `status`,
 `all`, `list`, `bays`, `get`, and the plain text of everything else as an error message. So stdout, stderr and the

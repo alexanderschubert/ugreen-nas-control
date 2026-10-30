@@ -1,11 +1,12 @@
 // Renders the model tables of the docs from web/models/ (the registry) between <!-- models:start --> and
 // <!-- models:end --> in README.md and docs/hardware.md. Also checks the hand-written docs: every repo-relative link
-// and path in backticks must exist, every `just <recipe>` must be a recipe of the justfile.
+// and anchor and every path in backticks must exist, every `just <recipe>` must be a recipe of the justfile, and
+// docs/README.md (the hand-written index) must link every Markdown file.
 //
 //   bun docs/tools/gen-docs.ts           write the generated blocks
 //   bun docs/tools/gen-docs.ts --check   fail when a block is out of date or a link/recipe is broken
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { loadModels } from '../../web/models/index';
 import { ALL_OUTPUTS, DOC_FILES } from '../../scripts/generated';
 import { format } from '../../scripts/format';
@@ -129,36 +130,6 @@ function splice(text: string, body: string, name = 'models'): string {
     return `${text.slice(0, a + start.length)}\n${NOTE}\n\n${body}\n\n${text.slice(b)}`;
 }
 
-/** What each doc is for (3 to 6 words). Every docs/*.md must be listed; the title is its first heading. */
-const PURPOSE: Record<string, string> = {
-    'docs/hardware.md': 'Model details, evidence, adding models',
-    'docs/faq.md': 'Features, command line, disclaimer',
-    'docs/mqtt.md': 'MQTT publisher for displays and Home Assistant',
-    'docs/architecture.md': 'How the plugin is built',
-    'docs/development.md': 'Setup, recipes, tests, conventions',
-    'docs/releasing.md': 'Release and next channels',
-    'docs/translations.md': 'Languages and how to translate',
-    'docs/unraid.md': 'Unraid versions and compatibility',
-    'docs/competition.md': 'Related projects compared',
-    'docs/decisions.md': 'Declined ideas and why',
-    'docs/third-party.md': 'Sources, licenses, notices',
-    '.github/CONTRIBUTING.md': 'How to send changes',
-    '.github/SECURITY.md': 'Reporting vulnerabilities',
-    'CHANGELOG.md': 'Changes per release',
-    'plugin/README.md': 'Plugin package layout'
-};
-
-function docIndex(): string {
-    const missing = markdownFiles().filter(f => f.startsWith('docs/') && !(f in PURPOSE));
-    if (missing.length) throw new Error(`docs without an entry in PURPOSE (gen-docs.ts): ${missing.join(', ')}`);
-    const rows = Object.entries(PURPOSE).map(([f, why]) => {
-        const title = readFileSync(join(root, f), 'utf8').match(/^# (.+)$/m)?.[1] ?? f;
-        return [`[${title.replace(/\|/g, '/')}](${f})`, why];
-    });
-    rows.push([`[Website](${SITE}/)`, 'Models and guides'], [`[Live demo](${SITE}/demo/?model=dxp6800-pro)`, 'Try the interface in a browser']);
-    return table(['Document', 'Purpose'], rows);
-}
-
 function markdownFiles(): string[] {
     const docs = readdirSync(join(root, 'docs'))
         .filter(f => f.endsWith('.md'))
@@ -179,14 +150,39 @@ function recipes(): Set<string> {
     return new Set([...names].map(m => g1(m)));
 }
 
+/** GitHub's anchor for a heading: lower case, markdown and punctuation dropped, spaces to hyphens, repeats numbered. */
+function anchors(text: string): Set<string> {
+    const seen = new Map<string, number>();
+    const out = new Set<string>();
+    for (const m of text.replace(/```[\s\S]*?```/g, '').matchAll(/^#{1,6} +(.+?) *#*$/gm)) {
+        const plain = g1(m)
+            .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+            .replace(/[`*_]/g, '');
+        const slug = plain
+            .toLowerCase()
+            .replace(/[^\p{L}\p{N}\s-]/gu, '')
+            .trim()
+            .replace(/\s/g, '-');
+        const n = seen.get(slug) ?? 0;
+        seen.set(slug, n + 1);
+        out.add(n ? `${slug}-${n}` : slug);
+    }
+    return out;
+}
+
 function problems(file: string, text: string, known: Set<string>): string[] {
     const bad: string[] = [];
     const base = dirname(join(root, file));
     const body = text.replace(/```[\s\S]*?```/g, m => m.replace(/\[[^\]]*\]\([^)]*\)/g, '')); // links inside fences are examples
     for (const m of body.matchAll(/\]\(([^)\s]+)\)/g)) {
-        const target = g1(m).split('#')[0];
-        if (!target || /^(https?:|mailto:)/.test(target)) continue;
-        if (!existsSync(resolve(base, target))) bad.push(`${file}: broken link ${g1(m)}`);
+        const [target = '', frag] = g1(m).split('#');
+        if (/^(https?:|mailto:)/.test(target)) continue;
+        const dest = target ? resolve(base, target) : join(root, file);
+        if (target && !existsSync(dest)) {
+            bad.push(`${file}: broken link ${g1(m)}`);
+            continue;
+        }
+        if (frag && dest.endsWith('.md') && !anchors(readFileSync(dest, 'utf8')).has(frag)) bad.push(`${file}: broken anchor ${g1(m)}`);
     }
     for (const m of body.matchAll(/(?:src|href)="([^"]+)"/g)) {
         if (/^(https?:|#)/.test(g1(m))) continue;
@@ -219,15 +215,10 @@ for (const [file, render] of Object.entries(RENDER)) {
 }
 
 {
-    const path = join(root, 'README.md');
-    const current = readFileSync(path, 'utf8');
-    const next = format('README.md', splice(current, docIndex(), 'docs'));
-    if (next !== current) {
-        if (check) errors.push('README.md: documentation index is out of date (run just docs)');
-        else {
-            writeFileSync(path, next);
-            console.log('wrote README.md (index)');
-        }
+    const index = readFileSync(join(root, 'docs/README.md'), 'utf8');
+    for (const f of markdownFiles()) {
+        if (f === 'docs/README.md') continue;
+        if (!index.includes(`](${relative(join(root, 'docs'), join(root, f))})`)) errors.push(`docs/README.md: no link to ${f}`);
     }
 }
 

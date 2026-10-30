@@ -9,11 +9,19 @@
 Your UGREEN NAS is not a generic box. It deserves more than generic defaults.<br>
 This plugin is the bridge.
 
-**Keep the hardware watchdog on. Leave it armed in the BIOS, the plugin feeds it, and a frozen box reboots itself** (DXP4800 GT, iDX6011 Pro).
+**Keep the hardware watchdog on. Leave it armed in the BIOS, the plugin feeds it, and a frozen box reboots itself** (DXP4800 GT, iDX6011 Pro; [how](docs/watchdog.md)).
 
-[![Release](https://img.shields.io/github/v/release/alexanderschubert/ugreen-nas-control?label=release)](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Unraid 7.2+](https://img.shields.io/badge/Unraid-7.2%2B-orange)](docs/unraid.md)
+[![Release](https://img.shields.io/github/v/release/alexanderschubert/ugreen-nas-control?color=0078ff&label=release)](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/alexanderschubert/ugreen-nas-control/latest/total?color=00c853&label=downloads%20%28latest%29)](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
+[![Checks](https://img.shields.io/github/actions/workflow/status/alexanderschubert/ugreen-nas-control/checks.yml?branch=next&label=checks)](https://github.com/alexanderschubert/ugreen-nas-control/actions/workflows/checks.yml)
+[![Unraid](https://img.shields.io/badge/Unraid-7.2%2B-f15a2c)](docs/unraid.md)
+[![Models](https://img.shields.io/badge/models-DX%20%C2%B7%20DXP%20%C2%B7%20iDX-0078ff)](#your-model-your-status)
+[![Fan control](https://img.shields.io/badge/fan%20control-DXP6800%20Pro%20%C2%B7%20DXP4800%20GT-0078ff)](#your-model-your-status)
+[![Watchdog](https://img.shields.io/badge/watchdog-DXP4800%20GT%20%C2%B7%20iDX6011%20Pro-0078ff)](docs/watchdog.md)
+[![License: MIT](https://img.shields.io/github/license/alexanderschubert/ugreen-nas-control?color=lightgrey)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/alexanderschubert/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/alexanderschubert/ugreen-nas-control/stargazers)
+[![Unraid forum](https://img.shields.io/badge/support-Unraid%20forum-f15a2c)](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/)
+[![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
 
 **[Live demo](https://alexanderschubert.github.io/ugreen-nas-control/demo/?model=dxp6800-pro)** · [Install](#install-in-60-seconds) · [Models](#your-model-your-status) · [Docs](#documentation) · [Help](#help)
 
@@ -25,7 +33,7 @@ This plugin is the bridge.
 
 ## Install in 60 seconds
 
-**Runs on every UGREEN NAS that runs Unraid: the x86 DX, DXP and iDX series** (Unraid 7.2+). The ARM-based DH models can't run Unraid.
+**Runs on every UGREEN NAS that runs Unraid: the x86 DX, DXP and iDX series** (Unraid 7.2+). The ARM-based DH models [can't run Unraid](docs/faq.md#which-models-cannot-run-it).
 
 1. Unraid: **Plugins, Install Plugin**
 2. Paste this URL, hit **Install**:
@@ -36,16 +44,16 @@ https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plug
 
 3. Open **Settings, UGREEN NAS Control**. It names the model it found.
 
-Try the next build (latest head of `next`, not for production): install `https://github.com/alexanderschubert/ugreen-nas-control/releases/download/next-build/ugreen-nas-control.plg`. It replaces a stable install in place and keeps your settings; to go back, run `plugin install <stable plg URL> forced`. See [docs/releasing.md](docs/releasing.md).
+Try the next build (latest head of `next`, not for production): install `https://alexanderschubert.github.io/ugreen-nas-control/next/ugreen-nas-control.plg`. It replaces a stable install in place and keeps your settings; to go back, run `plugin install <stable plg URL> forced`. See [docs/releasing.md](docs/releasing.md).
 
 ## What you get
 
 - **Case view.** Your box, drawn as it is: bays with drive temperatures and LED colours, rear ports with LAN link speeds, and the inside (M.2, RAM, PCIe) where mapped. Dark and light.
-- **Hardware watchdog, kept on.** Under Unraid nothing feeds UGREEN's watchdog, so the box resets every few minutes and you switch it off in the BIOS. Leave it on instead (DXP4800 GT, iDX6011 Pro): the plugin feeds it, and a frozen box reboots itself. It never arms the watchdog, and on stop it clears it.
+- **Hardware watchdog, kept on.** Leave it armed in the BIOS: the plugin feeds it, a frozen box reboots itself (DXP4800 GT, iDX6011 Pro). [Details](docs/watchdog.md).
 - **Fan curves in rpm.** Quiet, Standard, Performance, Full speed or your own curve. "Measure fans" records real rpm per speed. Too hot? All fans go to 100 %. Plugin stops? BIOS values come back.
 - **LEDs that say something.** Colour, effects and brightness per LED. Disk activity, errors, SMART warnings, network speed, night mode. Off until you switch them on.
 - **Sensors, dashboard tile, MQTT.** CPU, board, iGPU, NVMe and disks, each marked with the fan it steers. Sleeping disks stay asleep. Publish status to Home Assistant, read-only.
-- **7 languages.** English, German, Spanish, French, Italian, Dutch, Chinese.
+- **7 languages.** [Which ones](docs/translations.md).
 
 ## Your model. Your status.
 
@@ -91,7 +99,7 @@ Versions, dates and evidence per cell: [docs/hardware.md](docs/hardware.md), or 
 
 <!-- models:end -->
 
-Model missing or marked Expected? Run `ugreen-nas-ctl report` and paste the output into the [model report form](https://github.com/alexanderschubert/ugreen-nas-control/issues/new?template=model-report.yml).
+Model missing or marked Expected? [Report it](docs/cli.md#report-a-model).
 
 ## Help
 
@@ -99,37 +107,7 @@ Model missing or marked Expected? Run `ugreen-nas-ctl report` and paste the outp
 
 ## Documentation
 
-[FAQ](docs/faq.md) · [Hardware](docs/hardware.md) · [MQTT](docs/mqtt.md) · [Unraid compatibility](docs/unraid.md) · [Changelog](CHANGELOG.md)
-
-<details>
-<summary>All documents</summary>
-
-<!-- docs:start -->
-<!-- Generated by docs/tools/gen-docs.ts from web/models/. Do not edit; run `just docs`. -->
-
-| Document                                                                                    | Purpose                                        |
-| ------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| [Hardware](docs/hardware.md)                                                                | Model details, evidence, adding models         |
-| [FAQ](docs/faq.md)                                                                          | Features, command line, disclaimer             |
-| [MQTT](docs/mqtt.md)                                                                        | MQTT publisher for displays and Home Assistant |
-| [Architecture](docs/architecture.md)                                                        | How the plugin is built                        |
-| [Development](docs/development.md)                                                          | Setup, recipes, tests, conventions             |
-| [Releasing](docs/releasing.md)                                                              | Release and next channels                      |
-| [Translations](docs/translations.md)                                                        | Languages and how to translate                 |
-| [Unraid compatibility](docs/unraid.md)                                                      | Unraid versions and compatibility              |
-| [Related projects](docs/competition.md)                                                     | Related projects compared                      |
-| [Declined](docs/decisions.md)                                                               | Declined ideas and why                         |
-| [Third-party notices](docs/third-party.md)                                                  | Sources, licenses, notices                     |
-| [Contributing](.github/CONTRIBUTING.md)                                                     | How to send changes                            |
-| [Security](.github/SECURITY.md)                                                             | Reporting vulnerabilities                      |
-| [Changelog](CHANGELOG.md)                                                                   | Changes per release                            |
-| [plugin/](plugin/README.md)                                                                 | Plugin package layout                          |
-| [Website](https://alexanderschubert.github.io/ugreen-nas-control/)                          | Models and guides                              |
-| [Live demo](https://alexanderschubert.github.io/ugreen-nas-control/demo/?model=dxp6800-pro) | Try the interface in a browser                 |
-
-<!-- docs:end -->
-
-</details>
+[All documents](docs/README.md) · [FAQ](docs/faq.md) · [Hardware](docs/hardware.md) · [MQTT](docs/mqtt.md) · [Unraid compatibility](docs/unraid.md) · [Changelog](CHANGELOG.md)
 
 ## Credits
 

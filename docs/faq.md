@@ -1,16 +1,12 @@
 # FAQ
 
-## Features
+## What does it do
 
-- **Overview**: the NAS drawn with its bays, drive temperatures and live LED colours, fans and fan mode, CPU, memory, network.
-- **Case view**: drives as cards, the rear with ports and LAN link speeds, and the inside (M.2, RAM, PCIe) on models where it is mapped. Dark and light.
-- **Temperatures**: CPU, board, iGPU, fan controller, LAN chips, every NVMe SSD and disk. Read from Unraid, so sleeping disks stay asleep. Each sensor shows whether it steers the fans.
-- **Fans** (DXP6800 Pro, DXP4800 GT): modes BIOS, Quiet, Standard, Performance, Full speed or your own curves; minimum speed; case fans can follow the CPU curve.
-- **Fan measuring**: runs each fan from 10 to 100 % and records the rpm, so curves show real rpm. Takes minutes and is noisy; it aborts and returns the fans to 100 % when something gets too hot.
-- **Safety**: all fans to 100 % when the CPU or a disk is too hot or the CPU temperature is unreadable, an NVMe limit with offset, drives excluded from fan control, a notification when a fan stops, BIOS values restored when the plugin stops. Fan control can be switched off in Settings.
-- **LEDs** (off until you switch them on): colour, effects and brightness per LED, status mode for disk activity, errors and SMART warnings, network LED by link speed, night mode, Unraid alerts, shutdown signal.
-- **Dashboard tile** with fans, temperatures, SSDs and live LEDs.
-- Seven languages: English, German, Spanish, French, Italian, Dutch and Simplified Chinese (the last four machine-assisted); dark, light or "same as Unraid".
+Feature list: [README](../README.md#what-you-get). Fan safety rules: [fan.md](fan.md#safety-logic). Supported languages: [translations.md](translations.md).
+
+## Is my model supported
+
+The table in the [README](../README.md#your-model-your-status); evidence per model: [hardware.md](hardware.md). Not green: [report your model](cli.md#report-a-model).
 
 ## Coming from UGREEN LED Control
 
@@ -20,14 +16,9 @@ This plugin replaces it. The LEDs page offers to take over its settings.
 
 The DH2300 and DH4300 Plus use ARM chips (Rockchip) and cannot run Unraid, which needs a 64-bit x86 CPU. Only the x86 models are supported.
 
-## Command line
+## What to include in a support request
 
-```
-/usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-fan status
-/usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-ctl status
-```
-
-Include their output in support requests, with the NAS model and the Unraid and plugin versions.
+The output of the two `status` commands ([cli.md](cli.md#support-requests)), the NAS model, and the Unraid and plugin versions.
 
 ## Disclaimer
 

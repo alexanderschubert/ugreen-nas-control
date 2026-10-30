@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// The per-tick pipeline: inputs, curve, shape, job floor/boost, quiet cap, emergency override (docs/architecture.md).
+// The per-tick pipeline: inputs, curve, shape, job floor/boost, quiet cap, emergency override (docs/fan.md).
 // Safety: the emergency is decided first (Decide, from the raw sensors, never from a configured input) and its 100 %
 // skips shape, job and quiet cap.
 
