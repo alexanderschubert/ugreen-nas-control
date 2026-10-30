@@ -1,10 +1,10 @@
-name: Beta
+name: 'Beta: rolling prerelease from next'
 
-# Every push to dev refreshes the rolling `beta` prerelease: the release archive (web files + binaries), beta plg, SHA256SUMS.
+# Every push to next refreshes the rolling `beta` prerelease: the release archive (web files + binaries), beta plg, SHA256SUMS.
 # The beta plg downloads the archive from this release, so all assets are replaced together.
 on:
   push:
-    branches: [dev]
+    branches: [next]
 
 permissions: {}
 
@@ -15,6 +15,8 @@ concurrency:
 jobs:
   # No nix cache here: this job holds an OIDC token.
   build:
+    # Off unless the repository variable BETA_ENABLED is "true" (Settings, Secrets and variables, Actions, Variables)
+    if: vars.BETA_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -65,17 +67,17 @@ jobs:
           KEEP: '5'
         run: |
           set -euo pipefail
-          notes="Rolling beta of dev at ${SHA}. Not for production."
+          notes="Rolling beta of next at ${SHA}. Not for production."
           plg=ugreen-nas-control-beta.plg
           new="$(sed -n 's/^<!ENTITY version *"\([^"]*\)">.*/\1/p' ".build/assets/${plg}")"
           [ -n "$new" ] || { echo "::error::No version in .build/assets/${plg}."; exit 1; }
-          if ! gh release view beta >/dev/null 2>&1; then
-            gh release create beta .build/assets/* --prerelease --target "$SHA" --title "Beta (dev)" --notes "$notes"
+          if ! gh release view beta >/next/null 2>&1; then
+            gh release create beta .build/assets/* --prerelease --target "$SHA" --title "Beta (next)" --notes "$notes"
             exit 0
           fi
           # Unraid compares versions as text and never offers a lower one: an older run (re-run, or a recreated
           # workflow whose run numbers restarted) must not replace a newer beta.
-          old="$(gh release download beta -p "$plg" -O - 2>/dev/null | sed -n 's/^<!ENTITY version *"\([^"]*\)">.*/\1/p' || true)"
+          old="$(gh release download beta -p "$plg" -O - 2>/next/null | sed -n 's/^<!ENTITY version *"\([^"]*\)">.*/\1/p' || true)"
           if [ -n "$old" ] && ! [[ "$new" > "$old" ]]; then
             echo "::warning::Published beta is $old, this run built $new; not replacing it (after a workflow reset, delete the beta release once)."
             exit 0
@@ -88,11 +90,11 @@ jobs:
           gh release upload beta "${RUNNER_TEMP}/${plg}.new" --clobber
           fresh="$(id "${plg}.new")"
           old_id="$(id "$plg")"
-          [ -z "$old_id" ] || gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${old_id}" >/dev/null
-          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/assets/${fresh}" -f name="$plg" >/dev/null
+          [ -z "$old_id" ] || gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${old_id}" >/next/null
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/assets/${fresh}" -f name="$plg" >/next/null
           gh release upload beta .build/assets/SHA256SUMS --clobber
           # Move the tag and the notes to this commit.
-          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/beta" -f sha="$SHA" -F force=true >/dev/null
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/beta" -f sha="$SHA" -F force=true >/next/null
           gh release edit beta --prerelease --target "$SHA" --notes "$notes"
           # Keep the newest archives: a box that lost its /boot cache can still fetch the version it runs.
           gh release view beta --json assets --jq '.assets[].name' | { grep -E '^ugreen-nas-control-.*\.tar\.xz$' || true; } | sort -r | tail -n +"$((KEEP + 1))" \

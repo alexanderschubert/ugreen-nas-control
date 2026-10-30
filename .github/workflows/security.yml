@@ -1,4 +1,4 @@
-name: Security
+name: 'Security: Go vulnerabilities, workflow audit, flake update'
 
 on:
   schedule:
@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: dev
+          ref: next
       - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
       - run: nix develop .#go -c bash -c 'cd backend && govulncheck ./...'
 
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: dev
+          ref: next
       - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
       - run: nix develop .#lint -c zizmor .github/workflows
         env:
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          ref: dev
+          ref: next
       - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
       - name: Update flake.lock and open a PR
         env:
@@ -66,6 +66,6 @@ jobs:
           git add flake.lock .changes/flake-update.md
           git commit -q -m "chore: update flake.lock"
           git push --force "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$branch"
-          if [ -z "$(gh pr list --head "$branch" --base dev --state open --json number --jq '.[].number')" ]; then
-            gh pr create --base dev --head "$branch" --title "chore: update flake.lock" --body "Weekly \`nix flake update\`."
+          if [ -z "$(gh pr list --head "$branch" --base next --state open --json number --jq '.[].number')" ]; then
+            gh pr create --base next --head "$branch" --title "chore: update flake.lock" --body "Weekly \`nix flake update\`."
           fi

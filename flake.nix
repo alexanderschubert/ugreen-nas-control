@@ -114,7 +114,8 @@
               "bun"
               "php"
               "rsvg-convert"
-            ];
+            ]
+            ++ pkgs.lib.optional isLinux "chromium";
             plugin = [
               "bun"
               "rsvg-convert"

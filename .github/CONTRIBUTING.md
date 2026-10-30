@@ -11,10 +11,20 @@ just setup && just check
 
 With nix installed, every `just` recipe runs inside the flake's dev shell (go, bun, php, shellcheck and the rest), from any shell; nothing else to install. `just check` installs the locked JS dependencies (`bun install --frozen-lockfile`) and runs everything CI runs; `just setup` enables the pre-commit hook (staged-only format and syntax checks), `just fmt` formats every file type. Without nix, install the tools listed in `flake.nix` yourself. More: [docs/development.md](../docs/development.md).
 
+## Branches
+
+| Branch | Holds                                                                                                 | Pages    |
+| ------ | ----------------------------------------------------------------------------------------------------- | -------- |
+| `main` | the released plugin; releases are tags `vX.Y`                                                         | `/`      |
+| `next` | development; feature PRs target it                                                                    | `/next/` |
+| `site` | design playground for the site, branched from `next`, `docs/site/` only; merged into `next` when done | `/lab/`  |
+
+A push to any of the three rebuilds the whole Pages deployment. `/next/` and `/lab/` are marked noindex and show a preview banner.
+
 ## Workflow
 
-1. Branch from `dev` (`git fetch upstream && git switch -c my-change upstream/dev`). `main` is for releases only.
-2. One topic per PR. Rebase on `dev` right before you open it.
+1. Branch from `next` (`git fetch upstream && git switch -c my-change upstream/next`). `main` is for releases only.
+2. One topic per PR. Rebase on `next` right before you open it.
 3. Several PRs touching the same file: stack them (each branched on the previous) or send one PR. Do not open parallel PRs that edit the same lines.
 4. Add one fragment `.changes/<slug>.md` ([format](../.changes/README.md)), or ask for the label `no-changelog` when nothing a user sees changes.
 5. `just check` before you push. Run `just harness` and look at UI changes; say in the PR which model you tested on, or that you used the harness only.

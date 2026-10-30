@@ -21,6 +21,9 @@ import {
     OVERALL_HELP,
     OVERALL_LABEL,
     PLG_URL,
+    PREVIEW,
+    ROOT_URL,
+    SITE_STREAM,
     SITE_URL,
     SUBLINE,
     checkText
@@ -128,7 +131,7 @@ function layout(o: { title: string; desc: string; rel: string; body: string; pat
 <meta name="keywords" content="${esc(KEYWORDS)}">
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#2B2F33">
-<link rel="canonical" href="${SITE_URL}${o.path}">
+${PREVIEW ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical" href="${PREVIEW ? ROOT_URL : SITE_URL}${o.path}">
 <link rel="icon" href="${o.rel}icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="${o.rel}icon.png">
 <meta property="og:site_name" content="UGREEN NAS Control"><meta property="og:title" content="${esc(o.title)}"><meta property="og:description" content="${esc(o.desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${SITE_URL}${o.path}">
@@ -139,7 +142,7 @@ ${social}${ld}
 <link rel="stylesheet" href="${o.rel}style.css">
 </head>
 <body>
-<header class="top"><div class="bar">
+${PREVIEW ? `<div class="preview">Preview of ${esc(SITE_STREAM)}, the released site is <a href="${ROOT_URL}">${esc(ROOT_URL.replace(/^https:\/\//, ''))}</a></div>\n` : ''}<header class="top"><div class="bar">
   <a class="brand" href="${o.rel}"><img src="${o.rel}icon.svg" alt="" width="28" height="28"><span>UGREEN NAS Control</span></a>
   <nav class="menu" aria-label="Sections"><a href="${o.rel}#features">Features</a><a href="${o.rel}#models">Models</a><a href="${o.rel}#install">Install</a></nav>
   <a class="iconbtn" href="${GITHUB}" aria-label="Source on GitHub">${icon('github')}</a>
@@ -412,9 +415,10 @@ for (const m of listed) {
     mkdirSync(join(dist, 'models', m.id), { recursive: true });
     writeFileSync(join(dist, 'models', m.id, 'index.html'), modelPage(m));
 }
-writeFileSync(
-    join(dist, 'sitemap.xml'),
-    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${['', ...listed.map(m => `models/${m.id}/`)].map(p => `<url><loc>${SITE_URL}${p}</loc></url>`).join('\n')}\n</urlset>\n`
-);
-writeFileSync(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}sitemap.xml\n`);
+if (!PREVIEW)
+    writeFileSync(
+        join(dist, 'sitemap.xml'),
+        `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${['', ...listed.map(m => `models/${m.id}/`)].map(p => `<url><loc>${SITE_URL}${p}</loc></url>`).join('\n')}\n</urlset>\n`
+    );
+if (!PREVIEW) writeFileSync(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${SITE_URL}sitemap.xml\n`);
 console.log(`site: ${1 + listed.length} pages -> ${dist}`);

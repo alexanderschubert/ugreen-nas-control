@@ -12,7 +12,7 @@ Unraid 7.2 or newer, x86 UGREEN models only.
 
 - **Apps tab** (Community Applications): search "UGREEN NAS Control".
 - Or **Plugins, Install Plugin** with `https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugin/ugreen-nas-control.plg`.
-- Beta channel (every merge to `dev`, not for production): see [docs/releasing.md](docs/releasing.md).
+- Beta channel (every merge to `next`, not for production): see [docs/releasing.md](docs/releasing.md).
 
 Then open **Settings, UGREEN NAS Control**.
 

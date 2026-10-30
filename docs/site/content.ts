@@ -5,6 +5,10 @@ export { CAPABILITY_LABEL, EVIDENCE_HELP, EVIDENCE_LABEL, OVERALL_HELP, OVERALL_
 export const REPO = process.env.GITHUB_REPOSITORY ?? 'alexanderschubert/ugreen-nas-control';
 export const [OWNER = '', NAME = ''] = REPO.split('/');
 export const SITE_URL = process.env.SITE_URL ?? `https://${OWNER.toLowerCase()}.github.io/${NAME}/`;
+/** main is the released site at the root; next and site are previews in a subdirectory (noindex, banner, canonical to ROOT_URL). */
+export const SITE_STREAM = process.env.SITE_STREAM ?? 'main';
+export const PREVIEW = SITE_STREAM !== 'main';
+export const ROOT_URL = process.env.ROOT_URL ?? `https://${OWNER.toLowerCase()}.github.io/${NAME}/`;
 export const GITHUB = `https://github.com/${REPO}`;
 export const PLG_URL = `https://raw.githubusercontent.com/${REPO}/main/plugin/ugreen-nas-control.plg`;
 export const FORUM = 'https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/';

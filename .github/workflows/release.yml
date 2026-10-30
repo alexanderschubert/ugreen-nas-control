@@ -1,7 +1,7 @@
-name: Release
+name: 'Release: publish a new plugin version (manual)'
 
 # Order of events (nothing public exists before the release PR is merged):
-# 1. workflow_dispatch on dev (input version): folds .changes/ fragments, builds, renders the plg, attests the
+# 1. workflow_dispatch on next (input version): folds .changes/ fragments, builds, renders the plg, attests the
 #    build output, pushes
 #    release/X.Y, creates the DRAFT release vX.Y (archive, plg, SHA256SUMS, SBOM; no tag yet) and opens the PR
 #    release/X.Y -> main. CI job `release` (ci.yml) rebuilds from the branch and compares with the draft, so a bad
@@ -9,7 +9,7 @@ name: Release
 # 2. Push to main that changes the plg version (the merge of that PR): verifies the draft's assets against the plg
 #    on main, deploys the Pages site (pages.yml), then creates the tag vX.Y at the merge commit and
 #    publishes the draft. A failed deploy keeps the release a draft. Safe to re-run.
-# 3. Opens a main -> dev PR (a fast-forward unless dev moved on).
+# 3. Opens a main -> next PR (a fast-forward unless next moved on).
 #
 # PRs created with GITHUB_TOKEN do not start workflows. Optional secret RELEASE_PR_TOKEN (GitHub App installation
 # token or fine-grained PAT with contents + pull-requests write) opens the PRs, so CI starts by itself. Without it
@@ -44,12 +44,12 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - name: Require dev and a valid version
+      - name: Require next and a valid version
         env:
           REF: ${{ github.ref }}
           VERSION: ${{ inputs.version }}
         run: |
-          [ "$REF" = refs/heads/dev ] || { echo "::error::Run this workflow on dev."; exit 1; }
+          [ "$REF" = refs/heads/next ] || { echo "::error::Run this workflow on next."; exit 1; }
           printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+$' || { echo "::error::Version must be X.Y."; exit 1; }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -62,10 +62,10 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
+          if git rev-parse -q --verify "refs/tags/v${VERSION}" >/next/null; then
             echo "::error::Tag v${VERSION} already exists."; exit 1
           fi
-          if git ls-remote --exit-code --heads origin "release/${VERSION}" >/dev/null 2>&1; then
+          if git ls-remote --exit-code --heads origin "release/${VERSION}" >/next/null 2>&1; then
             echo "::error::Branch release/${VERSION} already exists (close its PR and delete the branch and the draft release first)."; exit 1
           fi
           state="$(nix develop .#release -c bun plugin/tools/release.ts state "v${VERSION}")"
@@ -157,8 +157,8 @@ jobs:
           new="$(ver < plugin/ugreen-nas-control.plg)"
           [ -n "$new" ] || { echo "::error::No version entity in the plg."; exit 1; }
           old=""
-          if git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
-            old="$(git show "${BEFORE}:plugin/ugreen-nas-control.plg" 2>/dev/null | ver || true)"
+          if git cat-file -e "${BEFORE}^{commit}" 2>/next/null; then
+            old="$(git show "${BEFORE}:plugin/ugreen-nas-control.plg" 2>/next/null | ver || true)"
           fi
           echo "version=${new}" >> "$GITHUB_OUTPUT"
           if [ "$old" = "$new" ]; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
@@ -190,7 +190,7 @@ jobs:
           case "$state" in
             draft) ;;
             published) echo "::notice::${TAG} is already published with its archive; nothing to do." ;;
-            none) echo "::error::No draft release ${TAG}. Releases start with the Release workflow on dev."; exit 1 ;;
+            none) echo "::error::No draft release ${TAG}. Releases start with the Release workflow on next."; exit 1 ;;
             *) echo "::error::Release ${TAG} lacks the archive or the plg. Delete it and run the Release workflow again."; exit 1 ;;
           esac
       - name: Draft assets must match the plg on main
@@ -242,17 +242,17 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Open main -> dev PR
+      - name: Open main -> next PR
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PR_TOKEN || github.token }}
           VERSION: ${{ needs.check.outputs.version }}
         run: |
           set -euo pipefail
-          ahead="$(gh api "repos/${GITHUB_REPOSITORY}/compare/dev...main" --jq .ahead_by)"
-          if [ "$ahead" = 0 ]; then echo "dev already contains main."; exit 0; fi
-          if [ -n "$(gh pr list --base dev --head main --state open --json number --jq '.[].number')" ]; then
+          ahead="$(gh api "repos/${GITHUB_REPOSITORY}/compare/next...main" --jq .ahead_by)"
+          if [ "$ahead" = 0 ]; then echo "next already contains main."; exit 0; fi
+          if [ -n "$(gh pr list --base next --head main --state open --json number --jq '.[].number')" ]; then
             echo "Back-merge PR already open."; exit 0
           fi
-          gh pr create --base dev --head main \
-            --title "chore: merge main (v${VERSION}) back into dev" \
-            --body "Brings the release commit of v${VERSION} (rendered plg, CHANGELOG) into dev. Use a merge commit; GitHub offers no fast-forward, so it is a trivial merge."
+          gh pr create --base next --head main \
+            --title "chore: merge main (v${VERSION}) back into next" \
+            --body "Brings the release commit of v${VERSION} (rendered plg, CHANGELOG) into next. Use a merge commit; GitHub offers no fast-forward, so it is a trivial merge."

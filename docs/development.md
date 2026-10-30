@@ -77,7 +77,7 @@ Open the printed URL. `?p=dash` shows the dashboard tile, `?shot=1` freezes the 
 
 `just shots` drives the harness with `Bun.WebView` for every model in `web/models/` with `shots: true`, every applicable page and both themes. Output: `.build/shots/<model>/<page>-<theme>.png` and `index.json`. Pages: overview, case, fans, sensors, leds, settings, about, dashboard. macOS uses WebKit; Linux uses Chromium over CDP ([Bun.WebView](https://bun.sh/docs/runtime/webview)): the flake devShell provides it with Inter and DejaVu fonts and sets `BUN_CHROME_PATH` and `FONTCONFIG_FILE` (outside the shell: `BUN_CHROME_PATH`, `chromium` on PATH, or nixpkgs on demand). The `e2e` CI job (not yet required by `ci-ok`; the Linux run is untested; Chrome on macOS (`E2E_BACKEND=chrome`) passes single scenarios but a full run still shows 232 diffs and crashes, so the golden is only proven for WebKit) runs `just e2e` and `just shots dxp4800-gt` on Linux in the `e2e` job and uploads `.build/shots` and the e2e output on failure. `SHOTS_SCALE=2` renders at double resolution.
 
-`just site` validates `web/models/` and builds `.build/site` (one page per model). `just site-preview` builds it and serves it at `http://localhost:8788/ugreen-nas-control/`, the base path of GitHub Pages (rebuilds on changes). The Pages workflow publishes it (landing page, model pages, live demo; no screenshots). The only committed screenshots are the four for the Community Applications listing: `just ca-shots` renders DXP6800 Pro overview, fans, case and LEDs (dark) into `docs/ca/`, declared in `.gitattributes`; `plugins/ugreen-nas-control.xml` links them on `main` (the store takes plain `<Screenshot>` image URLs, one tag per image).
+`just site` validates `web/models/` and builds `.build/site` (one page per model). `just site-preview` builds it and serves it at `http://localhost:8788/ugreen-nas-control/`, the base path of GitHub Pages (rebuilds on changes). `SITE_STREAM=next just site` adds the preview banner and noindex of the `/next/` and `/lab/` streams (base URL via `SITE_URL`, released site via `ROOT_URL`). The Pages workflow publishes `main` at `/`, `next` at `/next/` and `site` at `/lab/` in one deployment (landing page, model pages, live demo; no screenshots). The only committed screenshots are the four for the Community Applications listing: `just ca-shots` renders DXP6800 Pro overview, fans, case and LEDs (dark) into `docs/ca/`, declared in `.gitattributes`; `plugins/ugreen-nas-control.xml` links them on `main` (the store takes plain `<Screenshot>` image URLs, one tag per image).
 
 ## Tests
 
@@ -104,7 +104,7 @@ Status words are defined in [hardware.md](hardware.md).
 
 ## Conventions
 
-- Branch from `dev`, one topic per PR, squash merge. See [CONTRIBUTING.md](../.github/CONTRIBUTING.md).
+- Branch from `next`, one topic per PR, squash merge. See [CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 - PR title: `type(scope): summary`, for example `fix(fan): hold the minimum speed in Quiet mode`. Types: `feat`, `fix`, `model`, `docs`, `chore`.
 - One fragment per PR in `.changes/` ([format](../.changes/README.md)).
 - Do not edit `plugin/ugreen-nas-control.plg` or `CHANGELOG.md`; do not commit generated files (`just generated-check`).

@@ -133,6 +133,17 @@ h3 {
 }
 
 /* ---- header ---- */
+.preview {
+    padding: 6px var(--pad);
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    font-size: var(--s-1);
+    text-align: center;
+}
+.preview a {
+    color: var(--accent);
+}
 .top {
     position: sticky;
     top: 0;
