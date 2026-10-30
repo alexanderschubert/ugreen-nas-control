@@ -49,9 +49,32 @@ func readProposal(model string) *ProbeProposal {
 	return &p
 }
 
+// errNoIT8613Probe: the IT8613E header probe writes to Super-I/O registers; the DXP2800 GT has a Chipsea CS201x
+// and goes through `cs201x confirm`. Every probe-fans path checks it first, so no IT8613E write can happen there.
+func errNoIT8613Probe(model string) error {
+	if isDXP2800GT(model) {
+		return fmt.Errorf("%s has a Chipsea CS201x, not an IT8613E: use ugreen-nas-fan cs201x", model)
+	}
+	if FanKind(model) != KindProbe {
+		return fmt.Errorf("%s has no fan probe: its fans are wired as known", orUnknown(model))
+	}
+	return nil
+}
+
 func probeStatus() ProbeStatus {
 	model := productName()
 	st := ProbeStatus{OK: true, Model: model, Kind: FanKind(model)}
+	if isDXP2800GT(model) {
+		// Confirmed through `cs201x confirm`; no proposal, no probe progress.
+		m, err := loadCS201xMap(model)
+		switch {
+		case err == nil:
+			st.Map, st.FanControl = m, true
+		case !errors.Is(err, errNoFanMap):
+			st.MapError = err.Error()
+		}
+		return st
+	}
 	if st.Kind != KindProbe {
 		st.FanControl = st.Kind == KindFixed
 		return st
@@ -71,8 +94,8 @@ func probeStatus() ProbeStatus {
 // are left alone. Only outputs the probe found a fan on can be confirmed.
 func confirmProbe(choice map[string]string) (*FanMap, error) {
 	model := productName()
-	if FanKind(model) != KindProbe {
-		return nil, fmt.Errorf("%s has no fan probe", orUnknown(model))
+	if err := errNoIT8613Probe(model); err != nil {
+		return nil, err
 	}
 	prop := readProposal(model)
 	if prop == nil {
@@ -123,6 +146,9 @@ func forgetMap() error {
 
 // restoreProbe writes back the state a killed probe left behind (the probe restores itself on every normal exit).
 func restoreProbe() (bool, error) {
+	if isDXP2800GT(productName()) {
+		return false, errNoIT8613Probe(productName())
+	}
 	b, err := os.ReadFile(probeRestorePath)
 	if err != nil {
 		return false, nil
@@ -150,8 +176,8 @@ func restoreProbe() (bool, error) {
 // readTachs reads every tach input without writing anything: the read-only view of a probe model without a map.
 func readTachs() (any, error) {
 	model := productName()
-	if FanKind(model) != KindProbe {
-		return nil, fmt.Errorf("%s has no fan probe", orUnknown(model))
+	if err := errNoIT8613Probe(model); err != nil {
+		return nil, err
 	}
 	if !LoadConfig(configPath).FanControl {
 		return nil, errors.New("fan control is switched off in the settings")
@@ -199,6 +225,12 @@ func parseChoice(args []string) (map[string]string, error) {
 func ProbeCommand(args []string) {
 	if len(args) == 0 {
 		usage()
+	}
+	switch args[0] {
+	case "run", "confirm", "tachs", "restore":
+		if isDXP2800GT(productName()) {
+			fail(errNoIT8613Probe(productName()))
+		}
 	}
 	switch args[0] {
 	case "status":
@@ -266,7 +298,11 @@ func BacklightCommand(args []string) {
 		if err := withLock(func() (err error) { pct, raw, err = ec.BacklightPct(); return }); err != nil {
 			fail(err)
 		}
-		printJSON(map[string]any{"ok": true, "pct": pct, "raw": raw})
+		out := map[string]any{"ok": true, "pct": pct, "raw": raw}
+		if pct == BacklightUnknownPct && raw == 0 {
+			out["pct"] = "default" // the register holds the vendor default; the panel shows its own brightness
+		}
+		printJSON(out)
 	case len(args) == 2 && args[0] == "set":
 		var pct int
 		if _, err := fmt.Sscanf(args[1], "%d", &pct); err != nil || fmt.Sprint(pct) != args[1] || pct < 0 || pct > 100 {

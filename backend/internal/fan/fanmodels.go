@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-
-	"github.com/alexanderschubert/ugreen-nas-control/internal/led/chip"
 )
 
 const (
@@ -18,21 +16,30 @@ const (
 	// KindProbe: an IT8613E whose header wiring is not known. Fan control stays off until the user confirmed a map
 	// found by `probe-fans run`.
 	KindProbe = "probe"
+	// KindReadOnly: the plain iDX6011/iDX6012. Tach, duty and mode are shown; no register is written, so the
+	// daemon, `set` and `calibrate` stay off (ecSpecIdx, errReadOnly).
+	KindReadOnly = "readonly"
 )
 
-// FanKind says how the model's fans are reached, "" for a model without fan control (plain iDX6011 and iDX6012,
-// every DX and the rest).
+// FanKind says how the model's fans are reached, "" for a model without fan control (every DX and the rest). The
+// DXP2800 GT is a probe-like model too: its CS201x fans need `ugreen-nas-fan cs201x confirm`, not the IT8613E probe.
 func FanKind(model string) string {
 	switch {
 	case strings.HasPrefix(model, "DXP6800"), isDXP4800GT(model), isIdxPro(model):
 		return KindFixed
-	case isProbeModel(model):
+	case isProbeModel(model), isDXP2800GT(model):
 		return KindProbe
+	case isIdxPlain(model):
+		return KindReadOnly
 	}
 	return ""
 }
 
-func isIdxPro(model string) bool { return chip.IdxLayout(model) == "idx-pro" }
+// isIdxPro: UGREEN has the Pro driver for DMI "iDX6011 Pro" only; an "iDX6012 Pro" does not exist.
+func isIdxPro(model string) bool { return model == "iDX6011 Pro" }
+
+// isIdxPlain: the plain iDX6011 and iDX6012 share one driver (ug_idx6011-sio).
+func isIdxPlain(model string) bool { return model == "iDX6011" || model == "iDX6012" }
 
 // isProbeModel: the IT8613E models without a known header map. The IT8613E at 0xa30 on the DXP2800 shows a fan
 // on tach 3 and none on tach 2; UGREEN's drivers name the expected wiring (see probeHints), which the probe
@@ -127,6 +134,9 @@ var errNoFanMap = errors.New("no confirmed fan map")
 
 // loadFanMap reads the map; errNoFanMap when there is none, another error when it does not fit this NAS.
 func loadFanMap(model string) (*FanMap, error) {
+	if isDXP2800GT(model) {
+		return loadCS201xMap(model)
+	}
 	b, err := os.ReadFile(fanMapPath)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, errNoFanMap

@@ -48,8 +48,9 @@ func isDXP4800GT(model string) bool {
 	return strings.HasPrefix(model, "DXP4800 GT")
 }
 
-// detectFans picks the controller by model: the GT and the iDX6011 Pro have no Super-I/O fan chip, their fans hang
-// on the embedded controller. On the IT8613E models without a known wiring the channels come from the confirmed
+// detectFans picks the controller by model: the DXP4800 GT and the iDX (Pro or plain, the plain one read only) have
+// no Super-I/O fan chip, their fans hang on the embedded controller; the DXP2800 GT has a Chipsea CS201x, gated by
+// `cs201x confirm`. On the IT8613E models without a known wiring the channels come from the confirmed
 // fan map; without one the chip comes with the probe candidates (pwm1..pwm4), which is enough to hand the fans
 // back (`restore`) but never reaches the daemon: requireSupportedModel stops that first.
 func detectFans(p Ports, model string) (Fans, error) {
@@ -58,6 +59,10 @@ func detectFans(p Ports, model string) (Fans, error) {
 		return DetectEC(p)
 	case isIdxPro(model):
 		return detectEC(p, ecSpecIdxPro)
+	case isIdxPlain(model):
+		return detectEC(p, ecSpecIdx)
+	case isDXP2800GT(model):
+		return DetectCS201x(p, model)
 	case FanKind(model) == KindProbe:
 		c, err := Detect(p)
 		if err != nil {

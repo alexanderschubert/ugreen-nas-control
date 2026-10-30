@@ -211,6 +211,9 @@ func runDaemon(chip Fans) error {
 	}
 
 	model := daemonModel()
+	if FanKind(model) == KindReadOnly {
+		return fmt.Errorf("%s is read only: fan control is off, the fans are only shown", model)
+	}
 	var bios Snapshot
 	if err := withLock(func() (err error) { bios, err = saveBIOS(chip); return }); err != nil {
 		return fmt.Errorf("cannot save the BIOS fan settings: %w", err)

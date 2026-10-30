@@ -24,6 +24,17 @@ How `ugreen-nas-fan` reads and drives the fan chips. Unraid's kernel has no driv
 - Never below 25 % (the case fan stalls near 20 %); emergency limits 88 C CPU and 60 C disk.
 - `ugreen-nas-fan backlight [set <0-100>]` reads and sets the LCD brightness (EC register `0xa5`, 1 = full, 198 = off) and touches nothing else of the display.
 
+### DXP2800 GT, Chipsea CS201x embedded controller
+
+- Reached through the Super-I/O window `0x2e`/`0x2f` (host-to-EC device) and the EC's indirect register window; two fans: CPU (fan1) and system (fan3 role case), duty in percent (0-100), tachometer the rpm.
+- No EC automatic mode exists. `restore` writes the duty back that each fan had when the daemon started (60 % if that read is unusable), not a curve.
+- The 25 % floor is the class default, not measured on this model.
+- Control stays off until `ugreen-nas-fan cs201x confirm` saved `fan_map.json` (the IT8613E `probe-fans` commands refuse on this model); `cs201x forget` removes it, `cs201x` alone only reads.
+
+### Plain iDX6011 and iDX6012, ITE IT5571 embedded controller
+
+- Readings only: fan1 and fan2 (tachometer `0x96`-`0x99`, mode and duty `0x9c`-`0x9f`) are shown as `readonly` in `fan_caps.kind`. No register is written, the daemon refuses to start and `set` and `calibrate` fail with a read-only error. No EC temperatures, no watchdog feed, no backlight.
+
 The EC watchdog of the DXP4800 GT and iDX6011 Pro: [watchdog.md](watchdog.md).
 
 ## Fan settings and pipeline order

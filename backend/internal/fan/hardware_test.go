@@ -321,16 +321,15 @@ func TestIdxBayOrder(t *testing.T) {
 		"iDX6011":     {3, 4, 5, 6, 1, 2},
 		"iDX6012":     {3, 4, 5, 6, 1, 2},
 		"iDX6011 Pro": {3, 4, 1, 2, 5, 6},
-		"iDX6012 Pro": {3, 4, 1, 2, 5, 6},
 	} {
 		if got := idxBayPorts(model); !slices.Equal(got, want) {
 			t.Errorf("%s: bay ports %v, want %v", model, got, want)
 		}
 	}
-	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("iDX6012 Pro\n"), 0o644)
+	os.WriteFile(filepath.Join(dmiDir, "product_name"), []byte("iDX6011 Pro\n"), 0o644)
 	hw := ReadHardware()
 	if len(hw.Bays) != 6 {
-		t.Fatalf("iDX6012 Pro bays: %+v", hw.Bays)
+		t.Fatalf("iDX6011 Pro bays: %+v", hw.Bays)
 	}
 }
 

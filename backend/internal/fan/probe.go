@@ -436,8 +436,8 @@ func (s *probeSession) execute() (reason string, err error) {
 
 func runProbe() error {
 	model := productName()
-	if FanKind(model) != KindProbe {
-		return fmt.Errorf("%s has no fan probe: its fans are wired as known", orUnknown(model))
+	if err := errNoIT8613Probe(model); err != nil {
+		return err
 	}
 	if !LoadConfig(configPath).FanControl {
 		return fmt.Errorf("not started: fan_control_off")
