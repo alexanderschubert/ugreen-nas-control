@@ -27,8 +27,19 @@ const (
 	iteWdtMaxValue = 65535 // 16-bit value register of the IT8613 (it87_wdt.c:56)
 )
 
-// sioGap is the time between the two samples that prove the timer counts; a variable for tests.
-var sioGap = 1500 * time.Millisecond
+// The two samples that prove the timer counts lie on different daemon ticks at least this far apart: sioGap for a
+// seconds timer, sioGapSlow for a minutes timer (WDTCFG bit 7 clear), which moves once a minute. Variables for tests.
+var (
+	sioGap     = 1500 * time.Millisecond
+	sioGapSlow = 61 * time.Second
+)
+
+func sampleGap(cfg byte) time.Duration {
+	if cfg&iteWdtSeconds == 0 {
+		return sioGapSlow
+	}
+	return sioGap
+}
 
 var (
 	errNotIT8613  = errors.New("Super-I/O chip is not an IT8613E")

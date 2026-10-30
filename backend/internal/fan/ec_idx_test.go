@@ -76,6 +76,7 @@ func TestIdxProNeverBelowFloor(t *testing.T) {
 func TestIdxProRestoreHandsBackAndDisarms(t *testing.T) {
 	f := newFakeIdxEC()
 	ec, _ := detectEC(f, ecSpecIdxPro)
+	ec.fed = true // the petter fed the BIOS's timer
 	for _, ch := range ec.Outputs() {
 		_ = ec.SetPWM(ch, 100)
 	}
@@ -451,5 +452,67 @@ func TestWatchdogStatusCounter(t *testing.T) {
 	}
 	if st, _, _ := p.Tick(ec, t0.Add(time.Second)); st.Counter == nil || *st.Counter != 300 {
 		t.Fatalf("after the feed: %v", st.Counter)
+	}
+}
+
+// Restore clears the enable byte only of a timer this process fed; the `restore` command and a daemon that never saw
+// an armed timer leave a timer somebody else armed alone.
+func TestECRestoreLeavesAForeignWatchdogArmed(t *testing.T) {
+	f := newFakeEC()
+	f.regs[ecRegWdtEnable] = 1
+	ec, _ := DetectEC(f)
+	if err := ec.Restore(nil); err != nil {
+		t.Fatal(err)
+	}
+	if f.regs[ecRegWdtEnable] != 1 || slices.Contains(f.writes, ecRegWdtEnable) {
+		t.Fatalf("enable byte %d, writes %v", f.regs[ecRegWdtEnable], f.writes)
+	}
+}
+
+func TestECRestoreDisarmsWhatItFed(t *testing.T) {
+	isolate(t, "DXP4800 GT")
+	f := newFakeEC()
+	f.regs[ecRegWdtEnable] = 1
+	ec, _ := DetectEC(f)
+	if _, _, err := (&Petter{}).Tick(ec, time.Unix(1_000_000, 0)); err != nil {
+		t.Fatal(err)
+	}
+	if err := ec.Restore(nil); err != nil {
+		t.Fatal(err)
+	}
+	if f.regs[ecRegWdtEnable] != 0 {
+		t.Fatal("the timer this process fed stays armed after the stop")
+	}
+}
+
+func TestWatchdogFeedNotEffective(t *testing.T) {
+	isolate(t, "DXP4800 GT")
+	f := newFakeEC()
+	f.regs[ecRegWdtEnable] = 1
+	f.regs[ecRegWdtHi], f.regs[ecRegWdtLo] = 0x02, 0x58 // 600, the feed does not change it
+	f.stuck = map[byte]bool{ecRegWdtHi: true, ecRegWdtLo: true}
+	ec, _ := DetectEC(f)
+	p := &Petter{}
+	t0 := time.Unix(1_000_000, 0)
+	st, _, err := p.Tick(ec, t0)
+	if err != nil || st.State != WdtNotEffective || !st.Armed || st.LastPet != t0.Unix() {
+		t.Fatalf("status %+v (%v)", st, err)
+	}
+	if got := ReadWatchdogStatus(); got == nil || got.State != WdtNotEffective {
+		t.Fatalf("persisted %+v", got)
+	}
+	// Disarmed: the state clears.
+	f.regs[ecRegWdtEnable] = 0
+	if st, _, _ := p.Tick(ec, t0.Add(time.Second)); st.State != WdtOff {
+		t.Fatalf("after disarm %+v", st)
+	}
+
+	// A feed that sticks is armed, not "not effective".
+	g := newFakeEC()
+	g.regs[ecRegWdtEnable] = 1
+	g.regs[ecRegWdtHi], g.regs[ecRegWdtLo] = 0x02, 0x58
+	ec2, _ := DetectEC(g)
+	if st, _, _ := (&Petter{}).Tick(ec2, t0); st.State != WdtArmed {
+		t.Fatalf("effective feed: %+v", st)
 	}
 }

@@ -28,6 +28,10 @@ const (
 	csSafePct = 60
 )
 
+// csWrotePath marks that this tool wrote a CS201x duty since boot and has not handed the fans back. A snapshot taken
+// while it exists would hold our own duty, not the BIOS's. /var/run is cleared on boot, as the fan state is.
+var csWrotePath = envOr("UGREEN_FAN_CS201X_WROTE", "/var/run/ugreen-nas-control.cs201x-wrote")
+
 type csFan struct {
 	id, role      string
 	en, duty, spd uint32
@@ -186,7 +190,27 @@ func (c *CS201x) SetPWM(ch Channel, duty byte) error {
 	if err := c.prepare(); err != nil {
 		return err
 	}
-	return c.ec.Write(f.duty, min(max(duty, csFloorPct), 100))
+	want := min(max(duty, csFloorPct), 100)
+	// Marked before the first write: a crash between the write and the mark would leave our duty unmarked.
+	if err := os.WriteFile(csWrotePath, []byte("1\n"), 0o644); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("cannot mark the fan duty as written: %w", err)
+	}
+	// Read back: a duty the controller did not take (one retry) is an error, not a silent no-op.
+	for try := 0; ; try++ {
+		if err := c.ec.Write(f.duty, want); err != nil {
+			return err
+		}
+		got, err := c.ec.Read(f.duty)
+		if err != nil {
+			return err
+		}
+		if got == want {
+			return nil
+		}
+		if try == 1 {
+			return fmt.Errorf("%s duty reads %d after writing %d", ch.ID, got, want)
+		}
+	}
 }
 
 func (c *CS201x) temp(reg uint32) *int {
@@ -206,12 +230,15 @@ func (c *CS201x) Temps() []*int   { return []*int{c.temp(csRegNTC2)} }
 func (c *CS201x) BoardTemp() *int { return c.temp(csRegNTC4) }
 
 // Snapshot is {enable, duty} per fan as found. It switches the host interface on (it must, to read) but writes
-// nothing else.
+// nothing else. If this tool wrote a duty since boot (csWrotePath), the duty register holds ours, not the BIOS's: it
+// is saved as 0, which Restore turns into the safe duty.
 func (c *CS201x) Snapshot() (Snapshot, error) {
 	if err := c.switchOn(); err != nil {
 		return nil, err
 	}
 	s := Snapshot{}
+	_, werr := os.Stat(csWrotePath)
+	ours := werr == nil
 	for _, ch := range c.chans {
 		f, _ := csFanOf(ch.ID)
 		en, err := c.ec.Read(f.en)
@@ -222,13 +249,17 @@ func (c *CS201x) Snapshot() (Snapshot, error) {
 		if err != nil {
 			return nil, err
 		}
+		if ours {
+			duty = 0
+		}
 		s[ch.ID] = [2]byte{en, duty}
 	}
 	return s, nil
 }
 
-// Restore writes the saved duty back, and the enable value where it differs. A fan without a usable saved duty
-// (none, or 0, which would stop it) gets csSafePct: there is no automatic mode to give it to.
+// Restore writes the saved duty back, but never below csSafePct, and the enable value where it differs. There is no
+// automatic mode to give the fans to, so what stays behind must be safe: a saved duty below the floor (the BIOS
+// value was lost, or a snapshot kept across restarts holds one we wrote) and a missing or 0 duty get csSafePct.
 func (c *CS201x) Restore(s Snapshot) error {
 	if err := c.switchOn(); err != nil {
 		return err
@@ -237,9 +268,9 @@ func (c *CS201x) Restore(s Snapshot) error {
 	for _, ch := range c.chans {
 		f, _ := csFanOf(ch.ID)
 		saved, have := s[ch.ID]
-		duty := min(saved[1], 100)
-		if !have || duty == 0 {
-			duty = csSafePct
+		duty := byte(csSafePct)
+		if have {
+			duty = min(max(saved[1], csSafePct), 100)
 		}
 		errs = append(errs, c.ec.Write(f.duty, duty))
 		if have && saved[0] <= 1 {
@@ -248,7 +279,36 @@ func (c *CS201x) Restore(s Snapshot) error {
 			}
 		}
 	}
-	return errors.Join(errs...)
+	err := errors.Join(errs...)
+	if err == nil {
+		_ = os.Remove(csWrotePath)
+	}
+	return err
+}
+
+// forgetCS201x hands the fans back before the map goes: without the map nothing can open the CS201x again, and
+// the duty we wrote would stay. Without a saved BIOS snapshot nothing was ever written, so the map just goes. A failed
+// restore keeps the map.
+func forgetCS201x(p Ports, model string) error {
+	if _, err := os.Stat(biosPath); err == nil {
+		if err := withLock(func() error {
+			c, err := DetectCS201x(p, model)
+			if err != nil {
+				if errors.Is(err, errCSNotConfirmed) {
+					return nil // no map: nothing to open
+				}
+				return err
+			}
+			var s Snapshot
+			if b, err := os.ReadFile(biosPath); err == nil {
+				_ = json.Unmarshal(b, &s)
+			}
+			return c.Restore(s)
+		}); err != nil {
+			return fmt.Errorf("cannot hand the fans back, map kept: %w", err)
+		}
+	}
+	return forgetMap()
 }
 
 // loadCS201xMap reads the confirmed map of the DXP2800 GT from fan_map.json; errNoFanMap when there is none.
@@ -296,6 +356,9 @@ func confirmCS201x(p Ports, model string, ids []string) (*FanMap, error) {
 	if err != nil {
 		return nil, err
 	}
+	if rd.HostEC != "active" {
+		return nil, errors.New("the host interface of the embedded controller is off, so no fan could be checked: start the fan driver once (it switches the interface on) or switch it on, then confirm again")
+	}
 	m := &FanMap{Version: 1, Model: model, Chip: csChip, Time: time.Now().Unix()}
 	for _, id := range ids {
 		f, ok := csFanOf(id)
@@ -303,7 +366,7 @@ func confirmCS201x(p Ports, model string, ids []string) (*FanMap, error) {
 			return nil, fmt.Errorf("unknown fan %q (fan1 = cpu, fan3 = case)", id)
 		}
 		// The probe lists the fans in the order of csFans.
-		if i := slices.IndexFunc(csFans, func(x csFan) bool { return x.id == id }); rd.HostEC == "active" && i < len(rd.Fans) && rd.Fans[i].RPM == 0 {
+		if i := slices.IndexFunc(csFans, func(x csFan) bool { return x.id == id }); i < len(rd.Fans) && rd.Fans[i].RPM == 0 {
 			return nil, fmt.Errorf("%s reads no rpm: nothing connected, or the fan is stopped", id)
 		}
 		m.Outputs = append(m.Outputs, FanMapOutput{ID: id, Role: f.role, PWM: "duty", Tach: "rpm"})

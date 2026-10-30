@@ -7,7 +7,8 @@ A watchdog (the IT5571 EC's, or the IT8613E's) resets the box when nothing feeds
 - Models: DXP4800 GT and iDX6011 Pro (both IT5571 EC, [fan.md](fan.md#fan-chips)); DXP2800, DXP4800, DXP4800 Plus, DXP4800 Pro, DXP6800 Pro and DXP8800 Plus (IT8613E, see below). Other models run no watchdog code. The plain iDX6011/iDX6012 keeps its own registers (`0x55`-`0x57`), read only: no petter, no write. There `0x98`/`0x99` is a fan tachometer, not the watchdog.
 - Recommended BIOS setting: leave the watchdog armed.
 - The plugin never arms it. While it is armed, the fan daemon rewrites the timeout at a third of the timeout, at least every 60 seconds. UGREEN's keepalive also sets the enable byte again; the plugin does not, and that a timeout rewrite alone reloads the counter is not proven on hardware.
-- On stop the plugin returns the fans to the EC curve and clears the enable register.
+- On stop the plugin returns the fans to the EC curve and clears the enable register, only if this process fed the timer. A timer somebody else armed, and `restore` (which never feeds), leave the enable byte alone.
+- After a feed the counter is read again. If it does not show the value written (within 5 s), `state` is `not_effective`: the rewrite did not reload this unit's timer. Feeding goes on; the state clears when the timer is disarmed or a feed takes.
 - `ugreen-nas-fan status` reports `watchdog`, with `counter` (the timeout registers read back before the feed, read only; whether it counts down is not stated by UGREEN) while armed ([cli.md](cli.md)).
 - Fan code writes only fan mode and duty, the watchdog timeout, the enable byte with 0, and (iDX6011 Pro) the backlight register. The wake registers `0x99`/`0x9A` (GT/Pro), the EUP and beeper registers (`0x9C`, `0x9E`) and `0xA5` on the plain iDX (beeper) are refused in code.
 - Code: `backend/internal/fan/ec_watchdog.go` (both petters), `ite_watchdog.go` (IT8613E registers).
@@ -17,12 +18,12 @@ A watchdog (the IT5571 EC's, or the IT8613E's) resets the box when nothing feeds
 On this chip a keepalive write of a non-zero value is also the start: there is no enable bit, so rewriting a stopped timer would arm it. The plugin therefore writes only after proof that the timer counts.
 
 - Detect (read only, one Super-I/O session under the fan lock): unlock, chip id `0x8613`, logical device 7, read `0x71`-`0x74`. Value `0` = off, nothing more happens.
-- Proof: a non-zero value is read twice `1.5 s` apart and must fall (and not reach 0). The proof latches until the value reads 0. A value that stands still (a stopped timer with a stale value, or a register that does not count when read) is never written: `state` is `not_counting`, the proof is retried at most every 60 s. Whether a read returns the live count is not stated by any source and not yet confirmed on hardware.
+- Proof: the first non-zero value is kept as a sample (with its time); on a later daemon tick, at least `1.5 s` later (seconds unit, `0x72` bit 7 set) or `61 s` later (minutes unit, bit 7 clear), the value must be lower. Nothing sleeps under the fan lock. The proof latches until the value reads 0. A value that stands still (a stopped timer with a stale value, or a register that does not count when read) is never written: `state` is `not_counting` and a new sample is taken, so it is retried at every gap. A value that rose replaces the sample. Whether a read returns the live count is not stated by any source and not yet confirmed on hardware.
 - Feed (same cadence as the EC: a third of the timeout, at most 60 s, default timeout 300 s): rewrite `0x72` with the value read (keeps the BIOS's reset bits), then the value LSB `0x73`, then MSB `0x74`, in the unit `0x72` bit 7 selects (set = seconds, clear = minutes, rounded up). `0x71` is never written; the only writable registers are `0x72`-`0x74` of logical device 7 (`runSIO` allowlist).
 - Stop: a clean daemon stop writes value 0 (config untouched), only if this process fed the timer. `probe-fans restore` never touches the watchdog.
 - Yield: while the `it87_wdt` module is loaded the plugin accesses nothing and reports `yielded` ([conflicts.md](conflicts.md)). Loading the module rewrites the config and control registers, and the module holds the Super-I/O ports.
 - Without a confirmed fan map (probe models) the daemon runs as a watchdog petter only and writes no fan register.
-- Status states beyond the EC's: `yielded`, `not_counting`; `counter` is the 16-bit value.
+- Status states beyond the EC's: `yielded`, `not_counting` (also while the first proof is pending); `counter` is the 16-bit value.
 
 ## EC registers
 

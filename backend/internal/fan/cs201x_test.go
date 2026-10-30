@@ -2,8 +2,10 @@ package fan
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,14 +19,20 @@ type fakeCS struct {
 	base    uint16
 	ec      map[uint32]byte
 	addr    [4]byte
-	writes  []uint16 // ports written
-	ecData  []byte   // values written to the data port
-	cfgData []byte   // values written to the config data port
-	ecLog   []uint32 // register addresses written, in order
+	writes  []uint16        // ports written
+	ecData  []byte          // values written to the data port
+	cfgData []byte          // values written to the config data port
+	ecLog   []uint32        // register addresses written, in order
+	stuck   map[uint32]bool // writes to these registers are logged but do not stick
+}
+
+func init() {
+	csWrotePath = filepath.Join(os.TempDir(), fmt.Sprintf("ugreen-test-cs-wrote-%d", os.Getpid()))
 }
 
 func newFakeCS() *fakeCS {
 	csCounterGap = 0
+	_ = os.Remove(csWrotePath)
 	return &fakeCS{id: 0x2011, active: 1, base: 0x200, ec: map[uint32]byte{
 		csRegFan0En: 1, csRegFan1En: 1, csRegFan0Duty: 25, csRegFan1Duty: 25,
 		csRegFan0Spd: 0x07, csRegFan0Spd + 1: 0x08, // 1800
@@ -76,7 +84,9 @@ func (f *fakeCS) Out(port uint16, v byte) error {
 	case port == f.base+csEcData:
 		f.ecData = append(f.ecData, v)
 		a := uint32(f.addr[0]) | uint32(f.addr[1])<<8 | uint32(f.addr[2])<<16 | uint32(f.addr[3])<<24
-		f.ec[a] = v
+		if !f.stuck[a] {
+			f.ec[a] = v
+		}
 		f.ecLog = append(f.ecLog, a)
 	}
 	return nil
@@ -266,10 +276,10 @@ func TestCS201xSetPWMFloorCeilingAndPrepare(t *testing.T) {
 func TestCS201xSnapshotRestore(t *testing.T) {
 	confirmedMap(t, csChip, "fan1", "fan3")
 	f := newFakeCS()
-	f.ec[csRegFan0Duty], f.ec[csRegFan1Duty], f.ec[csRegFan1En] = 40, 0, 0
+	f.ec[csRegFan0Duty], f.ec[csRegFan1Duty], f.ec[csRegFan1En] = 70, 0, 0
 	c, _ := DetectCS201x(f, "DXP2800 GT")
 	snap, err := c.Snapshot()
-	if err != nil || snap["fan1"] != [2]byte{1, 40} || snap["fan3"] != [2]byte{0, 0} || len(f.ecData) != 0 {
+	if err != nil || snap["fan1"] != [2]byte{1, 70} || snap["fan3"] != [2]byte{0, 0} || len(f.ecData) != 0 {
 		t.Fatalf("snap %v %v writes %v", snap, err, f.ecData)
 	}
 	_ = c.SetPWM(c.Outputs()[0], 90)
@@ -280,8 +290,8 @@ func TestCS201xSnapshotRestore(t *testing.T) {
 	if err := c.Restore(snap); err != nil {
 		t.Fatal(err)
 	}
-	// fan1: duty back. fan3: saved duty 0 would stop it, so the safe duty; enable back to what it was.
-	if f.ec[csRegFan0Duty] != 40 || f.ec[csRegFan1Duty] != csSafePct || f.ec[csRegFan1En] != 0 {
+	// fan1: duty back (above the floor). fan3: saved duty 0 would stop it, so the safe duty; enable back to what it was.
+	if f.ec[csRegFan0Duty] != 70 || f.ec[csRegFan1Duty] != csSafePct || f.ec[csRegFan1En] != 0 {
 		t.Fatalf("duty %d/%d en %d", f.ec[csRegFan0Duty], f.ec[csRegFan1Duty], f.ec[csRegFan1En])
 	}
 	if err := c.Restore(nil); err != nil || f.ec[csRegFan0Duty] != csSafePct {
@@ -341,4 +351,125 @@ func TestFanLockIsTheSharedCS201xLock(t *testing.T) {
 	}
 	close(release)
 	<-got
+}
+
+// A saved duty below the floor (a snapshot of one we wrote) is never written back: the CS201x has no automatic mode.
+func TestCS201xRestoreNeverBelowSafeDuty(t *testing.T) {
+	confirmedMap(t, csChip, "fan1", "fan3")
+	f := newFakeCS()
+	c, _ := DetectCS201x(f, "DXP2800 GT")
+	if err := c.Restore(Snapshot{"fan1": {1, 24}, "fan3": {1, 85}}); err != nil {
+		t.Fatal(err)
+	}
+	if f.ec[csRegFan0Duty] != csSafePct || f.ec[csRegFan1Duty] != 85 {
+		t.Fatalf("duty %d/%d, want %d/85", f.ec[csRegFan0Duty], f.ec[csRegFan1Duty], csSafePct)
+	}
+}
+
+// A snapshot taken after this tool wrote a duty (a crashed daemon, a lost snapshot file) must not keep our duty as
+// the BIOS value.
+func TestCS201xSnapshotAfterOwnWriteIsNotTrusted(t *testing.T) {
+	confirmedMap(t, csChip, "fan1", "fan3")
+	f := newFakeCS()
+	c, _ := DetectCS201x(f, "DXP2800 GT")
+	if err := c.SetPWM(c.Outputs()[0], 30); err != nil {
+		t.Fatal(err)
+	}
+	c2, _ := DetectCS201x(f, "DXP2800 GT") // the restarted daemon
+	snap, err := c2.Snapshot()
+	if err != nil || snap["fan1"][1] != 0 || snap["fan3"][1] != 0 {
+		t.Fatalf("snapshot %v (%v) kept our duty", snap, err)
+	}
+	if err := c2.Restore(snap); err != nil || f.ec[csRegFan0Duty] != csSafePct {
+		t.Fatalf("restore: duty %d (%v)", f.ec[csRegFan0Duty], err)
+	}
+	if _, err := os.Stat(csWrotePath); err == nil {
+		t.Fatal("marker stays after the fans were handed back")
+	}
+	c3, _ := DetectCS201x(f, "DXP2800 GT")
+	f.ec[csRegFan0Duty] = 40 // the BIOS value of a later boot
+	if snap, _ := c3.Snapshot(); snap["fan1"][1] != 40 {
+		t.Fatalf("clean snapshot %v", snap)
+	}
+}
+
+func TestCS201xSetPWMReadsBack(t *testing.T) {
+	confirmedMap(t, csChip, "fan1", "fan3")
+	f := newFakeCS()
+	c, _ := DetectCS201x(f, "DXP2800 GT")
+	f.stuck = map[uint32]bool{csRegFan0Duty: true}
+	n := len(f.ecLog)
+	if err := c.SetPWM(c.Outputs()[0], 50); err == nil {
+		t.Fatal("a duty the EC did not take was reported as written")
+	}
+	writes := 0
+	for _, a := range f.ecLog[n:] {
+		if a == csRegFan0Duty {
+			writes++
+		}
+	}
+	if writes != 2 {
+		t.Fatalf("%d duty writes, want 1 + 1 retry", writes)
+	}
+	f.stuck = nil
+	if err := c.SetPWM(c.Outputs()[0], 50); err != nil || f.ec[csRegFan0Duty] != 50 {
+		t.Fatalf("duty %d (%v)", f.ec[csRegFan0Duty], err)
+	}
+}
+
+func TestConfirmCS201xRefusesWithHostInterfaceOff(t *testing.T) {
+	old := fanMapPath
+	defer func() { fanMapPath = old }()
+	fanMapPath = filepath.Join(t.TempDir(), "fan_map.json")
+	f := newFakeCS()
+	f.active = 0
+	_, err := confirmCS201x(f, "DXP2800 GT", nil)
+	if err == nil || !strings.Contains(err.Error(), "host interface") {
+		t.Fatalf("err %v", err)
+	}
+	if _, err := os.Stat(fanMapPath); err == nil {
+		t.Fatal("map saved blind")
+	}
+}
+
+func TestForgetCS201xHandsFansBackFirst(t *testing.T) {
+	confirmedMap(t, csChip, "fan1", "fan3")
+	oldBios, oldLock := biosPath, lockPath
+	dir := t.TempDir()
+	biosPath, lockPath = filepath.Join(dir, "bios"), filepath.Join(dir, "lock")
+	defer func() { biosPath, lockPath = oldBios, oldLock }()
+	f := newFakeCS()
+
+	// Nothing was ever saved: nothing was written, the map just goes.
+	if err := forgetCS201x(f, "DXP2800 GT"); err != nil || len(f.ecData) != 0 {
+		t.Fatalf("no snapshot: %v, writes %v", err, f.ecData)
+	}
+	if _, err := os.Stat(fanMapPath); err == nil {
+		t.Fatal("map kept")
+	}
+
+	confirmedMap(t, csChip, "fan1", "fan3")
+	if err := os.WriteFile(biosPath, []byte(`{"fan1":[1,80],"fan3":[1,25]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f.ec[csRegFan0Duty], f.ec[csRegFan1Duty] = 30, 30 // ours
+	if err := forgetCS201x(f, "DXP2800 GT"); err != nil {
+		t.Fatal(err)
+	}
+	if f.ec[csRegFan0Duty] != 80 || f.ec[csRegFan1Duty] != csSafePct {
+		t.Fatalf("duty %d/%d after forget", f.ec[csRegFan0Duty], f.ec[csRegFan1Duty])
+	}
+	if _, err := os.Stat(fanMapPath); err == nil {
+		t.Fatal("map kept")
+	}
+
+	// A failed hand-back keeps the map: forget can be run again.
+	confirmedMap(t, csChip, "fan1", "fan3")
+	f.id = 0x8613
+	if err := forgetCS201x(f, "DXP2800 GT"); err == nil {
+		t.Fatal("forget succeeded without handing the fans back")
+	}
+	if _, err := os.Stat(fanMapPath); err != nil {
+		t.Fatal("map removed although the fans were not handed back")
+	}
 }

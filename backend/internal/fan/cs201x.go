@@ -190,18 +190,18 @@ func cs201xCommand() {
 		fail(fmt.Errorf("%q is not a DXP2800 GT", model))
 	}
 	args := os.Args[2:]
-	if len(args) > 0 && args[0] == "forget" {
-		if err := forgetMap(); err != nil {
-			fail(err)
-		}
-		printJSON(map[string]any{"ok": true})
-		return
-	}
 	p, err := hw.OpenPorts()
 	if err != nil {
 		fail(err)
 	}
 	defer func() { _ = p.Close() }()
+	if len(args) > 0 && args[0] == "forget" {
+		if err := forgetCS201x(p, model); err != nil {
+			fail(err)
+		}
+		printJSON(map[string]any{"ok": true})
+		return
+	}
 	out := map[string]any{}
 	if len(args) > 0 && args[0] == "confirm" {
 		var m *FanMap

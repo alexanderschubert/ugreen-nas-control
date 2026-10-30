@@ -27,6 +27,7 @@ const (
 	wdtMinTimeout     = 1
 	wdtMaxTimeout     = 10000
 	wdtMaxInterval    = 60 * time.Second // never feed less often than this
+	wdtReloadSlack    = 5                // a reloaded counter reads within this many seconds of the value written
 )
 
 var errNeverArm = errors.New("refusing to arm the EC watchdog")
@@ -37,7 +38,7 @@ type WatchdogStatus struct {
 	Interval int    `json:"interval"`          // seconds between feeds
 	LastPet  int64  `json:"last_pet"`          // unix time, 0 = never
 	Time     int64  `json:"time"`              // when this was sampled
-	State    string `json:"state"`             // a Wdt* state, computed when read (WdtYielded and WdtNotCounting are kept as written)
+	State    string `json:"state"`             // a Wdt* state, computed when read (WdtYielded, WdtNotCounting and WdtNotEffective are kept as written)
 	Counter  *int   `json:"counter,omitempty"` // timeout registers read back before the feed; only while armed
 }
 
@@ -48,11 +49,12 @@ const (
 	WdtActionNeeded = "action_needed" // armed, but nothing fed it for more than twice the interval
 	WdtYielded      = "yielded"       // IT8613E: the it87_wdt module is loaded and owns the timer, nothing is accessed
 	WdtNotCounting  = "not_counting"  // IT8613E: the value is non-zero but did not count down, so nothing is written
+	WdtNotEffective = "not_effective" // EC: armed and fed, but the counter did not reload after a feed
 )
 
 func watchdogState(st WatchdogStatus, now time.Time) string {
 	switch {
-	case st.State == WdtYielded || st.State == WdtNotCounting:
+	case st.State == WdtYielded || st.State == WdtNotCounting || st.State == WdtNotEffective:
 		return st.State
 	case !st.Armed:
 		return WdtOff
@@ -134,12 +136,22 @@ type Petter struct {
 	status  WatchdogStatus
 	failed  bool // the last Tick failed (the daemon logs it once)
 
-	// IT8613E only. counting latches once two samples sioGap apart showed the value fall, until it reads 0 or the
-	// petter yields; nextProbe rate-limits the new proof while the value stands still; petted: this process wrote the
+	notEffective bool // EC: the counter did not reload after the last feed
+
+	// IT8613E only. counting latches once two samples on different ticks showed the value fall (at least sampleGap
+	// apart), until it reads 0 or the petter yields; sample is the first of the pair; petted: this process wrote the
 	// timer, so a clean stop writes 0.
-	counting  bool
-	nextProbe time.Time
-	petted    bool
+	counting bool
+	sample   iteSample
+	petted   bool
+}
+
+// iteSample is one reading of the IT8613E value with the time and the config it was read under.
+type iteSample struct {
+	val  uint16
+	cfg  byte
+	at   time.Time
+	have bool
 }
 
 func (p *Petter) timeout() int {
@@ -185,11 +197,24 @@ func (p *Petter) tickEC(ec *EC, now time.Time) (st WatchdogStatus, ok bool, err 
 			p.status.Counter = &n
 		}
 	}
+	if !armed {
+		p.notEffective = false
+	}
 	if armed && (p.last.IsZero() || now.Sub(p.last) >= wdtInterval(timeout)) {
 		if err = ec.WatchdogPet(timeout); err == nil {
 			p.last = now
 			p.status.LastPet = now.Unix()
+			ec.fed = true
+			// Read the counter again: after a feed it shows the value written. A timer that keeps its old value did
+			// not take the feed (UGREEN's driver does not say that this write reloads the counter).
+			if n, cerr := ec.WatchdogCounter(); cerr == nil {
+				p.notEffective = n < timeout-wdtReloadSlack || n > timeout+wdtReloadSlack
+			}
 		}
+	}
+	p.status.State = ""
+	if p.notEffective {
+		p.status.State = WdtNotEffective
 	}
 	p.status.State = watchdogState(p.status, now)
 	p.record(now)
@@ -208,7 +233,7 @@ func (p *Petter) tickITE(c *Chip, now time.Time) (st WatchdogStatus, ok bool, er
 	p.status.Armed, p.status.Counter = false, nil
 
 	if p.Yield {
-		p.counting, p.nextProbe = false, time.Time{}
+		p.counting, p.sample = false, iteSample{}
 		p.status.State = WdtYielded
 		p.record(now)
 		return p.status, true, nil
@@ -222,32 +247,14 @@ func (p *Petter) tickITE(c *Chip, now time.Time) (st WatchdogStatus, ok bool, er
 		return p.status, true, err
 	}
 	if cur.val == 0 {
-		p.counting, p.nextProbe = false, time.Time{}
+		p.counting, p.sample = false, iteSample{}
 		p.status.State = WdtOff
 		p.record(now)
 		return p.status, true, nil
 	}
 
-	if !p.counting && !now.Before(p.nextProbe) {
-		time.Sleep(sioGap)
-		next, err := c.WatchdogRead()
-		if err != nil {
-			return p.status, true, err
-		}
-		switch {
-		case next.val == 0:
-			cur = next
-		case next.val < cur.val:
-			p.counting = true
-			cur = next
-		default:
-			p.nextProbe = now.Add(wdtMaxInterval)
-		}
-	}
-	if cur.val == 0 {
-		p.status.State = WdtOff
-		p.record(now)
-		return p.status, true, nil
+	if !p.counting {
+		p.proveCounting(cur, now)
 	}
 	n := int(cur.val)
 	p.status.Counter = &n
@@ -258,6 +265,7 @@ func (p *Petter) tickITE(c *Chip, now time.Time) (st WatchdogStatus, ok bool, er
 	}
 
 	p.status.Armed = true
+	p.status.State = ""
 	if p.last.IsZero() || now.Sub(p.last) >= wdtInterval(timeout) {
 		if err = c.WatchdogPet(cur, timeout); err == nil {
 			p.last, p.petted = now, true
@@ -267,6 +275,26 @@ func (p *Petter) tickITE(c *Chip, now time.Time) (st WatchdogStatus, ok bool, er
 	p.status.State = watchdogState(p.status, now)
 	p.record(now)
 	return p.status, true, err
+}
+
+// proveCounting compares the value with the sample of an earlier tick: the timer counts when it fell by at least one
+// unit since then. The pair must be sampleGap apart (a minutes timer cannot move faster than once a minute), so the
+// proof spans ticks and never sleeps under the lock. A sample that rose, or was taken under another config, or lies in
+// the future, is replaced; a value that stood still is sampled again.
+func (p *Petter) proveCounting(cur ITEWdt, now time.Time) {
+	s := p.sample
+	if !s.have || s.cfg != cur.cfg || now.Before(s.at) || cur.val > s.val {
+		p.sample = iteSample{cur.val, cur.cfg, now, true}
+		return
+	}
+	if now.Sub(s.at) < sampleGap(cur.cfg) {
+		return
+	}
+	if cur.val < s.val {
+		p.counting = true
+		return
+	}
+	p.sample = iteSample{cur.val, cur.cfg, now, true}
 }
 
 // Stop ends the feeding on a clean daemon stop. An IT8613E timer this process fed is stopped (value 0), so that a

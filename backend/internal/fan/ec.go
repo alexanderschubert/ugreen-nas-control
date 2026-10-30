@@ -134,6 +134,7 @@ type EC struct {
 	ports  Ports
 	spec   ecSpec
 	idNote string // chip id warning of a softID spec
+	fed    bool   // this process fed the watchdog (Petter.tickEC); only then does Restore clear the enable byte
 }
 
 func (c *EC) sp() ecSpec {
@@ -425,7 +426,9 @@ func (c *EC) Snapshot() (Snapshot, error) {
 }
 
 // Restore hands the fans back to the EC's own curve, whatever the snapshot
-// says: it may have been taken while a fan was still in manual mode.
+// says: it may have been taken while a fan was still in manual mode. The watchdog enable byte is cleared only if
+// this process fed the timer (a stop must not leave an armed timer that nobody feeds); a timer somebody else armed
+// is left alone, also on the `restore` command, which never feeds.
 func (c *EC) Restore(Snapshot) error {
 	if c.sp().readOnly {
 		return nil // nothing was written
@@ -435,6 +438,12 @@ func (c *EC) Restore(Snapshot) error {
 		errs = append(errs, c.write(ch.Ctrl, ecModeAuto))
 	}
 	// Last, so that a stop never leaves an armed watchdog that nobody feeds.
-	errs = append(errs, c.DisarmWatchdog())
+	if c.fed && c.sp().wdt != nil {
+		err := c.DisarmWatchdog()
+		errs = append(errs, err)
+		if err == nil {
+			c.fed = false
+		}
+	}
 	return errors.Join(errs...)
 }

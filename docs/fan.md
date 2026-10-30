@@ -27,9 +27,9 @@ How `ugreen-nas-fan` reads and drives the fan chips. Unraid's kernel has no driv
 ### DXP2800 GT, Chipsea CS201x embedded controller
 
 - Reached through the Super-I/O window `0x2e`/`0x2f` (host-to-EC device) and the EC's indirect register window; two fans: CPU (fan1) and system (fan3 role case), duty in percent (0-100), tachometer the rpm.
-- No EC automatic mode exists. `restore` writes the duty back that each fan had when the daemon started (60 % if that read is unusable), not a curve.
+- No EC automatic mode exists. `restore` writes the duty back that each fan had when the daemon started, never below 60 % (a lower or unusable value, or a snapshot taken after this tool had written a duty since boot, gives 60 %), not a curve. A duty write is read back; a mismatch after one retry is an error.
 - The 25 % floor is the class default, not measured on this model.
-- Control stays off until `ugreen-nas-fan cs201x confirm` saved `fan_map.json` (the IT8613E `probe-fans` commands refuse on this model); `cs201x forget` removes it, `cs201x` alone only reads.
+- Control stays off until `ugreen-nas-fan cs201x confirm` saved `fan_map.json` (the IT8613E `probe-fans` commands refuse on this model); `cs201x confirm` refuses while the host interface is off (nothing could be checked); `cs201x forget` hands the fans back (restore) and then removes it, keeping the map if that fails; `cs201x` alone only reads.
 
 ### Plain iDX6011 and iDX6012, ITE IT5571 embedded controller
 

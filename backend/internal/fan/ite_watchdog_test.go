@@ -136,13 +136,17 @@ func TestITEWatchdogCountingPets(t *testing.T) {
 		name   string
 		cfg    byte
 		lo, hi byte
+		gap    time.Duration
 	}{
-		{"seconds", cfgSecondsKRST, 0x2c, 0x01}, // 300
-		{"minutes", 0x50, 5, 0},                 // ceil(300 / 60)
+		{"seconds", cfgSecondsKRST, 0x2c, 0x01, 2 * time.Second}, // 300
+		{"minutes", 0x50, 5, 0, 62 * time.Second},                // ceil(300 / 60)
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			r := newWdtRig(t, 1000, tc.cfg, true)
-			st := r.tick(t, 0)
+			if st := r.tick(t, 0); st.State != WdtNotCounting || st.Armed || len(r.f.wlog) != 0 {
+				t.Fatalf("first sample: %+v, writes %v", st, r.f.wlog)
+			}
+			st := r.tick(t, tc.gap)
 			if st.State != WdtArmed || !st.Armed || st.Counter == nil || *st.Counter != 999 {
 				t.Fatalf("status %+v", st)
 			}
@@ -169,6 +173,28 @@ func TestITEWatchdogCountingPets(t *testing.T) {
 	}
 }
 
+// The proof spans daemon ticks: nothing sleeps under the lock, and a minutes timer needs more than a minute between the
+// samples (it cannot move faster, so two samples seconds apart prove nothing).
+func TestITEWatchdogProofSpansTicks(t *testing.T) {
+	r := newWdtRig(t, 1000, 0x50, true) // minutes; the fake falls on every read
+	sioGap = 5 * time.Second
+	start := time.Now()
+	for _, d := range []time.Duration{0, 2 * time.Second, 30 * time.Second, 20 * time.Second} {
+		if st := r.tick(t, d); st.State != WdtNotCounting || st.Armed {
+			t.Fatalf("armed %v after %v: %+v", d, r.now, st)
+		}
+	}
+	if len(r.f.wlog) != 0 {
+		t.Fatalf("writes before 61 s: %v", r.f.wlog)
+	}
+	if st := r.tick(t, 10*time.Second); st.State != WdtArmed || len(r.f.wlog) != 3 { // 62 s after the first sample
+		t.Fatalf("after 62 s: %+v, writes %v", st, r.f.wlog)
+	}
+	if time.Since(start) > 2*time.Second {
+		t.Fatal("a tick slept")
+	}
+}
+
 func TestITEWatchdogStaticValueNeverWritten(t *testing.T) {
 	r := newWdtRig(t, 500, cfgSecondsKRST, false)
 	for i := range 20 {
@@ -187,6 +213,7 @@ func TestITEWatchdogStaticValueNeverWritten(t *testing.T) {
 func TestITEWatchdogLatchResets(t *testing.T) {
 	r := newWdtRig(t, 1000, cfgSecondsKRST, true)
 	r.tick(t, 0)
+	r.tick(t, 2*time.Second)
 	if !r.p.counting || len(r.f.wlog) != 3 {
 		t.Fatalf("counting %v, writes %v", r.p.counting, r.f.wlog)
 	}
@@ -259,6 +286,7 @@ func TestITEWatchdogStopWritesZeroOnlyIfPetted(t *testing.T) {
 
 	r = newWdtRig(t, 1000, cfgSecondsKRST, true)
 	r.tick(t, 0)
+	r.tick(t, 2*time.Second)
 	r.f.wlog = nil
 	if err := r.p.Stop(r.chip); err != nil {
 		t.Fatal(err)
