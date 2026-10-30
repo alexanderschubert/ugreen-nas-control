@@ -2678,7 +2678,7 @@
         const led = ledControllerState();
         const status = state.ledStatus;
         const ports = /IT5571/.test(data.chip || '') ? '0x62 / 0x66' : '';
-        const fanState = !data.chip ? ['sensors.not_found', 'bad'] : fanOff() ? ['sensors.ctl_off', 'warn'] : ['sensors.ctl_on', 'ok'];
+        const fanState = modelName() && !fanKnown() ? ['sensors.no_fanctl', 'plain'] : !data.chip ? ['sensors.not_found', 'bad'] : fanOff() ? ['sensors.ctl_off', 'warn'] : ['sensors.ctl_on', 'ok'];
         const ledState = led === 'found' ? ['sensors.found', 'ok'] : led === 'missing' ? ['sensors.not_found', 'bad'] : null;
 
         return [

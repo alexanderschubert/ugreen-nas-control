@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "4.1">
+<!ENTITY version   "4.2">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 4.2
+- Sensors: on a model without fan control (every one but the DXP6800 Pro and the DXP4800 GT) the fan controller now says "No fan control for this model" instead of a red "Not found", which looked like a defect. Nothing changes in what the plugin does with the fan chip: it still does not touch it on these models.
 
 ### 4.1
 - DXP2800 GT: a read-only test command, `ugreen-nas-fan cs201x`, for the Chipsea CS201x chip of this model (it is not an ITE chip). It reads the chip ID, the base address of the embedded controller, the rpm and duty of the two fans and two temperatures, and prints them. It writes no fan setting and does not switch anything on. Fan control for this model is not part of it yet; the plugin itself still does not touch the fan chip on this NAS.
@@ -319,12 +322,12 @@
 
 <FILE Name="&srcDIR;/js/i18n.js">
 <URL>&gitURL;/src/web/js/i18n.js</URL>
-<MD5>d8f90e991d7a73b83ddfc7250602d1ed</MD5>
+<MD5>ae1d86c700e143054e9edc759fb9e9ba</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>d38c50289f1792acfc93329fa96b02a7</MD5>
+<MD5>ef3191b3c80d97dd7f52598a2b852679</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">
