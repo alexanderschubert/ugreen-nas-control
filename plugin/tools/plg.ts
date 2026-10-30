@@ -1,26 +1,28 @@
 #!/usr/bin/env bun
 // Packs the plugin and renders the .plg from plugin/ugreen-nas-control.plg.tmpl + plugin/files.txt + CHANGELOG.md.
-//   bun plugin/tools/plg.ts pack   [--version X.Y] [--beta --run N] [--out .build/dist] [--binary-dir .build/bin] [--binary name=path]
-//   bun plugin/tools/plg.ts render [--version X.Y] [--beta --run N] [--out .build/dist] [--archive path] [--changes 20]
+//   bun plugin/tools/plg.ts pack   [--version X.Y] [--next --run N] [--out .build/dist] [--binary-dir .build/bin] [--binary name=path]
+//   bun plugin/tools/plg.ts render [--version X.Y] [--next --run N] [--out .build/dist] [--archive path] [--changes 20]
 //   bun plugin/tools/plg.ts check  [--binary-dir .build/bin]
 //   bun plugin/tools/plg.ts serve  [--version X.Y] [--port 8790] [--host IP]   test install from this machine (see below)
 // pack builds the web files (web/tools/build.ts) and writes ONE archive, <out>/ugreen-nas-control-<version>.tar.xz: every
 // file of plugin/files.txt at its install-relative path, binaries from .build/bin/. The archive is reproducible (sorted
 // entries, fixed mtime, uid/gid 0), so the same sources give the same SHA256.
 // render writes the .plg with the archive's hashes; the plugin manager downloads that one file from the release.
-// Stable: version X.Y, archive from the release v<X.Y>, installed as ugreen-nas-control.plg.
-// Beta:   version X.Y.bNNNNNN (X.Y = latest stable, NNNNNN = CI run), archive from the rolling "beta" prerelease,
-//         installed as ugreen-nas-control-beta.plg.
-// Test:   --test (render, pack) or `serve`: version X.Y.tYYYYMMDDHHMM, installed as ugreen-nas-control.plg from
+// Stable: version X.Y or X.Y.Z (plugin/tools/version.ts), archive from the release v<X.Y>, installed as ugreen-nas-control.plg.
+// Next:   version X.(Y+1)-next.NNNNNN (X.Y = latest stable, NNNNNN = CI run, zero-padded), archive from the Pages folder /next/ (website.yml, only the current build),
+//         installed as ugreen-nas-control.plg too (Unraid names the installed file after the URL's basename), so the channels switch in place;
+//         the pluginURL points at the Pages copy so the update check follows the channel.
+// Test:   --test (render, pack) or `serve`: version X.Y.Z.tYYYYMMDDHHMM, installed as ugreen-nas-control.plg from
 //         --release-url / --plugin-url (this machine). The plugin manager installs only a version that sorts above the
-//         installed one as text (strcmp): X.Y.t... is above X.Y and below the next release X.(Y+1). Written to
-//         .build/plg-test; only --test accepts the two URL options, `check` refuses a stable or beta plg without GitHub URLs.
+//         installed one as text (strcmp): X.Y.Z.t... is above X.Y.Z and below the next patch. Written to
+//         .build/plg-test; only --test accepts the two URL options, `check` refuses a stable or next plg without GitHub URLs.
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { networkInterfaces, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { $ } from 'bun';
 import { buildWeb, TREE } from '../../web/tools/build.ts';
 import { parseChangelog, readFragments, sortedTexts, VERSION_RE } from './changes.ts';
+import { localVersion, nextAfter, nextVersion, orderProblems } from './version.ts';
 import { ALL_OUTPUTS } from '../../scripts/generated.ts';
 import { type Entry, type Link, linkTarget, MANIFEST, readLinks, readManifest } from './manifest.ts';
 
@@ -55,9 +57,10 @@ async function latestStable(): Promise<string> {
     return log[0].version;
 }
 
+
 interface Opts {
     version: string; // as written in the plg
-    beta: boolean;
+    next: boolean;
     test?: boolean;
     releaseTag: string;
     pluginURL: string;
@@ -71,7 +74,7 @@ async function changesBlock(o: Opts, base: string, n: number): Promise<string> {
     const from = log.findIndex(r => r.version === base);
     const releases = (from >= 0 ? log.slice(from) : log).slice(0, n);
     const parts: string[] = [];
-    if (o.beta || o.test) {
+    if (o.next || o.test) {
         const pending = sortedTexts(readFragments().fragments);
         if (pending.length) parts.push(`### ${o.version}\n${pending.map(t => `- ${esc(t)}`).join('\n')}`);
     }
@@ -178,6 +181,9 @@ export async function buildArchive(manifest: Entry[], links: Link[], binDir: str
 // ---- options ----------------------------------------------------------------------------------------------
 
 const GITHUB_RELEASES = `https://github.com/${REPO}/releases/download/`;
+// The next channel lives on GitHub Pages (website.yml): base derived from GITHUB_REPOSITORY like the workflow does.
+const [PAGES_OWNER, PAGES_NAME] = (process.env.GITHUB_REPOSITORY || REPO).split('/');
+const NEXT_PAGES = `https://${PAGES_OWNER.toLowerCase()}.github.io/${PAGES_NAME}/next`;
 
 function stamp(d = new Date()): string {
     const p = (n: number) => String(n).padStart(2, '0');
@@ -186,20 +192,20 @@ function stamp(d = new Date()): string {
 
 async function options(a: ReturnType<typeof args>): Promise<{ opts: Opts; base: string }> {
     const base = a.val('version') ?? (await latestStable());
-    if (!VERSION_RE.test(base)) throw new Error(`version "${base}" must be X.Y (Unraid compares plugin versions as text)`);
+    if (!VERSION_RE.test(base)) throw new Error(`version "${base}" must be X.Y or X.Y.Z (Unraid compares plugin versions as text)`);
     if ((a.has('release-url') || a.has('plugin-url')) && !a.has('test')) throw new Error('--release-url and --plugin-url are for --test renders only');
     if (a.has('test')) {
-        if (a.has('beta')) throw new Error('--test and --beta exclude each other');
+        if (a.has('next')) throw new Error('--test and --next exclude each other');
         const releaseURL = a.val('release-url');
         const pluginURL = a.val('plugin-url');
         if (!releaseURL || !pluginURL) throw new Error('--test needs --release-url and --plugin-url');
-        const version = `${base}.t${a.val('stamp') ?? stamp()}`;
-        if (!/^\d+\.\d+\.t\d{12}$/.test(version)) throw new Error(`test version ${version} must be X.Y.tYYYYMMDDHHMM`);
+        const version = localVersion(base, a.val('stamp') ?? stamp());
+        if (!/^\d\.\d\.\d\.t\d{12}$/.test(version)) throw new Error(`test version ${version} must be X.Y.Z.tYYYYMMDDHHMM`);
         return {
             base,
             opts: {
                 version,
-                beta: false,
+                next: false,
                 test: true,
                 releaseTag: 'test',
                 plgFile: 'ugreen-nas-control.plg',
@@ -209,12 +215,12 @@ async function options(a: ReturnType<typeof args>): Promise<{ opts: Opts; base: 
             }
         };
     }
-    if (!a.has('beta')) {
+    if (!a.has('next')) {
         return {
             base,
             opts: {
                 version: base,
-                beta: false,
+                next: false,
                 releaseTag: `v${base}`,
                 plgFile: 'ugreen-nas-control.plg',
                 archive: `ugreen-nas-control-${base}.tar.xz`,
@@ -224,18 +230,18 @@ async function options(a: ReturnType<typeof args>): Promise<{ opts: Opts; base: 
         };
     }
     const run = a.val('run');
-    if (!run || !/^\d{1,6}$/.test(run)) throw new Error('--beta needs --run N (CI run number, up to 6 digits)');
-    const version = `${base}.b${run.padStart(6, '0')}`;
+    if (!run || !/^\d{1,6}$/.test(run)) throw new Error('--next needs --run N (CI run number, up to 6 digits)');
+    const version = nextVersion(base, run);
     return {
         base,
         opts: {
             version,
-            beta: true,
-            releaseTag: 'beta',
-            plgFile: 'ugreen-nas-control-beta.plg',
+            next: true,
+            releaseTag: 'next-build',
+            plgFile: 'ugreen-nas-control.plg',
             archive: `ugreen-nas-control-${version}.tar.xz`,
-            releaseURL: `${GITHUB_RELEASES}beta`,
-            pluginURL: `https://github.com/${REPO}/releases/download/beta/ugreen-nas-control-beta.plg`
+            releaseURL: NEXT_PAGES,
+            pluginURL: `${NEXT_PAGES}/ugreen-nas-control.plg`
         }
     };
 }
@@ -252,12 +258,10 @@ async function build(opts: Opts, base: string, manifest: Entry[], links: Link[],
             .filter(e => e.mode === mode)
             .map(e => e.dest)
             .join(' ');
-    const other = opts.beta ? 'ugreen-nas-control.plg' : 'ugreen-nas-control-beta.plg';
     const vars: Record<string, string> = {
         VERSION: opts.version,
         RELEASE_URL: opts.releaseURL,
         PLUGIN_URL: opts.pluginURL,
-        OTHER_PLG: other,
         ARCHIVE: opts.archive,
         ARCHIVE_SHA256: hex('sha256', archive),
         ARCHIVE_MD5: hex('md5', archive),
@@ -358,7 +362,7 @@ async function check(a: ReturnType<typeof args>): Promise<number> {
         }
         const variants: [string, string[]][] = [
             ['stable', []],
-            ['beta', ['--beta', '--run', '1']]
+            ['next', ['--next', '--run', '1']]
         ];
         for (const [label, extra] of variants) {
             try {
@@ -376,11 +380,17 @@ async function check(a: ReturnType<typeof args>): Promise<number> {
                 else if (lint) problems.push(`${label} plg is not well-formed XML:\n${lint}`);
                 if (!/version="&version;"/.test(text) || !text.includes(`<!ENTITY version   "${opts.version}">`))
                     problems.push(`${label}: version entity missing`);
+                if (opts.next) {
+                    // Unraid compares versions as text: this build must sort above the stable and below the stable after next.
+                    const later = nextAfter(base);
+                    if (!(opts.version > base) || !(opts.version < nextAfter(later))) problems.push(`next: version ${opts.version} does not sort between ${base} and ${nextAfter(later)}`);
+                    problems.push(...orderProblems(base));
+                }
                 const count = (text.match(/<FILE Name=/g) ?? []).length;
                 if (count !== 1) problems.push(`${label}: ${count} FILE downloads, want the one archive`);
                 if (!text.includes(opts.archive)) problems.push(`${label}: archive name ${opts.archive} missing`);
                 const releaseURL = text.match(/<!ENTITY releaseURL "([^"]*)">/)?.[1] ?? '';
-                if (!releaseURL.startsWith(GITHUB_RELEASES)) problems.push(`${label}: releaseURL ${releaseURL} is not a GitHub release of ${REPO}`);
+                if (!releaseURL.startsWith(opts.next ? NEXT_PAGES : GITHUB_RELEASES)) problems.push(`${label}: releaseURL ${releaseURL} is not a GitHub ${opts.next ? 'Pages folder' : 'release'} of ${REPO}`);
             } catch (err) {
                 problems.push(`${label}: ${(err as Error).message}`);
             }
@@ -412,7 +422,7 @@ async function check(a: ReturnType<typeof args>): Promise<number> {
 
     for (const p of problems) console.error(p);
     if (!problems.length)
-        console.log(`plg ok (${manifest.length} files in one archive, stable and beta render, ${dirname(MANIFEST).split('/').pop()}/files.txt consistent)`);
+        console.log(`plg ok (${manifest.length} files in one archive, stable and next render, ${dirname(MANIFEST).split('/').pop()}/files.txt consistent)`);
     return problems.length ? 1 : 0;
 }
 
@@ -447,7 +457,7 @@ async function serve(a: ReturnType<typeof args>): Promise<number> {
         }
     });
     console.log(`\nServing ${dir} on ${base} (version ${opts.version}). On the NAS:\n\n  plugin install ${base}/ugreen-nas-control.plg\n`);
-    console.log('Roll back: plugin remove ugreen-nas-control.plg, then install the official plg. Settings survive. Ctrl-C stops the server.');
+    console.log('Roll back: plugin install <stable plg URL> forced (a lower version needs forced). Settings survive. Ctrl-C stops the server.');
     await new Promise<void>(done => {
         for (const sig of ['SIGINT', 'SIGTERM'] as const)
             process.on(sig, () => {

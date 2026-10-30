@@ -64,7 +64,7 @@ Incompatibilities found: none. Nothing in 7.2 to 7.4.0-rc.2 lists a plugin API, 
 
 Rows are Unraid builds, columns are scenarios. Every cell is run on a real box or VM unless 2.3 says the harness covers it. Build list: **7.2.9** (last 7.2, PHP 8.4.27), **7.2.7** (last 7.2 on PHP 8.3), **7.3.4** (stable), **7.4.0-rc.N** (newest RC; replace by 7.4.0 stable when it ships).
 
-| Build           | A fresh install | B upgrade from the previous stable `.plg` | C reboot | D remove (and reinstall) | E beta to stable and back |
+| Build           | A fresh install | B upgrade from the previous stable `.plg` | C reboot | D remove (and reinstall) | E next to stable and back |
 | --------------- | --------------- | ----------------------------------------- | -------- | ------------------------ | ------------------------- |
 | 7.2.7 (PHP 8.3) | run             | run                                       | run      | run                      | run                       |
 | 7.2.9 (PHP 8.4) | run             | run                                       | run      | run                      | skip                      |
@@ -75,7 +75,7 @@ Hardware: the fan and LED paths need a DXP6800 Pro or DXP4800 GT. Everything els
 
 ### 2.2 Steps and pass criteria
 
-Preparation on every build: note `cat /etc/unraid-version`, `php -v`, the server clock. Browser console and `/var/log/syslog` open. "Plugins page" = Plugins tab. `/boot/config/plugins/ugreen-nas-control` is the boot folder. Install URL stable: the raw `.plg` on `main`; beta: `https://github.com/alexanderschubert/ugreen-nas-control/releases/download/beta/ugreen-nas-control-beta.plg` (`docs/releasing.md`).
+Preparation on every build: note `cat /etc/unraid-version`, `php -v`, the server clock. Browser console and `/var/log/syslog` open. "Plugins page" = Plugins tab. `/boot/config/plugins/ugreen-nas-control` is the boot folder. Install URL stable: the raw `.plg` on `main`; next: `https://github.com/alexanderschubert/ugreen-nas-control/releases/download/next-build/ugreen-nas-control.plg` (`docs/releasing.md`).
 
 **A. Fresh install**
 
@@ -93,7 +93,7 @@ Preparation on every build: note `cat /etc/unraid-version`, `php -v`, the server
 2. Plugins, Check for Updates, Update (or install the new `.plg`).
 3. Pass: log ends with `Installation complete.`; settings unchanged (`diff` of `fan.cfg`, `leds.cfg` before and after); old cache folder `/boot/config/plugins/ugreen-nas-control/3.6/` is gone and the new one exists; other folders created by the user inside the boot folder are still there; fan duty never reads 0 % for more than one poll; one daemon process; the page works after a hard reload (no stale JS: `autov` and `tar -m` give new mtimes).
 4. Fail test: delete the archive from the cache folder before the install script runs (or point `<URL>` to a 404 in a local copy). Pass: the install fails with a non-zero exit, the old version keeps running, no half-installed tree.
-5. Version order: `3.9` then `4.0` and beta `3.6.b000042` between `3.6` and `3.7` (loader uses `strcmp`, `plugin/README.md`); run the comparison in `plugin/tools/plg.ts check` locally.
+5. Version order: `5.0.9` then `5.1` and next `5.1-next.000042` between `5.0.3` and `5.2` (loader uses `strcmp`, `plugin/README.md`); run the comparison in `plugin/tools/plg.ts check` locally.
 
 **C. Reboot**
 
@@ -109,12 +109,12 @@ Preparation on every build: note `cat /etc/unraid-version`, `php -v`, the server
 3. Reinstall: settings come back as before.
 4. On 7.4: a remove whose output contains shell characters still completes (hook runs; the 7.4 notes list the fix).
 
-**E. Beta and stable**
+**E. Next and stable**
 
-1. With stable installed, install the beta URL. Pass: install refuses with `... is installed. Remove it on the Plugins page first` (`plugin/ugreen-nas-control.plg.tmpl:96-98`).
-2. Remove stable, install beta. Pass: version `3.6.bNNNNNN` shown on the page (`UGREENNASControl.page:19-26` reads the beta file), settings kept.
-3. Remove beta, install stable. Pass: as in B. Check Plugins page: exactly one entry, icon and README shown (same plugin `name`).
-4. Update check: with beta installed, "Check for updates" shows no update unless a newer beta or a newer stable exists.
+1. With stable installed, install the next URL. Pass: install refuses with `... is installed. Remove it on the Plugins page first` (`plugin/ugreen-nas-control.plg.tmpl:96-98`).
+2. Remove stable, install next. Pass: version `3.7-next.NNNNNN` shown on the page (`UGREENNASControl.page:19-26` reads the next file), settings kept.
+3. Remove next, install stable. Pass: as in B. Check Plugins page: exactly one entry, icon and README shown (same plugin `name`).
+4. Update check: with next installed, "Check for updates" shows no update unless a newer next build or a newer stable exists.
 
 ### 2.3 What the local harness covers
 
@@ -126,7 +126,7 @@ Preparation on every build: note `cat /etc/unraid-version`, `php -v`, the server
 | Go behaviour (fan, LED, parity with the shell backend)                                          | `just go-test`, `just parity`                         | logic without hardware                                                                                                      | `/dev/port`, `/dev/mem`, `/dev/i2c-N` on real chips                                       |
 | Install script logic                                                                            | none                                                  | -                                                                                                                           | everything in `INLINE` (stage, swap, prune, remove); needs a box or VM                    |
 
-Needs a real Unraid box or VM, not the harness: all cells of 2.1, the responsive layout with Unraid's CSS, the install log in the task tray, reboot/boot-cache behaviour, `update_cron`, `restore_favorites`, the beta/stable switch, and everything touching the chips.
+Needs a real Unraid box or VM, not the harness: all cells of 2.1, the responsive layout with Unraid's CSS, the install log in the task tray, reboot/boot-cache behaviour, `update_cron`, `restore_favorites`, the next/stable switch, and everything touching the chips.
 
 ### 2.4 Release checklist (per Unraid release)
 

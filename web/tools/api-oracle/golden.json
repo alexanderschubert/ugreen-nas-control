@@ -336,7 +336,7 @@
       }
     ]
   },
-  "nas.status.plg-beta-only": {
+  "nas.status.plg-next": {
     "status": 200,
     "headers": {
       "content-type": "application/json; charset=utf-8"
@@ -369,7 +369,7 @@
       },
       "fan_control": true,
       "running": true,
-      "version": "2026.11.0-beta1",
+      "version": "4.3-next.000005",
       "led": {
         "enabled": true,
         "supported": true,
@@ -395,7 +395,7 @@
         }
       }
     },
-    "raw": "{\"ok\":true,\"model\":\"DXP6800 Pro\",\"daemon\":{\"time\":1759999995,\"quiet_active\":false,\"job\":\"\",\"cap\":null},\"conflicts\":[],\"fans\":[{\"id\":\"fan1\",\"rpm\":1200,\"pct\":35},{\"id\":\"fan2\",\"rpm\":0,\"pct\":0}],\"temps\":{\"cpu\":41.5,\"case\":33},\"fan_control\":true,\"running\":true,\"version\":\"2026.11.0-beta1\",\"led\":{\"enabled\":true,\"supported\":true,\"blocker\":\"\"},\"settings\":{\"mode\":\"standard\",\"cpu_curve\":\"\",\"case_curve\":\"\",\"min_pct\":25,\"cpu_crit\":90,\"disk_crit\":55,\"nvme_offset\":15,\"stall_notify\":true,\"fan_control\":true,\"case_follows_cpu\":false,\"ignore_drives\":[],\"ui_lang\":\"auto\",\"ui_theme\":\"dark\",\"fan_config\":{\"mode\":\"standard\",\"version\":2}}}",
+    "raw": "{\"ok\":true,\"model\":\"DXP6800 Pro\",\"daemon\":{\"time\":1759999995,\"quiet_active\":false,\"job\":\"\",\"cap\":null},\"conflicts\":[],\"fans\":[{\"id\":\"fan1\",\"rpm\":1200,\"pct\":35},{\"id\":\"fan2\",\"rpm\":0,\"pct\":0}],\"temps\":{\"cpu\":41.5,\"case\":33},\"fan_control\":true,\"running\":true,\"version\":\"4.3-next.000005\",\"led\":{\"enabled\":true,\"supported\":true,\"blocker\":\"\"},\"settings\":{\"mode\":\"standard\",\"cpu_curve\":\"\",\"case_curve\":\"\",\"min_pct\":25,\"cpu_crit\":90,\"disk_crit\":55,\"nvme_offset\":15,\"stall_notify\":true,\"fan_control\":true,\"case_follows_cpu\":false,\"ignore_drives\":[],\"ui_lang\":\"auto\",\"ui_theme\":\"dark\",\"fan_config\":{\"mode\":\"standard\",\"version\":2}}}",
     "calls": [
       {
         "tool": "fan",

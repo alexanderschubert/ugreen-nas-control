@@ -136,7 +136,7 @@ const PURPOSE: Record<string, string> = {
     'docs/mqtt.md': 'MQTT publisher for displays and Home Assistant',
     'docs/architecture.md': 'How the plugin is built',
     'docs/development.md': 'Setup, recipes, tests, conventions',
-    'docs/releasing.md': 'Release and beta channels',
+    'docs/releasing.md': 'Release and next channels',
     'docs/translations.md': 'Languages and how to translate',
     'docs/unraid.md': 'Unraid versions and compatibility',
     'docs/competition.md': 'Related projects compared',

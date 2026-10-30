@@ -17,12 +17,9 @@ $unc_led_dir = '/usr/local/emhttp/plugins/ugreen-nas-control/led';
 $unc_led_on = is_file('/boot/config/plugins/ugreen-nas-control/led.enabled') && is_file("{$unc_led_dir}/include/views.php");
 
 $unc_version = 'dev';
-foreach (['ugreen-nas-control.plg', 'ugreen-nas-control-beta.plg'] as $unc_plg) {
-    if (is_file("/boot/config/plugins/{$unc_plg}")
-        && preg_match('/ENTITY\s+version\s+"([^"]+)"/', (string)@file_get_contents("/boot/config/plugins/{$unc_plg}"), $unc_match)) {
-        $unc_version = $unc_match[1];
-        break;
-    }
+$unc_plg = '/boot/config/plugins/ugreen-nas-control.plg';
+if (is_file($unc_plg) && preg_match('/ENTITY\s+version\s+"([^"]+)"/', (string)@file_get_contents($unc_plg), $unc_match)) {
+    $unc_version = $unc_match[1];
 }
 ?>
 

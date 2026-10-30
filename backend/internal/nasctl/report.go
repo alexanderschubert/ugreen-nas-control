@@ -122,13 +122,11 @@ func readFirstLine(path string) string {
 
 var versionRe = regexp.MustCompile(`(?m)<!ENTITY\s+version\s+"([^"]+)"`)
 
-// pluginVersion reads the version entity of the installed .plg (stable, else beta).
+// pluginVersion reads the version entity of the installed .plg (a "-next." version is the next channel).
 func pluginVersion(boot string) string {
-	for _, name := range []string{"ugreen-nas-control.plg", "ugreen-nas-control-beta.plg"} {
-		if data, err := os.ReadFile(filepath.Join(boot, name)); err == nil {
-			if m := versionRe.FindSubmatch(data); m != nil {
-				return scrub(string(m[1]))
-			}
+	if data, err := os.ReadFile(filepath.Join(boot, "ugreen-nas-control.plg")); err == nil {
+		if m := versionRe.FindSubmatch(data); m != nil {
+			return scrub(string(m[1]))
 		}
 	}
 	return ""

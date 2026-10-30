@@ -305,11 +305,10 @@
       ]
     },
     {
-      "id": "nas.status.plg-beta-only",
+      "id": "nas.status.plg-next",
       "api": "nas",
       "files": {
-        "/boot/config/plugins/ugreen-nas-control.plg": null,
-        "/boot/config/plugins/ugreen-nas-control-beta.plg": "<!ENTITY version \"2026.11.0-beta1\">"
+        "/boot/config/plugins/ugreen-nas-control.plg": "<!ENTITY version \"4.3-next.000005\">"
       }
     },
     { "id": "nas.status.plg-none", "api": "nas", "files": { "/boot/config/plugins/ugreen-nas-control.plg": null } },

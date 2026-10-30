@@ -1,4 +1,4 @@
-name: 'Checks: lint, tests, build (every push and PR)'
+name: 'Checks (lint, tests, build)'
 
 # Every job runs the same `just` recipes as local development, inside the flake's devShell. The `check` job is
 # `just check` itself (everything: format, lint, tests, docs, models, generated files); the other jobs split parts
@@ -126,12 +126,12 @@ jobs:
       - run: nix develop .#plugin -c just plg-check
       - run: nix develop .#plugin -c just changes-check
       - run: nix develop .#plugin -c just generated-check
-      # Archive and beta plg of this commit (version scheme owned by plugin/tools/plg.ts).
-      - run: nix develop .#plugin -c bun plugin/tools/plg.ts pack --beta --run "$GITHUB_RUN_NUMBER"
-      - run: nix develop .#plugin -c bun plugin/tools/plg.ts render --beta --run "$GITHUB_RUN_NUMBER"
+      # Archive and next plg of this commit (version scheme owned by plugin/tools/plg.ts).
+      - run: nix develop .#plugin -c bun plugin/tools/plg.ts pack --next --run "$GITHUB_RUN_NUMBER"
+      - run: nix develop .#plugin -c bun plugin/tools/plg.ts render --next --run "$GITHUB_RUN_NUMBER"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: plg-beta
+          name: plg-next
           path: .build/dist/
           include-hidden-files: true
           if-no-files-found: error

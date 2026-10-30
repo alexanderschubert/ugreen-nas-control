@@ -1,14 +1,15 @@
 #!/usr/bin/env bun
 // Changelog fragments: one .changes/<slug>.md per PR, folded into CHANGELOG.md at release.
 //   bun plugin/tools/changes.ts check
-//   bun plugin/tools/changes.ts release --version 3.7
+//   bun plugin/tools/changes.ts release --version 5.0.1   (scheme: plugin/tools/version.ts)
 import { existsSync, readdirSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
+import { releaseProblem, STABLE_RE } from './version.ts';
 
 export const ROOT = join(import.meta.dir, '../..');
 export const TYPES = ['feat', 'fix', 'model', 'docs', 'chore'] as const;
 export type ChangeType = (typeof TYPES)[number];
-export const VERSION_RE = /^\d+\.\d+$/;
+export const VERSION_RE = STABLE_RE;
 
 const CHANGES_DIR = join(ROOT, '.changes');
 const CHANGELOG = join(ROOT, 'CHANGELOG.md');
@@ -84,7 +85,7 @@ async function check(): Promise<number> {
         const log = parseChangelog(await Bun.file(CHANGELOG).text());
         const seen = new Set<string>();
         for (const r of log) {
-            if (!VERSION_RE.test(r.version) && !/^\d+\.\d+\.\d+$/.test(r.version)) errors.push(`CHANGELOG.md: bad version "${r.version}"`);
+            if (!/^\d+\.\d+(\.\d+)*$/.test(r.version)) errors.push(`CHANGELOG.md: bad version "${r.version}"`);
             if (seen.has(r.version)) errors.push(`CHANGELOG.md: ${r.version} twice`);
             seen.add(r.version);
         }
@@ -95,8 +96,8 @@ async function check(): Promise<number> {
 }
 
 async function release(version: string | undefined): Promise<number> {
-    if (!version || !VERSION_RE.test(version)) {
-        console.error('usage: changes.ts release --version X.Y (two numbers; Unraid compares plugin versions as text)');
+    if (!version) {
+        console.error('usage: changes.ts release --version X.Y[.Z] (scheme: plugin/tools/version.ts)');
         return 2;
     }
     const { fragments, errors } = readFragments();
@@ -114,9 +115,9 @@ async function release(version: string | undefined): Promise<number> {
         console.error(`CHANGELOG.md already has ${version}`);
         return 1;
     }
-    // strcmp, like the Unraid plugin loader
-    if (log.length && !(version > log[0].version)) {
-        console.error(`${version} does not sort above ${log[0].version} as text; Unraid would not offer it as an update`);
+    const problem = releaseProblem(log[0]?.version, version, fragments.map(f => f.type));
+    if (problem) {
+        console.error(problem);
         return 1;
     }
     const section = `## ${version}\n\n${sortedTexts(fragments)
@@ -137,7 +138,7 @@ if (import.meta.main) {
     if (cmd === 'check') process.exit(await check());
     else if (cmd === 'release') process.exit(await release(arg('version')));
     else {
-        console.error('usage: changes.ts check | release --version X.Y');
+        console.error('usage: changes.ts check | release --version X.Y[.Z]');
         process.exit(2);
     }
 }

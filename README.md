@@ -25,7 +25,7 @@ This plugin is the bridge.
 
 ## Install in 60 seconds
 
-**Unraid 7.2+ on an x86 UGREEN NAS (DX, DXP, iDX).**
+**Runs on every UGREEN NAS that runs Unraid: the x86 DX, DXP and iDX series** (Unraid 7.2+). The ARM-based DH models can't run Unraid.
 
 1. Unraid: **Plugins, Install Plugin**
 2. Paste this URL, hit **Install**:
@@ -36,7 +36,7 @@ https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plug
 
 3. Open **Settings, UGREEN NAS Control**. It names the model it found.
 
-Want the beta? See [docs/releasing.md](docs/releasing.md).
+Try the next build (latest head of `next`, not for production): install `https://github.com/alexanderschubert/ugreen-nas-control/releases/download/next-build/ugreen-nas-control.plg`. It replaces a stable install in place and keeps your settings; to go back, run `plugin install <stable plg URL> forced`. See [docs/releasing.md](docs/releasing.md).
 
 ## What you get
 
@@ -91,8 +91,6 @@ Versions, dates and evidence per cell: [docs/hardware.md](docs/hardware.md), or 
 
 <!-- models:end -->
 
-The DH2300 and DH4300 Plus run ARM chips and cannot run Unraid. This plugin covers the x86 models.
-
 Model missing or marked Expected? Run `ugreen-nas-ctl report` and paste the output into the [model report form](https://github.com/alexanderschubert/ugreen-nas-control/issues/new?template=model-report.yml).
 
 ## Help
@@ -116,7 +114,7 @@ Model missing or marked Expected? Run `ugreen-nas-ctl report` and paste the outp
 | [MQTT](docs/mqtt.md)                                                                        | MQTT publisher for displays and Home Assistant |
 | [Architecture](docs/architecture.md)                                                        | How the plugin is built                        |
 | [Development](docs/development.md)                                                          | Setup, recipes, tests, conventions             |
-| [Releasing](docs/releasing.md)                                                              | Release and beta channels                      |
+| [Releasing](docs/releasing.md)                                                              | Release and next channels                      |
 | [Translations](docs/translations.md)                                                        | Languages and how to translate                 |
 | [Unraid compatibility](docs/unraid.md)                                                      | Unraid versions and compatibility              |
 | [Related projects](docs/competition.md)                                                     | Related projects compared                      |

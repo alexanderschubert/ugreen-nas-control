@@ -124,7 +124,7 @@ This runs the real install path: plugin manager, install script, boot cache, dae
 
 `just plg-serve` writes the dev machine's LAN IP into the plg, which a NAS on another VLAN cannot reach. Then serve on loopback and tunnel the port from the dev machine: `just plg-serve '' 127.0.0.1` (same as `bun plugin/tools/plg.ts serve --host 127.0.0.1`), keep `ssh -R 8790:127.0.0.1:8790 <nas>` open, and run `plugin install http://127.0.0.1:8790/ugreen-nas-control.plg` on the NAS.
 
-- Version `X.Y.tYYYYMMDDHHMM` (X.Y = latest release in `CHANGELOG.md`). The plugin manager compares versions with `strcmp` and refuses to install the same or a lower one, so a test version sorts above `X.Y` and below the next release `X.(Y+1)`; every serve run gets a new minute stamp.
+- Version `X.Y.Z.tYYYYMMDDHHMM` (X.Y.Z = latest release in `CHANGELOG.md`, Z written even when 0). The plugin manager compares versions with `strcmp` and refuses to install the same or a lower one, so a test version sorts above its release and below the next patch; every serve run gets a new minute stamp.
 - Only `--test` renders accept `--release-url` and `--plugin-url`; `just plg-check` refuses a stable or beta plg whose release URL is not a GitHub release of this repository.
 - The plg installs as `ugreen-nas-control.plg`, replacing the official one. Roll back: `plugin remove ugreen-nas-control.plg`, then `plugin install https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugin/ugreen-nas-control.plg`. `fan.cfg`, `leds.cfg` and the other settings in `/boot/config/plugins/ugreen-nas-control/` survive the remove.
 - The NAS must reach the dev machine on port 8790. Say in the PR which model you tested on.

@@ -174,11 +174,9 @@ function valid_min_pct(mixed $value): ?int
 // The installed plugin version (the .plg entity, as the page reads it): a tab rendered by another version asks for a reload.
 function plugin_version(): string
 {
-    foreach (['ugreen-nas-control.plg', 'ugreen-nas-control-beta.plg'] as $plg) {
-        if (is_file("/boot/config/plugins/{$plg}")
-            && preg_match('/ENTITY\s+version\s+"([^"]+)"/', (string) @file_get_contents("/boot/config/plugins/{$plg}"), $match)) {
-            return $match[1];
-        }
+    $plg = '/boot/config/plugins/ugreen-nas-control.plg';
+    if (is_file($plg) && preg_match('/ENTITY\s+version\s+"([^"]+)"/', (string) @file_get_contents($plg), $match)) {
+        return $match[1];
     }
 
     return 'dev';

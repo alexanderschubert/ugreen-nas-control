@@ -17,9 +17,9 @@ Verdict: none for `backend/internal/fan` and `backend/internal/led/chip`.
 
 Needs conventional commits on squash titles and writes the `.plg` badly (entities, MD5 lines). `.changes/` fragments plus `plugin/tools/changes.ts` are smaller and keep the changelog text user-facing.
 
-## Beta channel in Community Applications
+## Next channel in Community Applications
 
-CA reviews every entry by hand and shows `PluginURL` as the update source; the beta URL is a rolling prerelease asset. The beta is published in the forum thread and the README. If it is ever wanted: a separate wrapper XML under `plugins/` with its own PluginURL and `<Beta>true</Beta>`.
+CA reviews every entry by hand and shows `PluginURL` as the update source; the next URL is a rolling prerelease asset. The next channel is published in the forum thread and the README. If it is ever wanted: a separate wrapper XML under `plugins/` with its own PluginURL and `<Beta>true</Beta>` (CA's own flag name).
 
 ## Biome, Prettier, tsc, Playwright
 

@@ -48,7 +48,6 @@ NAME="&name;"
 VERSION="&version;"
 BOOT_DIR="&bootDIR;"
 ARCHIVE="&srcDIR;/@ARCHIVE@"
-OTHER_PLG="@OTHER_PLG@"
 EXEC_FILES="@EXEC_FILES@"
 DATA_FILES="@DATA_FILES@"
 # Symbolic links, "path=target": the tool names are links to the one binary backend/ugreen-nas.
@@ -93,11 +92,6 @@ die() {
 }
 
 log "Installing ${VERSION} on kernel $(uname -r)"
-
-# Stable and beta share the install folder and the settings; only one may be installed.
-if [ -e "/boot/config/plugins/${OTHER_PLG}" ]; then
-    die "${OTHER_PLG} is installed. Remove it on the Plugins page first (your settings stay)."
-fi
 
 [ -f "${ARCHIVE}" ] || die "${ARCHIVE} is missing; the download did not finish."
 
@@ -159,7 +153,7 @@ fi
 start_daemons
 
 #
-# Drop cached files of older versions: only folders named like a version (3.6, 3.6.b000123).
+# Drop cached files of older versions: only folders named like a version (3.6, 4.3-next.000123).
 # Settings (fan.cfg, leds.cfg, fan_rpm.json, led.enabled) and anything else in there stay.
 #
 
@@ -167,7 +161,7 @@ for dir in "${BOOT_DIR}"/*/; do
     [ -d "${dir}" ] || continue
     base="$(basename "${dir}")"
     [ "${base}" = "${VERSION}" ] && continue
-    if [[ "${base}" =~ ^[0-9]+\.[0-9]+(\.b[0-9]+)?$ ]]; then
+    if [[ "${base}" =~ ^[0-9]+\.[0-9]+(-next\.[0-9]+)?$ ]]; then
         rm -rf "${dir}"
     fi
 done
@@ -207,7 +201,7 @@ rm -rf "${PLUGIN_DIR}" "/usr/local/emhttp/plugins/.${NAME}.new" "/usr/local/emht
 # Cached versions and the cron file go; the settings stay.
 for dir in "${BOOT_DIR}"/*/; do
     [ -d "${dir}" ] || continue
-    if [[ "$(basename "${dir}")" =~ ^[0-9]+\.[0-9]+(\.b[0-9]+)?$ ]]; then
+    if [[ "$(basename "${dir}")" =~ ^[0-9]+\.[0-9]+(-next\.[0-9]+)?$ ]]; then
         rm -rf "${dir}"
     fi
 done

@@ -1,4 +1,4 @@
-name: 'Website: build and publish to GitHub Pages'
+name: 'Website (GitHub Pages)'
 
 # Builds the project site (docs/site/: landing page, one page per model in web/models/, the live demo at /demo/) and
 # publishes one GitHub Pages deployment with three streams:
@@ -38,6 +38,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+      id-token: write
+      attestations: write
     env:
       MAIN_REF: ${{ inputs.ref }}
       REPO: ${{ github.repository }}
@@ -73,6 +75,31 @@ jobs:
             [ ! -d "$wt/next" ] || build next next next/
             [ ! -d "$wt/site" ] || build site site lab/
           '
+      # Next channel: the plg, its archive and checksums go into /next/ of this deployment (only the current build is hosted).
+      # Off unless the repository variable NEXT_CHANNEL_ENABLED is "true". Version X.(Y+1)-next.<run number>: Unraid compares as text, so run numbers only go up.
+      - name: Build the next channel
+        if: vars.NEXT_CHANNEL_ENABLED == 'true'
+        run: |
+          # shellcheck disable=SC2016
+          nix develop .#release -c bash -euo pipefail -c '
+            [ -d "$RUNNER_TEMP/wt/next" ] || { echo "no next stream, no next channel"; exit 0; }
+            cd "$RUNNER_TEMP/wt/next"
+            just go-build
+            bun plugin/tools/plg.ts pack --next --run "$GITHUB_RUN_NUMBER"
+            bun plugin/tools/plg.ts render --next --run "$GITHUB_RUN_NUMBER"
+            dest=$RUNNER_TEMP/pages/next
+            mkdir -p "$dest"
+            cp .build/dist/ugreen-nas-control-*.tar.xz .build/dist/ugreen-nas-control.plg "$dest/"
+            (cd "$dest" && sha256sum -- ugreen-nas-control-*.tar.xz ugreen-nas-control.plg > SHA256SUMS)
+          '
+      # An attestation hiccup must not block the site deploy
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        if: vars.NEXT_CHANNEL_ENABLED == 'true'
+        continue-on-error: true
+        with:
+          subject-path: |
+            ${{ runner.temp }}/pages/next/ugreen-nas-control-*.tar.xz
+            ${{ runner.temp }}/pages/next/ugreen-nas-control.plg
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ runner.temp }}/pages
