@@ -4,17 +4,15 @@ import "testing"
 
 // fakeCS answers like the CS201x of the DXP2800 GT; it records every write.
 type fakeCS struct {
-	idx      byte
-	unlocked int
-	ldn      byte
-	id       uint16
-	active   byte
-	base     uint16
-	ec       map[uint32]byte
-	addr     [4]byte
-	writes   []uint16 // ports written
-	ecData   []byte   // values written to the data port
-	cfgData  []byte   // values written to the config data port
+	idx     byte
+	id      uint16
+	active  byte
+	base    uint16
+	ec      map[uint32]byte
+	addr    [4]byte
+	writes  []uint16 // ports written
+	ecData  []byte   // values written to the data port
+	cfgData []byte   // values written to the config data port
 }
 
 func newFakeCS() *fakeCS {
