@@ -1,1 +1,0 @@
-**UGREEN NAS Control**: LED control for UGREEN DX/DXP/iDX NAS (grown out of UGREEN LED Control) and, for the **DXP6800 Pro** and **DXP4800 GT**, fan control with curves, temperatures and a case view with bays, ports, RAM and SSDs. Open it under *Settings → UGREEN NAS Control*.
