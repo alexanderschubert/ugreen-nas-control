@@ -17,8 +17,19 @@ Two programs that write the same fan or LED chip give no stable result. The plug
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
 | `daemon` | `/proc/*/cmdline`: FanCtrl Plus (2) loop, `autofan`, `ugreen-fan-control`, `ugreen-gt-leds`, `ugreen-pro-leds`, `ugreen-leds`, `panel_dash` | block    |
 | `plugin` | `/boot/config/plugins/<name>.plg` or `/usr/local/emhttp/plugins/<name>/` of the known rival plugins                                         | warn     |
-| `module` | `it87`, `led_ugreen`, `leds_sio_201x`, `it87_wdt` in `/proc/modules` or `/sys/module`                                                       | warn     |
+| `module` | `it87`, `led_ugreen`, `leds_sio_201x`, `it87_wdt` and UGREEN's own modules (below) in `/proc/modules` or `/sys/module`                                                    | warn     |
 | `hwmon`  | `it8613`/`it5571` device with `pwmN_enable` = 1 (manual)                                                                                    | warn     |
+
+UGREEN's vendor modules (`drivers/ugreen`, names as loaded), all `warn`:
+
+| Module                                                                                    | Controls            |
+| ----------------------------------------------------------------------------------------- | ------------------- |
+| `ug_it86x_sio`, `ug_it86x_sio_dh2600`, `ug_it86x_cpufan`                                  | fan                 |
+| `ug_idx6011_sio`, `ug_idx6011pro_sio`                                                     | fan, watchdog       |
+| `ug_201x`, `ug_sio201`                                                                    | fan, led, watchdog  |
+| `leds_mcu`, `leds_mcu_28a48`, `leds_mcu_68a88`, `leds_mcu_n76e003`, `leds_mcu_n76e003_dh2600` | led            |
+
+`ug_sataio_beep` and `ug_gpio_btn` (beeper, buttons) write nothing we write and are not listed.
 
 ## What the plugin does
 

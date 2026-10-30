@@ -5,7 +5,9 @@ package hw
 import (
 	"fmt"
 	"os"
+	"sync/atomic"
 	"syscall"
+	"unsafe"
 )
 
 type devMem struct{ f *os.File }
@@ -20,19 +22,42 @@ func OpenMem() (Mem, error) {
 	return &devMem{f: f}, nil
 }
 
-func (m *devMem) Read(addr uint64, n int) ([]byte, error) {
-	b := make([]byte, n)
-	if _, err := m.f.ReadAt(b, int64(addr)); err != nil { //nolint:gosec // physical addresses are far below 2^63
-		return nil, fmt.Errorf("read 0x%X: %w", addr, err)
+// access maps the page holding addr, runs fn on the register's bytes and unmaps. The mapping is page-aligned, the
+// register access inside it is a single aligned load or store.
+func (m *devMem) access(addr uint64, width int, fn func(reg []byte)) error {
+	if err := CheckMemAccess(addr, width); err != nil {
+		return err
 	}
-	return b, nil
+	page := uint64(os.Getpagesize())
+	base, off := addr&^(page-1), int(addr&(page-1))
+	b, err := syscall.Mmap(int(m.f.Fd()), int64(base), int(page), syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED) //nolint:gosec // physical addresses are far below 2^63
+	if err != nil {
+		return fmt.Errorf("map 0x%X: %w", addr, err)
+	}
+	defer func() { _ = syscall.Munmap(b) }()
+	fn(b[off : off+width])
+	return nil
 }
 
-func (m *devMem) Write(addr uint64, b []byte) error {
-	if _, err := m.f.WriteAt(b, int64(addr)); err != nil { //nolint:gosec // as above
-		return fmt.Errorf("write 0x%X: %w", addr, err)
-	}
-	return nil
+func (m *devMem) Read(addr uint64, width int) (v uint32, err error) {
+	err = m.access(addr, width, func(reg []byte) {
+		if width == 4 {
+			v = atomic.LoadUint32((*uint32)(unsafe.Pointer(&reg[0]))) //nolint:gosec // aligned, inside the mapping
+			return
+		}
+		v = uint32(reg[0])
+	})
+	return v, err
+}
+
+func (m *devMem) Write(addr uint64, width int, v uint32) error {
+	return m.access(addr, width, func(reg []byte) {
+		if width == 4 {
+			atomic.StoreUint32((*uint32)(unsafe.Pointer(&reg[0])), v) //nolint:gosec // aligned, inside the mapping
+			return
+		}
+		reg[0] = byte(v)
+	})
 }
 
 func (m *devMem) Close() error { return m.f.Close() }

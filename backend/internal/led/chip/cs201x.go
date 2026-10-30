@@ -325,6 +325,7 @@ func (b *csBus) status(name string) (ledStatus, error) {
 }
 
 // restoreCS201x writes the snapshot back and removes it; without a snapshot nothing was written and nothing happens.
+// A kernel module that owns the LEDs, or a snapshot that does not parse, is an error with the file kept.
 func restoreCS201x(d *csDevice) (bool, error) {
 	data, err := os.ReadFile(snapshotPath())
 	if errors.Is(err, os.ErrNotExist) {
@@ -333,10 +334,12 @@ func restoreCS201x(d *csDevice) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	if m := csModuleLoaded(); m != "" {
+		return false, fmt.Errorf("the kernel module %s owns the CS201x LEDs now: nothing was written, the saved state is kept", m)
+	}
 	var s csSnapshot
 	if err := json.Unmarshal(data, &s); err != nil || len(s.Channels) != argbChannels {
-		_ = os.Remove(snapshotPath())
-		return false, errors.New("the saved CS201x LED state is unreadable and was discarded")
+		return false, fmt.Errorf("the saved CS201x LED state in %s is unreadable: nothing was written, the file is kept", snapshotPath())
 	}
 	err = d.with(true, func(ec cs.EC) error {
 		for i, c := range s.Channels {

@@ -215,12 +215,20 @@ func TestECSendCommandAllowlist(t *testing.T) {
 	}
 }
 
+type memAccess struct {
+	addr  uint64
+	width int
+	write bool
+}
+
 type fakeMem struct {
 	b        map[uint64]byte
 	touched  map[uint64]bool
+	accesses []memAccess
 	writes   int
 	ignore   bool
-	readOnly bool
+	// flip is XORed into every read of the register: bits that change on their own.
+	flip uint32
 }
 
 func newFakeMem() *fakeMem { return &fakeMem{b: map[uint64]byte{}, touched: map[uint64]bool{}} }
@@ -238,21 +246,29 @@ func (m *fakeMem) get32(addr uint64) (v uint32) {
 	return
 }
 
-func (m *fakeMem) Read(addr uint64, n int) ([]byte, error) {
-	out := make([]byte, n)
-	for i := range out {
-		m.touched[addr+uint64(i)] = true
-		out[i] = m.b[addr+uint64(i)]
+func (m *fakeMem) Read(addr uint64, width int) (uint32, error) {
+	if err := hw.CheckMemAccess(addr, width); err != nil {
+		return 0, err
 	}
-	return out, nil
+	m.accesses = append(m.accesses, memAccess{addr, width, false})
+	var v uint32
+	for i := width - 1; i >= 0; i-- {
+		m.touched[addr+uint64(i)] = true
+		v = v<<8 | uint32(m.b[addr+uint64(i)])
+	}
+	return v ^ m.flip, nil
 }
 
-func (m *fakeMem) Write(addr uint64, b []byte) error {
+func (m *fakeMem) Write(addr uint64, width int, v uint32) error {
+	if err := hw.CheckMemAccess(addr, width); err != nil {
+		return err
+	}
+	m.accesses = append(m.accesses, memAccess{addr, width, true})
 	m.writes++
-	for i, v := range b {
+	for i := range width {
 		m.touched[addr+uint64(i)] = true
 		if !m.ignore {
-			m.b[addr+uint64(i)] = v
+			m.b[addr+uint64(i)] = byte(v >> (8 * i))
 		}
 	}
 	return nil
@@ -263,7 +279,7 @@ func (m *fakeMem) Close() error { return nil }
 func TestIdxACBit0Only(t *testing.T) {
 	m := newFakeMem()
 	m.set32(idxACAddr, 0xa5a5a5a4)
-	ac := newIdxAC(m)
+	ac := newIdxAC(m, false)
 	st, err := ac.Get()
 	if err != nil || st.Mode != acOn || !st.Readable || st.Source != "mmio-idx" || !slices.Equal(st.Settable, []acMode{acOn, acOff}) {
 		t.Fatalf("get %+v %v", st, err)
@@ -296,6 +312,57 @@ func TestIdxACBit0Only(t *testing.T) {
 	if err := ac.Set(acOff); !errors.Is(err, errACVerify) {
 		t.Fatalf("mismatch: %v", err)
 	}
+	for _, a := range m.accesses {
+		if a.addr != idxACAddr || a.width != 4 {
+			t.Fatalf("access %+v: must be one aligned dword", a)
+		}
+	}
+}
+
+// Readback is compared on bit 0 only: other bits of the dword changing on their own is not a failure.
+func TestIdxACVerifyMasksOwnBits(t *testing.T) {
+	m := newFakeMem()
+	m.set32(idxACAddr, 0x10)
+	m.flip = 0xfffffffe
+	if err := newIdxAC(m, false).Set(acOff); err != nil {
+		t.Fatalf("foreign bits changed: %v", err)
+	}
+}
+
+// The plain iDX6011/6012 is read only: Get works, Set refuses and writes nothing.
+func TestIdxPlainACReadOnly(t *testing.T) {
+	m := newFakeMem()
+	m.set32(idxACAddr, 1)
+	ac := newIdxAC(m, true)
+	st, err := ac.Get()
+	if err != nil || st.Mode != acOff || !st.Readable || len(st.Settable) != 0 {
+		t.Fatalf("get %+v %v", st, err)
+	}
+	for _, mode := range []acMode{acOn, acOff, acLast} {
+		if err := ac.Set(mode); !errors.Is(err, errACReadOnly) {
+			t.Fatalf("%s: %v", mode, err)
+		}
+	}
+	if m.writes != 0 {
+		t.Fatal("wrote on a read-only model")
+	}
+}
+
+func TestPowerACSetRefusedOnPlainIdx(t *testing.T) {
+	for _, model := range []string{"iDX6011", "iDX6012"} {
+		acRig(t, model)
+		mem := newFakeMem()
+		env := &acEnv{openPorts: func() (Ports, error) { return newFakeSIO(), nil }, openMem: func() (hw.Mem, error) { return mem, nil }}
+		_, err := runPowerAC([]string{"set", "off"}, model, env, func() error { return nil }, time.Unix(1, 0))
+		if !errors.Is(err, errACReadOnly) || mem.writes != 0 || readACRecord() != nil {
+			t.Fatalf("%s: err %v writes %d", model, err, mem.writes)
+		}
+		env = &acEnv{openPorts: env.openPorts, openMem: env.openMem}
+		out, err := runPowerAC(nil, model, env, noRival, time.Unix(1, 0))
+		if err != nil || out["readable"] != true {
+			t.Fatalf("%s read: %v %v", model, out, err)
+		}
+	}
 }
 
 func TestFCHACByteOnly(t *testing.T) {
@@ -320,6 +387,11 @@ func TestFCHACByteOnly(t *testing.T) {
 	}
 	if len(m.touched) != 1 || !m.touched[fchACAddr] {
 		t.Fatalf("addresses touched: %v", m.touched)
+	}
+	for _, a := range m.accesses {
+		if a.addr != fchACAddr || a.width != 1 {
+			t.Fatalf("access %+v: must be one byte", a)
+		}
 	}
 	m.ignore = true
 	if err := ac.Set(acOn); !errors.Is(err, errACVerify) {

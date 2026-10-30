@@ -17,9 +17,11 @@ import (
 //     differently (dh2600/ug_it86x-sio-dh2600.c:182-255), so nothing is written unless the value decodes.
 //   - IT5571 EC of the DXP4800 GT: bare commands 0x88 (on) and 0x89 (off) on port 0x66, no read at all; the vendor
 //     keeps a RAM cache (ug_it55_4800gt_functions.c:55-57,109-188).
-//   - iDX6011/6012 and iDX6011 Pro: dword at physical 0xFE001020, bit 0 set = stay off, clear = power on
+//   - iDX6011/6012 and iDX6011 Pro: dword at physical 0xFE001020, bit 0 set = stay off, clear = power on. Accessed
+//     as one aligned dword through a page-aligned mmap. The plain iDX6011/6012 is read only everywhere in this tool,
+//     so `set` is refused there; the Pro can be set.
 //     (ug_it55_functions.c:42,66-129; ug_it55pro_functions.c:53,90-160).
-//   - DXP2800 GT (CS201x): AMD FCH byte at physical 0xFED8035B, bits 1:0: 0 off, 1 on, 2 or 3 last
+//   - DXP2800 GT (CS201x): AMD FCH byte at physical 0xFED8035B (one byte access), bits 1:0: 0 off, 1 on, 2 or 3 last
 //     (ug_201x.c:125,409-437,539-606).
 type acMode string
 
@@ -48,6 +50,7 @@ var (
 	errNoACControl    = errors.New("this model has no power-on setting this tool can reach")
 	errACNotSettable  = errors.New("this model does not offer that mode")
 	errACUnrecognised = errors.New("the board reports a value this tool does not know: nothing was changed, please report it")
+	errACReadOnly     = errors.New("this model's power-on setting is declared read-only here (iDX6011/6012): it can be read, not changed")
 	errACVerify       = errors.New("the value read back is not the one written")
 )
 
@@ -193,6 +196,7 @@ type mmioAC struct {
 	dec      func(field uint32) acMode
 	source   string
 	settable []acMode
+	readOnly bool // read allowed, `set` refused
 }
 
 const (
@@ -200,9 +204,14 @@ const (
 	fchACAddr = 0xFED8035B
 )
 
-func newIdxAC(m hw.Mem) *mmioAC {
+// newIdxAC: the iDX6011 Pro can be set; the plain iDX6011/6012 is read-only (readOnly), like everything else there.
+func newIdxAC(m hw.Mem, readOnly bool) *mmioAC {
+	settable := []acMode{acOn, acOff}
+	if readOnly {
+		settable = []acMode{}
+	}
 	return &mmioAC{
-		mem: m, addr: idxACAddr, width: 4, mask: 1, source: "mmio-idx", settable: []acMode{acOn, acOff},
+		mem: m, addr: idxACAddr, width: 4, mask: 1, source: "mmio-idx", settable: settable, readOnly: readOnly,
 		enc: map[acMode]uint32{acOn: 0, acOff: 1},
 		dec: func(f uint32) acMode {
 			if f == 1 {
@@ -229,20 +238,7 @@ func newFCHAC(m hw.Mem) *mmioAC {
 	}
 }
 
-func (a *mmioAC) load() (uint32, error) {
-	b, err := a.mem.Read(a.addr, a.width)
-	if err != nil {
-		return 0, err
-	}
-	if len(b) != a.width {
-		return 0, fmt.Errorf("short read at 0x%X", a.addr)
-	}
-	var v uint32
-	for i := a.width - 1; i >= 0; i-- {
-		v = v<<8 | uint32(b[i])
-	}
-	return v, nil
-}
+func (a *mmioAC) load() (uint32, error) { return a.mem.Read(a.addr, a.width) }
 
 func (a *mmioAC) Get() (ACState, error) {
 	v, err := a.load()
@@ -256,6 +252,9 @@ func (a *mmioAC) Get() (ACState, error) {
 }
 
 func (a *mmioAC) Set(m acMode) error {
+	if a.readOnly {
+		return errACReadOnly
+	}
 	field, ok := a.enc[m]
 	if !ok {
 		return fmt.Errorf("%w: this register has no %q value", errACNotSettable, m)
@@ -265,19 +264,16 @@ func (a *mmioAC) Set(m acMode) error {
 		return err
 	}
 	nv := v&^a.mask | field
-	b := make([]byte, a.width)
-	for i := range b {
-		b[i] = byte(nv >> (8 * i))
-	}
-	if err := a.mem.Write(a.addr, b); err != nil {
+	if err := a.mem.Write(a.addr, a.width, nv); err != nil {
 		return err
 	}
 	rb, err := a.load()
 	if err != nil {
 		return err
 	}
-	if rb != nv {
-		return fmt.Errorf("%w (0x%X, wanted 0x%X)", errACVerify, rb, nv)
+	// Only the bits this tool owns are compared; the rest of the register may change on its own.
+	if rb&a.mask != field {
+		return fmt.Errorf("%w (field 0x%X, wanted 0x%X)", errACVerify, rb&a.mask, field)
 	}
 	return nil
 }
@@ -332,11 +328,11 @@ func powerACFor(model string, e *acEnv) (acLoss, error) {
 		}
 		return ecAC{ec: ec}, nil
 	case isIdxPro(model) || isIdxPlain(model):
-		m, err := e.mem()
+		m, err := e.mem() // plain iDX: read only, newIdxAC refuses the write
 		if err != nil {
 			return nil, err
 		}
-		return newIdxAC(m), nil
+		return newIdxAC(m, isIdxPlain(model)), nil
 	case isDXP2800GT(model):
 		p, err := e.ports()
 		if err != nil {

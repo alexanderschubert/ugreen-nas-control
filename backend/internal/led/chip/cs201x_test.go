@@ -379,3 +379,42 @@ func TestCS201xWaitsForTheFanLock(t *testing.T) {
 		t.Fatalf("rc %d", rc)
 	}
 }
+
+func TestCS201xRestoreKeepsSnapshotWhenModuleOwnsLEDs(t *testing.T) {
+	f := csRig(t, true)
+	const saved = `{"flow":0,"channels":[{},{},{},{}]}`
+	csWrite(t, csPaths.snapshot, saved)
+	csWrite(t, csPaths.modules, "ug_201x 16384 0 - Live 0x0\n")
+	rc, _, e := run("cs201x", "restore")
+	if rc == 0 || !strings.Contains(e, "ug_201x") {
+		t.Fatalf("rc %d %q", rc, e)
+	}
+	if f.count() != 0 {
+		t.Fatal("wrote while a kernel module owns the LEDs")
+	}
+	if data, _ := os.ReadFile(csPaths.snapshot); string(data) != saved {
+		t.Fatalf("snapshot lost: %q", data)
+	}
+}
+
+func TestCS201xRestoreKeepsUnreadableSnapshot(t *testing.T) {
+	for name, saved := range map[string]string{
+		"garbage":        "not json",
+		"wrong channels": `{"flow":0,"channels":[{}]}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := csRig(t, true)
+			csWrite(t, csPaths.snapshot, saved)
+			rc, _, e := run("cs201x", "restore")
+			if rc == 0 || !strings.Contains(e, "unreadable") {
+				t.Fatalf("rc %d %q", rc, e)
+			}
+			if f.count() != 0 {
+				t.Fatal("wrote from an unreadable snapshot")
+			}
+			if data, _ := os.ReadFile(csPaths.snapshot); string(data) != saved {
+				t.Fatalf("snapshot lost: %q", data)
+			}
+		})
+	}
+}
