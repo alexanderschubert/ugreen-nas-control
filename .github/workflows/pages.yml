@@ -1,0 +1,60 @@
+name: Pages
+
+# Builds the project site (docs/site/: landing page, one page per model in web/models/, the live demo at /demo/) and
+# publishes it to GitHub Pages. Needs Pages enabled with Source = "GitHub Actions" (Settings, Pages).
+#
+# Deploy any time: Actions, Pages, Run workflow. A release calls this workflow (release.yml, job `pages`) and only
+# publishes once it succeeded; there is no push trigger, so a release deploys exactly once.
+# The site is built from the given ref; the demo shows that ref's plugin, so deploy a ref whose
+# plugin you want shown (main by default).
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or SHA to build the site from
+        default: main
+        type: string
+  workflow_call:
+    inputs:
+      ref:
+        description: Branch, tag or SHA to build the site from
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+      # No magic-nix-cache: its post step spent 2m26s uploading store paths; the lean shell downloads from cache.nixos.org in seconds
+      - run: nix develop .#site -c just site
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: .build/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -1,0 +1,99 @@
+name: Beta
+
+# Every push to dev refreshes the rolling `beta` prerelease: the release archive (web files + binaries), beta plg, SHA256SUMS.
+# The beta plg downloads the archive from this release, so all assets are replaced together.
+on:
+  push:
+    branches: [dev]
+
+permissions: {}
+
+concurrency:
+  group: beta
+  cancel-in-progress: false
+
+jobs:
+  # No nix cache here: this job holds an OIDC token.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/nix-installer-action@3138316df39ed29be04236d7ffc686fa525866aa # v23
+      - run: nix develop .#release -c just go-build
+      - run: nix develop .#release -c bun plugin/tools/plg.ts pack --beta --run "$GITHUB_RUN_NUMBER"
+      - run: nix develop .#release -c bun plugin/tools/plg.ts render --beta --run "$GITHUB_RUN_NUMBER"
+      - name: Checksums
+        run: |
+          mkdir -p .build/assets
+          cp .build/dist/ugreen-nas-control-*.tar.xz .build/dist/ugreen-nas-control-beta.plg .build/assets/
+          (cd .build/assets && sha256sum -- * > SHA256SUMS)
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            .build/assets/ugreen-nas-control-*.tar.xz
+            .build/assets/ugreen-nas-control-beta.plg
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: beta-assets
+          path: .build/assets/
+          if-no-files-found: error
+
+  # Waits for a required reviewer of the `beta` environment. No checkout, no nix, no cache: only gh and the artifact.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: beta
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: beta-assets
+          path: .build/assets
+      - name: Update the beta prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          KEEP: '5'
+        run: |
+          set -euo pipefail
+          notes="Rolling beta of dev at ${SHA}. Not for production."
+          plg=ugreen-nas-control-beta.plg
+          new="$(sed -n 's/^<!ENTITY version *"\([^"]*\)">.*/\1/p' ".build/assets/${plg}")"
+          [ -n "$new" ] || { echo "::error::No version in .build/assets/${plg}."; exit 1; }
+          if ! gh release view beta >/dev/null 2>&1; then
+            gh release create beta .build/assets/* --prerelease --target "$SHA" --title "Beta (dev)" --notes "$notes"
+            exit 0
+          fi
+          # Unraid compares versions as text and never offers a lower one: an older run (re-run, or a recreated
+          # workflow whose run numbers restarted) must not replace a newer beta.
+          old="$(gh release download beta -p "$plg" -O - 2>/dev/null | sed -n 's/^<!ENTITY version *"\([^"]*\)">.*/\1/p' || true)"
+          if [ -n "$old" ] && ! [[ "$new" > "$old" ]]; then
+            echo "::warning::Published beta is $old, this run built $new; not replacing it (after a workflow reset, delete the beta release once)."
+            exit 0
+          fi
+          # Order: archive (new name, nothing refers to it yet), plg, checksums. The plg is swapped by renaming
+          # an uploaded copy over the old one, so the window without a beta plg is two API calls.
+          gh release upload beta .build/assets/ugreen-nas-control-*.tar.xz --clobber
+          id() { gh api "repos/${GITHUB_REPOSITORY}/releases/tags/beta" --jq ".assets[] | select(.name == \"$1\") | .id"; }
+          cp ".build/assets/${plg}" "${RUNNER_TEMP}/${plg}.new"
+          gh release upload beta "${RUNNER_TEMP}/${plg}.new" --clobber
+          fresh="$(id "${plg}.new")"
+          old_id="$(id "$plg")"
+          [ -z "$old_id" ] || gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/${old_id}" >/dev/null
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/assets/${fresh}" -f name="$plg" >/dev/null
+          gh release upload beta .build/assets/SHA256SUMS --clobber
+          # Move the tag and the notes to this commit.
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/beta" -f sha="$SHA" -F force=true >/dev/null
+          gh release edit beta --prerelease --target "$SHA" --notes "$notes"
+          # Keep the newest archives: a box that lost its /boot cache can still fetch the version it runs.
+          gh release view beta --json assets --jq '.assets[].name' | { grep -E '^ugreen-nas-control-.*\.tar\.xz$' || true; } | sort -r | tail -n +"$((KEEP + 1))" \
+            | while read -r stale; do gh release delete-asset beta "$stale" --yes; done
