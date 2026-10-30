@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 )
 
 // tools maps every accepted name to the tool it runs.
@@ -21,7 +22,22 @@ var tools = map[string]string{
 	"ugreen-nas-ctl": "nas-ctl", "nas-ctl": "nas-ctl",
 }
 
-func main() { os.Exit(run(os.Args)) }
+// tuneGC keeps the resident heap small: the daemons allocate about 20 KB/s, so the default GC (next cycle at 4 MB of
+// garbage) rarely runs; at 25 % it runs about every 40 s on a heap under 1 MB (peak heap 4.9 -> 3.0 MB measured with
+// the fan loop). The soft limit only matters if a heap ever grows. GOGC and GOMEMLIMIT in the environment win.
+func tuneGC() {
+	if os.Getenv("GOGC") == "" {
+		debug.SetGCPercent(25)
+	}
+	if os.Getenv("GOMEMLIMIT") == "" {
+		debug.SetMemoryLimit(24 << 20)
+	}
+}
+
+func main() {
+	tuneGC()
+	os.Exit(run(os.Args))
+}
 
 // resolve picks the tool from the name the binary was started as, else from its first argument.
 func resolve(args []string) (tool string, name string, rest []string, ok bool) {

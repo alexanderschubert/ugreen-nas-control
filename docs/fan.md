@@ -33,6 +33,10 @@ The EC watchdog of the DXP4800 GT and iDX6011 Pro: [watchdog.md](watchdog.md).
 - Input specs: `auto` (default: the CPU for `cpu`; the hottest non-ignored disk, or NVMe minus `nvme_offset`, for `case`), `cpu`, `disk_max[:disk1+disk2]`, `disk_avg[:disk1+disk2]`, `nvme`, `gpu`, `nic:<iface>`, `script:<name>`, `max:<spec>|<spec>` (2 to 8, no nesting).
 - Order per tick: inputs, curve, shape (deadband, kick-start, minimum run speed, ramps), job floor or boost, quiet cap, emergency override. The emergency check runs first and its 100 % is never capped, ramped, held by a deadband or scheduled. A missing input follows `on_missing` and never leaves a group silently off; an unreadable CPU still raises `cpu_unreadable`. Script, GPU and NIC temperatures never trigger the disk emergency. The quiet cap never goes below `min_run`. Calibration pauses all of it.
 
+## Memory
+
+The daemons run with GC at 25 % and a 24 MiB soft memory limit (`backend/cmd/ugreen-nas/main.go`); `GOGC` and `GOMEMLIMIT` override both.
+
 ## Safety logic
 
 - The first start after boot saves the BIOS values to `/var/run/ugreen-nas-control.bios`. Stopping the daemon (also on update or removal) and `restore` write them back.

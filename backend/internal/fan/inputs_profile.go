@@ -252,6 +252,11 @@ func ExportProfile(c Config, model string, now time.Time) profile.Profile {
 	return p
 }
 
+var (
+	nvmeDevPartRe = regexp.MustCompile(`^(nvme[0-9]+)(?:n[0-9]+)?(?:p[0-9]+)?$`)
+	diskIDRe      = regexp.MustCompile(`^[A-Za-z0-9_.:+-]{1,200}$`)
+)
+
 // profileEnv is a variable so that tests can stand in for the NAS.
 var profileEnv = nasEnv
 
@@ -260,7 +265,7 @@ func nasEnv() profile.Env {
 	s := ReadSensors()
 	byDevice := func(dev string) (string, bool) {
 		dev = strings.TrimPrefix(dev, "/dev/")
-		if m := regexp.MustCompile(`^(nvme[0-9]+)(?:n[0-9]+)?(?:p[0-9]+)?$`).FindStringSubmatch(dev); m != nil {
+		if m := nvmeDevPartRe.FindStringSubmatch(dev); m != nil {
 			for _, n := range s.NVMe {
 				if n.Name == m[1] {
 					return n.Name, true
@@ -287,7 +292,7 @@ func nasEnv() profile.Env {
 					}
 				}
 			}
-			if !regexp.MustCompile(`^[A-Za-z0-9_.:+-]{1,200}$`).MatchString(id) {
+			if !diskIDRe.MatchString(id) {
 				return "", false
 			}
 			if target, err := filepath.EvalSymlinks(filepath.Join(diskByIDDir, id)); err == nil {
