@@ -2,7 +2,7 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "4.0">
+<!ENTITY version   "4.1">
 <!ENTITY launch    "Settings/UGREENNASControl">
 <!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 4.1
+- DXP2800 GT: a read-only test command, `ugreen-nas-fan cs201x`, for the Chipsea CS201x chip of this model (it is not an ITE chip). It reads the chip ID, the base address of the embedded controller, the rpm and duty of the two fans and two temperatures, and prints them. It writes no fan setting and does not switch anything on. Fan control for this model is not part of it yet; the plugin itself still does not touch the fan chip on this NAS.
 
 ### 4.0
 - DXP2800 GT: front and rear view after the product photos (two bays with the LEDs below them, USB-C and USB-A at the front; the back with the grille of the DXP4800 GT (ribbed bezel, dot mesh, dotted lettering, the fan behind it when the NAS reports one), HDMI, USB 3.2, two USB 2.0, 10G LAN, reset and the power inlet). Fan control stays off for this model
@@ -270,7 +273,7 @@
 <!-- Static binary built by the "Tag release" workflow and attached to the release -->
 <FILE Name="&srcDIR;/backend/ugreen-nas-fan">
 <URL>&releaseURL;/ugreen-nas-fan</URL>
-<MD5>fe2340360b9d767a8aac43dacabe53a6</MD5>
+<MD5>de7f41afac4f857ab2850195d5b0639f</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/api.php">
