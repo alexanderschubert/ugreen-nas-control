@@ -44,3 +44,7 @@ Declined for now. Driving the front LCD needs an EFI entry, an i915 overlay and 
 ## Unraid API or guessed manifest formats as Unraid 8 plugin host
 
 The Unraid API (GraphQL, Nest) is not shown to be the Unraid 8 plugin path, and the manifest format is not public. Revisit when [unraid-8.md](unraid-8.md#what-is-known) lists official plugin docs.
+
+## UGREEN GPL drivers as primary hardware source; facts with citation, no code; no clean room
+
+Verdict: read `drivers/ugreen` in [ugreen-opensource](https://github.com/ugreen-opensource) first, community projects second ([third-party.md](third-party.md#ugreen-open-source-drivers)). Take facts (chip IDs, addresses, bits, scaling, sequences) and cite `file:line@commit`; copy or port no code, because that would make the MIT binary GPL-2.0. A clean-room process adds nothing: facts are not copyrightable and our Go is written from them.

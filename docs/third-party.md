@@ -13,6 +13,26 @@ Prior work this project builds on; licenses and what is used follow below.
 - UGREEN LED Control (Unraid plugin by ivolution): the Spanish LED texts.
 - UGREEN stock driver `ug_4800gt-sio.ko` (DXP4800 GT): the EC watchdog registers were derived from it; design: pet-only, never arm ([watchdog.md](watchdog.md)).
 
+## UGREEN open-source drivers
+
+Primary source for register facts; the community projects below are secondary. UGREEN publishes its GPL kernel sources in the GitHub account [ugreen-opensource](https://github.com/ugreen-opensource). Read at `kernel-6.12` commit `c75c5abd60dd45f45966720293ce1ee505fb8615`, folder `drivers/ugreen`. Files carry `SPDX-License-Identifier: GPL-2.0-only` (the repository label says GPL-3.0).
+
+| Model                                       | Chip                           | Files                                                                               |
+| ------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------- |
+| DXP2800, DXP4800, DX4600, DX4700            | ITE IT8613 (`0x8613`)          | `ug_it86x-sio.c`                                                                    |
+| DXP4800 GT                                  | ITE IT5571                     | `ug_it55_4800gt_functions.c`, `it55_helper.c`                                       |
+| iDX6011 Pro                                 | ITE IT5571                     | `ug_it55pro_functions.c`                                                            |
+| iDX6011, iDX6012                            | ITE IT5571                     | `ug_it55_functions.c`                                                               |
+| DXP2800 GT                                  | Chipsea CS201x (`0x2011`)      | `ug_201x.c` (fan, temperature, watchdog), `leds-sio-201x.c`                         |
+| DXP480T                                     | IT86x + N76E003 LED MCU        | `dxp480t/ug_it86x-cpufan.c`, `leds-mcu-n76e003.c`                                   |
+| DH2600                                      | IT86x + N76E003 LED MCU        | `dh2600/ug_it86x-sio-dh2600.c`, `leds-mcu-n76e003-dh2600.c`                         |
+| DXP6800, DXP8800 (LEDs)                     | LED MCU                        | `dxp68a88/leds-mcu-68a88.c`                                                         |
+| DXP2800, DXP4800, Plus, DXP6800, iDX (LEDs) | LED MCU                        | `leds-mcu.c`, `leds-mcu-28a48.c`                                                    |
+| all                                         | buttons, beeper, register dump | `ug_gpio_btn.c`, `ug_sataio_beeper.c`, `tools/it55_regs_dump.sh` (IT5571 registers) |
+
+- Product list: `include/misc/ugreen_product.h` (also in the repository `linux-headers-6.12.30`).
+- ARM models (DH2300, DH4300 Plus): repositories `rk3576_kernel` and `rk3588_kernel`, folder `drivers/ugreen`. Not supported by this plugin.
+
 ## Hardware facts from community plugins
 
 The iDX6011 / iDX6012 LED and fan handling uses facts (bay order, model names, the power LED start-up sequence, EC fan and backlight registers) read from these MIT-licensed
@@ -61,6 +81,8 @@ SOFTWARE.
 The miskcoo issue threads (#6, #22, #93, #100, #121, #122) are cited in `web/models/*.ts` and `backend/internal/led/chip/protocol.go` as evidence that models work; user reports only.
 
 ## Facts only, no code
+
+This project is MIT. From UGREEN's GPL drivers we take facts only: chip IDs, ports, register addresses, bit meanings, scaling, channel roles, sequences, timeouts. Each fact is cited as `file:line@commit` in the Go comment and in this document. We do not copy or line-by-line port code; that would make the binary GPL-2.0. No clean-room process is needed: reading the vendor source and writing our own Go is the method. `backend/internal/fan/cs201x.go` and `backend/internal/fan/ec.go` already work this way.
 
 | Project                                                                                   | License                         | What we use                                                                                                                                                                                         |
 | ----------------------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

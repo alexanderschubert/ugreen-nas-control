@@ -34,7 +34,7 @@ One line per file: what it answers. One topic per file; a topic that appears els
 
 ## Reference
 
-- [docs/third-party.md](third-party.md) — Credits, licences, where borrowed facts come from, the MIT notice.
+- [docs/third-party.md](third-party.md) — Credits, licences, UGREEN's open-source drivers as hardware source, where borrowed facts come from, the MIT notice.
 - [docs/competition.md](competition.md) — How other community projects compare.
 - [CHANGELOG.md](../CHANGELOG.md) — What changed in each release (generated).
 - [.github/SECURITY.md](../.github/SECURITY.md) — How to report a vulnerability.
