@@ -15,6 +15,7 @@ import (
 	"github.com/alexanderschubert/ugreen-nas-control/internal/led/ledctl"
 	"github.com/alexanderschubert/ugreen-nas-control/internal/mqtt"
 	"github.com/alexanderschubert/ugreen-nas-control/internal/nasctl"
+	"github.com/alexanderschubert/ugreen-nas-control/internal/panel"
 	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
 )
 
@@ -69,6 +70,13 @@ func runLEDCtl(name string, args []string) int {
 	c.Name = name
 	c.Detect = func() []conflict.Conflict { return conflict.Default().Detect() }
 	return c.Main(ctx, args)
+}
+
+// runPanel: buttons and beeper; SIGINT/SIGTERM end `--watch` and cut a beep short, and the beeper is switched off either way.
+func runPanel(args []string) int {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer stop()
+	return panel.Main(ctx, panel.Env{}, args, os.Stdout, os.Stderr)
 }
 
 func runNasCtl(args []string) int {

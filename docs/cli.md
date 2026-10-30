@@ -41,6 +41,13 @@ Without the map the daemon does not start on this model.
 /usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-ctl status
 ```
 
+## ugreen-nas panel
+
+Front-panel buttons and beeper, from UGREEN's driver facts, not yet confirmed on hardware ([panel.md](panel.md)).
+
+- `buttons [--watch]`: power and reset button state; `--watch` prints press and release events. Read only.
+- `beep [--freq Hz] [--ms N]`: one tone, 20 to 2000 ms; the speaker is always switched off afterwards.
+
 ## Support requests
 
 Include the output of both `status` commands, the NAS model and the Unraid and plugin versions.

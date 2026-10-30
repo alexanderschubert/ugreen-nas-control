@@ -5,6 +5,7 @@
 //	ugreen-led-i2c, led-i2c   LED controller over /dev/i2c-N
 //	ugreen-led-ctl, led-ctl   LED CLI and status daemon
 //	ugreen-nas-ctl, nas-ctl   fan daemon control, LED switch, report
+//	panel                     front-panel buttons (read only) and beeper
 package main
 
 import (
@@ -20,6 +21,7 @@ var tools = map[string]string{
 	"ugreen-led-i2c": "led-i2c", "led-i2c": "led-i2c",
 	"ugreen-led-ctl": "led-ctl", "led-ctl": "led-ctl",
 	"ugreen-nas-ctl": "nas-ctl", "nas-ctl": "nas-ctl",
+	"panel": "panel",
 }
 
 // tuneGC keeps the resident heap small: the daemons allocate about 20 KB/s, so the default GC (next cycle at 4 MB of
@@ -58,7 +60,7 @@ func resolve(args []string) (tool string, name string, rest []string, ok bool) {
 func run(args []string) int {
 	tool, name, rest, ok := resolve(args)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "Usage: ugreen-nas <fan|led-i2c|led-ctl|nas-ctl> [arguments]\n(or start it under the name of a tool: ugreen-nas-fan, ugreen-led-i2c, ugreen-led-ctl, ugreen-nas-ctl)")
+		fmt.Fprintln(os.Stderr, "Usage: ugreen-nas <fan|led-i2c|led-ctl|nas-ctl|panel> [arguments]\n(or start it under the name of a tool: ugreen-nas-fan, ugreen-led-i2c, ugreen-led-ctl, ugreen-nas-ctl)")
 		return 2
 	}
 	switch tool {
@@ -68,6 +70,8 @@ func run(args []string) int {
 		return runLEDI2C(rest)
 	case "led-ctl":
 		return runLEDCtl(name, rest)
+	case "panel":
+		return runPanel(rest)
 	default:
 		return runNasCtl(rest)
 	}

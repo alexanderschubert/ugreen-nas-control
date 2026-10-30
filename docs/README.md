@@ -17,6 +17,7 @@ One line per file: what it answers. One topic per file; a topic that appears els
 - [docs/architecture.md](architecture.md) — Which parts exist (Go binary, PHP API, web UI), how they talk, repo layout, how to add a feature.
 - [docs/fan.md](fan.md) — How fan chips are read and driven, fan settings and pipeline order, safety rules, fan history, the wiring probe.
 - [docs/led.md](led.md) — How the LED controller is driven and what the LED tool and backend do.
+- [docs/panel.md](panel.md) — How the front-panel buttons are read and the beeper is driven, per model, vendor source only.
 - [docs/watchdog.md](watchdog.md) — Why the hardware watchdog stays on and what the plugin does with it.
 - [docs/conflicts.md](conflicts.md) — Which other tools write the same chips and what the plugin does about them.
 - [backend/internal/led/ledctl/SPEC.md](../backend/internal/led/ledctl/SPEC.md) — Which LED tool behaviour the Go port must keep (parity contract).
