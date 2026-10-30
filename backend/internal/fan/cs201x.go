@@ -7,20 +7,20 @@ import (
 	"time"
 
 	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	cs "github.com/alexanderschubert/ugreen-nas-control/internal/hw/cs201x"
 )
 
 // Chipsea CS201x Super-I/O with an embedded controller (DXP2800 GT). Register addresses as published by UGREEN
 // (GPL-2.0-only driver ug_201x.c@c75c5ab, cited as ug_201x.c:LINE); facts only, no code used. The probe below only
 // reads; the fan driver is in cs201x_fans.go.
 const (
-	cs201xID = 0x2011 // ug_201x.c:30
+	// Shared with the LED backend: hw/cs201x.
+	cs201xID     = cs.ChipID
+	csLDNHost2EC = cs.LDNHost2EC
 
-	csLDNHost2EC = 0x0a // ug_201x.c:48
-
-	// Offsets from the base address of the host-to-EC interface (ug_201x.c:80-84,215-248).
-	csEcCtrl = 0x01 // 0 = one byte, no auto increment
-	csEcAddr = 0x04 // 32-bit register address, least significant byte first
-	csEcData = 0x08
+	csEcCtrl = cs.EcCtrl
+	csEcAddr = cs.EcAddr
+	csEcData = cs.EcData
 
 	csRegFan0En   = 0x200053f0 // ug_201x.c:86-94
 	csRegFan1En   = 0x200053f1
@@ -45,9 +45,6 @@ const (
 	csRegWdtCounter = 0x20005484 // high byte, the low byte follows
 	csRegWdtFeed    = 0x20005488
 )
-
-var csEnterKey = []byte{0xa5, 0x69, 0x87} // ug_201x.c:185-205
-var csExitKey = []byte{0x87, 0x69, 0xa5}
 
 // csCounterGap is the pause between the two watchdog counter reads; tests shorten it.
 var csCounterGap = 1500 * time.Millisecond
@@ -100,92 +97,13 @@ func isDXP2800GT(model string) bool {
 	return strings.HasPrefix(model, "DXP2800 GT")
 }
 
-// csWindow is what the Super-I/O window of the host-to-EC device tells.
-type csWindow struct {
-	id, rev uint16
-	active  byte
-	base    uint16
-}
+type csWindow = cs.Window
 
-// csReadWindow opens the Super-I/O window, reads chip id, revision, the host interface state and the base address,
-// and closes it again. It writes the unlock key, the device number and, only with enableHost and only when the
-// interface is off, cfg 0x30 = 1 (ug_201x.c:264-266: UGREEN does that on every load). A chip id other than
-// CS201x ends it before the device number is written.
-func csReadWindow(p Ports, enableHost bool) (w csWindow, err error) {
-	for _, b := range csEnterKey {
-		if err := p.Out(sioIndex, b); err != nil {
-			return w, err
-		}
-	}
-	leave := func() {
-		for _, b := range csExitKey {
-			_ = p.Out(sioIndex, b)
-		}
-	}
-	read := func(reg byte) byte {
-		if p.Out(sioIndex, reg) != nil {
-			return 0xff
-		}
-		v, err := p.In(sioData)
-		if err != nil {
-			return 0xff
-		}
-		return v
-	}
+type csEC = cs.EC
 
-	w.id = uint16(read(sioRegChipID))<<8 | uint16(read(sioRegChipID+1))
-	w.rev = uint16(read(sioRegRev))<<8 | uint16(read(sioRegRev+1)) // 16 bit as UGREEN (ug_201x.c:155-164)
-	if w.id != cs201xID {
-		leave()
-		return w, fmt.Errorf("Super-I/O chip id 0x%04x, expected 0x%04x: nothing else was read", w.id, cs201xID)
-	}
+func csReadWindow(p Ports, enableHost bool) (csWindow, error) { return cs.ReadWindow(p, enableHost) }
 
-	_ = p.Out(sioIndex, sioRegLDN)
-	_ = p.Out(sioData, csLDNHost2EC)
-	w.active = read(sioRegActive)
-	if enableHost && w.active&0x01 == 0 {
-		_ = p.Out(sioIndex, sioRegActive)
-		_ = p.Out(sioData, 0x01)
-		w.active = read(sioRegActive)
-	}
-	w.base = uint16(read(sioRegBaseHi))<<8 | uint16(read(sioRegBaseLo))
-	leave()
-	return w, nil
-}
-
-// csEC reads and writes EC registers through the host-to-EC window at base, outside the Super-I/O window.
-type csEC struct {
-	p    Ports
-	base uint16
-}
-
-func (e csEC) latch(reg uint32) error {
-	if err := e.p.Out(e.base+csEcCtrl, 0); err != nil {
-		return err
-	}
-	for i := 0; i < 4; i++ {
-		if err := e.p.Out(e.base+csEcAddr+uint16(i), byte(reg>>(8*i))); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (e csEC) read(reg uint32) (byte, error) {
-	if err := e.latch(reg); err != nil {
-		return 0, err
-	}
-	return e.p.In(e.base + csEcData)
-}
-
-func (e csEC) write(reg uint32, v byte) error {
-	if err := e.latch(reg); err != nil {
-		return err
-	}
-	return e.p.Out(e.base+csEcData, v)
-}
-
-func plausibleBase(base uint16) bool { return base >= 0x100 && base != 0xffff }
+func plausibleBase(base uint16) bool { return cs.PlausibleBase(base) }
 
 // ProbeCS201x writes only the unlock key, the logical device number and the EC address latch (needed for every
 // read). It never writes a data register, never switches the host interface on and never touches a fan or watchdog
@@ -194,30 +112,30 @@ func ProbeCS201x(p Ports, model string) (CS201xReading, error) {
 	r := CS201xReading{Model: model, Temps: map[string]int{}}
 
 	w, err := csReadWindow(p, false)
-	r.ChipID = fmt.Sprintf("0x%04x", w.id)
-	r.Revision = fmt.Sprintf("0x%04x", w.rev)
+	r.ChipID = fmt.Sprintf("0x%04x", w.ID)
+	r.Revision = fmt.Sprintf("0x%04x", w.Rev)
 	if err != nil {
 		return r, err
 	}
 
-	if w.active&0x01 == 0 {
+	if w.Active&0x01 == 0 {
 		r.HostEC = "not active"
 		r.Notes = append(r.Notes, "the host interface of the embedded controller is off (cfg 0x30 = 0); the read-only probe does not switch it on, so no EC register was read. The fan driver switches it on before its first write")
-		if plausibleBase(w.base) {
-			r.Base = fmt.Sprintf("0x%04x", w.base)
+		if plausibleBase(w.Base) {
+			r.Base = fmt.Sprintf("0x%04x", w.Base)
 		}
 		return r, nil
 	}
 	r.HostEC = "active"
-	if !plausibleBase(w.base) {
-		return r, fmt.Errorf("implausible base address 0x%04x", w.base)
+	if !plausibleBase(w.Base) {
+		return r, fmt.Errorf("implausible base address 0x%04x", w.Base)
 	}
-	r.Base = fmt.Sprintf("0x%04x", w.base)
+	r.Base = fmt.Sprintf("0x%04x", w.Base)
 
-	ec := csEC{p, w.base}
+	ec := csEC{P: p, Base: w.Base}
 	var firstErr error
 	get := func(reg uint32) int {
-		v, err := ec.read(reg)
+		v, err := ec.Read(reg)
 		if err != nil && firstErr == nil {
 			firstErr = err
 		}

@@ -35,7 +35,6 @@ func TestIdxBayOrder(t *testing.T) {
 		want    []string
 	}{
 		{"iDX6011 Pro", []string{"ata1", "ata2", "ata5", "ata6", "ata3", "ata4"}},
-		{"iDX6012 Pro", []string{"ata1", "ata2", "ata5", "ata6", "ata3", "ata4"}},
 		{"iDX6011", []string{"ata1", "ata2", "ata3", "ata4", "ata5", "ata6"}},
 		{"iDX6012", []string{"ata1", "ata2", "ata3", "ata4", "ata5", "ata6"}},
 	}

@@ -72,8 +72,11 @@ func (c *Ctl) Main(ctx context.Context, args []string) int {
 	// Every command except help talks to the controller (tests bring their own tool).
 	if !c.Env.ToolFromEnv {
 		switch cmd {
-		case "help", "-h", "--help":
+		case "help", "-h", "--help", "cs201x":
 		default:
+			if c.isCS201x() {
+				break // no SMBus: the LEDs sit in the embedded controller
+			}
 			if !c.hasSMBus() {
 				c.ensureSMBus()
 			}
@@ -83,6 +86,8 @@ func (c *Ctl) Main(ctx context.Context, args []string) int {
 	switch cmd {
 	case "dxp480t":
 		return c.dxp480tApply()
+	case "cs201x":
+		return c.tool(append([]string{"cs201x"}, args[1:]...)...)
 	case "smbus":
 		return c.smbusCommand()
 	case "status":

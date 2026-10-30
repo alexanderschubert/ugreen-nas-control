@@ -230,7 +230,7 @@ func TestLan2LED(t *testing.T) {
 
 func TestDXP2800Layout(t *testing.T) {
 	for product, want := range map[string]string{
-		"DXP2800": layoutDXP2800, "DXP2800 GT": "", "DXP2800S": "", "DXP4800": "", "iDX6011": "idx", "": "",
+		"DXP2800": layoutDXP2800, "DXP6800": layoutDXP2800, "DXP6800S": layoutDXP2800, "DXP6800 Pro": "", "DXP6800 Plus": "", "DXP2800 GT": layoutCS201x, "DXP2800S": "", "DXP4800": "", "iDX6011": "idx", "": "",
 	} {
 		if got := detectLayout(product); got != want {
 			t.Errorf("%q: got %q, want %q", product, got, want)
@@ -245,11 +245,18 @@ func TestDXP2800Layout(t *testing.T) {
 			t.Errorf("%s: got %d %v, want %d", name, id, err, i)
 		}
 	}
+
+	for i, name := range []string{"power", "netdev", "disk1", "disk2", "disk3", "disk4", "disk5", "disk6"} { // DXP6800 table, leds-mcu.c:110-115
+		SetLayout(detectLayout("DXP6800"))
+		if id, err := ledID(name); err != nil || int(id) != i {
+			t.Errorf("DXP6800 %s: got %d %v, want %d", name, id, err, i)
+		}
+	}
 }
 
 func TestIdxLayoutByProduct(t *testing.T) {
 	for product, want := range map[string]string{
-		"iDX6011": "idx", "iDX6012": "idx", "iDX6011 Pro": "idx-pro", "iDX6012 Pro": "idx-pro",
+		"iDX6011": "idx", "iDX6012": "idx", "iDX6011 Pro": "idx-pro", "iDX6012 Pro": "",
 		"iDX6012B": "idx", "DXP4800 Pro": "", "iDX6013": "", "": "",
 	} {
 		if got := IdxLayout(product); got != want {

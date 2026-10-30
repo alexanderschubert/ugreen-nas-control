@@ -71,10 +71,10 @@ func DetectCS201x(p Ports, model string) (*CS201x, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !plausibleBase(w.base) {
-		return nil, fmt.Errorf("implausible base address 0x%04x of the embedded controller", w.base)
+	if !plausibleBase(w.Base) {
+		return nil, fmt.Errorf("implausible base address 0x%04x of the embedded controller", w.Base)
 	}
-	c := &CS201x{p: p, ec: csEC{p, w.base}, active: w.active&0x01 != 0}
+	c := &CS201x{p: p, ec: csEC{P: p, Base: w.Base}, active: w.Active&0x01 != 0}
 	for _, o := range m.Outputs {
 		c.chans = append(c.chans, Channel{ID: o.ID})
 	}
@@ -84,7 +84,7 @@ func DetectCS201x(p Ports, model string) (*CS201x, error) {
 func (c *CS201x) Name() string     { return csChip }
 func (c *CS201x) Describe() string { return "Chipsea CS201x embedded controller" }
 func (c *CS201x) Details() map[string]any {
-	return map[string]any{"base": fmt.Sprintf("0x%04x", c.ec.base), "host_interface": c.active}
+	return map[string]any{"base": fmt.Sprintf("0x%04x", c.ec.Base), "host_interface": c.active}
 }
 func (c *CS201x) Outputs() []Channel  { return c.chans }
 func (c *CS201x) MaxDuty() byte       { return 100 }  // percent
@@ -99,10 +99,10 @@ func (c *CS201x) switchOn() error {
 	if err != nil {
 		return err
 	}
-	if w.active&0x01 == 0 || !plausibleBase(w.base) {
+	if w.Active&0x01 == 0 || !plausibleBase(w.Base) {
 		return errors.New("the host interface of the embedded controller does not switch on")
 	}
-	c.ec.base, c.active, c.hostOn = w.base, true, true
+	c.ec.Base, c.active, c.hostOn = w.Base, true, true
 	return nil
 }
 
@@ -116,10 +116,10 @@ func (c *CS201x) prepare() error {
 		return err
 	}
 	set := func(reg uint32) error {
-		if v, err := c.ec.read(reg); err != nil || v != 0 {
+		if v, err := c.ec.Read(reg); err != nil || v != 0 {
 			return err
 		}
-		return c.ec.write(reg, 1)
+		return c.ec.Write(reg, 1)
 	}
 	for _, ch := range c.chans {
 		f, _ := csFanOf(ch.ID)
@@ -128,7 +128,7 @@ func (c *CS201x) prepare() error {
 		}
 	}
 	for _, t := range []struct{ temp, cfg uint32 }{{csRegNTC2, csRegADC2Cfg}, {csRegNTC4, csRegADC4Cfg}} {
-		if v, err := c.ec.read(t.temp); err != nil {
+		if v, err := c.ec.Read(t.temp); err != nil {
 			return err
 		} else if v == 0 {
 			if err := set(t.cfg); err != nil {
@@ -155,11 +155,11 @@ func (c *CS201x) RPM(ch Channel) (int, error) {
 	if err := c.readable(); err != nil {
 		return 0, err
 	}
-	hi, err := c.ec.read(f.spd)
+	hi, err := c.ec.Read(f.spd)
 	if err != nil {
 		return 0, err
 	}
-	lo, err := c.ec.read(f.spd + 1)
+	lo, err := c.ec.Read(f.spd + 1)
 	if err != nil {
 		return 0, err
 	}
@@ -174,7 +174,7 @@ func (c *CS201x) PWM(ch Channel) (byte, bool, error) {
 	if err := c.readable(); err != nil {
 		return 0, false, err
 	}
-	d, err := c.ec.read(f.duty)
+	d, err := c.ec.Read(f.duty)
 	return d, false, err
 }
 
@@ -186,14 +186,14 @@ func (c *CS201x) SetPWM(ch Channel, duty byte) error {
 	if err := c.prepare(); err != nil {
 		return err
 	}
-	return c.ec.write(f.duty, min(max(duty, csFloorPct), 100))
+	return c.ec.Write(f.duty, min(max(duty, csFloorPct), 100))
 }
 
 func (c *CS201x) temp(reg uint32) *int {
 	if c.readable() != nil {
 		return nil
 	}
-	v, err := c.ec.read(reg)
+	v, err := c.ec.Read(reg)
 	if err != nil || v == 0 || v == 0xff {
 		return nil
 	}
@@ -214,11 +214,11 @@ func (c *CS201x) Snapshot() (Snapshot, error) {
 	s := Snapshot{}
 	for _, ch := range c.chans {
 		f, _ := csFanOf(ch.ID)
-		en, err := c.ec.read(f.en)
+		en, err := c.ec.Read(f.en)
 		if err != nil {
 			return nil, err
 		}
-		duty, err := c.ec.read(f.duty)
+		duty, err := c.ec.Read(f.duty)
 		if err != nil {
 			return nil, err
 		}
@@ -241,10 +241,10 @@ func (c *CS201x) Restore(s Snapshot) error {
 		if !have || duty == 0 {
 			duty = csSafePct
 		}
-		errs = append(errs, c.ec.write(f.duty, duty))
+		errs = append(errs, c.ec.Write(f.duty, duty))
 		if have && saved[0] <= 1 {
-			if en, err := c.ec.read(f.en); err == nil && en != saved[0] {
-				errs = append(errs, c.ec.write(f.en, saved[0]))
+			if en, err := c.ec.Read(f.en); err == nil && en != saved[0] {
+				errs = append(errs, c.ec.Write(f.en, saved[0]))
 			}
 		}
 	}

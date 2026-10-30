@@ -13,7 +13,7 @@ import (
 
 var (
 	busI2CRe = regexp.MustCompile(`"bus": "/dev/i2c-([0-9]*)"`)
-	busMemRe = regexp.MustCompile(`"bus": "(/dev/mem)"`)
+	busMemRe = regexp.MustCompile(`"bus": "(/dev/mem|/dev/port)"`)
 )
 
 // statusJSON is what the web UI expects: brightness 0 while off, effect none|blink|breath.
@@ -138,6 +138,17 @@ func (c *Ctl) foreignMonitorRunning() bool {
 }
 
 func (c *Ctl) isGT() bool { return globMatch("DXP4800*GT*", c.product) }
+
+// isCS201x: the DXP2800 GT has no I2C LED controller; its LEDs are four ARGB channels in the CS201x embedded
+// controller, behind an opt-in (cs201x_leds="1" in leds.cfg, docs/led.md).
+func (c *Ctl) isCS201x() bool { return globMatch("DXP2800 GT*", c.product) }
+
+// cs201xRestore hands the channels back as found before our first write; a no-op on every other model.
+func (c *Ctl) cs201xRestore() {
+	if c.isCS201x() {
+		c.quiet(func() { c.tool("cs201x", "restore") })
+	}
+}
 
 func (c *Ctl) i2cNameFiles() []string {
 	var out []string
@@ -362,7 +373,11 @@ func (c *Ctl) status() int {
 	p("  \"controller\": \"ugreen-led-i2c\",\n")
 	if bus != "" {
 		p("  \"i2c_bus\": %s,\n", bus)
-		p("  \"i2c_address\": \"0x3a\",\n")
+		if bus == `"/dev/port"` {
+			p("  \"i2c_address\": \"cs201x\",\n")
+		} else {
+			p("  \"i2c_address\": \"0x3a\",\n")
+		}
 		p("  \"i2c_probe\": \"%s\",\n", found)
 	} else {
 		p("  \"i2c_bus\": null,\n")

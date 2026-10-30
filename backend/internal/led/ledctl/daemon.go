@@ -123,6 +123,7 @@ func (c *Ctl) daemonRun(ctx context.Context) int {
 	if names := c.ledRivals(); names != "" {
 		c.log(names + " controls the LEDs, status daemon exits")
 		_ = os.Remove(c.Env.PidFile)
+		c.cs201xRestore()
 		return 0
 	}
 
@@ -190,12 +191,14 @@ func (c *Ctl) daemonRun(ctx context.Context) int {
 			if tick%150 == 0 && c.foreignMonitorRunning() {
 				c.log("ugreenleds-driver monitor is running, status daemon exits")
 				_ = os.Remove(c.Env.PidFile)
+				c.cs201xRestore()
 				return 0
 			}
 			if tick%150 == 0 {
 				if names := c.ledRivals(); names != "" {
 					c.log(names + " controls the LEDs, status daemon exits")
 					_ = os.Remove(c.Env.PidFile)
+					c.cs201xRestore()
 					return 0
 				}
 			}
@@ -403,6 +406,7 @@ func (c *Ctl) daemonRun(ctx context.Context) int {
 		select {
 		case <-ctx.Done():
 			c.log("status daemon stopped")
+			c.cs201xRestore()
 			return 0
 		case <-ticker.C:
 		}

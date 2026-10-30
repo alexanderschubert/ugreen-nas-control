@@ -41,7 +41,8 @@ const (
 	minBreathOff = 500
 	maxPeriod    = 0x7fff
 
-	// layoutDXP2800 is the DXP2800: the legacy frame first, the idx frame as a fallback (see framesFor).
+	// layoutDXP2800 is the DXP2800, DXP6800 and DXP6800S (UGREEN serves the three with the same driver path): the legacy
+	// frame first, the idx frame as a fallback (see framesFor).
 	layoutDXP2800 = "dxp2800"
 )
 
@@ -53,6 +54,9 @@ const lan2Name = "netdev2"
 
 // allLeds is every LED of the layout in use, in register order.
 func allLeds() []string {
+	if getLayout() == layoutCS201x {
+		return ledNames[:argbChannels]
+	}
 	if getLayout() != "idx-pro" {
 		return ledNames
 	}
@@ -106,7 +110,13 @@ func detectLayout(product string) string {
 	if v := IdxLayout(product); v != "" {
 		return v
 	}
-	if product == "DXP2800" { // exact name, as UGREEN's driver compares it (leds-mcu.c:558@c75c5ab)
+	if isCS201xProduct(product) {
+		return layoutCS201x
+	}
+	// Exact names, as UGREEN's driver compares them: DXP2800, DXP6800 and DXP6800S take the no-ID frame, 4 LEDs for the
+	// DXP2800, 8 for the DXP6800 and DXP6800S (leds-mcu.c:62-63,171-173,558-561,627-629@c75c5ab; names :93-115). "DXP6800 Pro"
+	// and "DXP6800 Plus" are not in UGREEN's list and stay on the DX/DXP frame.
+	if product == "DXP2800" || product == "DXP6800" || product == "DXP6800S" {
 		return layoutDXP2800
 	}
 
@@ -127,7 +137,7 @@ func ledID(name string) (byte, error) {
 	}
 
 	i := slices.Index(ledNames, name)
-	if i < 0 {
+	if i < 0 || (getLayout() == layoutCS201x && i >= argbChannels) {
 		return 0, fmt.Errorf("unknown LED %q (power, netdev, disk1..disk8)", name)
 	}
 	if getLayout() == "idx-pro" && i >= 2 {
@@ -376,9 +386,9 @@ var dxp480tWhite = [][2]byte{
 	{regModeWhite, modeNone},
 }
 
-// IdxLayout is the layout of an iDX601x front panel by its DMI product name: "idx-pro" when the name
-// says Pro (two LAN LEDs, disk registers shifted by one), "idx" for the plain iDX6011 and iDX6012
-// (one LAN LED), "" for every other model.
+// IdxLayout is the layout of an iDX601x front panel by its DMI product name: "idx-pro" for exactly
+// "iDX6011 Pro" (two LAN LEDs, disk registers shifted by one), "idx" for the plain iDX6011 and iDX6012
+// (one LAN LED), "" for every other model, including any other name with "Pro" (an "iDX6012 Pro" does not exist).
 //
 // Facts, not code, from MIT-licensed community plugins (see docs/third-party.md):
 //   - the plain iDX6012 is handled like the iDX6011: omgapuppy/unraid-ugreen-idx6011-led-fan
@@ -389,8 +399,11 @@ func IdxLayout(product string) string {
 	if !strings.HasPrefix(product, "iDX6011") && !strings.HasPrefix(product, "iDX6012") {
 		return ""
 	}
-	if strings.Contains(product, "Pro") {
+	if product == "iDX6011 Pro" {
 		return "idx-pro"
+	}
+	if strings.Contains(product, "Pro") {
+		return "" // no other Pro exists (UGREEN lists "iDX6011 Pro" only, leds-mcu.c:88-90@c75c5ab)
 	}
 	return "idx"
 }
