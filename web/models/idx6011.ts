@@ -29,7 +29,7 @@ export default {
         },
         fans: {
             status: 'expected',
-            note: 'Pro only: it uses the same IT5571 embedded controller as the DXP4800 GT with four fans (second CPU fan, second case fan; their registers are from the MIT-licensed noodlemctwoodle plugin), a 25 % floor because the case fan stalls near 20 %, and emergency limits of 88 C CPU and 60 C disk. Not run on a device with this plugin. The plain iDX6011 and iDX6012 have a different fan map and get no fan control. The Pro LCD backlight can be read and set.'
+            note: 'Pro only: it uses the same IT5571 embedded controller as the DXP4800 GT with four fans (second CPU fan, second case fan; their registers are from the MIT-licensed noodlemctwoodle plugin), a 25 % floor because the case fan stalls near 20 %, and emergency limits of 88 C CPU and 60 C disk. Not run on a device with this plugin. The plain iDX6011 and iDX6012 have a different fan map: the plugin shows their fan readings (speed, duty, mode) and writes nothing. The Pro LCD backlight can be read and set.'
         },
         case: { status: 'expected', note: 'Drawn after photos, not compared on a device. The iDX6012 is the pre-launch name of the iDX6011 as far as known.' },
         sensors: { status: 'expected' }
@@ -40,6 +40,6 @@ export default {
         'https://nascompares.com/2026/01/21/ugreen-idx6011-pro-ai-nas-review/',
         'https://github.com/noodlemctwoodle/unraid-ugreen-idx6011-pro'
     ],
-    note: 'Six bays, two M.2 slots, a display at the front (Pro: 3.7 inch LCD), two 10G LAN ports, two Thunderbolt 4 ports, OCuLink. Fan control on the Pro only; the plain iDX6011 has none.',
+    note: 'Six bays, two M.2 slots, a display at the front (Pro: 3.7 inch LCD), two 10G LAN ports, two Thunderbolt 4 ports, OCuLink. Fan control on the Pro only; the plain iDX6011 and iDX6012 show fan readings only (read-only).',
     shots: true
 } satisfies Model;

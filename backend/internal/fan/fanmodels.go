@@ -25,7 +25,7 @@ const (
 // DXP2800 GT is a probe-like model too: its CS201x fans need `ugreen-nas-fan cs201x confirm`, not the IT8613E probe.
 func FanKind(model string) string {
 	switch {
-	case strings.HasPrefix(model, "DXP6800"), isDXP4800GT(model), isIdxPro(model):
+	case model == "DXP6800 Pro", isDXP4800GT(model), isIdxPro(model):
 		return KindFixed
 	case isProbeModel(model), isDXP2800GT(model):
 		return KindProbe
@@ -46,7 +46,7 @@ func isIdxPlain(model string) bool { return model == "iDX6011" || model == "iDX6
 // checks; nothing is assumed, the probe decides. DX4600/DX4700 stay out: a source comment is the only evidence.
 func isProbeModel(model string) bool {
 	switch model {
-	case "DXP2800", "DXP4800", "DXP4800 Plus", "DXP4800 Pro", "DXP8800 Plus":
+	case "DXP2800", "DXP4800", "DXP4800 Plus", "DXP4800 Pro", "DXP6800", "DXP6800 Plus", "DXP8800", "DXP8800 Pro", "DXP8800 Plus":
 		return true
 	}
 	return false
@@ -59,6 +59,11 @@ func isProbeModel(model string) bool {
 // and the community reports IT-Kuny/UGREEN-DXP-FAN-NAS-Driver README:262 (GPL-3.0; DXP2800: IT8613E at 0xa30, fan2
 // 0 rpm, fan3 1726 rpm) and smashah/ugreen-dxp-fan-cli (DXP4800 Plus drives pwm2 and pwm3). A strong hint, not proof
 // of the physical wiring: fan control of these models stays off until a probe result is confirmed.
+//
+// UGREEN's fan driver matches the prefix "DXP6800" and "DXP8800" (ug_it86x-cpufan.c:227-235@c75c5ab), so the plain
+// DXP6800, "DXP6800 Plus", the plain DXP8800 and "DXP8800 Pro" share the DXP6800 Pro / DXP8800 Plus wiring on paper;
+// only the DXP6800 Pro is verified, the others are probed. DXP6800 Ultra and DXP6800S have no model file with fans
+// and stay without fan control.
 //
 // Header 4 is unconfirmed: UGREEN's driver names 0x1e as its control register (ug_it86x-cpufan.c:82-83@c75c5ab), we
 // write 0x7f (it8613Headers). Until a device settles it, no new model gets to write header 4 (isProbeModel).
@@ -83,6 +88,10 @@ var probeHints = map[string]probeHint{
 	"DXP4800 Pro":  {hintOutputs("2:cpu", "3:case")},
 	// ug_it86x-cpufan.c:227-235,265-270,441-451: both case headers get the same duty.
 	"DXP8800 Plus": {hintOutputs("2:cpu", "3:case", "4:case")},
+	"DXP8800":      {hintOutputs("2:cpu", "3:case", "4:case")},
+	"DXP8800 Pro":  {hintOutputs("2:cpu", "3:case", "4:case")},
+	"DXP6800":      {hintOutputs("2:cpu", "3:case", "4:case")},
+	"DXP6800 Plus": {hintOutputs("2:cpu", "3:case", "4:case")},
 	// Not a probe model (header 4, no model file with fans): hint only. cpu on header 3, case on 2 and 4
 	// (ug_it86x-cpufan.c:236-243,271-275@c75c5ab).
 	"DXP480T Plus": {hintOutputs("3:cpu", "2:case", "4:case")},

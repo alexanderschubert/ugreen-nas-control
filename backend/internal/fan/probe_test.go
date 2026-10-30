@@ -361,6 +361,8 @@ func TestVendorHintsCompare(t *testing.T) {
 		{"DXP8800 Plus", mapped("pwm2", "fan2", "pwm3", "fan3", "pwm4", "fan4"), "outputs pwm2 and pwm3 and pwm4", true},
 		{"DXP8800 Plus", mapped("pwm2", "fan2", "pwm3", "fan3"), "outputs pwm2 and pwm3 and pwm4", false},
 		{"DXP2800", mapped("pwm3", "fan2"), "outputs pwm3", false},
+		{"DXP6800 Plus", mapped("pwm2", "fan2", "pwm3", "fan3", "pwm4", "fan4"), "outputs pwm2 and pwm3 and pwm4", true},
+		{"DXP8800 Pro", mapped("pwm2", "fan2", "pwm3", "fan3"), "outputs pwm2 and pwm3 and pwm4", false},
 	}
 	for _, c := range cases {
 		text, ag := compareHint(c.model, c.outs)

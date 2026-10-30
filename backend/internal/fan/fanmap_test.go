@@ -19,7 +19,9 @@ func TestFanKind(t *testing.T) {
 	for model, want := range map[string]string{
 		"DXP6800 Pro": KindFixed, "DXP4800 GT": KindFixed, "iDX6011 Pro": KindFixed,
 		"DXP2800": KindProbe, "DXP4800": KindProbe, "DXP4800 Plus": KindProbe, "DXP4800 Pro": KindProbe, "DXP8800 Plus": KindProbe,
-		"DXP2800 GT": KindProbe, "iDX6011": KindReadOnly, "iDX6012": KindReadOnly, "iDX6012 Pro": "", "DXP8800 Pro": "", "DX4600 Pro": "", "": "",
+		"DXP2800 GT": KindProbe, "iDX6011": KindReadOnly, "iDX6012": KindReadOnly, "iDX6012 Pro": "", "DX4600 Pro": "", "": "",
+		"DXP6800": KindProbe, "DXP6800 Plus": KindProbe, "DXP8800": KindProbe, "DXP8800 Pro": KindProbe,
+		"DXP6800 Ultra": "", "DXP6800S": "", "DXP8800 Ultra": "", "DXP2800S": "", "DXP4800S": "", "DH2600": "", "DXP480T Plus": "",
 	} {
 		if got := FanKind(model); got != want {
 			t.Errorf("%q: %q, want %q", model, got, want)

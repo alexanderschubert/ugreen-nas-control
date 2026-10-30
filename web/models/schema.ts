@@ -35,8 +35,8 @@ export interface Check {
 
 export type LedSupport = 'bays' | 'power' | 'none';
 export type CaseView = 'none' | 'front-rear' | 'full';
-export type Series = 'DX' | 'DXP' | 'iDX';
-export const SERIES: Series[] = ['DX', 'DXP', 'iDX'];
+export type Series = 'DH' | 'DX' | 'DXP' | 'iDX';
+export const SERIES: Series[] = ['DH', 'DX', 'DXP', 'iDX'];
 
 export type Overall = 'verified' | 'partial' | 'community' | 'expected';
 

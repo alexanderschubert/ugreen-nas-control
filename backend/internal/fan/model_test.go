@@ -10,17 +10,20 @@ import (
 
 func TestModelSupported(t *testing.T) {
 	for model, want := range map[string]bool{
-		"DXP6800 Pro":  true,
-		"DXP6800 Plus": true,
-		"DXP4800 Plus": true,
-		"DXP4800 GT":   true,
-		"DXP8800 Plus": true,
-		"DX4600 Pro":   false,
-		"DXP2800":      true,
-		"DXP2800 GT":   true,
-		"iDX6011 Pro":  true,
-		"iDX6011":      false, // read only: shown, not driven
-		"":             false,
+		"DXP6800 Pro":   true,
+		"DXP6800 Plus":  true,
+		"DXP4800 Plus":  true,
+		"DXP4800 GT":    true,
+		"DXP8800 Plus":  true,
+		"DXP8800 Pro":   true,
+		"DXP6800":       true,
+		"DXP6800 Ultra": false,
+		"DX4600 Pro":    false,
+		"DXP2800":       true,
+		"DXP2800 GT":    true,
+		"iDX6011 Pro":   true,
+		"iDX6011":       false, // read only: shown, not driven
+		"":              false,
 	} {
 		if got := ModelSupported(model); got != want {
 			t.Errorf("%q: got %v, want %v", model, got, want)

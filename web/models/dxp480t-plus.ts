@@ -22,7 +22,10 @@ export default {
             ref: 'https://github.com/miskcoo/ugreen_leds_controller/issues/6',
             note: 'Only the power LED works; the model has no drive bays.'
         },
-        fans: { status: 'unsupported' },
+        fans: {
+            status: 'unsupported',
+            note: "UGREEN's fan driver expects cpu on header 3 and case fans on headers 2 and 4; header 4 is unconfirmed, so there is no fan control and no case view."
+        },
         case: { status: 'unsupported' },
         sensors: { status: 'expected' }
     },
