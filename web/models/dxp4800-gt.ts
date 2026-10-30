@@ -17,7 +17,7 @@ export default {
     fan: {
         chip: 'ITE IT5571 embedded controller',
         fans: { fan1: 'cpu', fan3: 'case' },
-        watchdog: { status: 'expected', note: 'Registers from the UGOS driver; no armed watchdog seen on a device with this plugin yet.' }
+        watchdog: { status: 'expected', note: 'Registers from the driver UGREEN ships; no armed watchdog seen on a device with this plugin yet.' }
     },
     verified: {
         leds: {

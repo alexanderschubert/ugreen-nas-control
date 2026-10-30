@@ -6,7 +6,7 @@ export const status: StatusResponse = {
     ok: true,
     info: {
         model: 'DXP6800 Pro',
-        bios: 'UGOS 1.2.3',
+        bios: 'BIOS 1.2.3',
         bios_date: '03/24/2024',
         cpu: '12th Gen Intel(R) Core(TM) i5-1235U @ 2.50GHz',
         threads: 12,

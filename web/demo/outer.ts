@@ -172,7 +172,10 @@ langSelect.addEventListener('change', () => {
     sync(true);
 });
 $('reset').addEventListener('click', () => {
+    // Reset is about demo data, not appearance: theme and language survive, so the bar and the frame stay in sync.
+    const { ui_lang: lang, ui_theme: theme } = prefs();
     resetDemo(store, Object.keys(localStorage));
+    seedPrefs(store, { lang: lang ?? null, theme: theme ?? null });
     page = 'overview';
     sync(true);
 });

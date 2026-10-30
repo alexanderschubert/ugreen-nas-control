@@ -11,7 +11,7 @@ Prior work this project builds on; licenses and what is used follow below.
 - [flybrys/UGREEN-DXP4800GT-LED-Driver](https://github.com/flybrys/UGREEN-DXP4800GT-LED-Driver) and [EllipticSet/UGREEN-DXP4800Pro-LEDs](https://github.com/EllipticSet/UGREEN-DXP4800Pro-LEDs): LED controller buses.
 - [IT-Kuny/UGREEN-DXP-FAN-NAS-Driver](https://github.com/IT-Kuny/UGREEN-DXP-FAN-NAS-Driver) and [smashah/ugreen-dxp-fan-cli](https://github.com/smashah/ugreen-dxp-fan-cli): fan chips and PWM channels.
 - UGREEN LED Control (Unraid plugin by ivolution): the Spanish LED texts.
-- UGOS driver `ug_4800gt-sio.ko` (DXP4800 GT): the EC watchdog registers were derived from it; design: pet-only, never arm (see EC watchdog registers below).
+- UGREEN stock driver `ug_4800gt-sio.ko` (DXP4800 GT): the EC watchdog registers were derived from it; design: pet-only, never arm (see EC watchdog registers below).
 
 ## Hardware facts from community plugins
 
@@ -70,7 +70,7 @@ The miskcoo issue threads (#6, #22, #93, #100, #121, #122) are cited in `web/mod
 
 ## EC watchdog registers
 
-The EC watchdog registers (`0x98` enable, `0xA2`/`0xA3` timeout, big-endian) were derived from the UGOS driver `ug_4800gt-sio.ko` on a DXP4800 GT. Reused as facts and design, no code: never arm, pet every timeout / 3 only while armed, clear `0x98` on stop after returning the fans to EC auto. Used in `backend/internal/fan/ec_watchdog.go`. As of 2026-10-29 no earlier public source for this EC register approach is known.
+The EC watchdog registers (`0x98` enable, `0xA2`/`0xA3` timeout, big-endian) were derived from the UGREEN stock driver `ug_4800gt-sio.ko` on a DXP4800 GT. Reused as facts and design, no code: never arm, pet every timeout / 3 only while armed, clear `0x98` on stop after returning the fans to EC auto. Used in `backend/internal/fan/ec_watchdog.go`. As of 2026-10-29 no earlier public source for this EC register approach is known.
 
 ## Watchdog background
 
