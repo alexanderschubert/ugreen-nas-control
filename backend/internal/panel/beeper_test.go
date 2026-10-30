@@ -4,13 +4,27 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
 	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
 )
+
+func noLock(fn func() error) error { return fn() }
+
+func testOpeners(ec hw.Ports) openers {
+	return openers{
+		ports:     func() (hw.Ports, error) { return ec, nil },
+		lock:      noLock,
+		acpiDir:   "/nonexistent",
+		conflicts: func() []conflict.Conflict { return nil },
+	}
+}
 
 func TestBeeperFor(t *testing.T) {
 	for model, kind := range map[string]BeepKind{
@@ -88,7 +102,7 @@ func TestECBeeper(t *testing.T) {
 		echo2 bool
 	}{{"iDX6011", 0xA5, false}, {"iDX6011", 0xA5, true}, {"iDX6012", 0xA5, false}, {"iDX6011 Pro", 0x9E, false}, {"iDX6011 Pro", 0x9E, true}} {
 		ec := &fakeEC{echo2: c.echo2}
-		b, _, err := BeeperFor(c.model).open(openers{ports: func() (hw.Ports, error) { return ec, nil }})
+		b, _, err := BeeperFor(c.model).open(testOpeners(ec))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -106,7 +120,7 @@ func TestECBeeper(t *testing.T) {
 
 func TestECBeeperNeverWritesAnotherRegister(t *testing.T) {
 	ec := &fakeEC{}
-	b := &ecBeeper{p: ec, reg: BeeperFor("iDX6011 Pro").ECReg, wait: 50 * time.Millisecond}
+	b := &ecBeeper{p: ec, reg: BeeperFor("iDX6011 Pro").ECReg, wait: 50 * time.Millisecond, lock: noLock}
 	_ = b.On(0)
 	_ = b.Off()
 	for _, w := range ec.writes {
@@ -118,7 +132,7 @@ func TestECBeeperNeverWritesAnotherRegister(t *testing.T) {
 
 func TestECBeeperErrors(t *testing.T) {
 	ec := &fakeEC{deaf: true}
-	b := &ecBeeper{p: ec, reg: 0xA5, wait: 50 * time.Millisecond}
+	b := &ecBeeper{p: ec, reg: 0xA5, wait: 50 * time.Millisecond, lock: noLock}
 	if err := b.On(0); err == nil || !strings.Contains(err.Error(), "reads back") {
 		t.Errorf("deaf EC: %v", err)
 	}
@@ -126,7 +140,7 @@ func TestECBeeperErrors(t *testing.T) {
 		t.Errorf("tries %d", len(ec.writes))
 	}
 	ec = &fakeEC{failRead: true}
-	b = &ecBeeper{p: ec, reg: 0xA5, wait: 5 * time.Millisecond}
+	b = &ecBeeper{p: ec, reg: 0xA5, wait: 5 * time.Millisecond, lock: noLock}
 	if err := b.On(0); !errors.Is(err, errECTimeout) {
 		t.Errorf("silent EC: %v", err)
 	}
@@ -206,6 +220,17 @@ type cliEnv struct {
 	mem      *fakeMem
 	memOpens []bool
 	waits    []time.Duration
+	// lock bookkeeping: held now, number of acquisitions, and whether a wait ran while it was held.
+	heldNow, locks int
+	heldInWait     bool
+	rivals         []conflict.Conflict
+}
+
+func (c *cliEnv) lock(fn func() error) error {
+	c.locks++
+	c.heldNow++
+	defer func() { c.heldNow-- }()
+	return fn()
 }
 
 func newCLI(t *testing.T, model string) *cliEnv {
@@ -214,6 +239,7 @@ func newCLI(t *testing.T, model string) *cliEnv {
 		t.Fatal(err)
 	}
 	c := &cliEnv{ports: newFakePorts(), ec: &fakeEC{}, mem: newFakeMem()}
+	c.ec.held = func() bool { return c.heldNow > 0 }
 	c.Env = Env{
 		DMIDir: dir,
 		OpenPorts: func() (hw.Ports, error) {
@@ -222,9 +248,15 @@ func newCLI(t *testing.T, model string) *cliEnv {
 			}
 			return c.ports, nil
 		},
-		OpenMem: func(w bool) (Mem, error) { c.memOpens = append(c.memOpens, w); return c.mem, nil },
-		Wait:    func(_ context.Context, d time.Duration) { c.waits = append(c.waits, d) },
-		Now:     func() time.Time { return time.Time{} },
+		Lock:      c.lock,
+		ACPIDir:   t.TempDir(),
+		Conflicts: func() []conflict.Conflict { return c.rivals },
+		OpenMem:   func(w bool) (Mem, error) { c.memOpens = append(c.memOpens, w); return c.mem, nil },
+		Wait: func(_ context.Context, d time.Duration) {
+			c.waits = append(c.waits, d)
+			c.heldInWait = c.heldInWait || c.heldNow > 0
+		},
+		Now: func() time.Time { return time.Time{} },
 	}
 	return c
 }
@@ -331,5 +363,83 @@ func TestCLIUsage(t *testing.T) {
 	}
 	if rc, out := c.run("help"); rc != 0 || !strings.Contains(out, "Usage") {
 		t.Error("help")
+	}
+}
+
+func TestECBeeperRunsUnderTheSharedLock(t *testing.T) {
+	c := newCLI(t, "iDX6011 Pro")
+	if rc, out := c.run("beep"); rc != 0 {
+		t.Fatalf("rc %d %q", rc, out)
+	}
+	if c.ec.unlocked != 0 {
+		t.Errorf("%d EC port accesses outside the lock", c.ec.unlocked)
+	}
+	// One lock for the chip id, one per write (on, off); never held while the beep sounds.
+	if c.locks != 3 || c.heldInWait || c.heldNow != 0 {
+		t.Errorf("locks %d heldInWait %v heldNow %d", c.locks, c.heldInWait, c.heldNow)
+	}
+}
+
+func TestECBeeperRetryLocksEachExchange(t *testing.T) {
+	ec := &fakeEC{deaf: true}
+	n := 0
+	b := &ecBeeper{p: ec, reg: 0xA5, wait: 50 * time.Millisecond, lock: func(fn func() error) error { n++; return fn() }}
+	_ = b.On(0)
+	if n != ecTries {
+		t.Errorf("%d locks for %d tries", n, ecTries)
+	}
+}
+
+func TestECBeeperGuards(t *testing.T) {
+	// a rival fan writer
+	c := newCLI(t, "iDX6011 Pro")
+	c.rivals = []conflict.Conflict{{Kind: conflict.KindDaemon, Name: "Rival", Controls: []string{conflict.Fan}, Severity: conflict.SeverityBlock}}
+	if rc, out := c.run("beep"); rc != 1 || !strings.Contains(out, "Rival") || len(c.ec.writes) != 0 || c.locks != 0 {
+		t.Errorf("rival: rc %d %q", rc, out)
+	}
+	// a warn-only finding does not block
+	c = newCLI(t, "iDX6011 Pro")
+	c.rivals = []conflict.Conflict{{Controls: []string{conflict.Fan}, Severity: conflict.SeverityWarn}}
+	if rc, out := c.run("beep"); rc != 0 {
+		t.Errorf("warn: rc %d %q", rc, out)
+	}
+	// kernel EC driver bound
+	c = newCLI(t, "iDX6011 Pro")
+	dev := filepath.Join(c.ACPIDir, "PNP0C09:00")
+	if err := os.MkdirAll(dev, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("/nonexistent", filepath.Join(dev, "driver")); err != nil {
+		t.Fatal(err)
+	}
+	if rc, out := c.run("beep"); rc != 1 || !strings.Contains(out, "ACPI embedded controller driver is bound") || len(c.ec.writes) != 0 {
+		t.Errorf("bound: rc %d %q", rc, out)
+	}
+	// unbound device directory is fine
+	if err := os.Remove(filepath.Join(dev, "driver")); err != nil {
+		t.Fatal(err)
+	}
+	if rc, out := c.run("beep"); rc != 0 {
+		t.Errorf("unbound: rc %d %q", rc, out)
+	}
+	// wrong chip: refused on the Pro, only noted on the plain iDX6011
+	c = newCLI(t, "iDX6011 Pro")
+	c.ec.chip = 0x8613
+	if rc, out := c.run("beep"); rc != 1 || !strings.Contains(out, "0x8613") || len(c.ec.writes) != 0 {
+		t.Errorf("chip: rc %d %q", rc, out)
+	}
+	c = newCLI(t, "iDX6011")
+	c.ec.chip = 0x8613
+	if rc, out := c.run("beep"); rc != 0 || len(c.ec.writes) != 2 {
+		t.Errorf("soft chip: rc %d %q", rc, out)
+	}
+}
+
+func TestOtherBeepersTakeNoLock(t *testing.T) {
+	for _, m := range []string{"DXP4800", "DXP480T Plus"} {
+		c := newCLI(t, m)
+		if rc, out := c.run("beep"); rc != 0 || c.locks != 0 {
+			t.Errorf("%s: rc %d %q locks %d", m, rc, out, c.locks)
+		}
 	}
 }

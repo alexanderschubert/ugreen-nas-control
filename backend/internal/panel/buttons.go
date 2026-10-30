@@ -40,11 +40,12 @@ type ButtonSpec struct {
 	Cite            string
 }
 
+// Hold lengths, counted in polls of Poll (ug_gpio_btn.c:73-82,99-115@c75c5ab). The vendor's reset comment says a
+// five-second hold, but its constant is 260 polls, which is 13 s; we follow the constant.
 const (
-	// Vendor long-press constants (ug_gpio_btn.c:73-82,99-115@c75c5ab).
-	resetPressPolls = 260 // 13 s; the vendor comment says 5 s
-	powerReleasePol = 100 // a power release is only reported after 5 s down
-	seenCap         = 1200
+	resetPressAfter   = 260  // polls of continuous hold before a reset press is reported
+	powerReleaseAfter = 100  // a power release is reported only if the button was held at least this long (5 s)
+	countCeiling      = 1200 // the hold counter stops here (one minute)
 )
 
 func pad(addr uint64, high bool) *Pad { return &Pad{Addr: addr, Bit: 1, ActiveHigh: high} }
@@ -123,45 +124,52 @@ type Event struct {
 	Polls int
 }
 
-// Tracker follows one button the way the vendor driver does: it counts consecutive active polls, reports the press
-// at a threshold and the release afterwards. Power: press after pressPolls, release only if held >= 100 polls. Reset:
-// press after 260 polls, release if the press was reported (the vendor needs more than 260 and so misses a release
-// at exactly 260; we do not).
+// Tracker turns a stream of pad readings (one per Poll) into events for one button. It mirrors the vendor driver's
+// observable rules, not its code: the press is reported once the hold reaches a threshold; whether the later release
+// is reported depends on the button. Power: the release is reported only after a hold of powerReleaseAfter polls or
+// more, so a short press yields down and up but no release. Reset: the release is reported whenever the press was
+// reported (the vendor needs a hold above the threshold and misses a release at exactly 260 polls; we do not).
 type Tracker struct {
-	reset      bool
-	pressPolls int
-	seen       int
-	down       bool
-	reported   bool
+	isReset   bool
+	threshold int  // polls of hold that make a press
+	held      int  // length of the current hold, capped at countCeiling
+	pressed   bool // the pad is currently active
+	announced bool // the press event of this hold has been emitted
 }
 
-func NewPowerTracker(pressPolls int) *Tracker { return &Tracker{pressPolls: pressPolls} }
-func NewResetTracker() *Tracker               { return &Tracker{reset: true, pressPolls: resetPressPolls} }
+func NewPowerTracker(pressPolls int) *Tracker { return &Tracker{threshold: pressPolls} }
+func NewResetTracker() *Tracker               { return &Tracker{isReset: true, threshold: resetPressAfter} }
+
+// releaseWanted: should this hold end with a release event?
+func (t *Tracker) releaseWanted() bool {
+	if t.isReset {
+		return t.announced
+	}
+	return t.announced && t.held >= powerReleaseAfter
+}
 
 // Poll feeds one reading and returns the events it causes.
-func (t *Tracker) Poll(active bool) []Event {
-	var ev []Event
-	if active {
-		if !t.down {
-			t.down = true
+func (t *Tracker) Poll(active bool) (ev []Event) {
+	switch {
+	case active:
+		if !t.pressed {
+			t.pressed = true
 			ev = append(ev, Event{Name: EvDown})
 		}
-		if t.seen < seenCap {
-			t.seen++
-			if t.seen == t.pressPolls {
-				t.reported = true
-				ev = append(ev, Event{Name: EvPress, Polls: t.seen})
+		if t.held < countCeiling {
+			t.held++
+			if t.held == t.threshold {
+				t.announced = true
+				ev = append(ev, Event{Name: EvPress, Polls: t.held})
 			}
 		}
-		return ev
-	}
-	if t.down {
-		ev = append(ev, Event{Name: EvUp, Polls: t.seen})
-		if t.reported && (t.reset || t.seen >= powerReleasePol) {
-			ev = append(ev, Event{Name: EvRelease, Polls: t.seen})
+	case t.pressed:
+		ev = append(ev, Event{Name: EvUp, Polls: t.held})
+		if t.releaseWanted() {
+			ev = append(ev, Event{Name: EvRelease, Polls: t.held})
 		}
+		*t = Tracker{isReset: t.isReset, threshold: t.threshold}
 	}
-	t.seen, t.down, t.reported = 0, false, false
 	return ev
 }
 

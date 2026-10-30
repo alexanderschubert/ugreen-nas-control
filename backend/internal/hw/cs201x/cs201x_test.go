@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
 )
 
 // fakeChip is the Super-I/O window and the host-to-EC window of a CS201x.
@@ -135,5 +137,18 @@ func TestWithLockExcludes(t *testing.T) {
 	}
 	if n := <-second; n != 0 {
 		t.Fatalf("second ran with %d holders inside", n)
+	}
+}
+
+func TestLockPathMatchesSharedHelper(t *testing.T) {
+	for _, env := range []string{"", filepath.Join(t.TempDir(), "env.lock")} {
+		t.Setenv(hw.LockEnv, env)
+		if LockPath() != hw.LockPath() {
+			t.Errorf("env %q: cs201x %q, hw %q", env, LockPath(), hw.LockPath())
+		}
+	}
+	t.Setenv(hw.LockEnv, "")
+	if LockPath() != hw.DefaultLockPath {
+		t.Errorf("default %q", LockPath())
 	}
 }

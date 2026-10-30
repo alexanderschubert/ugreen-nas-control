@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
 	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
 )
 
@@ -36,12 +39,15 @@ func (k BeepKind) String() string {
 
 // BeeperSpec is the beeper of one model group.
 type BeeperSpec struct {
-	Name    string
-	Match   matcher
-	Kind    BeepKind
-	ECReg   byte   // ECByte
-	PadAddr uint64 // PadReg
-	Cite    string
+	Name  string
+	Match matcher
+	Kind  BeepKind
+	ECReg byte // ECByte
+	// ECSoftID: the chip id of the controller is only noted, not required (the plain iDX6011/6012; the fan code
+	// treats them alike). Every other EC model must answer as an IT5571.
+	ECSoftID bool
+	PadAddr  uint64 // PadReg
+	Cite     string
 }
 
 // BeeperSpecs: the generic PC speaker for the models of the SATA/beeper driver (ug_sataio_beeper.c:535-583@c75c5ab)
@@ -58,7 +64,7 @@ var BeeperSpecs = []BeeperSpec{
 	{Name: "DX4700", Match: matcher{exact: []string{"DX4700"}},
 		Kind: PCSpeaker, Cite: "dx4700/ug_sata_beep-dx4700.c:164-189@c75c5ab"},
 	{Name: "iDX6011, iDX6012", Match: matcher{exact: []string{"iDX6011", "iDX6012"}},
-		Kind: ECByte, ECReg: 0xA5, Cite: "ug_sataio_beeper.c:26-35,126-171,299-304@c75c5ab"},
+		Kind: ECByte, ECReg: 0xA5, ECSoftID: true, Cite: "ug_sataio_beeper.c:26-35,126-171,299-304@c75c5ab"},
 	{Name: "iDX6011 Pro", Match: matcher{exact: []string{"iDX6011 Pro"}},
 		Kind: ECByte, ECReg: 0x9E, Cite: "ug_sataio_beeper.c:33,301-303@c75c5ab"},
 	{Name: "DH2600", Match: matcher{prefix: []string{"DH2600"}},
@@ -81,30 +87,110 @@ func BeeperFor(product string) *BeeperSpec {
 type openers struct {
 	ports func() (hw.Ports, error)
 	mem   func(write bool) (Mem, error)
+	// lock runs fn under the flock shared with the fan daemon; nil means hw.WithLock.
+	lock func(fn func() error) error
+	// acpiDir is the ACPI device directory the EC driver check reads; empty means the real one.
+	acpiDir string
+	// conflicts lists the rival fan writers; nil means the real detection.
+	conflicts func() []conflict.Conflict
+}
+
+func (o openers) withLock(fn func() error) error {
+	if o.lock != nil {
+		return o.lock(fn)
+	}
+	return hw.WithLock(fn)
 }
 
 // open returns the Beeper and a close func.
 func (s *BeeperSpec) open(o openers) (Beeper, func(), error) {
 	switch s.Kind {
 	case PCSpeaker:
+		// Ports 0x42, 0x43 and 0x61 belong to no other tool of this project, so no lock is taken.
 		p, err := o.ports()
 		if err != nil {
 			return nil, nil, err
 		}
 		return &speaker{p: p}, func() { _ = p.Close() }, nil
 	case ECByte:
+		if err := o.guardEC(); err != nil {
+			return nil, nil, err
+		}
 		p, err := o.ports()
 		if err != nil {
 			return nil, nil, err
 		}
-		return &ecBeeper{p: p, reg: s.ECReg, wait: ecWait}, func() { _ = p.Close() }, nil
+		if err := o.checkChip(p, s.ECSoftID); err != nil {
+			_ = p.Close()
+			return nil, nil, err
+		}
+		return &ecBeeper{p: p, reg: s.ECReg, wait: ecWait, lock: o.withLock}, func() { _ = p.Close() }, nil
 	default:
+		// The pad words are written by this tool alone (the fan code touches other MMIO words), so no lock.
 		m, err := o.mem(true)
 		if err != nil {
 			return nil, nil, err
 		}
 		return &padBeeper{m: m, addr: s.PadAddr}, func() { _ = m.Close() }, nil
 	}
+}
+
+// The same read-only refusals the fan code applies before it talks to the controller (fan/ec.go detectEC): the
+// kernel's ACPI EC driver must not be bound, the chip behind ports 0x4E/0x4F must be an IT5571, and no rival fan
+// writer may be running.
+const (
+	ecSioIndex = 0x4E
+	ecSioData  = 0x4F
+	ecChipID   = 0x5571
+)
+
+// DefaultACPIDir lists the ACPI devices; a bound PNP0C09 entry is the kernel's EC driver.
+const DefaultACPIDir = "/sys/bus/acpi/devices"
+
+func (o openers) guardEC() error {
+	list := conflict.Default().Detect
+	if o.conflicts != nil {
+		list = o.conflicts
+	}
+	if rivals := conflict.Blocking(list(), conflict.Fan); len(rivals) > 0 {
+		return fmt.Errorf("refusing to use the embedded controller while %s is running", rivals[0].Name)
+	}
+	dir := o.acpiDir
+	if dir == "" {
+		dir = DefaultACPIDir
+	}
+	bound, _ := filepath.Glob(filepath.Join(dir, "PNP0C09:*", "driver"))
+	for _, d := range bound {
+		if _, err := os.Lstat(d); err == nil {
+			return fmt.Errorf("the kernel's ACPI embedded controller driver is bound (%s); refusing to share the controller with it", filepath.Dir(d))
+		}
+	}
+	return nil
+}
+
+// checkChip reads the chip id word (registers 0x20, 0x21) under the shared lock, because the index port is shared.
+func (o openers) checkChip(p hw.Ports, soft bool) error {
+	var id uint16
+	err := o.withLock(func() error {
+		for _, reg := range []byte{0x20, 0x21} {
+			if err := p.Out(ecSioIndex, reg); err != nil {
+				return err
+			}
+			v, err := p.In(ecSioData)
+			if err != nil {
+				return err
+			}
+			id = id<<8 | uint16(v)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if id != ecChipID && !soft {
+		return fmt.Errorf("no supported embedded controller found (chip id 0x%04x, expected 0x%04x)", id, ecChipID)
+	}
+	return nil
 }
 
 // PC speaker: timer command 0xB6 to port 0x43, divisor low then high byte to port 0x42, on = set bits 0-1 of port
@@ -146,9 +232,11 @@ func (s *speaker) Off() error {
 	return s.p.Out(pitGate, v&^3)
 }
 
-// EC byte: ACPI EC ports data 0x62 and command 0x66, write = 0x81 reg value, read = 0x80 reg; the vendor writes, reads
-// back, and repeats until they match, treating a read-back of 2 after writing 1 as success
-// (ug_sataio_beeper.c:26-29,126-171@c75c5ab). We wait for IBF/OBF like the fan code and give up after a few tries.
+// EC byte: ACPI EC ports data 0x62 and command 0x66, write = 0x81 reg value, read = 0x80 reg
+// (ug_sataio_beeper.c:26-29,126-171@c75c5ab). Behaviour taken from the vendor driver: after a write the register is
+// read back and the write is repeated until the read-back matches, and a read-back of 2 after writing 1 counts as
+// success (the controller reports the active state that way on the iDX6011). We bound the repeats and wait for
+// IBF/OBF as the fan code does.
 const (
 	ecData     = 0x62
 	ecCmd      = 0x66
@@ -161,14 +249,24 @@ const (
 
 var ecWait = 100 * time.Millisecond
 
-// ecBeeper writes exactly one register, fixed at construction, with 0 or 1 only.
+// ecBeeper writes exactly one register, fixed at construction, with 0 or 1 only. Ports 0x62/0x66 are also used by
+// the fan daemon, so every write-and-read-back exchange runs under the shared flock; the lock is released between
+// exchanges, never held while the beep sounds.
 type ecBeeper struct {
 	p    hw.Ports
 	reg  byte
 	wait time.Duration
+	lock func(fn func() error) error // nil: hw.WithLock
 }
 
 var errECTimeout = errors.New("embedded controller timeout")
+
+func (e *ecBeeper) locked(fn func() error) error {
+	if e.lock != nil {
+		return e.lock(fn)
+	}
+	return hw.WithLock(fn)
+}
 
 func (e *ecBeeper) waitFlag(flag byte, set bool) error {
 	deadline := time.Now().Add(e.wait)
@@ -194,31 +292,41 @@ func (e *ecBeeper) send(port uint16, v byte) error {
 	return e.p.Out(port, v)
 }
 
-func (e *ecBeeper) set(v byte) error {
-	var last error
-	for i := 0; i < ecTries; i++ {
-		got, err := e.writeRead(v)
-		if err == nil && (got == v || (v == 1 && got == 2)) {
-			return nil
-		}
-		if err == nil {
-			err = fmt.Errorf("register 0x%02X reads back 0x%02X after writing %d", e.reg, got, v)
-		}
-		last = err
-		time.Sleep(time.Duration(i+1) * time.Millisecond)
-	}
-	return last
+// readbackOK: the register holds what was asked, or, for "on", the controller's alternative active value 2.
+func readbackOK(want, got byte) bool {
+	return got == want || (want == 1 && got == 2)
 }
 
-func (e *ecBeeper) writeRead(v byte) (byte, error) {
-	if st, err := e.p.In(ecCmd); err == nil && st&ecOBF != 0 {
-		_, _ = e.p.In(ecData) // stale byte of an aborted read
+// set drives the register to v. A failed exchange or a wrong read-back is retried up to ecTries times with a
+// growing pause; the last problem is returned if none succeeds.
+func (e *ecBeeper) set(v byte) error {
+	var problem error
+	for n := 1; n <= ecTries; n++ {
+		var got byte
+		err := e.locked(func() (err error) { got, err = e.exchange(v); return })
+		if err == nil && readbackOK(v, got) {
+			return nil
+		}
+		problem = err
+		if problem == nil {
+			problem = fmt.Errorf("register 0x%02X reads back 0x%02X after writing %d", e.reg, got, v)
+		}
+		time.Sleep(time.Duration(n) * time.Millisecond)
 	}
-	for _, w := range []struct {
+	return problem
+}
+
+// exchange is one complete write-then-read transaction; the caller holds the lock.
+func (e *ecBeeper) exchange(v byte) (byte, error) {
+	if st, err := e.p.In(ecCmd); err == nil && st&ecOBF != 0 {
+		_, _ = e.p.In(ecData) // drop a stale byte left by an aborted read
+	}
+	steps := [...]struct {
 		port uint16
 		v    byte
-	}{{ecCmd, ecCmdWrite}, {ecData, e.reg}, {ecData, v}, {ecCmd, ecCmdRead}, {ecData, e.reg}} {
-		if err := e.send(w.port, w.v); err != nil {
+	}{{ecCmd, ecCmdWrite}, {ecData, e.reg}, {ecData, v}, {ecCmd, ecCmdRead}, {ecData, e.reg}}
+	for _, st := range steps {
+		if err := e.send(st.port, st.v); err != nil {
 			return 0, err
 		}
 	}
@@ -231,25 +339,30 @@ func (e *ecBeeper) writeRead(v byte) (byte, error) {
 func (e *ecBeeper) On(int) error { return e.set(1) }
 func (e *ecBeeper) Off() error   { return e.set(0) }
 
-// Pad register: force bits 10..8 to 010 and set (on) or clear (off) bit 0, other bits kept
-// (dh2600/ug_sata_beep-dh2600.c:164-182, dxp480t/ug-beeper-dxp480t.c:118-134@c75c5ab).
+// Pad register (dh2600/ug_sata_beep-dh2600.c:164-182, dxp480t/ug-beeper-dxp480t.c:118-134@c75c5ab): bit 0 is the
+// buzzer level, bits 10..8 are a three-bit field that must hold 0b010 while the buzzer is used. A beep changes only
+// those four bits; the other 28 are written back as read.
+const (
+	padLevelBit  = uint32(1)
+	padFieldMask = uint32(0b111) << 8
+	padFieldVal  = uint32(0b010) << 8
+)
+
 type padBeeper struct {
 	m    Mem
 	addr uint64
 }
 
 func (b *padBeeper) put(on bool) error {
-	v, err := b.m.Read32(b.addr)
+	word, err := b.m.Read32(b.addr)
 	if err != nil {
 		return err
 	}
-	v = v&^(7<<8) | 1<<9
+	word = word&^(padFieldMask|padLevelBit) | padFieldVal
 	if on {
-		v |= 1
-	} else {
-		v &^= 1
+		word |= padLevelBit
 	}
-	return b.m.Write32(b.addr, v)
+	return b.m.Write32(b.addr, word)
 }
 
 func (b *padBeeper) On(int) error { return b.put(true) }

@@ -82,10 +82,32 @@ type fakeEC struct {
 	echo2    bool      // writing 1 reads back 2 (seen on the iDX6011)
 	deaf     bool      // writes are dropped
 	failRead bool
+	// chip is the id read behind 0x4E/0x4F; zero means a genuine IT5571.
+	chip   uint16
+	sioReg byte
+	// held, when set, reports whether the shared lock is held; accesses outside it are counted in unlocked.
+	held     func() bool
+	unlocked int
+}
+
+func (f *fakeEC) check() {
+	if f.held != nil && !f.held() {
+		f.unlocked++
+	}
 }
 
 func (f *fakeEC) In(port uint16) (byte, error) {
+	f.check()
 	switch port {
+	case ecSioData:
+		id := f.chip
+		if id == 0 {
+			id = ecChipID
+		}
+		if f.sioReg == 0x21 {
+			return byte(id), nil
+		}
+		return byte(id >> 8), nil
 	case ecCmd:
 		if len(f.out) > 0 {
 			return ecOBF, nil
@@ -103,7 +125,10 @@ func (f *fakeEC) In(port uint16) (byte, error) {
 }
 
 func (f *fakeEC) Out(port uint16, v byte) error {
+	f.check()
 	switch port {
+	case ecSioIndex:
+		f.sioReg = v
 	case ecCmd:
 		switch v {
 		case ecCmdRead:

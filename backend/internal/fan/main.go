@@ -8,28 +8,21 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"syscall"
 
 	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
 	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
 )
 
-var lockPath = envOr("UGREEN_FAN_LOCK", "/var/run/ugreen-nas-control.lock")
+// lockPath overrides the shared lock file (tests); empty means hw.LockPath, the one every process resolves alike.
+var lockPath string
 
 // withLock keeps the index/data port pair to one process at a time
-// (daemon, web page, command line).
+// (daemon, web page, command line, LED backend, front panel).
 func withLock(fn func() error) error {
-	f, err := fsx.OpenLock(lockPath, 0o644)
-	if err != nil {
-		return err
+	if lockPath != "" {
+		return hw.WithLockAt(lockPath, fn)
 	}
-	defer func() { _ = f.Close() }()
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
-		return err
-	}
-	defer func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN) }()
-	return fn()
+	return hw.WithLock(fn)
 }
 
 func usage() {

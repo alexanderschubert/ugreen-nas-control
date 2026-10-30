@@ -8,11 +8,8 @@ package cs201x
 
 import (
 	"fmt"
-	"syscall"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
 	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
 )
 
 const (
@@ -131,37 +128,12 @@ func PlausibleBase(base uint16) bool { return base >= 0x100 && base != 0xffff }
 
 // LockPath is the flock file that serialises every access to the Super-I/O ports and the EC window. It is the lock
 // of the fan tool and daemon (ugreen-nas-fan), so the LED backend, which runs in other processes, cannot interleave
-// its address latch with a fan access. Overridable for tests (UGREEN_FAN_LOCK, testhooks builds only).
-var lockOverride string
+// its address latch with a fan access. One implementation for all users: hw.LockPath (UGREEN_FAN_LOCK).
+func LockPath() string { return hw.LockPath() }
 
 // SetLockPath points the lock at another file (tests); the returned func puts it back.
-func SetLockPath(path string) (restore func()) {
-	old := lockOverride
-	lockOverride = path
-	return func() { lockOverride = old }
-}
-
-func LockPath() string {
-	if lockOverride != "" {
-		return lockOverride
-	}
-	if v := testenv.Get("UGREEN_FAN_LOCK"); v != "" {
-		return v
-	}
-	return "/var/run/ugreen-nas-control.lock"
-}
+func SetLockPath(path string) (restore func()) { return hw.SetLockPath(path) }
 
 // WithLock runs fn while holding the exclusive lock. Never nest it: a second flock on the same file from the same
 // process blocks forever.
-func WithLock(fn func() error) error {
-	f, err := fsx.OpenLock(LockPath(), 0o644)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = f.Close() }()
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
-		return err
-	}
-	defer func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN) }()
-	return fn()
-}
+func WithLock(fn func() error) error { return hw.WithLock(fn) }

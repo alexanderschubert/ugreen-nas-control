@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
 	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
 )
 
@@ -21,6 +22,11 @@ type Env struct {
 	Tick func() (<-chan time.Time, func())
 	Wait func(ctx context.Context, d time.Duration)
 	Now  func() time.Time
+	// Lock runs fn under the flock shared with the fan daemon (default hw.WithLock); ACPIDir is where the kernel EC
+	// driver binding is looked up; Conflicts lists rival fan writers (default: the real detection).
+	Lock      func(fn func() error) error
+	ACPIDir   string
+	Conflicts func() []conflict.Conflict
 }
 
 func (e Env) withDefaults() Env {
@@ -165,7 +171,7 @@ func runBeep(ctx context.Context, env Env, args []string, stderr io.Writer) erro
 	if *freq != 0 && spec.Kind != PCSpeaker {
 		return usageError(fmt.Sprintf("the %s beeper has a fixed tone; --freq is for PC speaker models", spec.Kind))
 	}
-	b, closeFn, err := spec.open(openers{ports: env.OpenPorts, mem: env.OpenMem})
+	b, closeFn, err := spec.open(openers{ports: env.OpenPorts, mem: env.OpenMem, lock: env.Lock, acpiDir: env.ACPIDir, conflicts: env.Conflicts})
 	if err != nil {
 		return fmt.Errorf("open the %s: %w (needs root)", spec.Kind, err)
 	}
