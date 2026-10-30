@@ -17,3 +17,5 @@ docs/ca/overview-dark.png linguist-generated=true
 docs/ca/fans-dark.png linguist-generated=true
 docs/ca/case-dark.png linguist-generated=true
 docs/ca/leds-dark.png linguist-generated=true
+# Light variant of the overview for the README hero (<picture>), rendered by the same recipe.
+docs/ca/overview-light.png linguist-generated=true

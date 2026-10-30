@@ -9,7 +9,7 @@ import { dirname, join, resolve } from 'node:path';
 import { loadModels } from '../../web/models/index';
 import { ALL_OUTPUTS, DOC_FILES } from '../../scripts/generated';
 import { format } from '../../scripts/format';
-import { CAPABILITIES, type Capability, type Model, monthYear, overallStatus } from '../../web/models/schema';
+import { CAPABILITIES, type Capability, type Evidence, type Model, type Overall, SERIES, monthYear, overallStatus } from '../../web/models/schema';
 import { CAPABILITY_LABEL, EVIDENCE_HELP, EVIDENCE_LABEL, OVERALL_HELP, OVERALL_LABEL, checkText } from '../site/content';
 
 const root = resolve(import.meta.dir, '../..');
@@ -38,13 +38,36 @@ function summary(): string {
     return [table(['Model', ...CAPABILITIES.map(c => CAPABILITY_LABEL[c]), 'Overall'], rows), '', `${words}.`].join('\n');
 }
 
+/** One symbol per evidence level for the README table; the legend line above the tables names them. */
+const SYMBOL: Record<Evidence, string> = { verified: '●', community: '◔', partial: '◐', expected: '○', unsupported: '–' };
+const OVERALL_SYMBOL: Record<Overall, string> = { verified: '●', community: '◔', partial: '◐', expected: '○' };
+const RANK: Record<Overall, number> = { verified: 0, partial: 1, community: 2, expected: 3 };
+
+/** README table: grouped by series, best status first (the order of the site matrix), one symbol per capability. */
 function compact(): string {
-    const cell = (m: Model, c: Capability) => (m.verified[c].status === 'unsupported' ? '-' : EVIDENCE_LABEL[m.verified[c].status]);
-    const rows = models.map(m => [link(m), ...CAPABILITIES.map(c => cell(m, c)), OVERALL_LABEL[overallStatus(m)]]);
+    const overalls = (Object.keys(RANK) as Overall[]).filter(o => models.some(m => overallStatus(m) === o));
+    const counts = overalls.map(o => `${models.filter(m => overallStatus(m) === o).length} ${OVERALL_LABEL[o].toLowerCase()}`).join(', ');
+    const legend = (['verified', 'community', 'partial', 'expected', 'unsupported'] as const)
+        .map(e => `${SYMBOL[e]} ${e === 'unsupported' ? 'not offered' : EVIDENCE_LABEL[e].toLowerCase()}`)
+        .join(' · ');
+    const groups = SERIES.map(s => {
+        const rows = models
+            .filter(m => m.series === s)
+            .sort((x, y) => RANK[overallStatus(x)] - RANK[overallStatus(y)] || x.name.localeCompare(y.name, 'en', { numeric: true }))
+            .map(m => [
+                link(m),
+                ...CAPABILITIES.map(c => SYMBOL[m.verified[c].status]),
+                `${OVERALL_SYMBOL[overallStatus(m)]} ${OVERALL_LABEL[overallStatus(m)]}`
+            ]);
+        return rows.length ? [`**${s} series**`, '', table(['Model', ...CAPABILITIES.map(c => CAPABILITY_LABEL[c]), 'Status'], rows)].join('\n') : '';
+    }).filter(Boolean);
     return [
-        table(['Model', ...CAPABILITIES.map(c => CAPABILITY_LABEL[c]), 'Overall'], rows),
+        `**${counts}.**`,
         '',
-        `${(Object.keys(EVIDENCE_LABEL) as (keyof typeof EVIDENCE_LABEL)[]).map(e => `**${EVIDENCE_LABEL[e]}**: ${lower(EVIDENCE_HELP[e])}`).join('. ')}. "-": not offered. Versions, dates and evidence: [docs/hardware.md](docs/hardware.md).`
+        legend,
+        '',
+        ...groups.flatMap(g => [g, '']),
+        'Versions, dates and evidence per cell: [docs/hardware.md](docs/hardware.md), or the model page on the website.'
     ].join('\n');
 }
 

@@ -134,12 +134,13 @@ harness model='dxp6800-pro': web-build
 shots *args: web-build
     bun web/tools/shots.ts {{ args }}
 
-# The 4 Community Applications store screenshots (DXP6800 Pro, dark) into docs/ca/; rerun after a visible UI change
+# The 4 Community Applications store screenshots (DXP6800 Pro, dark) and the README hero (overview, light) into docs/ca/; rerun after a visible UI change
 [group('dev')]
 ca-shots: web-build
     SHOTS_OUT=.build/ca-shots bun web/tools/shots.ts dxp6800-pro --page overview,fans,case,leds --theme dark --no-social
+    SHOTS_OUT=.build/ca-shots bun web/tools/shots.ts dxp6800-pro --page overview --theme light --no-social
     mkdir -p docs/ca
-    cp .build/ca-shots/dxp6800-pro/*-dark.png docs/ca/
+    cp .build/ca-shots/dxp6800-pro/*-dark.png .build/ca-shots/dxp6800-pro/overview-light.png docs/ca/
 
 # The site demo (the real plugin UI on sample data, model switcher) into .build/demo; checked against the PHP harness
 [group('dev')]

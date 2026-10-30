@@ -4,12 +4,12 @@
   <PluginURL>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugin/ugreen-nas-control.plg</PluginURL>
   <TemplateURL>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugins/ugreen-nas-control.xml</TemplateURL>
   <Category>Tools:Utilities</Category>
-  <Overview>LED, fan and system control for UGREEN NAS (the NASync series DX, DXP, iDX) under Unraid. LEDs: colours, effects, disk and network status, night mode, Unraid alerts. Case view of your NAS with its bays, ports and drives. Temperatures read from Unraid, so sleeping disks stay asleep. On the DXP6800 Pro and DXP4800 GT: fan control with Quiet, Standard, Performance or custom curves, fan measuring, and all fans at 100 % when a temperature is too high or unreadable. No kernel module. Replaces UGREEN LED Control.</Overview>
+  <Overview>LED, fan and system control for UGREEN NAS (DX, DXP, iDX series) under Unraid. LEDs: colours, effects, disk and network status, night mode, Unraid alerts. Case view of your NAS with its bays, ports and drives. Temperatures read from Unraid, so sleeping disks stay asleep. On the DXP6800 Pro and DXP4800 GT: fan control with Quiet, Standard, Performance or custom curves, fan measuring, and all fans at 100 % when a temperature is too high or unreadable. No kernel module. Replaces UGREEN LED Control.</Overview>
   <Project>https://github.com/alexanderschubert/ugreen-nas-control</Project>
   <Support>https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/</Support>
   <ReadMe>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/README.md</ReadMe>
   <Icon>https://alexanderschubert.github.io/ugreen-nas-control/icon.png</Icon>
-  <ExtraSearchTerms>ugreen nasync dxp dx idx dxp6800 dxp4800 led fan fan-control temperature case-view</ExtraSearchTerms>
+  <ExtraSearchTerms>ugreen nas dxp dx idx dxp6800 dxp4800 led fan fan-control temperature case-view</ExtraSearchTerms>
   <Screenshot>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/docs/ca/overview-dark.png</Screenshot>
   <Screenshot>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/docs/ca/fans-dark.png</Screenshot>
   <Screenshot>https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/docs/ca/case-dark.png</Screenshot>

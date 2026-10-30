@@ -1,5 +1,18 @@
 # Third-party notices
 
+## Credits
+
+Maintainer: [Alexander Schubert](https://github.com/alexanderschubert). Contributor (merged code): [j3n57h0m45](https://github.com/j3n57h0m45): DXP4800 GT support (fans, LEDs, case and System view), UX overhaul, fan measuring, CI.
+
+Prior work this project builds on; licenses and what is used follow below.
+
+- [miskcoo/ugreen_leds_controller](https://github.com/miskcoo/ugreen_leds_controller): LED protocol and bay mapping.
+- [noodlemctwoodle/unraid-ugreen-idx6011-pro](https://github.com/noodlemctwoodle/unraid-ugreen-idx6011-pro) and [omgapuppy/unraid-ugreen-idx6011-led-fan](https://github.com/omgapuppy/unraid-ugreen-idx6011-led-fan): iDX6011 bay order, EC registers, LED frames.
+- [flybrys/UGREEN-DXP4800GT-LED-Driver](https://github.com/flybrys/UGREEN-DXP4800GT-LED-Driver) and [EllipticSet/UGREEN-DXP4800Pro-LEDs](https://github.com/EllipticSet/UGREEN-DXP4800Pro-LEDs): LED controller buses.
+- [IT-Kuny/UGREEN-DXP-FAN-NAS-Driver](https://github.com/IT-Kuny/UGREEN-DXP-FAN-NAS-Driver) and [smashah/ugreen-dxp-fan-cli](https://github.com/smashah/ugreen-dxp-fan-cli): fan chips and PWM channels.
+- UGREEN LED Control (Unraid plugin by ivolution): the Spanish LED texts.
+- UGOS driver `ug_4800gt-sio.ko` (DXP4800 GT): the EC watchdog registers were derived from it; design: pet-only, never arm (see EC watchdog registers below).
+
 ## Hardware facts from community plugins
 
 The iDX6011 / iDX6012 LED and fan handling uses facts (bay order, model names, the power LED start-up sequence, EC fan and backlight registers) read from these MIT-licensed
