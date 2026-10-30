@@ -65,6 +65,7 @@
             xz = pkgs.xz; # release archive (plg.ts pack)
             git = pkgs.gitMinimal; # the scripts call git; the macOS shim fails inside nix develop. Minimal: full git pulls in python and clang
             chromium = pkgs.chromium;
+            woff2 = pkgs.woff2; # social preview: Archivo woff2 -> ttf for rsvg-convert (fontconfig reads no woff2)
           };
           # e2e and shots: Bun.WebView drives Chromium on Linux (macOS uses the system WebKit); nix has no system fonts
           chromeEnv = pkgs.lib.optionalAttrs isLinux {
@@ -114,8 +115,8 @@
               "bun"
               "php"
               "rsvg-convert"
-            ]
-            ++ pkgs.lib.optional isLinux "chromium";
+              "woff2"
+            ];
             plugin = [
               "bun"
               "rsvg-convert"

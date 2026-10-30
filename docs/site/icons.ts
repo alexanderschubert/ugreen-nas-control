@@ -3,7 +3,9 @@
 import { LED_ICONS, NAS_ICONS, SITE_ICONS, STATUS_ICONS, svgIcon } from '../../web/src/core/icons';
 import type { Capability, Evidence } from '../../web/models/schema';
 
-const ALL: Record<string, string> = { ...LED_ICONS, ...NAS_ICONS, ...SITE_ICONS };
+/** Site-only glyphs in the same grammar. */
+const EXTRA = { chevron: '<path d="m6 9 6 6 6-6"/>', download: '<path d="M12 4v10m-4.500-4.500L12 14l4.500-4.500M5 19h14"/>' };
+const ALL: Record<string, string> = { ...LED_ICONS, ...NAS_ICONS, ...SITE_ICONS, ...EXTRA };
 
 /** Capability -> the plugin icon its page uses in the sidebar (UGREENNASControl.page). */
 export const CAPABILITY_ICON: Record<Capability, string> = { leds: 'bulb', fans: 'fan', case: 'box', sensors: 'thermo' };

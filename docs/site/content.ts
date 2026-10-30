@@ -17,15 +17,16 @@ export const CA_LIVE = false;
 
 /** Meta description and keywords: the one place besides the hero where the official line name appears for search. */
 export const META_DESC =
-    'Unraid plugin for UGREEN NASync (DX, DXP, iDX) with what UGOS did for the hardware: fan curves, LEDs, a live case view, temperatures, a dashboard tile, MQTT and a hardware watchdog. No kernel module.';
-export const KEYWORDS = 'UGREEN NAS, UGREEN NASync, Unraid plugin, DXP6800 Pro, DXP4800, DXP8800, fan control, LED control, case view, Community Applications';
-export const HEADLINE = 'Unraid on your UGREEN, with everything UGOS did for the hardware.';
+    'Unraid plugin for UGREEN NAS (DX, DXP, iDX): fan curves, LEDs, case view, sensors, a dashboard tile and the hardware watchdog kept on (DXP4800 GT, iDX6011 Pro). No kernel module. The page runs the real plugin interface on sample data.';
+export const KEYWORDS = 'UGREEN NAS, Unraid plugin, DXP6800 Pro, DXP4800, DXP8800, fan control, LED control, case view, Community Applications';
+export const HEADLINE = 'Unraid on UGREEN. Done right.';
 export const SUBLINE =
-    'Fan curves, LED control, a live case view, temperatures, a dashboard tile, MQTT and a hardware watchdog for UGREEN NASync boxes. One plugin, no kernel module.';
+    'Keep the BIOS watchdog on: the plugin feeds it, and a frozen box reboots itself. Plus fan curves, LEDs and a live case view. The box below is the real plugin: click it.';
+/** Under the headline of the social preview image. */
+export const SOCIAL_SUB = 'Fans, LEDs, case view, and a hardware watchdog you can leave on, for UGREEN NAS on Unraid.';
 
 /** The ARM models of the home series cannot run Unraid; the one sentence that says so on the site and in the README. */
-export const ARM_NOTE =
-    'The DH2300 and DH4300 Plus use ARM chips (Rockchip) and cannot run Unraid, which needs a 64-bit x86 CPU; this plugin supports the x86 models only.';
+export const ARM_NOTE = "Runs on every UGREEN NAS that runs Unraid: the x86 DX, DXP and iDX series. (The ARM-based DH models can't run Unraid.)";
 
 export const CASE_LABEL = { none: 'none', 'front-rear': 'front and rear', full: 'front, rear and inside' } as const;
 

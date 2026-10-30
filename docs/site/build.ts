@@ -1,9 +1,10 @@
 // Builds the static site into .build/site from web/models/ (the registry) and docs/site/style.css. One landing page (hero with the
-// live case view of the chosen model, UGOS comparison, support matrix, install steps) plus one short page per model so the old
-// /models/<id>/ links keep working. The live demo (web/tools/demo.ts) is copied to .build/site/demo. Plain HTML written by TypeScript.
+// plugin's own front view of the chosen model, four live islands of the real plugin UI (islands.ts), support matrix, install
+// steps) plus one short page per model so the old /models/<id>/ links keep working. The live demo (web/tools/demo.ts) is copied
+// to .build/site/demo. Plain HTML written by TypeScript.
 //
 //   bun docs/site/build.ts
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { loadModels } from '../../web/models/index';
 import { CAPABILITIES, type Capability, type Check, type Evidence, type Model, SERIES, monthYear, overallStatus } from '../../web/models/schema';
@@ -28,9 +29,11 @@ import {
     SUBLINE,
     checkText
 } from './content';
+import { ISLAND_SCRIPT, island } from './islands';
 import { demoModal } from '../../web/demo/site-modal';
 import { CAPABILITY_ICON, capIcon, icon, statusIcon } from './icons';
 import { liveFront, pluginCss } from './live';
+import { socialSvg } from './social';
 
 const root = resolve(import.meta.dir, '../..');
 const dist = join(root, '.build/site');
@@ -63,8 +66,11 @@ function front(m: Model): string {
     return `<div class="thumb" aria-hidden="true"><div class="nas-live unc-hero" style="width:${natural}px;--zd:${z(360)};--zm:${z(340)}">${live}</div></div>`;
 }
 
-/** What one check says in words, for tooltips and screen readers: "LEDs: Verified on 3.6, Oct 2026". */
-const checkLine = (m: Model, cap: Capability) => `${CAPABILITY_LABEL[cap]}: ${checkText(m.verified[cap])}`;
+/** The public status line: "Verified Oct 2026"; the plugin version stays in the tooltips (checkText). */
+const stamp = (c: Check): string =>
+    c.status === 'unsupported' || c.status === 'expected'
+        ? checkText(c)
+        : [EVIDENCE_LABEL[c.status], monthYear(c.date)].filter(Boolean).join(' ') || checkText(c);
 
 /** The hero's picture of one model: the front as the plugin draws it, scaled to the column by the page script. */
 function stagePicture(m: Model): string {
@@ -73,60 +79,96 @@ function stagePicture(m: Model): string {
     return `<div class="plate"><div class="fit" data-natural="${naturalWidth(m)}" aria-hidden="true"><div class="nas-live unc-hero" style="width:${naturalWidth(m)}px">${live}</div></div></div>`;
 }
 
-const chip = (iconName: string, label: string, status: Evidence, title: string) => {
-    const state = status === 'unsupported' ? 'Not offered' : EVIDENCE_LABEL[status];
-    return `<li class="st-${status}" title="${esc(title)}"><span class="cap">${icon(iconName, 20)}<span class="badge">${statusIcon(status, 11)}</span></span><span><b>${label}</b><small>${state}</small></span></li>`;
-};
-
-function stage(m: Model, rel: string): string {
-    const all = overallStatus(m);
-    const chips = CAPABILITIES.map(c => chip(CAPABILITY_ICON[c], CAPABILITY_LABEL[c], m.verified[c].status, checkLine(m, c)));
-    const wd = m.fan?.watchdog;
-    if (wd) chips.push(chip('shield', 'Watchdog', wd.status, `Watchdog: ${checkText(wd)}. ${wd.note ?? ''}`));
-    return `<div class="stage" data-model="${m.id}"${m.id === DEFAULT_MODEL ? '' : ' hidden'}>
-  ${stagePicture(m)}
-  <ul class="chips" aria-label="What works on the ${esc(m.name)}">${chips.join('')}</ul>
-  <p class="sum st-${all}">${statusIcon(all, 16)}<span><b>${OVERALL_LABEL[all]}.</b> ${esc(OVERALL_HELP[all])}</span></p>
-  <p class="acts"><a class="btn quiet" href="${demoUrl(rel, m)}">${icon('play', 16)}Try the ${esc(m.name)} in the live demo</a><a class="textlink" href="${demoUrl(rel, m, 'dashboard')}">See the dashboard tile</a></p>
-</div>`;
+function stage(m: Model): string {
+    return `<div class="stage" data-model="${m.id}"${m.id === DEFAULT_MODEL ? '' : ' hidden'}>${stagePicture(m)}</div>`;
 }
 
-const modelPicker = (listed: Model[]) =>
-    `<select id="model">${SERIES.map(series => {
+const modelPicker = (listed: Model[], id = 'model', label = 'Your model', selected = DEFAULT_MODEL) =>
+    `<label class="pick"><span>${label}</span><select id="${id}" aria-label="Pick your UGREEN model">${SERIES.map(series => {
         const group = listed.filter(m => m.series === series);
         return group.length
-            ? `<optgroup label="${series} series">${group.map(m => `<option value="${m.id}"${m.id === DEFAULT_MODEL ? ' selected' : ''}>${esc(m.name)}</option>`).join('')}</optgroup>`
+            ? `<optgroup label="${series} series">${group.map(m => `<option value="${m.id}"${m.id === selected ? ' selected' : ''}>${esc(m.name)}</option>`).join('')}</optgroup>`
             : '';
-    }).join('')}</select>`;
+    }).join('')}</select></label>`;
+
+/** Prominent model switcher above the hero island: chips by series on wide screens, one select on phones. Wired in SCRIPT. */
+function modelChips(listed: Model[], selected = DEFAULT_MODEL): string {
+    const groups = SERIES.map(series => {
+        const group = listed.filter(m => m.series === series);
+        return group.length
+            ? `<div class="mchip-group"><span class="mchip-series" aria-hidden="true">${series}</span><span class="mchip-list">${group.map(m => `<button type="button" role="radio" class="mchip" data-pick="${m.id}" aria-checked="${m.id === selected}" tabindex="${m.id === selected ? 0 : -1}">${esc(m.name)}</button>`).join('')}</span></div>`
+            : '';
+    }).join('');
+    return `<div class="chooser"><p class="chooser-h" id="chooser-h">Which UGREEN do you have?<span class="chooser-sub"> Pick yours, the page switches to it.</span></p><div class="mchips" role="radiogroup" aria-labelledby="chooser-h">${groups}</div>${modelPicker(listed, 'model3', 'Your model')}</div>`;
+}
+
+/** One trust line under the hero CTAs; the verified models come from the registry. */
+function trustLine(listed: Model[]): string {
+    const names = listed.filter(m => overallStatus(m) === 'verified').map(m => m.name);
+    const who = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : (names[0] ?? '');
+    return `<p class="trust">Free, MIT, open source. Unraid 7.2+.${who ? ` Verified on ${esc(who)}.` : ''}</p>`;
+}
 
 const SCRIPT = `
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-copy]');
   if(c)navigator.clipboard.writeText(c.dataset.copy).then(()=>{const l=c.querySelector('.lbl'),o=l.textContent;l.textContent='Copied';setTimeout(()=>{l.textContent=o},1600)});
-  if(e.target.closest('#theme')){const t=document.documentElement.dataset.theme==='light'?'dark':'light';document.documentElement.dataset.theme=t;try{localStorage.setItem('theme',t)}catch(_){}}
+  if(e.target.closest('#theme')){const t=document.documentElement.dataset.theme==='light'?'light':'dark';const n=t==='light'?'dark':'light';document.documentElement.dataset.theme=n;try{localStorage.setItem('theme',n)}catch(_){}}
 });
 (()=>{
   const sel=document.getElementById('model');
-  const fit=()=>document.querySelectorAll('.stage:not([hidden]) .fit').forEach(f=>{f.firstElementChild.style.zoom=Math.min(1,f.clientWidth/f.dataset.natural)});
-  const show=()=>{if(sel)document.querySelectorAll('.stage').forEach(s=>{s.hidden=s.dataset.model!==sel.value});fit()};
+  const fit=()=>document.querySelectorAll('.stage:not([hidden]) .fit').forEach(f=>{const w=f.clientWidth,z=Math.min(1.5,w/f.dataset.natural);f.firstElementChild.style.zoom=innerWidth<600?Math.min(1,Math.max(z,.8)):z;f.classList.toggle("pan",f.scrollWidth>w+1)});
+  const show=()=>{
+    if(!sel)return;
+    if(sel2)sel2.value=sel.value;
+    if(sel3)sel3.value=sel.value;
+    chips.forEach(c=>{const on=c.dataset.pick===sel.value;c.setAttribute('aria-checked',on);c.tabIndex=on?0:-1});
+    try{localStorage.setItem('model',sel.value)}catch(_){}
+    try{const u=new URL(location.href);if(u.searchParams.get('model')!==sel.value){u.searchParams.set('model',sel.value);history.replaceState(null,'',u)}}catch(_){}
+    document.querySelectorAll('[data-model]').forEach(s=>{s.hidden=s.dataset.model!==sel.value});
+    fit();if(window.__islands)window.__islands();
+  };
+  const sel2=document.getElementById('model2'),sel3=document.getElementById('model3'),chips=[...document.querySelectorAll('[data-pick]')];
+  const valid=id=>id&&[...sel.options].some(o=>o.value===id);
+  window.__setModel=id=>{sel.value=id;show()};
   if(sel)sel.addEventListener('change',show);
+  if(sel2)sel2.addEventListener('change',()=>{sel.value=sel2.value;show()});
+  if(sel3)sel3.addEventListener('change',()=>{sel.value=sel3.value;show()});
+  chips.forEach((c,i)=>{
+    c.addEventListener('click',()=>{sel.value=c.dataset.pick;show()});
+    c.addEventListener('keydown',e=>{
+      const d={ArrowRight:1,ArrowDown:1,ArrowLeft:-1,ArrowUp:-1}[e.key];if(!d)return;
+      e.preventDefault();const n=chips[(i+d+chips.length)%chips.length];n.focus();n.click()});
+  });
+  let want;try{want=new URLSearchParams(location.search).get('model')||localStorage.getItem('model')}catch(_){}
+  if(sel&&valid(want))sel.value=want;
   addEventListener('resize',fit);show();
   setTimeout(()=>document.documentElement.classList.add('booted'),3500);
 })();`;
 const THEME_INIT = `(()=>{let t;try{t=localStorage.getItem('theme')}catch(_){}if(!t)t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t})()`;
 
-function layout(o: { title: string; desc: string; rel: string; body: string; path: string; ld?: object }): string {
+/** Previews only: what this stream is, in the page title, the sticky bar and the badge. */
+const STREAM_LABEL = SITE_STREAM === 'site' ? 'LAB' : SITE_STREAM.toUpperCase();
+const TAG = PREVIEW ? `[${STREAM_LABEL.toLowerCase()}] ` : '';
+const streamBar = () => {
+    const lab = SITE_STREAM === 'site';
+    const long = lab ? 'Design lab: experiments, not the released site' : 'Preview: next, an unreleased development build. Features may change';
+    const short = lab ? 'Design lab, not released' : 'Unreleased preview';
+    return `<div class="stream-bar" role="note"><strong>${esc(STREAM_LABEL)}</strong><span class="long">${esc(long)}</span><span class="short">${esc(short)}</span><a href="${ROOT_URL}">Go to the released site</a></div>`;
+};
+
+function layout(o: { title: string; desc: string; rel: string; body: string; path: string; ld?: object; picker?: string; extraScript?: string }): string {
     const img = `${SITE_URL}social-preview.png`;
     const social = existsSync(join(built, 'social-preview.png'))
-        ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1280"><meta property="og:image:height" content="640"><meta property="og:image:alt" content="UGREEN NAS Control: ${esc(HEADLINE)}"><meta name="twitter:image" content="${img}">`
+        ? `<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="UGREEN NAS Control: Unraid on UGREEN. Done right."><meta name="twitter:image" content="${img}">`
         : '';
     const ld = o.ld ? `\n<script type="application/ld+json">${JSON.stringify(o.ld)}</script>` : '';
     return `<!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="dark"${PREVIEW ? ` data-stream="${esc(SITE_STREAM)}"` : ''}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(o.title)}</title>
+<title>${esc(TAG + o.title)}</title>
 <meta name="description" content="${esc(o.desc)}">
 <meta name="keywords" content="${esc(KEYWORDS)}">
 <meta name="color-scheme" content="dark light">
@@ -134,33 +176,35 @@ function layout(o: { title: string; desc: string; rel: string; body: string; pat
 ${PREVIEW ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical" href="${PREVIEW ? ROOT_URL : SITE_URL}${o.path}">
 <link rel="icon" href="${o.rel}icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="${o.rel}icon.png">
-<meta property="og:site_name" content="UGREEN NAS Control"><meta property="og:title" content="${esc(o.title)}"><meta property="og:description" content="${esc(o.desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${SITE_URL}${o.path}">
-<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(o.title)}"><meta name="twitter:description" content="${esc(o.desc)}">
+<meta property="og:site_name" content="UGREEN NAS Control"><meta property="og:title" content="${esc(TAG + o.title)}"><meta property="og:description" content="${esc(o.desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${SITE_URL}${o.path}">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(TAG + o.title)}"><meta name="twitter:description" content="${esc(o.desc)}">
 ${social}${ld}
 <script>${THEME_INIT}</script>
 <link rel="preload" href="${o.rel}fonts/Archivo-latin-wdth.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="${o.rel}style.css">
 </head>
 <body>
-${PREVIEW ? `<div class="preview">Preview of ${esc(SITE_STREAM)}, the released site is <a href="${ROOT_URL}">${esc(ROOT_URL.replace(/^https:\/\//, ''))}</a></div>\n` : ''}<header class="top"><div class="bar">
-  <a class="brand" href="${o.rel}"><img src="${o.rel}icon.svg" alt="" width="28" height="28"><span>UGREEN NAS Control</span></a>
-  <nav class="menu" aria-label="Sections"><a href="${o.rel}#features">Features</a><a href="${o.rel}#models">Models</a><a href="${o.rel}#install">Install</a></nav>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">${PREVIEW ? streamBar() : ''}<div class="bar">
+  <a class="brand" href="${o.rel}"><img src="${o.rel}icon.svg" alt="" width="28" height="28"><span>UGREEN NAS Control</span>${PREVIEW ? `<b class="stream-badge">${esc(STREAM_LABEL)}</b>` : ''}</a>
+  <nav class="menu" aria-label="Sections"><a href="${o.rel}#case">Case</a><a href="${o.rel}#fans">Fans</a><a href="${o.rel}#leds">LEDs</a><a href="${o.rel}#dashboard">Dashboard</a><a href="${o.rel}#models">Models</a></nav>
+  ${o.picker ?? ''}<a class="btn mini-btn" href="${o.rel}#install">Install</a>
   <a class="iconbtn" href="${GITHUB}" aria-label="Source on GitHub">${icon('github')}</a>
   <button class="iconbtn" id="theme" type="button" aria-label="Switch between light and dark theme"><span class="dark-only">${icon('sun')}</span><span class="light-only">${icon('moon')}</span></button>
 </div></header>
-<main>
+<main id="main" tabindex="-1">
 ${o.body}
 </main>
 ${FOOTER}
 ${o.path === '' ? demoModal(o.rel) : ''}
 <script>${SCRIPT}</script>
-</body>
+${o.extraScript ? `<script>${o.extraScript}</script>\n` : ''}</body>
 </html>
 `;
 }
 
 const copyBox = () =>
-    `<div class="copy"><code aria-label="Plugin URL">${PLG_URL}</code><button type="button" data-copy="${PLG_URL}" aria-label="Copy the plugin URL">${icon('copy', 16)}<span class="lbl">Copy</span></button></div>`;
+    `<div class="copy"><code tabindex="0" aria-label="Plugin URL">${PLG_URL}</code><button type="button" data-copy="${PLG_URL}" aria-label="Copy the plugin URL">${icon('copy', 18)}<span class="lbl">Copy</span></button></div>`;
 
 const installHint = CA_LIVE
     ? 'Community Applications: search <b>UGREEN NAS Control</b>. Or in Plugins, Install Plugin, paste this URL:'
@@ -168,8 +212,7 @@ const installHint = CA_LIVE
 
 const FOOTER = `<footer><div class="foot">
   <nav aria-label="Project"><a href="${GITHUB}">GitHub</a><a href="${FORUM}">Unraid forum</a><a href="${GITHUB}/blob/main/docs/third-party.md">Credits and licences</a><a href="${GITHUB}/blob/main/LICENSE">MIT license</a></nav>
-  <p>${esc(ARM_NOTE)}</p>
-  <p>Not affiliated with UGREEN or Lime Technology. Product names belong to their owners. Set in Archivo (SIL Open Font License 1.1).</p>
+  <p>Not affiliated with UGREEN or Lime Technology. Product names belong to their owners. MIT licensed, source on GitHub. Set in Archivo (SIL Open Font License 1.1).</p>
 </div></footer>`;
 
 // ---- landing sections -------------------------------------------------------------------------------------
@@ -178,7 +221,7 @@ const FOOTER = `<footer><div class="foot">
 function cell(c: Check | undefined, name: string, tipExtra = ''): string {
     if (!c || c.status === 'unsupported')
         return `<td class="st-unsupported" data-label="${esc(name)}" title="${esc(name)}: not offered">${statusIcon('unsupported')}<span class="sr">Not offered</span></td>`;
-    const when = [c.version ? `on ${c.version}` : '', c.date ? monthYear(c.date) : ''].filter(Boolean).join(', ') || (c.by ?? '');
+    const when = (c.date ? monthYear(c.date) : '') || (c.by ?? '');
     const tip = [`${name}: ${checkText(c)}`, c.by ? `by ${c.by}` : '', c.note ?? '', tipExtra].filter(Boolean).join('. ');
     const label = `<span class="lbl">${EVIDENCE_LABEL[c.status]}</span>${when ? `<small>${esc(when)}</small>` : ''}`;
     const body = c.ref ? `<a href="${esc(c.ref)}" rel="noopener">${label}</a>` : label;
@@ -199,99 +242,197 @@ function evidence(entries: { model: string; check: Check }[]): string {
     return `<ul class="ev">${lines.join('')}</ul>`;
 }
 
-interface Feature {
-    icon: string;
-    name: string;
-    ugos: string;
-    stock: string;
-    plugin: string;
-    proof: string;
-}
-
-function features(listed: Model[]): Feature[] {
-    const cap = (c: Capability) => evidence(listed.filter(m => m.verified[c].status !== 'unsupported').map(m => ({ model: m.name, check: m.verified[c] })));
-    const dog = listed.filter(m => m.fan?.watchdog);
-    const untracked = '<p class="lim">Not tracked per model.</p>';
-    return [
-        {
-            icon: 'fan',
-            name: 'Fan curves',
-            ugos: 'Built in',
-            stock: 'BIOS curve only',
-            plugin: 'Modes from Quiet to Full speed or your own curves, with measured rpm and safety limits.',
-            proof: cap('fans')
-        },
-        {
-            icon: 'bulb',
-            name: 'LEDs',
-            ugos: 'Built in',
-            stock: 'No driver',
-            plugin: 'Colour, effects and brightness per LED, disk activity, errors, network speed and night mode.',
-            proof: cap('leds')
-        },
-        {
-            icon: 'box',
-            name: 'Case view',
-            ugos: '',
-            stock: 'None',
-            plugin: 'Front, rear ports with LAN speeds, and the inside on mapped models, with live drive state.',
-            proof: cap('case')
-        },
-        {
-            icon: 'thermo',
-            name: 'Temperatures',
-            ugos: 'Built in',
-            stock: 'Drives, other sensors need extra plugins',
-            plugin: 'CPU, board, iGPU, fan controller, LAN chips, NVMe and disks. Sleeping disks stay asleep.',
-            proof: cap('sensors')
-        },
-        {
-            icon: 'home',
-            name: 'Dashboard tile',
-            ugos: '',
-            stock: 'None',
-            plugin: 'Fans, temperatures, SSDs and live LEDs on the Unraid dashboard.',
-            proof: untracked
-        },
-        {
-            icon: 'net',
-            name: 'MQTT',
-            ugos: '',
-            stock: 'No publisher',
-            plugin: 'Publishes status for displays and Home Assistant. Off until you set a broker.',
-            proof: untracked
-        },
-        {
-            icon: 'shield',
-            name: 'Hardware watchdog',
-            ugos: 'Built in',
-            stock: '',
-            plugin: 'If the BIOS arms the EC watchdog, the plugin keeps it fed while Unraid runs. If Unraid hangs, the box restarts itself. The plugin never arms it.',
-            proof: `${evidence(dog.map(m => ({ model: m.fixtureDmi, check: m.fan?.watchdog as Check })))}<p class="lim">Only these models have the EC watchdog.</p>`
-        }
-    ];
-}
-
-const dash = (label: string) => `<td data-label="${label}"><span class="nil" aria-hidden="true">&ndash;</span><span class="sr">No claim</span></td>`;
-
-function comparison(listed: Model[]): string {
-    const rows = features(listed)
-        .map(
-            f =>
-                `<tr role="row"><th scope="row" role="rowheader"><span class="feat">${icon(f.icon, 20)}${f.name}</span></th>${f.ugos ? `<td role="cell" data-label="UGOS">${f.ugos}</td>` : dash('UGOS')}${f.stock ? `<td role="cell" data-label="Stock Unraid">${f.stock}</td>` : dash('Stock Unraid')}<td role="cell" class="plug" data-label="Unraid with this plugin"><p>${f.plugin}</p>${f.proof}</td></tr>`
-        )
+/** One status line per model for a capability, shown for the picked model only. */
+const capTags = (listed: Model[], cap: Capability, dated = true) =>
+    listed
+        .map(m => {
+            const k = m.verified[cap];
+            const text = k.status === 'unsupported' ? `${m.name}: not offered` : `${m.name}: ${dated ? stamp(k) : EVIDENCE_LABEL[k.status]}`;
+            return `<span class="tag st-${k.status}" title="${esc(`${m.name}: ${checkText(k)}`)}" data-model="${m.id}"${m.id === DEFAULT_MODEL ? '' : ' hidden'}>${statusIcon(k.status, 14)}<span>${esc(text)}</span></span>`;
+        })
         .join('');
-    return `<section class="band" id="features" aria-labelledby="cmp">
-  <h2 id="cmp">What UGOS did for the hardware, now on Unraid</h2>
-  <p class="intro">UGOS drove the fans, LEDs and sensors of your box. Stock Unraid does not know that hardware. The plugin brings it back, and says per model how well each part is confirmed.</p>
-  <table class="compare" role="table"><caption class="sr">Features compared across UGOS, stock Unraid and Unraid with this plugin</caption>
-  <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Feature</th><th scope="col" role="columnheader">UGOS</th><th scope="col" role="columnheader">Stock Unraid</th><th scope="col" role="columnheader">Unraid with this plugin</th></tr></thead>
-  <tbody role="rowgroup">${rows}</tbody></table>
-  <p class="foot-note">A dash means no claim is made. Evidence labels come from the model registry; the table below has them per model.</p>
+
+/** One line per feature, counted from the registry: "Verified on DXP6800 Pro. Community-tested on 6 models. All models". Expected stays in the matrix. */
+function capLine(listed: Model[], cap: Capability): string {
+    const by = (k: Evidence) => listed.filter(m => m.verified[cap].status === k).map(m => m.name);
+    const parts = (['verified', 'partial', 'community'] as const).flatMap(k => {
+        const names = by(k);
+        if (!names.length) return [];
+        const who = names.length <= 3 ? names.join(', ') : `${names.length} models`;
+        return [`<b>${EVIDENCE_LABEL[k]}</b> on ${esc(who)}.`];
+    });
+    return `<p class="evline">${parts.join(' ')} <a href="#models">All models</a></p>`;
+}
+
+interface Section {
+    id: string;
+    title: string;
+    sub: string;
+    body: string;
+    extra?: string;
+    cta: { label: string; page: string };
+    flip?: boolean;
+    island: Parameters<typeof island>[0];
+    cap?: Capability;
+}
+
+function feature(sec: Section, listed: Model[]): string {
+    const m = listed.find(x => x.id === DEFAULT_MODEL) as Model;
+    const view = sec.cta.page === 'dashboard' ? '&view=dashboard' : `&page=${sec.cta.page}`;
+    return `<section class="band feature${sec.flip ? ' flip' : ''}" id="${sec.id}" aria-labelledby="${sec.id}-h">
+  <div class="feature-text">
+    <h2 id="${sec.id}-h">${sec.title}</h2>
+    <p class="sub">${sec.sub}</p>
+    <p>${sec.body}</p>
+    ${sec.cap ? capLine(listed, sec.cap) : ''}${sec.extra ?? ''}
+    <p class="acts"><a class="textlink" data-demo-link data-page="${sec.cta.page === 'dashboard' ? '' : sec.cta.page}" data-view="${sec.cta.page === 'dashboard' ? 'dashboard' : ''}" href="${`./demo/?model=${m.id}${view}`}">${sec.cta.label}</a></p>
+  </div>
+  ${island({ ...sec.island, id: `${sec.id}-live`, defaultModel: m, rel: './', tags: sec.cap ? capTags(listed, sec.cap, false) : '' }, listed)}
 </section>`;
 }
 
-function support(listed: Model[], rel: string): string {
+/** The case view's words; its picture is the hero island above. */
+function caseText(listed: Model[]): string {
+    const m = listed.find(x => x.id === DEFAULT_MODEL) as Model;
+    return `<section class="band casetext" id="case" aria-labelledby="case-h">
+  <h2 id="case-h">See inside your box.</h2>
+  <p class="sub">UGREEN built the case. We built the dashboard for it.</p>
+  <p>Every bay shows drive temperature and LED colour. The rear shows ports and LAN link speed. On the DXP6800 Pro and DXP4800 GT you see inside too: M.2, system, PCIe. Other models get front and rear.</p>
+  ${capLine(listed, 'case')}
+  <p class="acts"><a class="textlink" data-demo-link data-page="case" data-view="" href="./demo/?model=${m.id}&page=case">Open the case view in the demo</a></p>
+</section>`;
+}
+
+/** The headline block for the hardware watchdog (backend/internal/fan/ec_watchdog.go): feeds a timer the BIOS armed, never arms it. */
+function watchdog(listed: Model[]): string {
+    const dog = listed.filter(m => m.fan?.watchdog);
+    if (!dog.length) return '';
+    const gt = dog.find(m => m.id === 'dxp4800-gt') ?? (dog[0] as Model);
+    const names = dog.map(m => (m.id === 'idx6011' ? 'iDX6011 Pro' : m.name));
+    const who = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : (names[0] ?? '');
+    return `<section class="band feature wdt" id="watchdog" aria-labelledby="watchdog-h">
+  <div class="feature-text">
+    <span class="wdt-ico" aria-hidden="true">${icon('shield', 28)}</span>
+    <h2 id="watchdog-h">Keep the hardware watchdog on.</h2>
+    <p class="sub">UGREEN boxes ship with a hardware watchdog. Leave it armed in the BIOS: the plugin feeds it, and if the system freezes, the hardware reboots the box.</p>
+    <p>The plugin only feeds a watchdog the BIOS armed. It never arms one itself, and it clears the timer when it stops, so stopping or uninstalling never triggers a reset.</p>
+    <p class="evline"><b>Built for the ${esc(who)}.</b> <a href="#models">See the matrix</a></p>
+    <p class="acts"><a class="textlink" data-demo-link data-page="overview" data-view="" href="./demo/?model=${gt.id}&page=overview">See the Watchdog card in the demo</a></p>
+  </div>
+  <ol class="wdt-steps" aria-label="How the watchdog works">
+    <li>${icon('shield', 24)}<b>Leave it on in the BIOS</b><span>The hardware timer stays armed. No more switching it off.</span></li>
+    <li>${icon('refresh', 24)}<b>The plugin feeds it</b><span>A small service resets the timer on a steady beat while the system is alive.</span></li>
+    <li>${icon('reset', 24)}<b>A frozen box reboots itself</b><span>The beat stops, the hardware resets the box. Back up on its own.</span></li>
+  </ol>
+</section>`;
+}
+
+function sections(listed: Model[]): string {
+    const dog = listed.filter(m => m.fan?.watchdog);
+    const NUM = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'];
+    const probe = listed.filter(m => m.fan?.kind === 'probe').length;
+    const secs: Section[] = [
+        {
+            id: 'fans',
+            title: 'Fan curves you read in rpm.',
+            sub: 'Quiet, Standard, Performance, Full speed or your own curve.',
+            body: `One click measures real rpm at every speed. Too hot? Every fan goes to 100 percent. Plugin stops? BIOS values take over. ${NUM[probe] ?? probe} more models get a probe wizard that maps their fan chips. Bring yours.`,
+            extra: `<p class="mini-h">Watchdog</p><p class="lim">If the BIOS arms the EC watchdog, the plugin keeps it fed. It never arms it.</p>${evidence(dog.map(m => ({ model: m.name, check: m.fan?.watchdog as Check })))}`,
+            cta: { label: 'Try the fan curves', page: 'fans' },
+            cap: 'fans',
+            flip: true,
+            island: {
+                id: '',
+                file: 'app',
+                page: 'fans',
+                skip: 'fantiles',
+                label: 'Fan control',
+                missing: m => m.fan === null,
+                clip: 760,
+                clipPhone: 700,
+                defaultModel: listed[0] as Model,
+                rel: './'
+            }
+        },
+        {
+            id: 'leds',
+            title: 'LEDs that say something.',
+            sub: 'Off until you switch them on.',
+            body: 'Colour, effect, brightness, per LED. Bay LEDs show activity, errors and SMART warnings. The network LED shows link speed. Night mode dims the lot. Coming from UGREEN LED Control? One click imports your settings.',
+            cta: { label: 'Open the LED page', page: 'leds' },
+            cap: 'leds',
+            island: {
+                id: '',
+                file: 'app',
+                page: 'leds',
+                label: 'LED control',
+                missing: m => m.led === 'none',
+                clip: 700,
+                clipPhone: 600,
+                defaultModel: listed[0] as Model,
+                rel: './'
+            }
+        },
+        {
+            id: 'dashboard',
+            title: 'Where you already look.',
+            sub: 'The Unraid dashboard, and your broker.',
+            body: 'A tile with fans, temperatures, SSDs and live LEDs. A Sensors page for CPU, board, iGPU, NVMe and disks; sleeping disks stay asleep. Optional MQTT feeds displays and Home Assistant. Off until you set a broker.',
+            cta: { label: 'See the dashboard tile', page: 'dashboard' },
+            cap: 'sensors',
+            flip: true,
+            island: {
+                id: '',
+                file: 'tile',
+                label: 'The dashboard tile',
+                missing: () => false,
+                clip: 760,
+                clipPhone: 760,
+                defaultModel: listed[0] as Model,
+                rel: './'
+            }
+        }
+    ];
+    return secs.map(x => feature(x, listed)).join('\n');
+}
+
+/** Rows with a source in docs/competition.md (compared 2026-10-29 from the projects' public READMEs). */
+const COMPARE: [string, string, string][] = [
+    [
+        'Fan chips without an extra kernel driver',
+        'Yes (verified on DXP6800 Pro, DXP4800 GT)',
+        'No for FanCtrl Plus 2, Dynamix Auto Fan and the UGREEN fan driver (it87). Yes for the iDX6011 plugin'
+    ],
+    ['LEDs without a kernel module built per Unraid release', 'Yes', 'No for the ich777 LED driver and the single-model LED projects'],
+    ['Multi-point fan curves', 'Yes', 'No in FanCtrl Plus 2 and Dynamix Auto Fan; partial in two others'],
+    ['Fan calibration (rpm per duty)', 'Yes', 'No'],
+    ['Fan inputs: GPU, HBA, NIC, custom script', 'Partly', 'Ahead: FanCtrl Plus 2'],
+    ['Fan speed history graph', 'No', 'Ahead: FanCtrl Plus 2'],
+    ['Touch LCD (iDX6011 Pro)', 'No (declined)', 'Ahead: iDX6011 plugin']
+];
+
+function comparison(): string {
+    const rows = COMPARE.map(
+        ([f, a, b]) => `<tr><th scope="row">${f}</th><td class="plug" data-label="This plugin">${a}</td><td data-label="Other tools">${b}</td></tr>`
+    ).join('');
+    return `<div class="compare-block" id="compare">
+  <h3 id="cmp">Next to the other tools.</h3>
+  <p class="intro">Only facts you can check. The last three rows are where others are ahead.</p>
+  <table class="compare"><caption class="sr">This plugin next to other fan and LED tools</caption>
+  <thead><tr><th scope="col">What</th><th scope="col">This plugin</th><th scope="col">Other tools</th></tr></thead>
+  <tbody>${rows}</tbody></table>
+  <p class="foot-note">Compared 2026-10-29 from public READMEs: <a href="https://github.com/andrebrait/fanctrlplus">FanCtrl Plus 2</a>, <a href="https://github.com/bergware/dynamix">Dynamix Auto Fan</a>, <a href="https://github.com/IT-Kuny/UGREEN-DXP-FAN-NAS-Driver">UGREEN-DXP-FAN-NAS-Driver</a>, <a href="https://github.com/ich777/unraid-it87-driver">ich777 it87</a> and <a href="https://github.com/ich777/unraid-ugreenleds-driver">ugreenleds</a> drivers, <a href="https://github.com/EllipticSet/UGREEN-DXP4800Pro-LEDs">EllipticSet</a> and <a href="https://github.com/flybrys/UGREEN-DXP4800GT-LED-Driver">flybrys</a> LED drivers, the iDX6011 plugin by <a href="https://github.com/noodlemctwoodle/unraid-ugreen-idx6011-pro">noodlemctwoodle</a>. Sources: <a href="${GITHUB}/blob/main/docs/competition.md">competition.md</a>. Two programs writing the same fan or LED chip give no stable result: the plugin checks for them and stops writing fan registers while a rival runs. It never edits or removes the other tool.</p>
+</div>`;
+}
+
+function support(models: Model[], rel: string): string {
+    const rank = { verified: 0, partial: 1, community: 2, expected: 3 } as const;
+    const listed = [...models].sort((a, b) => rank[overallStatus(a)] - rank[overallStatus(b)] || a.name.localeCompare(b.name, 'en', { numeric: true }));
+    const counts = (['verified', 'partial', 'community', 'expected'] as const)
+        .map(k => [k, listed.filter(m => overallStatus(m) === k).length] as const)
+        .filter(([, n]) => n > 0)
+        .map(([k, n]) => `${n} ${OVERALL_LABEL[k].toLowerCase()}`)
+        .join(', ');
     const rows = listed
         .map(m => {
             const all = overallStatus(m);
@@ -306,21 +447,26 @@ function support(listed: Model[], rel: string): string {
         .map(e => `<li class="st-${e}" title="${esc(EVIDENCE_HELP[e])}">${statusIcon(e)}<span>${EVIDENCE_LABEL[e]}</span></li>`)
         .join('');
     return `<section class="band" id="models" aria-labelledby="sup">
-  <h2 id="sup">Support by model</h2>
-  <p class="intro">Each cell is checked on its own. Verified means a maintainer ran it on their own device with the plugin. Hover a cell for details, follow it for the evidence. Pick a model to open its live demo.</p>
+  <h2 id="sup">Every model, every claim, on the record.</h2>
+  <p class="intro">Every cell is dated and links to its evidence. Verified: a maintainer ran it. Community-tested: users confirmed it. Expected: the code covers it, nobody has confirmed it yet. Not green? Report it, or run the probe wizard.</p>
+  <p class="count">${counts}.</p>
+  <p class="acts"><a class="btn" href="${GITHUB}/issues/new?template=model-report.yml">${icon('check', 16)}Report your model</a></p>
   <ul class="legend">${legend}</ul>
-  <div class="matrix"><table><thead><tr><th scope="col">Model</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
-</section>`;
+  <div class="matrix"><table><thead><tr><th scope="col">Model</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
-function install(): string {
+function install(m: Model): string {
     return `<section class="band" id="install" aria-labelledby="ins">
-  <h2 id="ins">Install</h2>
+  <h2 id="ins">Install in 60 seconds.</h2>
+  <p class="intro">Unraid 7.2 or newer. ${esc(ARM_NOTE)}</p>
+  <div class="getit"><p>${installHint}</p>${copyBox()}</div>
   <ol class="steps">
-    <li><h3>Add the plugin</h3><p>In Unraid, open Plugins, Install Plugin, paste the URL from the top of this page and press Install.</p><p class="req">Unraid 7.2 or newer. x86 UGREEN models only.</p></li>
-    <li><h3>Confirm your model</h3><p>Open Settings, UGREEN NAS Control. The plugin names the model it found. If yours is marked Expected, About, Confirm my device helps move it up.</p></li>
-    <li><h3>Done</h3><p>Pick a fan mode, switch the LEDs on, and the case view and the dashboard tile fill with live data.</p></li>
+    <li><h3>Paste the URL</h3><p>Plugins, Install Plugin, paste, Install.</p></li>
+    <li><h3>Check your model</h3><p>Open Settings, UGREEN NAS Control. It names the model it found.</p></li>
+    <li><h3>Switch it on</h3><p>Pick a fan mode. Turn the LEDs on. The case view and the dashboard tile fill with live data.</p></li>
   </ol>
+  <p class="acts"><a class="btn quiet" data-demo-link href="${demoUrl('./', m)}">${icon('play', 16)}Try the live demo first</a></p>
+  <p class="foot-note">The demo runs in your browser on sample data.</p>
 </section>`;
 }
 
@@ -328,27 +474,56 @@ function install(): string {
 
 function landing(listed: Model[]): string {
     const rel = './';
+    const def = listed.find(m => m.id === DEFAULT_MODEL) as Model;
     const body = `
-<section class="hero">
-  <div class="hero-text">
-    <h1>${esc(HEADLINE)}</h1>
-    <p class="lead">${esc(SUBLINE)}</p>
-    <div class="getit"><p>${installHint}</p>${copyBox()}</div>
-  </div>
-  <div class="stagebox">
-    <div class="pick"><label for="model">Your model</label>${modelPicker(listed)}</div>
-    ${listed.map(m => stage(m, rel)).join('\n')}
+<section class="hero" id="top">
+  <h1>${HEADLINE.split(/(?<=\.) /)
+      .map(l => `<span>${esc(l)}</span>`)
+      .join(' ')}</h1>
+  <p class="lead">${esc(SUBLINE)}</p>
+  <p class="cta"><a class="btn" href="#install">${icon('download', 16)}Get the plugin</a><a class="textlink" data-demo-link href="${demoUrl(rel, def)}">Try it live</a></p>
+  ${trustLine(listed)}
+  ${modelChips(listed)}
+  <div class="hero-live" id="live">
+    ${island(
+        {
+            id: 'hero-live',
+            file: 'app',
+            page: 'overview',
+            label: 'The plugin overview',
+            missing: () => false,
+            clip: 720,
+            clipPhone: 620,
+            defaultModel: def,
+            rel,
+            eager: true,
+            poster: `<div class="poster" aria-hidden="true">${listed.map(m => stage(m)).join('\n')}</div>`,
+            barExtra: `<span class="pick-wrap"><span class="pick-l">Showing</span>${modelPicker(listed, 'model2', 'Change model')}</span>`,
+            tags: capTags(listed, 'case', false)
+        },
+        listed
+    )}
   </div>
 </section>
-${comparison(listed)}
+<section class="band strip" aria-label="What the plugin does">
+  <ul><li><b>Fans. LEDs. Case view.</b><span>One plugin drives all of it.</span></li><li><b>No kernel module.</b><span>No rebuild after Unraid updates.</span></li><li><b>Real UI. Real code.</b><span>The boxes on this page are the plugin itself.</span></li></ul>
+</section>
+${watchdog(listed)}
+${caseText(listed)}
+${sections(listed)}
 ${support(listed, rel)}
-${install()}`;
+${comparison()}
+</section>
+${install(def)}`;
     return layout({
-        title: 'UGREEN NAS Control: Unraid on your UGREEN, with everything UGOS did for the hardware',
+        title: 'UGREEN NAS Control: Unraid plugin for UGREEN NAS, with the real UI live in your browser',
         desc: META_DESC,
         rel,
         body,
         path: '',
+        // the chip picker above the hero island is the control; #model stays as its hidden state holder
+        picker: `<span hidden>${modelPicker(listed)}</span>`,
+        extraScript: ISLAND_SCRIPT,
         ld: {
             '@context': 'https://schema.org',
             '@type': 'SoftwareApplication',
@@ -370,15 +545,16 @@ function modelPage(m: Model): string {
     const all = overallStatus(m);
     const lines = CAPABILITIES.map(c => {
         const k = m.verified[c];
-        const text = k.status === 'unsupported' ? 'not offered' : checkText(k);
+        const text = k.status === 'unsupported' ? 'not offered' : stamp(k);
         const ref = k.ref ? ` <a href="${esc(k.ref)}" rel="noopener">Evidence</a>` : '';
         return `<li class="st-${k.status}">${capIcon(c, k.status, 22)}<span><b>${CAPABILITY_LABEL[c]}</b>: ${esc(text)}${k.note ? `<br><small>${esc(k.note)}</small>` : ''}${ref}</span></li>`;
     }).join('');
     const body = `
 <section class="band model">
+  <p class="back"><a class="textlink" href="${rel}">${icon('back', 16)}Unraid on UGREEN. Done right.</a></p>
   <h1>${esc(m.name)}</h1>
   <p class="lead">${esc(m.note)}</p>
-  <div class="solo">${front(m)}</div>
+  ${m.caseView === 'none' ? `<div class="solo">${front(m)}</div>` : `<div class="solo live">${island({ id: 'model-live', file: 'app', page: 'case', label: 'Case view', missing: () => false, clip: 720, clipPhone: 620, defaultModel: m, rel, eager: true, tags: capTags([m], 'case', false) }, [m])}</div>`}
   <p class="overall-line st-${all}">${statusIcon(all, 16)}<span>${OVERALL_LABEL[all]}: ${esc(OVERALL_HELP[all])}</span></p>
   <ul class="caps">${lines}</ul>
   <p><a class="btn" href="${demoUrl(rel, m)}">${icon('play', 16)}Open the live plugin for the ${esc(m.name)}</a></p>
@@ -386,15 +562,45 @@ function modelPage(m: Model): string {
 </section>`;
     return layout({
         title: `${m.name} on Unraid: fans, LEDs and case view | UGREEN NAS Control`,
-        desc: `UGREEN ${m.name} (NASync) under Unraid: ${m.note}`,
+        desc: `UGREEN ${m.name} under Unraid: ${m.note}`,
         rel,
         body,
-        path: `models/${m.id}/`
+        path: `models/${m.id}/`,
+        // the island script reads the model from #model; this page is about one model, so the picker stays hidden
+        picker: `<span hidden>${modelPicker([m], 'model', 'Your model', m.id)}</span>`,
+        extraScript: ISLAND_SCRIPT
     });
 }
 
 // ---- build ------------------------------------------------------------------------------------------------
 
+// The social preview (.build/social-preview.png, gitignored): social.ts draws an SVG, rsvg-convert rasterises it, no browser. rsvg-convert finds fonts through fontconfig, which reads no woff2: Archivo is unpacked to a ttf (woff2_decompress) in .build/social-fonts and a private fonts.conf points there. Redone when missing or older than its sources. Best effort: no rsvg-convert, no image (the og tags are then left out).
+const socialPng = join(built, 'social-preview.png');
+const socialSrc = ['social.ts', 'content.ts', 'fonts/Archivo-latin-wdth.woff2'].map(f => statSync(join(import.meta.dir, f)).mtimeMs);
+if (!existsSync(socialPng) || statSync(socialPng).mtimeMs < Math.max(...socialSrc)) {
+    const fontDir = join(built, 'social-fonts');
+    const fontConf = join(fontDir, 'fonts.conf');
+    mkdirSync(fontDir, { recursive: true });
+    const ttf = join(fontDir, 'Archivo.ttf');
+    if (!existsSync(ttf)) {
+        cpSync(join(import.meta.dir, 'fonts/Archivo-latin-wdth.woff2'), join(fontDir, 'Archivo.woff2'));
+        if (Bun.which('woff2_decompress')) Bun.spawnSync(['woff2_decompress', join(fontDir, 'Archivo.woff2')], { stdout: 'ignore', stderr: 'inherit' });
+        rmSync(join(fontDir, 'Archivo.woff2'), { force: true });
+    }
+    writeFileSync(fontConf, `<?xml version="1.0"?><fontconfig><dir>${fontDir}</dir><cachedir>${join(fontDir, 'cache')}</cachedir></fontconfig>\n`);
+    if (!Bun.which('rsvg-convert') || !existsSync(ttf))
+        console.warn('social preview: rsvg-convert or woff2_decompress missing (nix develop .#site), no og:image');
+    else {
+        const r = Bun.spawnSync(['rsvg-convert', '-w', '1200', '-h', '630', '-o', socialPng], {
+            stdin: new TextEncoder().encode(socialSvg()),
+            env: { ...process.env, FONTCONFIG_FILE: fontConf },
+            timeout: 30_000,
+            stdout: 'ignore',
+            stderr: 'inherit'
+        });
+        if (r.exitCode !== 0) console.warn('social preview: rsvg-convert failed, no og:image');
+    }
+}
 const models = await loadModels();
 const listed = models.filter(m => m.led !== 'none');
 rmSync(dist, { recursive: true, force: true });
@@ -404,7 +610,12 @@ if (existsSync(join(built, 'demo'))) cpSync(join(built, 'demo'), join(dist, 'dem
 if (existsSync(join(built, 'social-preview.png'))) cpSync(join(built, 'social-preview.png'), join(dist, 'social-preview.png'));
 // The plugin's colour tokens and front drawing come first, the site's own rules build on them.
 writeFileSync(join(dist, 'style.css'), `${pluginCss()}\n${readFileSync(join(import.meta.dir, 'style.css'), 'utf8')}`);
-cpSync(join(root, 'web/assets/icon.svg'), join(dist, 'icon.svg'));
+{
+    // Previews get a tinted corner dot on the favicon (amber next, violet lab).
+    const svg = readFileSync(join(root, 'web/assets/icon.svg'), 'utf8');
+    const dot = `<circle cx="52" cy="12" r="11" fill="${SITE_STREAM === 'site' ? '#7c3aed' : '#ffb020'}" stroke="#fff" stroke-width="2.500"/>`;
+    writeFileSync(join(dist, 'icon.svg'), PREVIEW ? svg.replace(/<\/svg>\s*$/, `${dot}</svg>\n`) : svg);
+}
 cpSync(join(import.meta.dir, 'fonts'), join(dist, 'fonts'), { recursive: true });
 // The Community Applications entries (ca_profile.xml, plugins/*.xml) load the plugin icon from here; the PNG is built (just web-build), not tracked.
 cpSync(join(root, '.build/plugin/images/ugreen-nas-control.png'), join(dist, 'icon.png'));

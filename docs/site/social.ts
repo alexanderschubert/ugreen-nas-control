@@ -1,34 +1,50 @@
-// The 1280x640 social preview, rendered by web/tools/shots.ts: the plugin's own drawing of a DXP6800 Pro front next to the name.
+// The 1200x630 social preview as an SVG, rasterised by build.ts with rsvg-convert (no browser). Fonts: rsvg-convert resolves them through fontconfig, build.ts points it at Archivo.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { loadModels } from '../../web/models/index';
-import { liveFront, pluginCss } from './live';
+import { HEADLINE, SOCIAL_SUB } from './content';
 
 const root = resolve(import.meta.dir, '../..');
-const model = (await loadModels()).find(m => m.id === 'dxp6800-pro');
-if (!model) throw new Error('social preview: model dxp6800-pro missing in web/models');
-const front = liveFront(model);
-const css = pluginCss();
 
-export function socialHtml(): string {
-    const icon = `data:image/svg+xml;base64,${readFileSync(resolve(root, 'web/assets/icon.svg')).toString('base64')}`;
-    return `<!doctype html><html><head><meta charset="utf-8"><style>
-${css}
-*{box-sizing:border-box;margin:0}
-body{width:1280px;height:640px;overflow:hidden;background:var(--unc-bg);color:var(--unc-text);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;position:relative}
-.dots{position:absolute;inset:0;background:radial-gradient(circle at 1px 1px,#ffffff14 1.2px,transparent 1.6px) 0 0/22px 22px}
-.glow{position:absolute;left:560px;top:60px;width:760px;height:520px;background:radial-gradient(closest-side,#2f7cf62e,transparent)}
-.text{position:absolute;left:64px;top:64px;bottom:64px;width:470px;display:flex;flex-direction:column;justify-content:space-between}
-img.icon{width:112px;height:112px;border-radius:26px}
-h1{font-size:44px;line-height:1;letter-spacing:-.035em;font-weight:760;margin-bottom:22px}
-p{font-size:29px;line-height:1.3;color:var(--unc-muted)}
-.leds{display:flex;gap:10px}
-.leds b{width:44px;height:8px;border-radius:4px}
-.nas{position:absolute;left:590px;top:150px;width:640px}
-.nas .nas-live{color:var(--unc-text);font:14px/1.45 Inter,-apple-system,"Segoe UI",sans-serif;width:720px;zoom:.89}
-.nas-live *{box-sizing:border-box}
-</style></head><body><div class="dots"></div><div class="glow"></div>
-<div class="text"><img class="icon" src="${icon}" alt=""><div><h1>Unraid on your UGREEN, with everything UGOS did for the hardware.</h1><p>Fan curves, LEDs, case view, watchdog</p></div>
-<div class="leds"><b style="background:#ff3b30"></b><b style="background:#ffd60a"></b><b style="background:#34c759"></b><b style="background:#0a84ff"></b></div></div>
-<div class="nas"><div class="nas-live unc-hero">${front}</div></div></body></html>`;
+/** Greedy word wrap to at most `max` characters per line. */
+function wrap(text: string, max: number): string[] {
+    const lines: string[] = [];
+    for (const w of text.split(' ')) {
+        const last = lines.at(-1);
+        if (last !== undefined && last.length + 1 + w.length <= max) lines[lines.length - 1] = `${last} ${w}`;
+        else lines.push(w);
+    }
+    return lines;
 }
+
+const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+export function socialSvg(): string {
+    const icon = `data:image/svg+xml;base64,${readFileSync(resolve(root, 'web/assets/icon.svg')).toString('base64')}`;
+    // "Unraid on UGREEN. Done right." -> one line per sentence
+    const head = HEADLINE.split(/(?<=\.) /);
+    const sub = wrap(SOCIAL_SUB, 40);
+    const font = `font-family="Archivo, Helvetica, Arial, sans-serif"`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<defs>
+<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1.2" fill="#ffffff" fill-opacity="0.08"/></pattern>
+<radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#7fe3ff" stop-opacity="0.22"/><stop offset="1" stop-color="#7fe3ff" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1200" height="630" fill="#23272b"/>
+<rect width="1200" height="630" fill="url(#dots)"/>
+<circle cx="975" cy="315" r="330" fill="url(#glow)"/>
+<image href="${icon}" x="835" y="175" width="280" height="280"/>
+<text x="64" y="104" ${font} font-size="30" font-weight="700" fill="#b4bac0">UGREEN NAS Control</text>
+<text ${font} font-size="76" font-weight="800" fill="#eef0f1" letter-spacing="-2">${head.map((l, i) => `<tspan x="64" y="${266 + i * 92}">${esc(l)}</tspan>`).join('')}</text>
+<text ${font} font-size="32" font-weight="400" fill="#b4bac0">${sub.map((l, i) => `<tspan x="64" y="${tail(head.length)}" dy="${i * 44}">${esc(l)}</tspan>`).join('')}</text>
+<g>
+<rect x="64" y="550" width="44" height="8" rx="4" fill="#ff3b30"/><rect x="118" y="550" width="44" height="8" rx="4" fill="#ffd60a"/>
+<rect x="172" y="550" width="44" height="8" rx="4" fill="#34c759"/><rect x="226" y="550" width="44" height="8" rx="4" fill="#0a84ff"/>
+</g>
+</svg>
+`;
+}
+
+const tail = (headLines: number): number => 266 + (headLines - 1) * 92 + 76;
+
+/** Kept for web/tools/shots.ts, which still screenshots the card in a browser; the site build uses socialSvg. */
+export const socialHtml = (): string => `<!doctype html><html><body style="margin:0;width:1200px;height:630px">${socialSvg()}</body></html>`;
