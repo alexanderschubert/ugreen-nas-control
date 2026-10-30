@@ -1,4 +1,4 @@
-package main
+package mqtt
 
 import (
 	"bufio"
@@ -11,6 +11,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/alexanderschubert/ugreen-nas-control/internal/fan"
 )
 
 func writeFile(t *testing.T, path, content string) {
@@ -23,18 +25,35 @@ func writeFile(t *testing.T, path, content string) {
 	}
 }
 
-func TestLoadMQTTConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "fan.cfg")
 	writeFile(t, p, "mqtt_enabled=\"1\"\nmqtt_host=\"broker\"\nmqtt_tls=\"1\"\nmqtt_name=\"My NAS!\"\nmqtt_interval=\"1\"\nmqtt_control=\"1\"\n")
-	c := LoadMQTTConfig(p)
+	c := LoadConfig(p)
 	if !c.Enabled || c.Host != "broker" || !c.TLS || c.Port != 8883 || c.Name != "MyNAS" || !c.Control || c.ControlUpdates {
 		t.Fatalf("config: %+v", c)
 	}
 	if c.Interval != 5*time.Second {
 		t.Fatalf("interval below 2 s must keep the default, got %v", c.Interval)
 	}
-	if d := LoadMQTTConfig(filepath.Join(t.TempDir(), "none")); d.Enabled || d.Control || d.Port != 1883 || d.Name == "" {
+	if d := LoadConfig(filepath.Join(t.TempDir(), "none")); d.Enabled || d.Control || d.Port != 1883 || d.Name == "" {
 		t.Fatalf("defaults: %+v", d)
+	}
+}
+
+// A v1 fan.cfg (no cfg_version) with mqtt_* keys: the publisher reads them, the fan side ignores them, nothing is written.
+func TestConfigFromV1File(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "fan.cfg")
+	content := "mode=\"standard\"\nmqtt_enabled=\"1\"\nmqtt_host=\"10.0.0.2\"\nmqtt_port=\"1884\"\nmqtt_interval=\"10\"\nmqtt_control_updates=\"1\"\n"
+	writeFile(t, p, content)
+	c := LoadConfig(p)
+	if !c.Enabled || c.Host != "10.0.0.2" || c.Port != 1884 || c.Interval != 10*time.Second || c.Control || !c.ControlUpdates {
+		t.Fatalf("config: %+v", c)
+	}
+	if f := fan.LoadConfig(p); f.Version != 1 || len(f.Warnings) != 0 {
+		t.Fatalf("fan side: version %d, warnings %v", f.Version, f.Warnings)
+	}
+	if b, _ := os.ReadFile(p); string(b) != content {
+		t.Fatalf("fan.cfg was rewritten: %q", b)
 	}
 }
 
@@ -139,13 +158,13 @@ func TestReadNetCounters(t *testing.T) {
 func ip(n int) *int { return &n }
 
 func TestBuildAlarms(t *testing.T) {
-	cfg := defaultConfig()
-	bays := []Bay{{Bay: 1, Present: true, HDD: true, Temp: ip(40)}, {Bay: 3, Present: true, HDD: true, Temp: ip(57)}, {Bay: 4, Present: true, HDD: true, Standby: true, Temp: ip(80)}}
+	cfg := fan.LoadConfig(filepath.Join(t.TempDir(), "none"))
+	bays := []fan.Bay{{Bay: 1, Present: true, HDD: true, Temp: ip(40)}, {Bay: 3, Present: true, HDD: true, Temp: ip(57)}, {Bay: 4, Present: true, HDD: true, Standby: true, Temp: ip(80)}}
 	a := buildAlarms(ip(50), bays, nil, nil, cfg)
 	if len(a) != 1 || a[0].Code != "disk_hot" || a[0].Bay != 3 || *a[0].Value != 57 || a[0].Limit != 55 {
 		t.Fatalf("alarms: %+v", a)
 	}
-	st := &State{Failsafe: "disk_hot", Stalled: []string{"fan3"}}
+	st := &fan.State{Failsafe: "disk_hot", Stalled: []string{"fan3"}}
 	a = buildAlarms(ip(50), bays, nil, st, cfg)
 	if len(a) != 3 || a[0].Hint == "" || a[2].Code != "fan_stalled" {
 		t.Fatalf("with fail-safe: %+v", a)
@@ -176,9 +195,9 @@ func TestCommander(t *testing.T) {
 	now := time.Now()
 	rl := &runLog{}
 	c := &commander{
-		cfg: MQTTConfig{Control: true, ControlUpdates: true}, run: rl.run,
+		cfg: Config{Control: true, ControlUpdates: true}, run: rl.run,
 		updates: func() []Update {
-			return []Update{{Kind: "plugin", Name: "ugreen-nas-control", File: "ugreen-nas-control.plg"}, {Kind: "plugin", Name: "evil", File: "../x.plg"}}
+			return []Update{{Kind: "plugin", Name: "ugreen-nas-control", File: "ugreen-nas-control.plg"}, {Kind: "plugin", Name: "evil", File: "../x.plg"}, {Kind: "plugin", Name: "-rf", File: "-rf.plg"}}
 		},
 	}
 	check := func(cmd command, at time.Time, ok bool, text string) func() {
@@ -210,6 +229,7 @@ func TestCommander(t *testing.T) {
 	check(command{Cmd: "update", Target: "container", Name: "x", TS: l2.Unix(), Nonce: "n6"}, l2, false, "only plugin")
 	check(command{Cmd: "update", Target: "plugin", Name: "nothing", TS: l2.Unix(), Nonce: "n7"}, l2, false, "no such update")
 	check(command{Cmd: "update", Target: "plugin", Name: "evil", TS: l2.Unix(), Nonce: "n8"}, l2, false, "no such update")
+	check(command{Cmd: "update", Target: "plugin", Name: "-rf", TS: l2.Unix(), Nonce: "n8b"}, l2, false, "no such update")
 	after = check(command{Cmd: "update", Target: "plugin", Name: "ugreen-nas-control", TS: l2.Unix(), Nonce: "n9"}, l2, true, "")
 	after()
 	if got := rl.calls[2]; len(got) != 3 || got[1] != "update" || got[2] != "ugreen-nas-control.plg" {
@@ -222,7 +242,7 @@ func TestCommander(t *testing.T) {
 
 func TestCommanderOff(t *testing.T) {
 	now := time.Now()
-	c := &commander{cfg: MQTTConfig{}, run: (&runLog{}).run, updates: func() []Update { return nil }}
+	c := &commander{cfg: Config{}, run: (&runLog{}).run, updates: func() []Update { return nil }}
 	for i, cmd := range []string{"reboot", "shutdown", "update"} {
 		res, after := c.handle(cmdJSON(command{Cmd: cmd, Target: "plugin", TS: now.Unix(), Nonce: "n" + string(rune('a'+i))}), now)
 		if res.OK || after != nil || !strings.Contains(res.Text, "switched off") {
@@ -266,17 +286,20 @@ func TestMQTTClient(t *testing.T) {
 			case mqttSubscribe:
 				conn.Write([]byte{mqttSuback << 4, 3, body[0], body[1], 1})
 				conn.Write(publishPacket("a/cmd", []byte(`{"x":1}`), false))
+				conn.Write(publishPacket("a/cmd", []byte(`{"x":2}`), true))
 			}
 		}
 	}()
 
-	received := make(chan string, 1)
-	c := &mqttClient{addr: ln.Addr().String(), user: "u", pass: "p", clientID: "id", willTopic: "a/availability", willPayload: []byte("offline")}
+	received := make(chan string, 2)
+	c := &client{addr: ln.Addr().String(), user: "u", pass: "p", clientID: "id", willTopic: "a/availability", willPayload: []byte("offline")}
 	c.onConnect = func() {
 		_ = c.publish("a/state", []byte("hello"), true)
 		_ = c.subscribe("a/cmd")
 	}
-	c.onMessage = func(topic string, p []byte) { received <- topic + "=" + string(p) }
+	c.onMessage = func(topic string, p []byte, retained bool) {
+		received <- topic + "=" + string(p) + "|retained=" + string('0'+rune(map[bool]int{false: 0, true: 1}[retained]))
+	}
 	stop := make(chan struct{})
 	defer close(stop)
 	go c.run(stop)
@@ -301,8 +324,11 @@ func TestMQTTClient(t *testing.T) {
 	}
 	select {
 	case m := <-received:
-		if m != `a/cmd={"x":1}` {
+		if m != `a/cmd={"x":1}|retained=0` {
 			t.Fatalf("received: %q", m)
+		}
+		if m := <-received; m != `a/cmd={"x":2}|retained=1` {
+			t.Fatalf("retained flag lost: %q", m)
 		}
 	case <-time.After(5 * time.Second):
 		t.Fatal("no message received")
@@ -314,5 +340,36 @@ func TestEncodeLength(t *testing.T) {
 		if got := encodeLength(n); string(got) != string(want) {
 			t.Errorf("encodeLength(%d) = %v, want %v", n, got, want)
 		}
+	}
+}
+
+func TestCollectorState(t *testing.T) {
+	dir := t.TempDir()
+	counters := filepath.Join(dir, "dev")
+	old := procNetDev
+	t.Cleanup(func() { procNetDev = old })
+	procNetDev = counters
+
+	cfgFile := filepath.Join(dir, "none")
+	c := &collector{
+		live: func() fan.Live {
+			return fan.Live{Sensors: fan.Sensors{CPU: ip(50)}, Info: fan.Info{Unraid: "7.3.0"}, FanControl: true, Fans: []fan.FanStatus{{ID: "pwm1", Role: "cpu", RPM: 900}}}
+		},
+		hardware: func() fan.Hardware {
+			return fan.Hardware{Model: "DXP4800", Net: []fan.NetPort{{Name: "eth0", Link: true, SpeedMbit: 1000}}}
+		},
+		settings: func() fan.Config { return fan.LoadConfig(cfgFile) },
+		daemon:   func(time.Time) *fan.State { return &fan.State{Mode: "quiet", CaseTemp: ip(33)} },
+	}
+	now := time.Now()
+	writeFile(t, counters, "  eth0: 1000 5 0 0 0 0 0 0 2000 7 0 0 0 0 0 0\n")
+	c.state(now)
+	writeFile(t, counters, "  eth0: 6000 5 0 0 0 0 0 0 4000 7 0 0 0 0 0 0\n")
+	s := c.state(now.Add(5 * time.Second))
+	if s.Model != "DXP4800" || s.Mode != "quiet" || *s.CaseTemp != 33 || len(s.Fans) != 1 || s.Fans[0].RPM != 900 || s.Bays == nil || s.Alarms == nil {
+		t.Fatalf("state: %+v", s)
+	}
+	if len(s.Net) != 1 || s.Net[0].RxBps != 1000 || s.Net[0].TxBps != 400 {
+		t.Fatalf("net rates: %+v", s.Net)
 	}
 }

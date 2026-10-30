@@ -134,7 +134,9 @@ export async function startHarness(modelId: string, opts: HarnessOptions = {}): 
     writeFileSync(join(boot, 'leds.cfg'), '');
 
     writeFileSync(join(fsRoot, 'var/local/emhttp/var.ini'), 'csrf_token="fake"\nmdState="STARTED"\n');
-    const version = /ENTITY\s+version\s+"([^"]+)"/.exec(readFileSync(join(root, 'plugin/ugreen-nas-control.plg'), 'utf8'))?.[1] ?? 'dev';
+    // Latest released version = newest CHANGELOG.md heading (the tracked .plg is only rendered at release); other streams are marked.
+    const stream = process.env.SITE_STREAM ?? 'main';
+    const version = `${/^## (\d+\.\d+(?:\.\d+)?)\s*$/m.exec(readFileSync(join(root, 'CHANGELOG.md'), 'utf8'))?.[1] ?? 'dev'}${stream === 'main' ? '' : `+${stream}`}`;
     writeFileSync(join(fsRoot, 'boot/config/plugins/ugreen-nas-control.plg'), `<!ENTITY version "${version}">\n`);
 
     const cfg = { ui_theme: 'dark', ui_lang: 'en' };

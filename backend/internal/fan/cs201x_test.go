@@ -1,8 +1,7 @@
-package main
+package fan
 
 import "testing"
 
-// fakeCS answers like the CS201x of the DXP2800 GT; it records every write.
 type fakeCS struct {
 	idx     byte
 	id      uint16
@@ -81,8 +80,7 @@ func TestProbeCS201xReads(t *testing.T) {
 	}
 }
 
-// The probe must never write an EC data register, and the only values it puts on
-// the config data port select device 0x0A.
+// Safety: no EC data register is written; the only config data value selects device 0x0A.
 func TestProbeCS201xWritesNothingToTheEC(t *testing.T) {
 	f := newFakeCS()
 	if _, err := ProbeCS201x(f, "DXP2800 GT"); err != nil {

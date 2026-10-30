@@ -363,6 +363,7 @@ export const es: Record<Key, string> = {
     'sensors.ctl_off': 'Desactivado',
     'sensors.found': 'Detectado',
     'sensors.not_found': 'No detectado',
+    'sensors.no_fanctl': 'Sin control de ventiladores para este modelo',
     'sensors.ports': 'Puertos {ports}',
     'sensors.fans_n': '{n} ventiladores',
     'sensors.led_bus': '{bus}, dirección I²C {address}',

@@ -1,22 +1,20 @@
-package main
+package fan
 
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
+
+	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
 )
 
-// Chipsea CS201x Super-I/O with an embedded controller, as found in the
-// DXP2800 GT. This file only reads: it is the first step of a fan control for
-// this model and exists so that the wiring can be checked on real hardware
-// before anything is written. The register map is taken from the register
-// addresses UGREEN published for the chip (GPL kernel driver ug_201x.c); no
-// code of it is used.
+// Chipsea CS201x Super-I/O with an embedded controller (DXP2800 GT). Read only: it exists to check the wiring on
+// real hardware before any fan control. Register addresses as published by UGREEN (GPL driver ug_201x.c); facts
+// only, no code used.
 const (
 	cs201xID = 0x2011
 
-	// Super-I/O config mode: the unlock key is written to the index port, the
-	// same three bytes in reverse order lock it again.
 	csLDNHost2EC = 0x0a
 
 	// Offsets from the base address of the host-to-EC interface.
@@ -38,7 +36,6 @@ const (
 var csEnterKey = []byte{0xa5, 0x69, 0x87}
 var csExitKey = []byte{0x87, 0x69, 0xa5}
 
-// CS201xReading is what the read-only probe found.
 type CS201xReading struct {
 	Model     string         `json:"model"`
 	ChipID    string         `json:"chip_id"`
@@ -63,12 +60,8 @@ func isDXP2800GT(model string) bool {
 	return strings.HasPrefix(model, "DXP2800 GT")
 }
 
-// ProbeCS201x reads the chip ID, the base address of the embedded controller
-// and its fan and temperature registers. What it writes: the unlock key to the
-// config index port, the logical device number (to look at device 0x0A), and
-// the address latch of the embedded controller (needed for every read). It
-// never writes a data register, never switches the host interface on and never
-// touches a fan setting.
+// ProbeCS201x writes only the unlock key, the logical device number and the EC address latch (needed for every
+// read). It never writes a data register, never switches the host interface on and never touches a fan setting.
 func ProbeCS201x(p Ports, model string) (CS201xReading, error) {
 	r := CS201xReading{Model: model, Temps: map[string]int{}}
 
@@ -158,4 +151,26 @@ func ProbeCS201x(p Ports, model string) (CS201xReading, error) {
 	r.FWVersion = fmt.Sprintf("0x%02x", get(csRegFWVer))
 
 	return r, firstErr
+}
+
+func cs201xCommand() {
+	model := productName()
+	if !isDXP2800GT(model) {
+		fail(fmt.Errorf("%q is not a DXP2800 GT", model))
+	}
+	p, err := hw.OpenPorts()
+	if err != nil {
+		fail(err)
+	}
+	defer func() { _ = p.Close() }()
+	var rd CS201xReading
+	err = withLock(func() (err error) { rd, err = ProbeCS201x(p, model); return })
+	out := map[string]any{"ok": err == nil, "read": rd}
+	if err != nil {
+		out["error"] = err.Error()
+	}
+	printJSON(out)
+	if err != nil {
+		os.Exit(1)
+	}
 }

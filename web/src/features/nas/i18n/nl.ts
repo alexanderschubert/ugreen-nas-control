@@ -374,6 +374,7 @@ export const nl: Record<Key, string> = {
     'sensors.ctl_off': 'Uit',
     'sensors.found': 'Gevonden',
     'sensors.not_found': 'Niet gevonden',
+    'sensors.no_fanctl': 'Geen ventilatorregeling voor dit model',
     'sensors.ports': 'Poorten {ports}',
     'sensors.fans_n': '{n} ventilatoren',
     'sensors.led_bus': '{bus}, I²C-adres {address}',

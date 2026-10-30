@@ -365,6 +365,7 @@ export const zh: Record<Key, string> = {
     'sensors.ctl_off': '关闭',
     'sensors.found': '已找到',
     'sensors.not_found': '未找到',
+    'sensors.no_fanctl': '此型号没有风扇控制',
     'sensors.ports': '端口 {ports}',
     'sensors.fans_n': '{n} 个风扇',
     'sensors.led_bus': '{bus}，I²C 地址 {address}',

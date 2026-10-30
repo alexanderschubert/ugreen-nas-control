@@ -1,4 +1,6 @@
-package main
+// Package mqtt is the publisher of `ugreen-nas-fan publish`: it sends the status of the NAS to an MQTT broker and, only if
+// switched on, carries out a few fixed commands. See docs/mqtt.md.
+package mqtt
 
 import (
 	"bufio"
@@ -28,7 +30,7 @@ const (
 	mqttKeepAlive = 30 * time.Second
 )
 
-type mqttClient struct {
+type client struct {
 	addr     string
 	useTLS   bool
 	user     string
@@ -40,7 +42,7 @@ type mqttClient struct {
 
 	// Called on every (re)connect, after CONNACK, and for every message received.
 	onConnect func()
-	onMessage func(topic string, payload []byte)
+	onMessage func(topic string, payload []byte, retained bool)
 
 	mu     sync.Mutex
 	conn   net.Conn
@@ -72,7 +74,7 @@ func packet(typ, flags byte, body []byte) []byte {
 	return append(p, body...)
 }
 
-func (c *mqttClient) connectPacket() []byte {
+func (c *client) connectPacket() []byte {
 	flags := byte(0x02) // clean session
 	body := append(encodeString("MQTT"), 4)
 	if c.willTopic != "" {
@@ -145,7 +147,7 @@ func readPacket(r *bufio.Reader) (typ, flags byte, body []byte, err error) {
 	return h >> 4, h & 0x0f, body, nil
 }
 
-func (c *mqttClient) write(p []byte) error {
+func (c *client) write(p []byte) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.conn == nil {
@@ -156,11 +158,11 @@ func (c *mqttClient) write(p []byte) error {
 	return err
 }
 
-func (c *mqttClient) publish(topic string, payload []byte, retain bool) error {
+func (c *client) publish(topic string, payload []byte, retain bool) error {
 	return c.write(publishPacket(topic, payload, retain))
 }
 
-func (c *mqttClient) subscribe(topic string) error {
+func (c *client) subscribe(topic string) error {
 	c.mu.Lock()
 	c.nextID++
 	id := c.nextID
@@ -169,7 +171,7 @@ func (c *mqttClient) subscribe(topic string) error {
 }
 
 // session connects once and serves the connection until it breaks.
-func (c *mqttClient) session() error {
+func (c *client) session() error {
 	d := net.Dialer{Timeout: 10 * time.Second}
 	var conn net.Conn
 	var err error
@@ -181,7 +183,7 @@ func (c *mqttClient) session() error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	r := bufio.NewReader(conn)
 	_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
@@ -218,7 +220,7 @@ func (c *mqttClient) session() error {
 			select {
 			case <-t.C:
 				if c.write(packet(mqttPingreq, 0, nil)) != nil {
-					conn.Close()
+					_ = conn.Close()
 					return
 				}
 			case <-stop:
@@ -254,13 +256,13 @@ func (c *mqttClient) session() error {
 			rest = rest[2:]
 		}
 		if c.onMessage != nil {
-			c.onMessage(topic, append([]byte(nil), rest...))
+			c.onMessage(topic, append([]byte(nil), rest...), flags&1 != 0)
 		}
 	}
 }
 
 // run keeps the connection up: after a failure it waits, longer each time up to a minute, and tries again.
-func (c *mqttClient) run(stop <-chan struct{}) {
+func (c *client) run(stop <-chan struct{}) {
 	wait := time.Second
 	for {
 		start := time.Now()
@@ -273,7 +275,7 @@ func (c *mqttClient) run(stop <-chan struct{}) {
 		if time.Since(start) > time.Minute {
 			wait = time.Second
 		}
-		fmt.Printf("mqtt: %v; retrying in %s\n", err, wait)
+		logf("mqtt: %v; retrying in %s", err, wait)
 		select {
 		case <-time.After(wait):
 		case <-stop:

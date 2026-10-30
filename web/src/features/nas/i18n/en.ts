@@ -371,6 +371,7 @@ export const en = {
     'sensors.ctl_off': 'Off',
     'sensors.found': 'Found',
     'sensors.not_found': 'Not found',
+    'sensors.no_fanctl': 'No fan control for this model',
     'sensors.ports': 'Ports {ports}',
     'sensors.fans_n': '{n} fans',
     'sensors.led_bus': '{bus}, I²C address {address}',

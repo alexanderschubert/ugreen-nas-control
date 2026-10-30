@@ -374,6 +374,7 @@ export const it: Record<Key, string> = {
     'sensors.ctl_off': 'Spento',
     'sensors.found': 'Trovato',
     'sensors.not_found': 'Non trovato',
+    'sensors.no_fanctl': 'Nessun controllo delle ventole per questo modello',
     'sensors.ports': 'Porte {ports}',
     'sensors.fans_n': '{n} ventole',
     'sensors.led_bus': '{bus}, indirizzo I²C {address}',

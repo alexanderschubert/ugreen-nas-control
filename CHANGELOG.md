@@ -2,6 +2,33 @@
 
 User-visible changes per release, newest first. Written by `bun plugin/tools/changes.ts release` from the files in .changes/; the plugin's change list is generated from this file.
 
+## 4.2
+
+- Sensors: on a model without fan control (every one but the DXP6800 Pro and the DXP4800 GT) the fan controller now says "No fan control for this model" instead of a red "Not found", which looked like a defect. Nothing changes in what the plugin does with the fan chip: it still does not touch it on these models.
+
+## 4.1
+
+- DXP2800 GT: a read-only test command, `ugreen-nas-fan cs201x`, for the Chipsea CS201x chip of this model (it is not an ITE chip). It reads the chip ID, the base address of the embedded controller, the rpm and duty of the two fans and two temperatures, and prints them. It writes no fan setting and does not switch anything on. Fan control for this model is not part of it yet; the plugin itself still does not touch the fan chip on this NAS.
+
+## 4.0
+
+- DXP2800 GT: front and rear view after the product photos (two bays with the LEDs below them, USB-C and USB-A at the front; the back with the grille of the DXP4800 GT (ribbed bezel, dot mesh, dotted lettering, the fan behind it when the NAS reports one), HDMI, USB 3.2, two USB 2.0, 10G LAN, reset and the power inlet). Fan control stays off for this model
+
+## 3.9
+
+- Rear views with fan control (DXP6800 Pro): the fan labels ("Case fan 1 · 900 rpm") are in front of the mesh and readable in both themes
+
+## 3.8
+
+- Rear view of the DXP4800 GT redrawn after the product photo (ribbed bezel around a dot mesh, dot-matrix lettering, ports at the photo positions); the rear fan turns with its rpm (thanks j3n57h0m45)
+- Light theme: the fan grille of the rear views is grey instead of a black slab
+- The LAN sockets drawn in the rear view flicker with the traffic (since the last poll); no frame around linked ports any more
+- The small 18 px icon: LEDs and fan stay inside the drawing
+
+## 3.7
+
+- Dashboard tile: with the colour scheme "Dark" or "Light" the tile has a background of its own again, in that scheme, whatever theme Unraid uses; "Same as Unraid" draws none and follows the dashboard (issue #91)
+
 ## 3.6
 
 - Dashboard tile: it always takes its colours from the dashboard behind it (light or dark Unraid theme), whatever the colour scheme of the plugin says. Before, a fixed "dark" scheme gave light text on a light tile (issue #87)

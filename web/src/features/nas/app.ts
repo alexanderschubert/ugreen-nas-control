@@ -2616,7 +2616,14 @@ function main(root: HTMLElement): void {
         const led = ledControllerState();
         const status = state.ledStatus;
         const ports = /IT5571/.test(data.chip || '') ? '0x62 / 0x66' : '';
-        const fanState: [Key, string] = !data.chip ? ['sensors.not_found', 'bad'] : fanOff() ? ['sensors.ctl_off', 'warn'] : ['sensors.ctl_on', 'ok'];
+        const fanState: [Key, string] =
+            state.data?.fan_caps === undefined && modelName()
+                ? ['sensors.no_fanctl', '']
+                : !data.chip
+                  ? ['sensors.not_found', 'bad']
+                  : fanOff()
+                    ? ['sensors.ctl_off', 'warn']
+                    : ['sensors.ctl_on', 'ok'];
         const ledState: [Key, string] | null = led === 'found' ? ['sensors.found', 'ok'] : led === 'missing' ? ['sensors.not_found', 'bad'] : null;
 
         return [

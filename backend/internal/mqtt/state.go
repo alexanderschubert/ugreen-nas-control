@@ -1,19 +1,18 @@
-package main
+package mqtt
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
-	"syscall"
 	"time"
+
+	"github.com/alexanderschubert/ugreen-nas-control/internal/fan"
+	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
 )
 
 // The publisher: sends the status of this NAS to an MQTT broker for displays and Home Assistant, and, only
@@ -23,6 +22,7 @@ import (
 // Topics, below ugreen-nas/<name>/: state, notifications and updates (JSON, retained), availability
 // (online/offline, the last will), cmd (commands in) and cmd_result (answers out).
 
+// Where Unraid keeps what is read; tests point these at a fake tree (the variables only work in test builds).
 var (
 	notifyDir    = envOr("UGREEN_NOTIFY_DIR", "/tmp/notifications/unread")
 	pluginsBoot  = envOr("UGREEN_PLUGINS_BOOT", "/boot/config/plugins")
@@ -34,58 +34,14 @@ var (
 	pluginBin    = envOr("UGREEN_PLUGIN_BIN", "/usr/local/sbin/plugin")
 )
 
-// MQTTConfig is read from the same fan.cfg as the fan settings.
-type MQTTConfig struct {
-	Enabled bool
-	Host    string
-	Port    int
-	TLS     bool
-	User    string
-	Pass    string
-	// Name is the part of the topics that tells this NAS from another one.
-	Name     string
-	Interval time.Duration
-	// Control: restart and shut down. ControlUpdates: update plugins. Both off unless switched on.
-	Control        bool
-	ControlUpdates bool
+func envOr(key, def string) string {
+	if v := testenv.Get(key); v != "" {
+		return v
+	}
+	return def
 }
 
-var nameRe = regexp.MustCompile(`[^a-zA-Z0-9_-]`)
-
-func LoadMQTTConfig(path string) MQTTConfig {
-	v := readValues(path)
-	c := MQTTConfig{
-		Enabled:        v["mqtt_enabled"] == "1",
-		Host:           v["mqtt_host"],
-		Port:           1883,
-		TLS:            v["mqtt_tls"] == "1",
-		User:           v["mqtt_user"],
-		Pass:           v["mqtt_pass"],
-		Name:           nameRe.ReplaceAllString(v["mqtt_name"], ""),
-		Interval:       5 * time.Second,
-		Control:        v["mqtt_control"] == "1",
-		ControlUpdates: v["mqtt_control_updates"] == "1",
-	}
-	if c.TLS {
-		c.Port = 8883
-	}
-	if n, err := strconv.Atoi(v["mqtt_port"]); err == nil && n > 0 && n < 65536 {
-		c.Port = n
-	}
-	if n, err := strconv.Atoi(v["mqtt_interval"]); err == nil && n >= 2 && n <= 60 {
-		c.Interval = time.Duration(n) * time.Second
-	}
-	if c.Name == "" {
-		h, _ := os.Hostname()
-		c.Name = nameRe.ReplaceAllString(strings.ToLower(h), "")
-	}
-	if c.Name == "" {
-		c.Name = "nas"
-	}
-	return c
-}
-
-// ---- What goes out ----
+func logf(format string, a ...any) { fmt.Fprintf(os.Stderr, format+"\n", a...) }
 
 type PubFan struct {
 	ID    string `json:"id"`
@@ -132,7 +88,7 @@ type PubState struct {
 	Board      *int      `json:"board"`
 	CaseTemp   *int      `json:"case_temp"`
 	Fans       []PubFan  `json:"fans"`
-	Bays       []Bay     `json:"bays"`
+	Bays       []fan.Bay `json:"bays"`
 	NVMe       []PubNVMe `json:"nvme"`
 	Net        []PubNet  `json:"net"`
 	Alarms     []Alarm   `json:"alarms"`
@@ -153,8 +109,6 @@ type Update struct {
 	To   string `json:"to,omitempty"`
 }
 
-// ---- Notifications ----
-
 // readNotifications reads Unraid's unread notifications (files of key="value" lines), newest first.
 func readNotifications(dir string, now time.Time) []Notification {
 	files, _ := filepath.Glob(filepath.Join(dir, "*.notify"))
@@ -164,7 +118,7 @@ func readNotifications(dir string, now time.Time) []Notification {
 	}
 	var items []item
 	for _, f := range files {
-		v := readValues(f)
+		v := fan.ReadValues(f)
 		ts, _ := strconv.ParseInt(v["timestamp"], 10, 64)
 		level := v["importance"]
 		if level == "" {
@@ -191,8 +145,6 @@ func readNotifications(dir string, now time.Time) []Notification {
 	}
 	return out
 }
-
-// ---- Updates ----
 
 var versionRe = regexp.MustCompile(`<!ENTITY\s+version\s+"([^"]+)"`)
 
@@ -301,8 +253,6 @@ func readUpdates(boot, fresh, dockerFile, osFile string) []Update {
 	return out
 }
 
-// ---- Network rates ----
-
 type netCounters struct{ rx, tx uint64 }
 
 func readNetCounters(path string) map[string]netCounters {
@@ -327,10 +277,8 @@ func readNetCounters(path string) map[string]netCounters {
 	return out
 }
 
-// ---- Alarms ----
-
-func hottestBay(bays []Bay) (Bay, bool) {
-	var best Bay
+func hottestBay(bays []fan.Bay) (fan.Bay, bool) {
+	var best fan.Bay
 	found := false
 	for _, b := range bays {
 		if b.Present && b.HDD && !b.Standby && b.Temp != nil && (!found || *b.Temp > *best.Temp) {
@@ -342,7 +290,7 @@ func hottestBay(bays []Bay) (Bay, bool) {
 
 // buildAlarms says what is wrong: what the fan daemon's fail-safe reports, plus the limits checked here too,
 // so the display shows an alarm even if the daemon does not run.
-func buildAlarms(cpu *int, bays []Bay, nvme []NVMe, st *State, cfg Config) []Alarm {
+func buildAlarms(cpu *int, bays []fan.Bay, nvme []fan.NVMe, st *fan.State, cfg fan.Config) []Alarm {
 	out := []Alarm{}
 	seen := map[string]bool{}
 	add := func(a Alarm) {
@@ -384,29 +332,22 @@ func buildAlarms(cpu *int, bays []Bay, nvme []NVMe, st *State, cfg Config) []Ala
 	return out
 }
 
-// ---- The state ----
-
+// collector reads what a state is made of; the funcs are the fan package's, replaced in tests.
 type collector struct {
-	cfgPath  string
-	hw       Hardware
-	hwAt     time.Time
-	prevNet  map[string]netCounters
-	prevAt   time.Time
-	rates    map[string][2]int64
-	statusFn func() (Sensors, Info, []FanStatus, bool)
+	live     func() fan.Live
+	hardware func() fan.Hardware
+	settings func() fan.Config
+	daemon   func(time.Time) *fan.State
+
+	hw      fan.Hardware
+	hwAt    time.Time
+	prevNet map[string]netCounters
+	prevAt  time.Time
+	rates   map[string][2]int64
 }
 
-func collectLive() (Sensors, Info, []FanStatus, bool) {
-	sensors := ReadSensors()
-	info := ReadInfo()
-	fanOn := LoadConfig(configPath).FanControl
-	var fans []FanStatus
-	if fanOn {
-		out := map[string]any{}
-		addChipStatus(out, &sensors)
-		fans, _ = out["fans"].([]FanStatus)
-	}
-	return sensors, info, fans, fanOn
+func newCollector() *collector {
+	return &collector{live: fan.ReadLive, hardware: fan.ReadHardware, settings: fan.Settings, daemon: fan.ReadDaemonState}
 }
 
 func (c *collector) netRates(now time.Time) {
@@ -424,34 +365,28 @@ func (c *collector) netRates(now time.Time) {
 }
 
 func (c *collector) state(now time.Time) PubState {
-	sensors, info, fans, fanOn := c.statusFn()
-	cfg := LoadConfig(c.cfgPath)
+	live := c.live()
+	sensors, info, fanOn := live.Sensors, live.Info, live.FanControl
+	cfg := c.settings()
 
 	if now.Sub(c.hwAt) > time.Minute {
-		c.hw, c.hwAt = ReadHardware(), now
+		c.hw, c.hwAt = c.hardware(), now
 	}
 	c.netRates(now)
-
-	var st *State
-	if b, err := os.ReadFile(statePath); err == nil {
-		var s State
-		if json.Unmarshal(b, &s) == nil && now.Unix()-s.Time < 30 {
-			st = &s
-		}
-	}
+	st := c.daemon(now)
 
 	s := PubState{
 		Time: now.Unix(), Model: c.hw.Model, Unraid: info.Unraid, Uptime: info.Uptime, Mode: cfg.Mode, FanControl: fanOn,
 		CPU: sensors.CPU, Board: sensors.Board, Fans: []PubFan{}, Bays: c.hw.Bays, NVMe: []PubNVMe{}, Net: []PubNet{},
 	}
 	if s.Bays == nil {
-		s.Bays = []Bay{}
+		s.Bays = []fan.Bay{}
 	}
 	if st != nil {
 		s.CaseTemp = st.CaseTemp
 		s.Mode = st.Mode
 	}
-	for _, f := range fans {
+	for _, f := range live.Fans {
 		s.Fans = append(s.Fans, PubFan{ID: f.ID, Role: f.Role, RPM: f.RPM, Pct: f.Pct, Auto: f.Auto, Error: f.Err})
 	}
 	for i, n := range c.hw.NVMe {
@@ -467,212 +402,4 @@ func (c *collector) state(now time.Time) PubState {
 	}
 	s.Alarms = buildAlarms(sensors.CPU, c.hw.Bays, c.hw.NVMe, st, cfg)
 	return s
-}
-
-// ---- Commands ----
-
-type command struct {
-	Cmd    string `json:"cmd"`
-	Target string `json:"target"`
-	Name   string `json:"name"`
-	TS     int64  `json:"ts"`
-	Nonce  string `json:"nonce"`
-}
-
-type cmdResult struct {
-	Nonce string `json:"nonce"`
-	OK    bool   `json:"ok"`
-	Text  string `json:"text"`
-}
-
-const (
-	cmdMaxAge   = 30 * time.Second
-	cmdMinSpace = 10 * time.Second
-)
-
-// commander validates and carries out commands. run is how a program is started (replaced in tests).
-type commander struct {
-	cfg     MQTTConfig
-	updates func() []Update
-	run     func(name string, args ...string) error
-	delay   time.Duration
-
-	mu    sync.Mutex
-	seen  map[string]time.Time
-	lastC time.Time
-}
-
-// handle checks one command and returns the answer. The program is started by `after`, which the caller runs once
-// the answer has been sent: a restart would otherwise take the answer down with it.
-func (c *commander) handle(raw []byte, now time.Time) (res cmdResult, after func()) {
-	var cmd command
-	if err := json.Unmarshal(raw, &cmd); err != nil {
-		return cmdResult{Text: "unreadable command"}, nil
-	}
-	res.Nonce = cmd.Nonce
-	reject := func(text string) (cmdResult, func()) {
-		fmt.Printf("command %q rejected: %s\n", cmd.Cmd, text)
-		res.Text = text
-		return res, nil
-	}
-
-	if cmd.Nonce == "" || len(cmd.Nonce) > 64 {
-		return reject("nonce missing")
-	}
-	age := now.Sub(time.Unix(cmd.TS, 0))
-	if age > cmdMaxAge || age < -cmdMaxAge {
-		return reject("command too old or clock apart")
-	}
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.seen == nil {
-		c.seen = map[string]time.Time{}
-	}
-	for n, t := range c.seen {
-		if now.Sub(t) > 2*cmdMaxAge {
-			delete(c.seen, n)
-		}
-	}
-	if _, dup := c.seen[cmd.Nonce]; dup {
-		return reject("command already seen")
-	}
-	if len(c.seen) >= 256 {
-		return reject("too many commands")
-	}
-	c.seen[cmd.Nonce] = now
-	if now.Sub(c.lastC) < cmdMinSpace {
-		return reject("too fast, wait a moment")
-	}
-
-	var prog []string
-	switch cmd.Cmd {
-	case "reboot", "shutdown":
-		if !c.cfg.Control {
-			return reject("remote control is switched off")
-		}
-		prog = []string{powerdownBin}
-		if cmd.Cmd == "reboot" {
-			prog = append(prog, "-r")
-		}
-	case "update":
-		if !c.cfg.ControlUpdates {
-			return reject("updates from the display are switched off")
-		}
-		if cmd.Target != "plugin" {
-			return reject("only plugin updates can be installed this way")
-		}
-		file := ""
-		for _, u := range c.updates() {
-			if u.Kind == "plugin" && u.Name == cmd.Name {
-				file = u.File
-			}
-		}
-		if file == "" || filepath.Base(file) != file {
-			return reject("no such update")
-		}
-		prog = []string{pluginBin, "update", file}
-	default:
-		return reject("unknown command")
-	}
-
-	c.lastC = now
-	fmt.Printf("command %q accepted: %s\n", cmd.Cmd, strings.Join(prog, " "))
-	res.OK, res.Text = true, "started"
-	return res, func() {
-		time.Sleep(c.delay)
-		if err := c.run(prog[0], prog[1:]...); err != nil {
-			fmt.Printf("command %q failed: %v\n", cmd.Cmd, err)
-		}
-	}
-}
-
-func execRun(name string, args ...string) error {
-	return exec.Command(name, args...).Run()
-}
-
-// ---- The loop ----
-
-func runPublish() error {
-	cfg := LoadMQTTConfig(configPath)
-	if !cfg.Enabled {
-		return fmt.Errorf("MQTT is switched off in the settings")
-	}
-	if cfg.Host == "" {
-		return fmt.Errorf("no MQTT host in the settings")
-	}
-
-	prefix := "ugreen-nas/" + cfg.Name + "/"
-	col := &collector{cfgPath: configPath, statusFn: collectLive}
-	cmdr := &commander{cfg: cfg, run: execRun, delay: time.Second,
-		updates: func() []Update { return readUpdates(pluginsBoot, pluginsFresh, dockerStatus, unraidCheck) }}
-
-	client := &mqttClient{
-		addr: fmt.Sprintf("%s:%d", cfg.Host, cfg.Port), useTLS: cfg.TLS, user: cfg.User, pass: cfg.Pass,
-		clientID:  "ugreen-nas-" + cfg.Name,
-		willTopic: prefix + "availability", willPayload: []byte("offline"),
-	}
-	last := map[string][]byte{}
-	send := func(topic string, v any, retain bool) {
-		b, err := json.Marshal(v)
-		if err != nil {
-			return
-		}
-		if retain && string(last[topic]) == string(b) {
-			return
-		}
-		if client.publish(prefix+topic, b, retain) == nil {
-			last[topic] = b
-		}
-	}
-	var lastMu sync.Mutex
-	client.onConnect = func() {
-		lastMu.Lock()
-		last = map[string][]byte{}
-		lastMu.Unlock()
-		_ = client.publish(prefix+"availability", []byte("online"), true)
-		if cfg.Control || cfg.ControlUpdates {
-			_ = client.subscribe(prefix + "cmd")
-		}
-	}
-	client.onMessage = func(topic string, payload []byte) {
-		if topic != prefix+"cmd" {
-			return
-		}
-		res, after := cmdr.handle(payload, time.Now())
-		b, _ := json.Marshal(res)
-		_ = client.publish(prefix+"cmd_result", b, false)
-		if after != nil {
-			go after()
-		}
-	}
-
-	stop := make(chan struct{})
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
-	go func() { <-sig; close(stop) }()
-	go client.run(stop)
-
-	tick := time.NewTicker(cfg.Interval)
-	defer tick.Stop()
-	var slowAt time.Time
-	for {
-		now := time.Now()
-		lastMu.Lock()
-		send("state", col.state(now), true)
-		if now.Sub(slowAt) >= time.Minute || slowAt.IsZero() {
-			slowAt = now
-			send("updates", readUpdates(pluginsBoot, pluginsFresh, dockerStatus, unraidCheck), true)
-		}
-		send("notifications", readNotifications(notifyDir, now), true)
-		lastMu.Unlock()
-
-		select {
-		case <-tick.C:
-		case <-stop:
-			_ = client.publish(prefix+"availability", []byte("offline"), true)
-			time.Sleep(200 * time.Millisecond)
-			return nil
-		}
-	}
 }
