@@ -203,7 +203,7 @@ func TestWatchdogPetCadence(t *testing.T) {
 }
 
 func TestWatchdogOtherChipsAreSkipped(t *testing.T) {
-	isolate(t, "DXP6800 Pro")
+	isolate(t, "DX4600 Pro") // an IT8613E chip on a model that has no petter
 	chip, _ := Detect(newFakeITE())
 	if _, ok, err := (&Petter{}).Tick(chip, time.Now()); ok || err != nil {
 		t.Fatalf("ok %v err %v", ok, err)

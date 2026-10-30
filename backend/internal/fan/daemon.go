@@ -3,6 +3,7 @@ package fan
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/syslog"
 	"os"
@@ -259,7 +260,9 @@ func runDaemon(chip Fans) error {
 			lastMode = c.Mode
 		}
 
-		rivals := conflict.Blocking(detectConflicts(), conflict.Fan)
+		found := detectConflicts()
+		rivals := conflict.Blocking(found, conflict.Fan)
+		pet.Yield = conflict.Present(found, conflict.Watchdog)
 		drives := map[string]Drive{} // what drove each fan this tick, for the history
 		driveAll := func(src string) {
 			for _, ch := range chip.Outputs() {
@@ -268,7 +271,7 @@ func runDaemon(chip Fans) error {
 		}
 
 		err := withLock(func() error {
-			// Feed the EC watchdog if the BIOS armed it, on every path below (also while yielding to a rival, in bios
+			// Feed the EC or IT8613E watchdog if the BIOS armed it, on every path below (also while yielding to a rival, in bios
 			// mode, during a calibration and in an emergency). Never arms it; rate-limited by the petter.
 			petWatchdog(pet, chip, now(), logf)
 			if len(rivals) > 0 {
@@ -398,11 +401,15 @@ func runDaemon(chip Fans) error {
 		case <-stop:
 			// Writing the BIOS values now would override the rival that took the fans over.
 			if len(rivals) > 0 {
+				_ = withLock(func() error { stopWatchdog(pet, chip, logf); return nil })
 				_ = os.Remove(statePath)
 				logf("fan control stopped, fans left to %s", rivalNames(rivals))
 				return nil
 			}
-			err := withLock(func() error { return restoreRetry(chip, bios, restoreTries, restoreBackoff, logf) })
+			err := withLock(func() error {
+				stopWatchdog(pet, chip, logf)
+				return restoreRetry(chip, bios, restoreTries, restoreBackoff, logf)
+			})
 			_ = os.Remove(statePath)
 			if err != nil {
 				logf("fan control stopped, BIOS fan settings NOT restored: %v", err)
@@ -567,7 +574,7 @@ func hasName(list []string, s string) bool {
 	return false
 }
 
-// petWatchdog feeds the EC watchdog once per tick (the petter limits the writes to its interval); a failure is
+// petWatchdog feeds the watchdog once per tick (the petter limits the writes to its interval); a failure is
 // logged when it starts, not every tick. The caller holds the lock.
 func petWatchdog(p *Petter, chip Fans, at time.Time, logf func(string, ...any)) {
 	_, ok, err := p.Tick(chip, at)
@@ -577,8 +584,62 @@ func petWatchdog(p *Petter, chip Fans, at time.Time, logf func(string, ...any)) 
 	switch {
 	case err != nil && !p.failed:
 		p.failed = true
-		logf("EC watchdog could not be fed: %v", err)
+		logf("watchdog could not be fed: %v", err)
 	case err == nil:
 		p.failed = false
+	}
+}
+
+// stopWatchdog ends the feeding on a clean stop: an IT8613E timer this process fed is stopped, so that nobody leaves
+// it running unfed. The caller holds the lock.
+func stopWatchdog(p *Petter, chip Fans, logf func(string, ...any)) {
+	if err := p.Stop(chip); err != nil {
+		logf("watchdog could not be stopped: %v", err)
+	}
+}
+
+// openWatchdogOnly opens the chip for runWatchdogOnly: an IT8613E model whose only obstacle to the daemon is the missing
+// fan map. Everything else keeps the error openChip gave.
+func openWatchdogOnly() (Fans, error) {
+	model := productName()
+	if !isIT8613Model(model) || FanKind(model) != KindProbe {
+		return nil, errNoWatchdog
+	}
+	if _, err := loadFanMap(model); !errors.Is(err, errNoFanMap) {
+		return nil, errNoWatchdog
+	}
+	return openChipUnchecked()
+}
+
+// runWatchdogOnly is the daemon of an IT8613E model without a confirmed fan map: fan control stays off, the watchdog
+// is still fed (the BIOS may have armed it). It never writes a fan register.
+func runWatchdogOnly(chip Fans) error {
+	logger, _ := syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "ugreen-nas-control")
+	logf := func(format string, args ...any) {
+		msg := fmt.Sprintf(format, args...)
+		if logger != nil {
+			_ = logger.Info(msg)
+		} else {
+			fmt.Fprintln(os.Stderr, msg)
+		}
+	}
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+	defer signal.Stop(stop)
+
+	pet := &Petter{}
+	logf("watchdog petter started without fan control (%s: no confirmed fan map)", chip.Describe())
+	ticker := time.NewTicker(tick)
+	defer ticker.Stop()
+	for {
+		pet.Yield = conflict.Present(detectConflicts(), conflict.Watchdog)
+		_ = withLock(func() error { petWatchdog(pet, chip, now(), logf); return nil })
+		select {
+		case <-stop:
+			_ = withLock(func() error { stopWatchdog(pet, chip, logf); return nil })
+			logf("watchdog petter stopped")
+			return nil
+		case <-ticker.C:
+		}
 	}
 }

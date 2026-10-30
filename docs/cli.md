@@ -13,13 +13,15 @@ Run them as root on the NAS.
 
 ## ugreen-nas-fan
 
-Talks to the fan chip, runs the curves every 2 s, reads sensors. Subcommands: `info`, `hardware`, `conflicts`, `cs201x`, `probe`, `probe-fans`, `backlight`, `status`, `history`, `set`, `calibrate`, `restore`, `daemon`, and `publish` (the MQTT publisher, [mqtt.md](mqtt.md)). Background: [fan.md](fan.md), [conflicts.md](conflicts.md), [watchdog.md](watchdog.md).
+Talks to the fan chip, runs the curves every 2 s, reads sensors. Subcommands: `info`, `hardware`, `conflicts`, `cs201x`, `probe`, `probe-fans`, `backlight`, `power-on-ac`, `status`, `history`, `set`, `calibrate`, `restore`, `daemon`, and `publish` (the MQTT publisher, [mqtt.md](mqtt.md)). Background: [fan.md](fan.md), [conflicts.md](conflicts.md), [watchdog.md](watchdog.md).
 
 ```
 /usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-fan status
 ```
 
-`status` prints sensors, chip state, presets and the daemon's state file (`/var/run/ugreen-nas-control.json`).
+`status` prints sensors, chip state, presets and the daemon's state file (`/var/run/ugreen-nas-control.json`). `watchdog` is the petter's last state: `state` is `off`, `armed`, `action_needed`, `yielded` (IT8613E: the `it87_wdt` module is loaded, nothing is accessed) or `not_counting` (IT8613E: the value is non-zero but stands still, nothing is written); `counter` is the timer value read back (IT8613E: the 16-bit value register). See [watchdog.md](watchdog.md).
+
+`power-on-ac` reads, `power-on-ac set on|off|last` writes what the NAS does when AC power returns (JSON). Only this command ever touches it: not `status`, the daemon, `restore` or the probe. A write refuses while a fan rival runs. Models, registers and caveats: [power-on-ac.md](power-on-ac.md).
 
 `cs201x` (DXP2800 GT only):
 

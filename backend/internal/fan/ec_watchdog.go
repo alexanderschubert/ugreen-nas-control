@@ -37,7 +37,7 @@ type WatchdogStatus struct {
 	Interval int    `json:"interval"`          // seconds between feeds
 	LastPet  int64  `json:"last_pet"`          // unix time, 0 = never
 	Time     int64  `json:"time"`              // when this was sampled
-	State    string `json:"state"`             // WdtOff, WdtArmed or WdtActionNeeded, computed when read
+	State    string `json:"state"`             // a Wdt* state, computed when read (WdtYielded and WdtNotCounting are kept as written)
 	Counter  *int   `json:"counter,omitempty"` // timeout registers read back before the feed; only while armed
 }
 
@@ -46,10 +46,14 @@ const (
 	WdtOff          = "off"
 	WdtArmed        = "armed"
 	WdtActionNeeded = "action_needed" // armed, but nothing fed it for more than twice the interval
+	WdtYielded      = "yielded"       // IT8613E: the it87_wdt module is loaded and owns the timer, nothing is accessed
+	WdtNotCounting  = "not_counting"  // IT8613E: the value is non-zero but did not count down, so nothing is written
 )
 
 func watchdogState(st WatchdogStatus, now time.Time) string {
 	switch {
+	case st.State == WdtYielded || st.State == WdtNotCounting:
+		return st.State
 	case !st.Armed:
 		return WdtOff
 	case st.LastPet == 0 || now.Unix()-st.LastPet > 2*int64(st.Interval):
@@ -120,28 +124,55 @@ func (c *EC) DisarmWatchdog() error {
 	return c.write(w.enable, 0)
 }
 
-// Petter feeds the watchdog of an EC while it is armed. One per process; Tick runs under the fan lock.
+// Petter feeds the watchdog of an EC or an IT8613E while it is armed. One per process; Tick runs under the fan lock.
 // The daemon calls it every tick, also while it yields to another fan tool: feeding is harmless and keeps the box
 // from resetting. A calibration or a probe calls it as well.
 type Petter struct {
-	Timeout int // seconds, 0 = wdtDefaultTimeout
+	Timeout int  // seconds, 0 = wdtDefaultTimeout
+	Yield   bool // IT8613E: it87_wdt is loaded, the daemon sets this before every Tick
 	last    time.Time
 	status  WatchdogStatus
 	failed  bool // the last Tick failed (the daemon logs it once)
+
+	// IT8613E only. counting latches once two samples sioGap apart showed the value fall, until it reads 0 or the
+	// petter yields; nextProbe rate-limits the new proof while the value stands still; petted: this process wrote the
+	// timer, so a clean stop writes 0.
+	counting  bool
+	nextProbe time.Time
+	petted    bool
 }
 
-// Tick reads the enable byte and feeds the timer if it is armed and due. ok is false for a chip without an EC.
+func (p *Petter) timeout() int {
+	t := p.Timeout
+	if t == 0 {
+		t = wdtDefaultTimeout
+	}
+	return min(max(t, wdtMinTimeout), wdtMaxTimeout)
+}
+
+// Tick reads the watchdog and feeds the timer if it is armed and due. ok is false for a chip without a watchdog.
 func (p *Petter) Tick(chip Fans, now time.Time) (st WatchdogStatus, ok bool, err error) {
-	ec, isEC := chip.(*EC)
-	// Defense in depth: the plain iDX6011/6012 gets no petter (its 0x98/0x99 is a fan tach, its own map is read only).
-	if !isEC || !WatchdogModel(productName()) || ec.sp().wdt == nil || ec.sp().readOnly {
+	switch c := chip.(type) {
+	case *EC:
+		return p.tickEC(c, now)
+	case *Chip:
+		return p.tickITE(c, now)
+	}
+	return WatchdogStatus{}, false, nil
+}
+
+func (p *Petter) record(now time.Time) {
+	p.status.Time = now.Unix()
+	_ = writeJSONAtomic(watchdogStatePath, p.status)
+}
+
+func (p *Petter) tickEC(ec *EC, now time.Time) (st WatchdogStatus, ok bool, err error) {
+	// Defense in depth: the plain iDX6011/6012 gets no petter (its 0x98/0x99 is a fan tach, its own map is read only),
+	// and the IT8613E models never reach an EC write.
+	if !ecWatchdogModel(productName()) || ec.sp().wdt == nil || ec.sp().readOnly {
 		return WatchdogStatus{}, false, nil
 	}
-	timeout := p.Timeout
-	if timeout == 0 {
-		timeout = wdtDefaultTimeout
-	}
-	timeout = min(max(timeout, wdtMinTimeout), wdtMaxTimeout)
+	timeout := p.timeout()
 
 	armed, err := ec.WatchdogArmed()
 	if err != nil {
@@ -160,10 +191,99 @@ func (p *Petter) Tick(chip Fans, now time.Time) (st WatchdogStatus, ok bool, err
 			p.status.LastPet = now.Unix()
 		}
 	}
-	p.status.Time = now.Unix()
 	p.status.State = watchdogState(p.status, now)
-	_ = writeJSONAtomic(watchdogStatePath, p.status)
+	p.record(now)
 	return p.status, true, err
+}
+
+// tickITE feeds the IT8613E watchdog. A keepalive write of a non-zero value also starts a stopped timer on this chip,
+// so it writes only after proof that the timer counts (see ite_watchdog.go); a value that stands still is reported
+// and left alone. While it87_wdt is loaded nothing at all is accessed.
+func (p *Petter) tickITE(c *Chip, now time.Time) (st WatchdogStatus, ok bool, err error) {
+	if !isIT8613Model(productName()) {
+		return WatchdogStatus{}, false, nil
+	}
+	timeout := p.timeout()
+	p.status.Timeout, p.status.Interval = timeout, int(wdtInterval(timeout)/time.Second)
+	p.status.Armed, p.status.Counter = false, nil
+
+	if p.Yield {
+		p.counting, p.nextProbe = false, time.Time{}
+		p.status.State = WdtYielded
+		p.record(now)
+		return p.status, true, nil
+	}
+
+	cur, err := c.WatchdogRead()
+	if errors.Is(err, errNotIT8613) {
+		return WatchdogStatus{}, false, nil
+	}
+	if err != nil {
+		return p.status, true, err
+	}
+	if cur.val == 0 {
+		p.counting, p.nextProbe = false, time.Time{}
+		p.status.State = WdtOff
+		p.record(now)
+		return p.status, true, nil
+	}
+
+	if !p.counting && !now.Before(p.nextProbe) {
+		time.Sleep(sioGap)
+		next, err := c.WatchdogRead()
+		if err != nil {
+			return p.status, true, err
+		}
+		switch {
+		case next.val == 0:
+			cur = next
+		case next.val < cur.val:
+			p.counting = true
+			cur = next
+		default:
+			p.nextProbe = now.Add(wdtMaxInterval)
+		}
+	}
+	if cur.val == 0 {
+		p.status.State = WdtOff
+		p.record(now)
+		return p.status, true, nil
+	}
+	n := int(cur.val)
+	p.status.Counter = &n
+	if !p.counting {
+		p.status.State = WdtNotCounting
+		p.record(now)
+		return p.status, true, nil
+	}
+
+	p.status.Armed = true
+	if p.last.IsZero() || now.Sub(p.last) >= wdtInterval(timeout) {
+		if err = c.WatchdogPet(cur, timeout); err == nil {
+			p.last, p.petted = now, true
+			p.status.LastPet = now.Unix()
+		}
+	}
+	p.status.State = watchdogState(p.status, now)
+	p.record(now)
+	return p.status, true, err
+}
+
+// Stop ends the feeding on a clean daemon stop. An IT8613E timer this process fed is stopped (value 0), so that a
+// stopped daemon does not leave a timer nobody feeds; the EC clears its enable byte in EC.Restore instead. Nothing is
+// written if this process never fed the timer or while it87_wdt owns it.
+func (p *Petter) Stop(chip Fans) error {
+	c, ok := chip.(*Chip)
+	if !ok || !p.petted || p.Yield {
+		return nil
+	}
+	if err := c.DisarmWatchdog(); err != nil {
+		return err
+	}
+	p.petted, p.counting = false, false
+	p.status.Armed, p.status.State = false, WdtOff
+	p.record(time.Now())
+	return nil
 }
 
 // ReadWatchdogStatus is the last state a Petter wrote, nil if none (no EC, or nothing ticked since boot).

@@ -67,6 +67,21 @@ func TestModules(t *testing.T) {
 	}
 }
 
+func TestLEDModules(t *testing.T) {
+	r := roots(t)
+	write(t, r.ProcModules, "leds_sio_201x 16384 0 - Live 0x0\n")
+	got := r.Detect()
+	if want := []string{"module:leds_sio_201x"}; !reflect.DeepEqual(ids(got), want) {
+		t.Fatalf("got %v", ids(got))
+	}
+	if got[0].Name != "UGREEN CS201x LED driver" || !reflect.DeepEqual(got[0].Controls, []string{LED}) || got[0].Severity != SeverityWarn {
+		t.Fatalf("bad fields %+v", got[0])
+	}
+	if len(Blocking(got, LED)) != 0 || Present(got, Fan) {
+		t.Fatal("a loaded module must not block, and controls only LEDs")
+	}
+}
+
 func TestHwmonManualOnly(t *testing.T) {
 	r := roots(t)
 	write(t, filepath.Join(r.Hwmon, "hwmon3", "name"), "it8613\n")
@@ -148,5 +163,27 @@ func TestDaemonNameInArgumentsIsNoRival(t *testing.T) {
 	got := r.Detect()
 	if want := []string{"daemon:ugreen-leds"}; !reflect.DeepEqual(ids(got), want) {
 		t.Fatalf("got %v want %v", ids(got), want)
+	}
+}
+
+// it87_wdt owns the IT8613E watchdog: found as a module, never a fan rival, but the watchdog petter yields to it.
+func TestWatchdogModule(t *testing.T) {
+	r := roots(t)
+	write(t, r.ProcModules, "it87_wdt 12288 0 - Live 0x0\n")
+	got := r.Detect()
+	if want := []string{"module:it87_wdt"}; !reflect.DeepEqual(ids(got), want) {
+		t.Fatalf("got %v", ids(got))
+	}
+	if len(Blocking(got, Fan)) != 0 || len(Blocking(got, Watchdog)) != 0 {
+		t.Fatal("a loaded module must not block")
+	}
+	if !Present(got, Watchdog) || Present(got, Fan) || Present(nil, Watchdog) {
+		t.Fatal("Present must see the watchdog control, and only that")
+	}
+
+	r = roots(t)
+	write(t, filepath.Join(r.SysModule, "it87_wdt", "version"), "1")
+	if !Present(r.Detect(), Watchdog) {
+		t.Fatal("/sys/module entry not found")
 	}
 }

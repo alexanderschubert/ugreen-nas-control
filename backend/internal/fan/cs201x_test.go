@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	cs "github.com/alexanderschubert/ugreen-nas-control/internal/hw/cs201x"
 )
 
 type fakeCS struct {
@@ -314,4 +317,28 @@ func TestIsDXP2800GT(t *testing.T) {
 	if !isDXP2800GT("DXP2800 GT") || isDXP2800GT("DXP2800") || isDXP2800GT("DXP4800 GT") {
 		t.Fatal("model match")
 	}
+}
+
+// The fan tool and the LED backend (other processes) take the same flock: one blocks the other.
+func TestFanLockIsTheSharedCS201xLock(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "lock")
+	oldLock := lockPath
+	lockPath = path
+	defer func() { lockPath = oldLock }()
+	defer cs.SetLockPath(path)()
+
+	held, release := make(chan struct{}), make(chan struct{})
+	go func() {
+		_ = withLock(func() error { close(held); <-release; return nil })
+	}()
+	<-held
+	got := make(chan struct{})
+	go func() { _ = cs.WithLock(func() error { close(got); return nil }) }()
+	select {
+	case <-got:
+		t.Fatal("the LED side got the lock while the fan tool held it")
+	case <-time.After(200 * time.Millisecond):
+	}
+	close(release)
+	<-got
 }

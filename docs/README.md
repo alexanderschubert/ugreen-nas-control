@@ -19,6 +19,7 @@ One line per file: what it answers. One topic per file; a topic that appears els
 - [docs/led.md](led.md) — How the LED controller is driven and what the LED tool and backend do.
 - [docs/panel.md](panel.md) — How the front-panel buttons are read and the beeper is driven, per model, vendor source only.
 - [docs/watchdog.md](watchdog.md) — Why the hardware watchdog stays on and what the plugin does with it.
+- [docs/power-on-ac.md](power-on-ac.md) — What the power-on-after-AC-loss setting is, per model, and how to read and set it.
 - [docs/conflicts.md](conflicts.md) — Which other tools write the same chips and what the plugin does about them.
 - [backend/internal/led/ledctl/SPEC.md](../backend/internal/led/ledctl/SPEC.md) — Which LED tool behaviour the Go port must keep (parity contract).
 - [plugin/README.md](../plugin/README.md) — What is in the plugin package, how the archive and `.plg` are built, install and remove.

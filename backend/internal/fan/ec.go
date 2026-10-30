@@ -28,6 +28,11 @@ const (
 	ecCmdRead  = 0x80
 	ecCmdWrite = 0x81
 
+	// Bare commands (no data byte) of the DXP4800 GT: power on / stay off after AC loss
+	// (ug_it55_4800gt_functions.c:55-57,134-151@c75c5ab). Only EC.SendCommand sends them, only for `power-on-ac set`.
+	ecCmdACOn  = 0x88
+	ecCmdACOff = 0x89
+
 	ecPoll  = 100 * time.Microsecond
 	ecTries = 3
 
@@ -93,7 +98,7 @@ var (
 )
 
 var (
-	ecSpecGT = ecSpec{channels: ecChannels, wdt: ecWdtGT}
+	ecSpecGT = ecSpec{channels: ecChannels, wdt: ecWdtGT, acCmd: &ecACCmd{on: ecCmdACOn, off: ecCmdACOff}}
 	// Pro: besides the fans and the watchdog timeout only the backlight register may be written. fan4 reading 0
 	// while fan3 spins shows fan3's value, as UGREEN reports it (ug_it55pro_functions.c:290-291@c75c5ab).
 	ecSpecIdxPro = ecSpec{
@@ -105,6 +110,9 @@ var (
 	ecSpecIdx = ecSpec{channels: ecChannelsIdx, wdt: ecWdtIdx, readOnly: true, softID: true, noTemps: true}
 )
 
+// ecACCmd are the two power-on-after-AC-loss commands of a map.
+type ecACCmd struct{ on, off byte }
+
 type ecSpec struct {
 	channels   []Channel
 	floor      byte              // duty register value; 0 = no floor
@@ -112,8 +120,9 @@ type ecSpec struct {
 	extraWrite []byte            // writable besides channel mode/duty and the watchdog timeout
 	mirror     map[string]string // channel id -> channel whose tach it shows while its own reads 0
 	readOnly   bool
-	softID     bool // a foreign chip id is a warning, not a refusal
-	noTemps    bool // 0x5f/0x70 are not known for this map
+	softID     bool     // a foreign chip id is a warning, not a refusal
+	noTemps    bool     // 0x5f/0x70 are not known for this map
+	acCmd      *ecACCmd // nil = no AC-loss command for this map (the Pro and plain iDX use memory-mapped registers)
 }
 
 var (
@@ -274,6 +283,23 @@ func (c *EC) write(reg, value byte) error {
 		}
 		return c.send(ecDataPort, value)
 	})
+}
+
+// SendCommand sends one bare command byte to the command port: only the AC-loss commands of the model's map, and
+// never on a read-only map. The controller reports nothing back that this code could trust (the vendor's check of
+// status bit 0x08 only says the last byte was a command), so success means the byte was taken, not that it applied.
+func (c *EC) SendCommand(cmd byte) error {
+	sp := c.sp()
+	if sp.readOnly {
+		return errReadOnly
+	}
+	if sp.acCmd == nil || (cmd != sp.acCmd.on && cmd != sp.acCmd.off) {
+		return fmt.Errorf("%w: command 0x%02x", errNotAllowed, cmd)
+	}
+	if err := c.send(ecCmdPort, cmd); err != nil {
+		return err
+	}
+	return c.wait(ecIBF, false)
 }
 
 func (c *EC) Name() string { return "IT5571" }
