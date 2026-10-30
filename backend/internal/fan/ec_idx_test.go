@@ -2,6 +2,7 @@ package fan
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"slices"
 	"testing"
@@ -223,7 +224,11 @@ func TestBacklight(t *testing.T) {
 	if pct, _, err := ec.BacklightPct(); err != nil || pct != 0 {
 		t.Fatalf("off: %d %v", pct, err)
 	}
-	for _, bad := range []byte{0, 199, 255} {
+	f.regs[ecRegBacklight] = 0 // the vendor default is no error
+	if pct, raw, err := ec.BacklightPct(); err != nil || pct != BacklightUnknownPct || raw != 0 {
+		t.Fatalf("default: %d %d %v", pct, raw, err)
+	}
+	for _, bad := range []byte{199, 255} {
 		f.regs[ecRegBacklight] = bad
 		if _, _, err := ec.BacklightPct(); err == nil {
 			t.Errorf("register %d accepted", bad)
@@ -257,5 +262,194 @@ func TestBacklight(t *testing.T) {
 		if r != ecRegBacklight {
 			t.Errorf("wrote register %#x", r)
 		}
+	}
+}
+
+// UGREEN reports fan3's value for a fan4 that reads 0 (ug_it55pro_functions.c:290-291@c75c5ab); a fan4 with its own
+// reading, and any other channel, stays as read.
+func TestIdxProFan4MirrorsFan3(t *testing.T) {
+	f := newFakeIdxEC()
+	ec, _ := detectEC(f, ecSpecIdxPro)
+	fan3, fan4 := ecChannelsIdxPro[2], ecChannelsIdxPro[3]
+
+	f.regs[0x3a], f.regs[0x3b] = 0, 0
+	if rpm, err := ec.RPM(fan4); err != nil || rpm != 731 {
+		t.Fatalf("fan4 with no tach = %d (%v), want fan3's 731", rpm, err)
+	}
+	f.regs[0x3a], f.regs[0x3b] = 0x03, 0x20
+	if rpm, _ := ec.RPM(fan4); rpm != 800 {
+		t.Fatalf("fan4 with its own tach = %d, want 800", rpm)
+	}
+	f.regs[0x3a], f.regs[0x3b], f.regs[0x38], f.regs[0x39] = 0, 0, 0, 0
+	if rpm, _ := ec.RPM(fan4); rpm != 0 {
+		t.Fatalf("both stopped: fan4 = %d", rpm)
+	}
+	f.regs[0x36], f.regs[0x37] = 0, 0
+	f.regs[0x38], f.regs[0x39] = 0x02, 0xdb
+	if rpm, _ := ec.RPM(ecChannelsIdxPro[1]); rpm != 0 {
+		t.Fatalf("fan2 mirrored fan3: %d", rpm)
+	}
+	if rpm, _ := ec.RPM(fan3); rpm != 731 {
+		t.Fatalf("fan3 = %d", rpm)
+	}
+}
+
+// Fan control, the watchdog timeout and (Pro) the backlight are the only registers written. 0x99/0x9a (wake),
+// 0x9c (EUP), 0x9e (Pro beeper), 0xa5 (plain beeper) and 0xa6 (G3 wake, GT SATA power) are not on any list that
+// reaches them (ug_it55pro_functions.c:49-50,394-398; it55_regs_dump.sh:21-24; ug_sataio_beeper.c:31-35@c75c5ab).
+func TestWriteListRefusesForeignRegisters(t *testing.T) {
+	foreign := []byte{0x99, 0x9a, 0x9c, 0x9e, 0xa6, 0xa7, 0xa0, 0xa1, 0x00}
+	for name, spec := range map[string]ecSpec{"GT": ecSpecGT, "Pro": ecSpecIdxPro, "plain": ecSpecIdx} {
+		f := newFakeIdxEC()
+		ec, err := detectEC(f, spec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, reg := range foreign {
+			if err := ec.write(reg, 1); err == nil {
+				t.Errorf("%s: register %#x was written", name, reg)
+			}
+		}
+		if name != "Pro" {
+			if err := ec.write(ecRegBacklight, 1); err == nil {
+				t.Errorf("%s: backlight register written", name)
+			}
+		}
+		if len(f.writes) != 0 {
+			t.Errorf("%s: bus writes %v", name, f.writes)
+		}
+	}
+	// What is allowed still goes through.
+	f := newFakeIdxEC()
+	ec, _ := detectEC(f, ecSpecIdxPro)
+	for _, reg := range []byte{0xb0, 0xb1, 0xb6, 0xb7, ecRegWdtHi, ecRegWdtLo, ecRegBacklight, ecRegWdtEnable} {
+		if err := ec.write(reg, 0); err != nil {
+			t.Errorf("register %#x refused: %v", reg, err)
+		}
+	}
+}
+
+func TestBacklightOnlyOnPro(t *testing.T) {
+	for name, spec := range map[string]ecSpec{"GT": ecSpecGT, "plain": ecSpecIdx} {
+		f := newFakeIdxEC()
+		f.regs[ecRegBacklight] = 80
+		ec, _ := detectEC(f, spec)
+		if _, _, err := ec.BacklightPct(); err == nil {
+			t.Errorf("%s: backlight read", name)
+		}
+		if err := ec.SetBacklight(50); err == nil || len(f.writes) != 0 {
+			t.Errorf("%s: backlight set (%v, writes %v)", name, err, f.writes)
+		}
+		if f.regs[ecRegBacklight] != 80 {
+			t.Errorf("%s: register changed", name)
+		}
+	}
+}
+
+// The plain iDX6011/6012 map is read only: tach, duty, mode and the watchdog registers read, nothing is written,
+// not even by the stop path.
+func TestPlainIdxReadOnly(t *testing.T) {
+	isolate(t, "iDX6011")
+	f := newFakeEC()
+	for r := range f.regs {
+		f.regs[r] = 0
+	}
+	f.regs[0x96], f.regs[0x97] = 0x03, 0x20 // fan1 800
+	f.regs[0x98], f.regs[0x99] = 0x02, 0x58 // fan2 600
+	f.regs[0x9c], f.regs[0x9d] = 0, 70
+	f.regs[0x9e], f.regs[0x9f] = 1, 90
+	f.regs[0x55], f.regs[0x56], f.regs[0x57] = 1, 0x01, 0x2c
+	ec, err := detectEC(f, ecSpecIdx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := outputIDs(ec.Outputs()); !slices.Equal(got, []string{"fan1", "fan2"}) {
+		t.Fatalf("outputs = %v", got)
+	}
+	want := []struct {
+		rpm  int
+		duty byte
+		auto bool
+	}{{800, 70, true}, {600, 90, false}}
+	for i, ch := range ec.Outputs() {
+		rpm, err := ec.RPM(ch)
+		duty, auto, err2 := ec.PWM(ch)
+		if err != nil || err2 != nil || rpm != want[i].rpm || duty != want[i].duty || auto != want[i].auto {
+			t.Errorf("%s: rpm %d duty %d auto %v (%v %v)", ch.ID, rpm, duty, auto, err, err2)
+		}
+	}
+	if armed, err := ec.WatchdogArmed(); err != nil || !armed {
+		t.Errorf("watchdog flag: %v %v", armed, err)
+	}
+	if n, err := ec.WatchdogCounter(); err != nil || n != 300 {
+		t.Errorf("watchdog counter: %d %v", n, err)
+	}
+	if ec.BoardTemp() != nil || ec.Temps()[0] != nil {
+		t.Error("temperatures reported for the plain map")
+	}
+
+	for _, ch := range ec.Outputs() {
+		if err := ec.SetPWM(ch, 100); !errors.Is(err, errReadOnly) {
+			t.Errorf("SetPWM: %v", err)
+		}
+	}
+	if err := ec.WatchdogPet(300); !errors.Is(err, errReadOnly) {
+		t.Errorf("pet: %v", err)
+	}
+	if err := ec.write(0x55, 1); !errors.Is(err, errNeverArm) && !errors.Is(err, errReadOnly) {
+		t.Errorf("arm: %v", err)
+	}
+	if err := ec.Restore(nil); err != nil {
+		t.Errorf("restore: %v", err)
+	}
+	if err := ec.SetBacklight(10); err == nil {
+		t.Error("backlight set on the plain map")
+	}
+	if len(f.writes) != 0 {
+		t.Fatalf("bus writes on the plain map: %v", f.writes)
+	}
+	// No petter, whatever the flag says.
+	if _, ok, err := (&Petter{}).Tick(ec, time.Unix(1_000_000, 0)); ok || err != nil {
+		t.Fatalf("petter ran on the plain map: ok %v err %v", ok, err)
+	}
+	if len(f.writes) != 0 {
+		t.Fatalf("petter wrote: %v", f.writes)
+	}
+}
+
+// UGREEN checks the model name only; another chip id on a plain unit is reported, not refused.
+func TestPlainIdxChipIDIsAWarning(t *testing.T) {
+	f := newFakeEC()
+	f.chipID = 0x8613
+	ec, err := detectEC(f, ecSpecIdx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := ec.Details()["warning"]; !ok {
+		t.Error("no warning in the details")
+	}
+	if _, err := detectEC(f, ecSpecIdxPro); err == nil {
+		t.Error("the Pro map accepted a foreign chip id")
+	}
+}
+
+// The watchdog status carries the counter read back from the timeout registers (read only).
+func TestWatchdogStatusCounter(t *testing.T) {
+	isolate(t, "DXP4800 GT")
+	f := newFakeEC()
+	ec, _ := DetectEC(f)
+	p := &Petter{}
+	t0 := time.Unix(1_000_000, 0)
+	if st, _, _ := p.Tick(ec, t0); st.Counter != nil {
+		t.Fatalf("counter while disarmed: %d", *st.Counter)
+	}
+	f.regs[ecRegWdtEnable] = 1
+	f.regs[ecRegWdtHi], f.regs[ecRegWdtLo] = 0x02, 0x58 // 600, as armed by someone else
+	st, _, err := p.Tick(ec, t0)
+	if err != nil || st.Counter == nil || *st.Counter != 600 {
+		t.Fatalf("counter = %v (%v), want 600 read before the feed", st.Counter, err)
+	}
+	if st, _, _ := p.Tick(ec, t0.Add(time.Second)); st.Counter == nil || *st.Counter != 300 {
+		t.Fatalf("after the feed: %v", st.Counter)
 	}
 }
