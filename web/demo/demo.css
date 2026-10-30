@@ -1,0 +1,372 @@
+:root {
+    color-scheme: dark;
+    --page: #0a0d12;
+    --panel: #1d2735;
+    --panel-line: #33445a;
+    --field: #141c28;
+    --text: #eef2f6;
+    --muted: #9aa8b8;
+    --accent: #2f7cf6;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --grey: #8b96a3;
+}
+* {
+    box-sizing: border-box;
+}
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    background: var(--page);
+    color: var(--text);
+    font:
+        14px/1.4 Inter,
+        system-ui,
+        -apple-system,
+        'Segoe UI',
+        sans-serif;
+}
+.controls {
+    flex: none;
+    border: 1px solid var(--panel-line);
+    border-top: 3px solid var(--accent);
+    border-radius: 10px;
+    background: var(--panel);
+    box-shadow: 0 6px 18px #0006;
+}
+.controls-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px 0;
+}
+h1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+.chip {
+    padding: 2px 9px;
+    border-radius: 4px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+}
+.title-text {
+    color: var(--muted);
+    font-weight: 500;
+}
+.nav {
+    display: flex;
+    gap: 14px;
+    margin-left: auto;
+}
+.link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--muted);
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+}
+.link:hover {
+    color: var(--text);
+}
+.embed #site,
+.embed #exit {
+    display: none;
+}
+.controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 8px 12px;
+    padding: 8px 12px;
+}
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 11px;
+    color: var(--muted);
+}
+select,
+.btn,
+.seg button {
+    height: 34px;
+    border: 1px solid var(--panel-line);
+    border-radius: 8px;
+    background: var(--field);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+select {
+    padding: 0 8px;
+}
+.model select {
+    min-width: 170px;
+}
+.badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-self: center;
+}
+.badge {
+    --st: var(--grey);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px 2px 8px;
+    border: 1px solid var(--panel-line);
+    border-radius: 999px;
+    background: var(--field);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: help;
+}
+.badge .state {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--st);
+}
+.badge .state small {
+    margin-left: 2px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 400;
+}
+.badge .glyph {
+    --on-status: var(--field);
+    width: 14px;
+    height: 14px;
+}
+.badge.st-verified {
+    --st: var(--green);
+}
+.badge.st-community {
+    --st: #6aa5ff;
+}
+.badge.st-partial {
+    --st: var(--amber);
+}
+.badge.st-expected {
+    --st: var(--grey);
+}
+.ico {
+    display: inline-flex;
+}
+.seg {
+    display: flex;
+}
+.seg button {
+    padding: 0 12px;
+    border-radius: 0;
+}
+.seg button:first-child {
+    border-radius: 8px 0 0 8px;
+}
+.seg button:last-child {
+    border-radius: 0 8px 8px 0;
+    border-left: 0;
+}
+.seg button[aria-pressed='true'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    text-decoration: none;
+}
+.btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+}
+svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 6px 12px;
+    border-top: 1px solid var(--panel-line);
+    color: #fcd9a0;
+    font-size: 13px;
+}
+.note.ok {
+    color: #b7f0cb;
+}
+.note[hidden] {
+    display: none;
+}
+.note a {
+    color: inherit;
+}
+.window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid #3a4150;
+    border-radius: 10px;
+    background: #0b0e12;
+    box-shadow: 0 12px 36px #000a;
+}
+.window-bar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    background: #2b303a;
+    border-bottom: 1px solid #3a4150;
+}
+.window-bar i {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #596273;
+}
+.window-bar i:nth-child(1) {
+    background: #ff5f57;
+}
+.window-bar i:nth-child(2) {
+    background: #febc2e;
+}
+.window-bar i:nth-child(3) {
+    background: #28c840;
+}
+.address {
+    flex: 1;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 2px 12px;
+    border-radius: 6px;
+    background: #1b1f27;
+    color: #aab3c2;
+    font-size: 12px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.address b {
+    color: #6b7585;
+}
+iframe {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    border: 0;
+    background: #0b0e12;
+}
+select:focus-visible,
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid #9cc1ff;
+    outline-offset: 2px;
+}
+@media (max-width: 720px) {
+    body {
+        padding: 6px;
+        gap: 6px;
+    }
+    .controls-row {
+        gap: 6px 8px;
+        padding: 6px 10px;
+    }
+    .model {
+        flex: 1 1 100%;
+    }
+    .model select {
+        width: 100%;
+    }
+    .field:not(.model) > span {
+        display: none;
+    }
+    .title-text {
+        display: none;
+    }
+    .actions {
+        margin-left: 0;
+    }
+    .note {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+    .window-bar {
+        height: 26px;
+    }
+    .address {
+        font-size: 11px;
+    }
+}
+@media (max-width: 720px) {
+    html,
+    body {
+        height: auto;
+        min-height: 100%;
+    }
+    .window {
+        min-height: 78dvh;
+    }
+    .embed,
+    .embed body {
+        height: 100%;
+    }
+    .embed .window {
+        min-height: 0;
+    }
+}
+@media (max-width: 720px) {
+    select,
+    .btn,
+    .seg button {
+        font-size: 13px;
+    }
+    .seg button,
+    .btn {
+        padding: 0 8px;
+    }
+    .controls-head {
+        padding-top: 6px;
+    }
+}

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>UGREEN NAS Control: live demo</title>
+        <link rel="icon" href="assets/icons/ugreen-nas-control.png" />
+        <link rel="stylesheet" href="demo.css" />
+    </head>
+    <body>
+        <section class="controls" aria-labelledby="controls-title">
+            <div class="controls-head">
+                <h1 id="controls-title"><span class="chip">Demo controls</span> <span class="title-text">UGREEN NAS Control</span></h1>
+                <nav class="nav">
+                    <a class="link" id="exit" href="../" title="Back to the site, demo stays open in a window">
+                        <span class="ico" data-icon="collapse"></span>
+                        Exit full screen
+                    </a>
+                    <a class="link" id="site" href="../">
+                        <span class="ico" data-icon="back"></span>
+                        Site
+                    </a>
+                </nav>
+            </div>
+            <div class="controls-row">
+                <label class="field model">
+                    <span>Model</span>
+                    <select id="model"></select>
+                </label>
+                <span class="badges" id="badges"></span>
+                <div class="field">
+                    <span>View</span>
+                    <div class="seg" role="group" aria-label="View">
+                        <button type="button" data-view="plugin">Plugin</button>
+                        <button type="button" data-view="dashboard">Dashboard widget</button>
+                    </div>
+                </div>
+                <label class="field">
+                    <span>Theme</span>
+                    <select id="theme">
+                        <option value="dark">Dark</option>
+                        <option value="light">Light</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span>Language</span>
+                    <select id="lang"></select>
+                </label>
+                <div class="actions">
+                    <button type="button" class="btn" id="reset" title="Forget every change you made in this demo">
+                        <span class="ico" data-icon="reset"></span>
+                        Reset demo
+                    </button>
+                    <button type="button" class="btn primary" id="install" title="Copy the install address for Unraid">
+                        <span class="ico" data-icon="copy"></span>
+                        <span id="install-label">Copy install URL</span>
+                    </button>
+                </div>
+            </div>
+            <p class="note" role="note">
+                <span class="ico" data-icon="info"></span>
+                <span>Demo with sample data — nothing is sent anywhere. Below is the real plugin; changes stay in this browser.</span>
+            </p>
+            <p class="note ok" id="copied" role="status" hidden>
+                <span class="ico" data-icon="check"></span>
+                <span>Install address copied. In Unraid open Plugins, Install Plugin, paste it. <a href="../#install">Install guide</a></span>
+            </p>
+        </section>
+        <div class="window">
+            <div class="window-bar" aria-hidden="true">
+                <i></i><i></i><i></i>
+                <span class="address">tower <b>›</b> Settings <b>›</b> UGREEN NAS Control</span>
+            </div>
+            <iframe id="frame" title="UGREEN NAS Control plugin (demo)"></iframe>
+        </div>
+        <script src="outer.js"></script>
+    </body>
+</html>

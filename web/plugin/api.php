@@ -495,6 +495,13 @@ if ($action === 'fan_v2') {
         ], 400);
     }
 
+    if ($changes === [] && $remove === []) {
+        respond([
+            'ok' => false,
+            'error' => 'Nothing to change',
+        ], 400);
+    }
+
     if (!save_settings($changes, $remove, true)) {
         respond([
             'ok' => false,
