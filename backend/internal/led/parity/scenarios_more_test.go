@@ -16,9 +16,13 @@ func more() []scenario {
 	var list []scenario
 
 	for _, p := range []string{"DXP8800 Plus", "DX4600 Pro", "DXP4800 Plus", "DXP2800", "DX4700+", "iDX6011 Pro", "iDX6012B", "UGREEN NAS", "DXP4800 GT", "DXP480T Plus", "DXP6800 Max", "DXP9999 Future"} {
-		list = append(list, scenario{name: "model-" + p, product: p, run: func(r *rig) {
+		s := scenario{name: "model-" + p, product: p, run: func(r *rig) {
 			r.runs("status", "list", "get disk7", "get disk8", "all", "bays")
-		}})
+		}}
+		if p == "iDX6011 Pro" {
+			s.intended = "the Pro lists netdev2, its second LAN LED (register 2, leds-mcu.c:104-108@c75c5ab); the shell has no such LED"
+		}
+		list = append(list, s)
 	}
 
 	list = append(list,

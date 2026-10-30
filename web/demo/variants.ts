@@ -32,7 +32,7 @@ const CS201X_STATUS_ERROR = 'fan control of the DXP2800 GT is off until you conf
 /** What `ugreen-nas-fan cs201x` reads on a DXP2800 GT (UGREEN's CS201x driver; sample numbers). */
 const CS201X_READ = {
     model: 'DXP2800 GT',
-    chip_id: '0x2012',
+    chip_id: '0x2011',
     revision: '0x0103',
     host_ec: 'active',
     base: '0x0a00',

@@ -162,6 +162,9 @@ func New(env Env, chip Chip, run Runner, out, errw io.Writer) *Ctl {
 	}
 	c.bays = bayCount(env.Product)
 	c.leds = []string{"power", "netdev"}
+	if env.Product == "iDX6011 Pro" {
+		c.leds = append(c.leds, "netdev2") // second LAN LED, chip layout idx-pro only
+	}
 	for i := 1; i <= c.bays; i++ {
 		c.leds = append(c.leds, "disk"+strconv.Itoa(i))
 	}

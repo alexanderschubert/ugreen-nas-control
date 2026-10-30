@@ -124,3 +124,19 @@ func TestPowerBootSkipsOtherModels(t *testing.T) {
 		}
 	}
 }
+
+// netdev2 (second LAN LED) exists on exactly the iDX6011 Pro.
+func TestNetdev2OnlyOnIdxPro(t *testing.T) {
+	for product, want := range map[string]bool{"iDX6011 Pro": true, "iDX6011": false, "iDX6012": false, "DXP6800 Pro": false, "DXP2800 GT": false} {
+		r := newRig(t, product)
+		if got := r.c.validLED("netdev2"); got != want {
+			t.Errorf("%s: validLED(netdev2) = %v, want %v", product, got, want)
+		}
+		if got := slices.Contains(r.c.leds, "netdev2"); got != want {
+			t.Errorf("%s: leds %v", product, r.c.leds)
+		}
+		if rc := r.ctl("on", "netdev2"); (rc == 0) != want {
+			t.Errorf("%s: on netdev2 rc %d", product, rc)
+		}
+	}
+}
