@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
 )
@@ -37,6 +38,7 @@ func TestYieldReportsAndAlertsOnce(t *testing.T) {
 			t.Fatalf("state %+v", st)
 		}
 	}
+	notifications.wg.Wait()
 	b, _ := os.ReadFile(log)
 	if n := strings.Count(string(b), "\n"); n != 1 {
 		t.Fatalf("alert sent %d times: %q", n, b)
@@ -63,5 +65,40 @@ func TestConflictListNeverNil(t *testing.T) {
 	t.Cleanup(func() { detectConflicts = old })
 	if l := conflictList(); l == nil || len(l) != 0 {
 		t.Fatalf("got %#v", l)
+	}
+}
+
+// A hung notify script is killed after notifyTimeout and repeats while it runs are dropped, not piled up.
+func TestNotifyBoundedAndNoPileUp(t *testing.T) {
+	dir := t.TempDir()
+	log := filepath.Join(dir, "starts.log")
+	script := filepath.Join(dir, "notify")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\necho start >> "+log+"\nexec /bin/sleep 30\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	oldCmd, oldTimeout := notifyCmd, notifyTimeout
+	notifyCmd, notifyTimeout = script, 300*time.Millisecond
+	t.Cleanup(func() { notifyCmd, notifyTimeout = oldCmd, oldTimeout })
+
+	start := time.Now()
+	for range 20 {
+		notify("fan1") // returns at once, never waits for the script
+	}
+	if d := time.Since(start); d > 200*time.Millisecond {
+		t.Fatalf("notify blocked for %v", d)
+	}
+	notifications.wg.Wait() // returns only because the timeout killed the script
+	if d := time.Since(start); d > 5*time.Second {
+		t.Fatalf("script not stopped: %v", d)
+	}
+	b, _ := os.ReadFile(log)
+	if n := strings.Count(string(b), "\n"); n != 1 {
+		t.Errorf("script started %d times for 20 calls, want 1", n)
+	}
+	notify("fan1") // the slot is free again
+	notifications.wg.Wait()
+	b, _ = os.ReadFile(log)
+	if n := strings.Count(string(b), "\n"); n != 2 {
+		t.Errorf("script started %d times, want 2", n)
 	}
 }
