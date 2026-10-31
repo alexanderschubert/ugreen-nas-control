@@ -12,6 +12,7 @@ import {
     ARM_NOTE,
     CA_LIVE,
     CAPABILITY_LABEL,
+    COMPARE_HEAD,
     EVIDENCE_HELP,
     EVIDENCE_LABEL,
     FORUM,
@@ -30,6 +31,9 @@ import {
     SOURCES,
     STRIP,
     SUBLINE,
+    TECH,
+    TECH_INTRO,
+    TECH_SUMMARY,
     WATCHDOG,
     checkText
 } from './content';
@@ -113,6 +117,13 @@ function trustLine(listed: Model[]): string {
     return `<p class="trust">Free, MIT, open source. Unraid 7.2+.${who ? ` LEDs, fans and case view verified on ${esc(who)}.` : ''}</p>`;
 }
 
+/** The opt-in layer: a collapsed block (native details, keyboard and screen reader ready) with short points and a link to the exact docs. */
+function more(key: keyof typeof TECH, lead: string[] = []): string {
+    const t = TECH[key];
+    const items = [...lead, ...t.items];
+    return `<details class="more"><summary>${TECH_SUMMARY}</summary><ul>${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul><p><a class="textlink" href="${GITHUB}/blob/main/docs/${t.doc}">Read docs/${t.doc}</a></p></details>`;
+}
+
 const SCRIPT = `
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-copy]');
@@ -191,7 +202,7 @@ ${social}${ld}
 <a class="skip" href="#main">Skip to content</a>
 <header class="top">${PREVIEW ? streamBar() : ''}<div class="bar">
   <a class="brand" href="${o.rel}"><img src="${o.rel}icon.svg" alt="" width="28" height="28"><span>UGREEN NAS Control</span>${PREVIEW ? `<b class="stream-badge">${esc(STREAM_LABEL)}</b>` : ''}</a>
-  <nav class="menu" aria-label="Sections"><a href="${o.rel}#case">Case</a><a href="${o.rel}#fans">Fans</a><a href="${o.rel}#leds">LEDs</a><a href="${o.rel}#dashboard">Dashboard</a><a href="${o.rel}#models">Models</a></nav>
+  <nav class="menu" aria-label="Sections"><a href="${o.rel}#case">Case</a><a href="${o.rel}#fans">Fans</a><a href="${o.rel}#leds">LEDs</a><a href="${o.rel}#dashboard">Dashboard</a><a href="${o.rel}#compare">Compare</a><a href="${o.rel}#models">Models</a></nav>
   ${o.picker ?? ''}<a class="btn mini-btn" href="${o.rel}#install">Install</a>
   <a class="iconbtn" href="${GITHUB}" aria-label="Source on GitHub">${icon('github')}</a>
   <button class="iconbtn" id="theme" type="button" aria-label="Switch between light and dark theme"><span class="dark-only">${icon('sun')}</span><span class="light-only">${icon('moon')}</span></button>
@@ -232,20 +243,6 @@ function cell(c: Check | undefined, name: string, tipExtra = ''): string {
     return `<td class="st-${c.status}" data-label="${esc(name)}" title="${esc(tip)}">${statusIcon(c.status)}<span class="what">${body}</span></td>`;
 }
 
-const ORDER = ['verified', 'community', 'partial', 'expected'] as const;
-
-/** Evidence of one feature across the models, counted from the registry: "Verified on DXP6800 Pro, DXP4800 GT". */
-function evidence(entries: { model: string; check: Check }[]): string {
-    const by = new Map<Evidence, string[]>();
-    for (const e of entries) by.set(e.check.status, [...(by.get(e.check.status) ?? []), e.model]);
-    const lines = ORDER.filter(k => by.has(k)).map(k => {
-        const names = by.get(k) ?? [];
-        const who = names.length <= 3 ? names.join(', ') : `${names.length} models`;
-        return `<li class="st-${k}">${statusIcon(k)}<span><b>${EVIDENCE_LABEL[k]}</b> on ${esc(who)}</span></li>`;
-    });
-    return `<ul class="ev">${lines.join('')}</ul>`;
-}
-
 /** One status line per model for a capability, shown for the picked model only. */
 const capTags = (listed: Model[], cap: Capability, dated = true) =>
     listed
@@ -278,6 +275,7 @@ interface Section {
     flip?: boolean;
     island: Parameters<typeof island>[0];
     cap?: Capability;
+    tech: keyof typeof TECH;
 }
 
 function feature(sec: Section, listed: Model[]): string {
@@ -289,6 +287,7 @@ function feature(sec: Section, listed: Model[]): string {
     <p class="sub">${sec.sub}</p>
     <p>${sec.body}</p>
     ${sec.cap ? capLine(listed, sec.cap) : ''}${sec.extra ?? ''}
+    ${more(sec.tech)}
     <p class="acts"><a class="textlink" data-demo-link data-page="${sec.cta.page === 'dashboard' ? '' : sec.cta.page}" data-view="${sec.cta.page === 'dashboard' ? 'dashboard' : ''}" href="${`./demo/?model=${m.id}${view}`}">${sec.cta.label}</a></p>
   </div>
   ${island({ ...sec.island, id: `${sec.id}-live`, defaultModel: m, rel: './', tags: sec.cap ? capTags(listed, sec.cap, false) : '' }, listed)}
@@ -301,8 +300,9 @@ function caseText(listed: Model[]): string {
     return `<section class="band casetext" id="case" aria-labelledby="case-h">
   <h2 id="case-h">See inside your box.</h2>
   <p class="sub">UGREEN built the case. We built the dashboard for it.</p>
-  <p>Every bay shows drive temperature and LED colour. The rear shows ports and LAN link speed. On the DXP6800 Pro and DXP4800 GT you see inside too: M.2, system, PCIe. Other models get front and rear.</p>
+  <p>Every bay shows drive temperature and LED colour. The rear shows ports and LAN link speed. On the DXP6800 Pro and DXP4800 GT you see inside too.</p>
   ${capLine(listed, 'case')}
+  ${more('case')}
   <p class="acts"><a class="textlink" data-demo-link data-page="case" data-view="" href="./demo/?model=${m.id}&page=case">Open the case view in the demo</a></p>
 </section>`;
 }
@@ -319,9 +319,8 @@ function watchdog(listed: Model[]): string {
     <span class="wdt-ico" aria-hidden="true">${icon('shield', 28)}</span>
     <h2 id="watchdog-h">${esc(WATCHDOG.title)}</h2>
     <p class="sub">${esc(WATCHDOG.sub)}</p>
-    <p>${esc(WATCHDOG.body)}</p>
-    <p class="lim">${esc(WATCHDOG.other)}</p>
     <p class="evline"><b>Listed in the matrix: ${esc(who)}.</b> <a href="#models">See the matrix</a></p>
+    <details class="more"><summary>${TECH_SUMMARY}</summary><ul>${WATCHDOG.tech.map(t => `<li>${esc(t)}</li>`).join('')}</ul><p><a class="textlink" href="${GITHUB}/blob/main/docs/watchdog.md">Read docs/watchdog.md</a></p></details>
     <p class="acts"><a class="textlink" data-demo-link data-page="overview" data-view="" href="./demo/?model=${gt.id}&page=overview">See the Watchdog card in the demo</a></p>
   </div>
   <ol class="wdt-steps" aria-label="How the watchdog works">
@@ -330,37 +329,29 @@ function watchdog(listed: Model[]): string {
 </section>`;
 }
 
-/** Where the hardware facts come from; links to the file-by-file list in docs/third-party.md. */
-function extras(): string {
-    return `<section class="band casetext" id="extras" aria-labelledby="extras-h">
-  <h2 id="extras-h">${esc(EXTRAS.title)}</h2>
-  <p class="sub">${esc(EXTRAS.sub)}</p>
-  <ul class="src-points">${EXTRAS.points.map(([h, t]) => `<li><b>${esc(h)}.</b> ${esc(t)}</li>`).join('')}</ul>
-</section>`;
-}
-
-function sources(): string {
-    return `<section class="band casetext" id="sources" aria-labelledby="sources-h">
-  <h2 id="sources-h">${esc(SOURCES.title)}</h2>
-  <p class="sub">${esc(SOURCES.sub)}</p>
-  <ul class="src-points">${SOURCES.points.map(([h, t]) => `<li><b>${esc(h)}.</b> ${esc(t)}</li>`).join('')}</ul>
-  <p class="acts"><a class="textlink" href="${GITHUB}/blob/main/docs/third-party.md#ugreen-open-source-drivers">${esc(SOURCES.link)}</a></p>
+/** The techie end of the page: the smaller controls and where the hardware facts come from (docs/third-party.md has them file by file). */
+function techies(): string {
+    return `<section class="band casetext" id="techies" aria-labelledby="techies-h">
+  <h2 id="techies-h">${esc(TECH_INTRO.title)}</h2>
+  <p class="sub">${esc(TECH_INTRO.sub)}</p>
+  <details class="more big" id="extras"><summary>${esc(EXTRAS.title)}</summary><p>${esc(EXTRAS.sub)}</p><ul class="src-points">${EXTRAS.points.map(([h, t]) => `<li><b>${esc(h)}.</b> ${esc(t)}</li>`).join('')}</ul></details>
+  <details class="more big" id="sources"><summary>${esc(SOURCES.title)}</summary><p>${esc(SOURCES.sub)}</p><ul class="src-points">${SOURCES.points.map(([h, t]) => `<li><b>${esc(h)}.</b> ${esc(t)}</li>`).join('')}</ul>
+  <p><a class="textlink" href="${GITHUB}/blob/main/docs/third-party.md#ugreen-open-source-drivers">${esc(SOURCES.link)}</a></p></details>
   <p class="credits"><b>Credits.</b> ${SOURCES.credits.map(([n, u, t]) => `<a href="${u}">${esc(n)}</a>, ${esc(t)}`).join('; ')}.</p>
   <p class="foot-note">${esc(SOURCES.note)}</p>
 </section>`;
 }
 
-function sections(listed: Model[]): string {
-    const dog = listed.filter(m => m.fan?.watchdog);
+function sections(listed: Model[]): Record<'fans' | 'history' | 'leds' | 'dashboard', string> {
     const NUM = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'];
     const probe = listed.filter(m => m.fan?.kind === 'probe').length;
     const secs: Section[] = [
         {
             id: 'fans',
-            title: 'Fan curves you read in rpm.',
+            title: 'Fan curves. Measured, not guessed.',
             sub: 'Quiet, Standard, Performance, Full speed or your own curve.',
-            body: `One click measures real rpm at every speed. Too hot? Every fan goes to 100 percent. Plugin stops? BIOS values take over. ${NUM[probe] ?? probe} more models get a probe wizard that maps their fan chips. Bring yours.`,
-            extra: `<p class="mini-h">Watchdog</p><p class="lim">If the watchdog is running, the plugin keeps it fed. It never arms it.</p>${evidence(dog.map(m => ({ model: m.name, check: m.fan?.watchdog as Check })))}`,
+            body: `One click measures real rpm at fixed speeds. Too hot? Every fan goes to 100 percent. Plugin stops? BIOS values take over. ${NUM[probe] ?? probe} more models get a probe wizard that maps their fan chips. Bring yours.`,
+            tech: 'fans',
             cta: { label: 'Try the fan curves', page: 'fans' },
             cap: 'fans',
             flip: true,
@@ -378,10 +369,31 @@ function sections(listed: Model[]): string {
             }
         },
         {
+            id: 'history',
+            title: 'See why every fan did what it did.',
+            sub: 'The last hour or the last 24 hours, per fan.',
+            body: 'Speed, rpm and temperature per fan, with a coloured lane for the input that drove the speed. Quiet hours, mover and parity boosts and emergencies are marked.',
+            tech: 'history',
+            cta: { label: 'Open the fan history', page: 'history' },
+            cap: 'fans',
+            island: {
+                id: '',
+                file: 'app',
+                page: 'history',
+                label: 'Fan history',
+                missing: m => m.fan === null,
+                clip: 720,
+                clipPhone: 640,
+                defaultModel: listed[0] as Model,
+                rel: './'
+            }
+        },
+        {
             id: 'leds',
             title: 'LEDs that say something.',
             sub: 'Off until you switch them on.',
-            body: 'Colour, effect, brightness, per LED. Bay LEDs show activity, errors and SMART warnings. The network LED shows link speed. Night mode dims the lot. Coming from UGREEN LED Control? One click imports your settings.',
+            body: 'Colour, effect and brightness, per LED. Bays show activity and errors, the network LED shows link speed.',
+            tech: 'leds',
             cta: { label: 'Open the LED page', page: 'leds' },
             cap: 'leds',
             island: {
@@ -399,8 +411,9 @@ function sections(listed: Model[]): string {
         {
             id: 'dashboard',
             title: 'Where you already look.',
-            sub: 'The Unraid dashboard, and your broker.',
-            body: 'A tile with fans, temperatures, SSDs and live LEDs. A Sensors page for CPU, board, iGPU, NVMe and disks; sleeping disks stay asleep. Optional MQTT feeds displays and Home Assistant. Off until you set a broker.',
+            sub: 'The Unraid dashboard, and Home Assistant.',
+            body: 'A tile with fans, temperatures, SSDs and live LEDs. A Sensors page for CPU, board, iGPU, NVMe and disks.',
+            tech: 'dashboard',
             cta: { label: 'See the dashboard tile', page: 'dashboard' },
             cap: 'sensors',
             flip: true,
@@ -416,7 +429,8 @@ function sections(listed: Model[]): string {
             }
         }
     ];
-    return secs.map(x => feature(x, listed)).join('\n');
+    const [fans, history, leds, dashboard] = secs.map(x => feature(x, listed)) as [string, string, string, string];
+    return { fans, history, leds, dashboard };
 }
 
 /** Rows with a source in docs/competition.md (compared 2026-10-29 from the projects' public READMEs). */
@@ -426,11 +440,17 @@ const COMPARE: [string, string, string][] = [
         'Yes (verified on DXP6800 Pro, DXP4800 GT)',
         'No for FanCtrl Plus 2, Dynamix Auto Fan and the UGREEN fan driver (it87). Yes for the iDX6011 plugin'
     ],
+    ['Case view drawn per model', 'Yes', 'No in FanCtrl Plus 2, Dynamix Auto Fan and the UGREEN fan driver. Yes in the iDX6011 plugin'],
+    ['Languages', '7', 'None of the others documents translations'],
     ['LEDs without a kernel module built per Unraid release', 'Yes', 'No for the ich777 LED driver and the single-model LED projects'],
     ['Multi-point fan curves', 'Yes', 'No in FanCtrl Plus 2 and Dynamix Auto Fan; partial in two others'],
     ['Fan calibration (rpm per duty)', 'Yes', 'No'],
     ['Fan inputs: GPU, HBA, NIC, custom script', 'Yes', 'Same in FanCtrl Plus 2; no in the others'],
-    ['Fan speed history graph', 'No', 'Ahead: FanCtrl Plus 2'],
+    [
+        'Fan speed history graph',
+        'Yes, with the input that drove each speed',
+        'Yes in FanCtrl Plus 2 (on par). Partial in the iDX6011 plugin, no in the other fan tools'
+    ],
     ['Touch LCD (iDX6011 Pro)', 'No (declined)', 'Ahead: iDX6011 plugin']
 ];
 
@@ -438,14 +458,15 @@ function comparison(): string {
     const rows = COMPARE.map(
         ([f, a, b]) => `<tr><th scope="row">${f}</th><td class="plug" data-label="This plugin">${a}</td><td data-label="Other tools">${b}</td></tr>`
     ).join('');
-    return `<div class="compare-block" id="compare">
-  <h3 id="cmp">Next to the other tools.</h3>
-  <p class="intro">Only facts you can check. The last three rows are where others are ahead.</p>
+    return `<section class="band" id="compare" aria-labelledby="cmp">
+  <h2 id="cmp">${esc(COMPARE_HEAD.title)}</h2>
+  <p class="sub">${esc(COMPARE_HEAD.sub)}</p>
+  <p class="intro">Only facts you can check. Rows marked Ahead are where another tool leads.</p>
   <table class="compare"><caption class="sr">This plugin next to other fan and LED tools</caption>
   <thead><tr><th scope="col">What</th><th scope="col">This plugin</th><th scope="col">Other tools</th></tr></thead>
   <tbody>${rows}</tbody></table>
-  <p class="foot-note">Compared 2026-10-29 from public READMEs: <a href="https://github.com/andrebrait/fanctrlplus">FanCtrl Plus 2</a>, <a href="https://github.com/bergware/dynamix">Dynamix Auto Fan</a>, <a href="https://github.com/IT-Kuny/UGREEN-DXP-FAN-NAS-Driver">UGREEN-DXP-FAN-NAS-Driver</a>, <a href="https://github.com/ich777/unraid-it87-driver">ich777 it87</a> and <a href="https://github.com/ich777/unraid-ugreenleds-driver">ugreenleds</a> drivers, <a href="https://github.com/EllipticSet/UGREEN-DXP4800Pro-LEDs">EllipticSet</a> and <a href="https://github.com/flybrys/UGREEN-DXP4800GT-LED-Driver">flybrys</a> LED drivers, the iDX6011 plugin by <a href="https://github.com/noodlemctwoodle/unraid-ugreen-idx6011-pro">noodlemctwoodle</a>. Sources: <a href="${GITHUB}/blob/main/docs/competition.md">competition.md</a>. Two programs writing the same fan or LED chip give no stable result: the plugin checks for them and stops writing fan registers while a rival runs. It never edits or removes the other tool.</p>
-</div>`;
+  <details class="more"><summary>Sources and method</summary><p class="foot-note">Compared 2026-10-29 from public READMEs: <a href="https://github.com/andrebrait/fanctrlplus">FanCtrl Plus 2</a>, <a href="https://github.com/bergware/dynamix">Dynamix Auto Fan</a>, <a href="https://github.com/IT-Kuny/UGREEN-DXP-FAN-NAS-Driver">UGREEN-DXP-FAN-NAS-Driver</a>, <a href="https://github.com/ich777/unraid-it87-driver">ich777 it87</a> and <a href="https://github.com/ich777/unraid-ugreenleds-driver">ugreenleds</a> drivers, <a href="https://github.com/EllipticSet/UGREEN-DXP4800Pro-LEDs">EllipticSet</a> and <a href="https://github.com/flybrys/UGREEN-DXP4800GT-LED-Driver">flybrys</a> LED drivers, the iDX6011 plugin by <a href="https://github.com/noodlemctwoodle/unraid-ugreen-idx6011-pro">noodlemctwoodle</a>. Sources: <a href="${GITHUB}/blob/main/docs/competition.md">competition.md</a>. Two programs writing the same fan or LED chip give no stable result: the plugin checks for them and stops writing fan registers while a rival runs. It never edits or removes the other tool.</p></details>
+</section>`;
 }
 
 function support(models: Model[], rel: string): string {
@@ -475,7 +496,8 @@ function support(models: Model[], rel: string): string {
   <p class="count">${counts}.</p>
   <p class="acts"><a class="btn" href="${GITHUB}/issues/new?template=model-report.yml">${icon('check', 16)}Report your model</a></p>
   <ul class="legend">${legend}</ul>
-  <div class="matrix"><table><thead><tr><th scope="col">Model</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  <div class="matrix"><table><thead><tr><th scope="col">Model</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>
+</section>`;
 }
 
 function install(m: Model): string {
@@ -498,6 +520,7 @@ function install(m: Model): string {
 function landing(listed: Model[]): string {
     const rel = './';
     const def = listed.find(m => m.id === DEFAULT_MODEL) as Model;
+    const secs = sections(listed);
     const body = `
 <section class="hero" id="top">
   <h1>${HEADLINE.split(/(?<=\.) /)
@@ -531,15 +554,16 @@ function landing(listed: Model[]): string {
 <section class="band strip" aria-label="What the plugin does">
   <ul>${STRIP.map(([h, t]) => `<li><b>${esc(h)}</b><span>${esc(t)}</span></li>`).join('')}</ul>
 </section>
+${secs.fans}
+${secs.history}
 ${watchdog(listed)}
-${extras()}
-${sources()}
 ${caseText(listed)}
-${sections(listed)}
-${support(listed, rel)}
+${secs.leds}
+${secs.dashboard}
 ${comparison()}
-</section>
-${install(def)}`;
+${support(listed, rel)}
+${install(def)}
+${techies()}`;
     return layout({
         title: 'UGREEN NAS Control: Unraid plugin for UGREEN NAS, with the real UI live in your browser',
         desc: META_DESC,

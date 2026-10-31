@@ -22,24 +22,85 @@ export const KEYWORDS =
     'UGREEN NAS, Unraid plugin, DXP6800 Pro, DXP4800, DXP8800, DXP2800 GT, iDX6011, fan control, LED control, watchdog, case view, Community Applications';
 export const HEADLINE = 'The Unraid control plugin for UGREEN NAS. Fans, LEDs, watchdog.';
 export const SUBLINE =
-    'Hardware facts come from the driver sources UGREEN publishes. Fan curves, LEDs, the watchdog, power on after AC loss and a live case view; models without confirmed wiring get a probe first. The box below is the real plugin: click it.';
+    'Your UGREEN is not a generic box. Quiet fans with a safe fallback, the hardware watchdog kept fed so a frozen box reboots itself, LEDs that say something, a live case view of every bay. One plugin, no kernel module. The box below is the real plugin: click it.';
 /** Headline of the social preview image: one short sentence per line, the card has room for 21 characters at three lines. */
 export const SOCIAL_HEAD = 'Unraid plugin. For UGREEN NAS. Fans, LEDs, watchdog.';
 /** Under the headline of the social preview image. */
 export const SOCIAL_SUB = "No kernel module. Built on UGREEN's published driver sources.";
 
-/** Strip under the hero: three short facts. */
+/** Strip under the hero, the management overview: four reasons, one line each. */
 export const STRIP = [
-    ['Fans. LEDs. Watchdog.', 'One plugin, one settings page.'],
-    ["From UGREEN's own sources.", 'Register facts read from the drivers UGREEN publishes.'],
-    ['No kernel module.', 'No rebuild after Unraid updates.']
+    ['Quiet fans that fail safe.', 'Multi-point curves. Too hot: every fan to 100 percent. Plugin stops: BIOS values return.'],
+    ['A frozen box reboots itself.', 'Keep the BIOS watchdog on. The plugin feeds it (supported models).'],
+    ['No kernel module.', 'Nothing to rebuild after an Unraid update.'],
+    ['See your box.', 'Case view, bay LEDs and a dashboard tile, drawn for your model.']
 ] as const;
+
+/** The opt-in layer: each feature section ends in a collapsed "techie" block. Exact detail stays in docs/. */
+export const TECH_SUMMARY = 'Techie details';
+export const TECH_INTRO = {
+    title: 'Want the detail?',
+    sub: 'Every feature above opens up for techies. Below: the smaller controls and where the hardware facts come from.'
+} as const;
+export const TECH = {
+    fans: {
+        items: [
+            'Inputs per fan: CPU, hottest disk or disk average, NVMe, GPU, HBA, NIC, your own script, or the hottest of several. Sleeping disks stay asleep.',
+            'Per fan: deadband, kick-start, minimum speed, ramps, quiet hours, a floor or boost during the mover or a parity check.',
+            'A hot CPU or disk, or a CPU temperature it cannot read, sends every fan to 100 percent, never capped or scheduled. A stopped fan raises a notification. BIOS values are written back when the plugin stops.',
+            'Take over your FanCtrl Plus 2 settings: import them, with a preview, or export your own.',
+            'Unknown fan wiring (DXP2800, DXP4800, DXP4800 Plus and Pro, DXP8800 Plus): a probe of about a minute finds the fans; control stays off until you confirm.'
+        ],
+        doc: 'fan.md'
+    },
+    history: {
+        items: [
+            'One hour in 10 second steps, 24 hours in 60 second averages. Per fan: speed, rpm, the temperature of its input; CPU and hottest drive for reference.',
+            "Kept in the daemon's RAM (about 100 KB). Nothing is written to the flash drive; a restart starts it empty."
+        ],
+        doc: 'fan.md'
+    },
+    case: {
+        items: [
+            'Inside view (M.2, system, PCIe) on the DXP6800 Pro and DXP4800 GT (verified), and drawn for the DXP6800 and Plus (expected); front and rear on the other models that have a case view.',
+            "The demo above is the plugin's own interface on sample data, not a mockup."
+        ],
+        doc: 'hardware.md'
+    },
+    leds: {
+        items: [
+            'Per bay: disk activity, errors, SMART warnings, standby and parity states. The network LED follows link speed, traffic or gateway. Identify a bay from the page.',
+            'Night mode dims every LED. Settings from UGREEN LED Control import in one click.',
+            'No kernel module: the ich777 LED driver and the single-model LED projects need one built per Unraid release.',
+            'Off until you switch them on. If a rival LED tool owns the same chip, the plugin steps aside and says so.'
+        ],
+        doc: 'led.md'
+    },
+    dashboard: {
+        items: [
+            'Sensors for CPU, board, iGPU, NVMe and disks, each marked with the fan it steers.',
+            'An optional MQTT publisher feeds displays and Home Assistant. Read only, off until you set a broker in fan.cfg.',
+            'The interface comes in 7 languages.'
+        ],
+        doc: 'mqtt.md'
+    }
+} as const;
+
+/** Verdict above the comparison table. Each clause maps to a row of docs/competition.md. */
+export const COMPARE_HEAD = {
+    title: 'Others fit any box. This one fits yours.',
+    sub: "FanCtrl Plus 2 and Dynamix Auto Fan drive any generic fan; neither knows UGREEN's fan chips. This plugin does, adds multi-point curves, rpm calibration, LEDs and a case view for your model, and needs no kernel driver."
+} as const;
 
 /** Watchdog band. Scoped to what UGREEN's source and this repo show: pet-only, never arm. */
 export const WATCHDOG = {
-    title: 'Pets the hardware watchdog. Never arms it.',
-    sub: "If the watchdog is running, the plugin feeds it. On the DXP4800 GT and iDX6011 Pro that is the embedded controller, through the registers UGREEN's own driver uses. On the IT8613E models it feeds only a timer it has seen count down. If the system freezes, the feed stops and the hardware resets the box.",
-    body: "UGREEN's driver arms the watchdog only when something opens /dev/watchdog. The plugin never does: it feeds a timer that is already running. When it stops, it clears a timer only if it fed it, so stopping or uninstalling never triggers a reset. Whether your BIOS arms it is not known; the card shows what the controller reports. That a feed alone reloads the counter is not yet confirmed on hardware; the card says so if a feed did not take.",
+    title: 'Keep the watchdog on. A frozen box reboots itself.',
+    sub: 'If the BIOS watchdog is on, the plugin feeds it while the system is alive. If the system freezes, the feed stops and the hardware resets the box. DXP4800 GT, iDX6011 Pro, DXP2800, DXP4800, DXP4800 Plus and Pro, DXP6800 Pro, DXP8800 Plus.',
+    tech: [
+        'The plugin never arms it. It feeds a timer that is already running, and stopping or uninstalling never triggers a reset.',
+        'Feeds: DXP4800 GT and iDX6011 Pro (embedded controller) and the IT8613E models, where it writes only after seeing the timer count down. No feed on the DXP2800 GT, the plain iDX6011 and iDX6012.',
+        'That a feed reloads the counter is not yet confirmed on hardware; the card says so if a feed did not take.'
+    ],
     steps: [
         ['shield', 'Something arms it', "UGREEN's driver, another tool or the firmware. The plugin only reads whether it is on."],
         [
@@ -48,28 +109,17 @@ export const WATCHDOG = {
             'A small service rewrites the timeout on a steady beat while the system is alive. On the IT8613E it waits until the timer was seen counting down.'
         ],
         ['reset', 'A frozen box reboots itself', 'The beat stops, the timer runs out, the hardware resets the box.']
-    ],
-    other: "IT8613E models (DXP2800, DXP4800, DXP4800 Plus and Pro, DXP6800 Pro, DXP8800 Plus): the plugin writes only after two reads show the timer counting, and it does nothing while the kernel's it87_wdt module is loaded. No feed on the DXP2800 GT, the plain iDX6011 and iDX6012 (read only), or any other model. UGREEN's DXP2800 GT driver switches off a watchdog that is already running when it loads, so firmware can leave one on."
+    ]
 } as const;
 
 /** Band that says where the hardware facts come from and what is and is not confirmed. */
 export const SOURCES = {
     title: "Built on UGREEN's published driver sources.",
-    sub: 'UGREEN publishes its GPL kernel drivers (github.com/ugreen-opensource, kernel-6.12, drivers/ugreen). The plugin takes chip IDs, register addresses and frame formats from them and cites file and line. No UGREEN code is copied; the plugin is MIT. Nobody has checked that the published sources match the modules inside UGOS, so this page says "from the published sources" and nothing more.',
+    sub: 'UGREEN publishes its GPL kernel drivers. The plugin takes chip IDs, register addresses and frame formats from them and cites file and line. No UGREEN code is copied; the plugin is MIT. Nobody has checked that the published sources match the firmware UGREEN ships. Not endorsed or certified by UGREEN.',
     points: [
-        [
-            'Fans',
-            "DXP4800 GT and iDX6011 Pro use the registers in UGREEN's IT5571 drivers. The fan probes for the DXP2800, DXP4800 and DXP8800 Plus check their result against the wiring in UGREEN's IT8613E driver. The plain iDX6011 and iDX6012 get readings only."
-        ],
-        [
-            'DXP2800 GT',
-            "Fan control for its Chipsea CS201x chip follows UGREEN's driver and stays off until you run a one-minute probe and confirm. The LEDs go through the chip's ARGB block and are opt-in. Vendor-sourced, not yet confirmed on hardware."
-        ],
-        [
-            'LEDs',
-            "The LED protocol comes from miskcoo's ugreen_leds_controller and matches UGREEN's published LED driver. DXP2800 boards whose LED controller does not answer the usual frame (V1.2) fall back to the frame UGREEN's driver uses; not confirmed on such a board. Which models are confirmed on hardware is in the matrix below."
-        ],
-        ['Not claimed', 'This is not endorsed or certified by UGREEN. The register facts are read from published sources; hardware status stays in the matrix.']
+        ['Fans', "Registers from UGREEN's IT5571 and IT8613E drivers. Hardware status stays in the matrix."],
+        ['DXP2800 GT', 'Fan control stays off until you run a one-minute probe and confirm. Vendor-sourced, not yet confirmed on hardware.'],
+        ['LEDs', "Protocol from miskcoo's ugreen_leds_controller, which matches UGREEN's LED driver."]
     ],
     credits: [
         ['miskcoo', 'https://github.com/miskcoo/ugreen_leds_controller', 'the LED protocol and bay mapping'],
@@ -87,24 +137,15 @@ export const SOURCES = {
 /** Band for the smaller controls: front panel, power after AC loss, new models, rival detection. Each line carries its evidence. */
 export const EXTRAS = {
     title: 'Front panel, power and new models.',
-    sub: "Smaller controls, each described in UGREEN's driver sources. None is confirmed on hardware yet; the page says so on every line.",
+    sub: "Smaller controls from UGREEN's driver sources. None is confirmed on hardware yet.",
     points: [
-        [
-            'Front-panel buttons',
-            'Read only. Shows whether power and reset are held and times a press. A press triggers nothing. Not yet confirmed on hardware.'
-        ],
-        ['Beeper test', 'Sounds the beeper for a set time on models where UGREEN names a beeper path, and refuses on the rest. Not yet confirmed on hardware.'],
-        [
-            'Power on after AC loss',
-            'An explicit setting: on, stay off, or last state where the board has it. Written only when you choose, never by the fan service. The DXP4800 GT cannot be read back. The plain iDX6011 and iDX6012 are read only. Not yet confirmed on hardware.'
-        ],
-        [
-            'New models',
-            "DXP6800 and Plus, DXP6800S, DXP8800 and Pro, DXP2800S and DH2600, from UGREEN's product list. Expected to work; nobody has run them. The DH2600 gets sensors only."
-        ],
+        ['Front-panel buttons', 'Read only. Shows power and reset presses and triggers nothing.'],
+        ['Beeper test', 'Sounds the beeper where UGREEN names a beeper path.'],
+        ['Power on after AC loss', 'On, stay off or last state. Written only when you choose.'],
+        ['New models', 'DXP6800 and Plus, DXP6800S, DXP8800 and Pro, DXP2800S. Expected to work; nobody has run them.'],
         [
             'Rival tools',
-            "Detects FanCtrl Plus, Dynamix Auto Fan, it87 and LED plugins, and UGREEN's own kernel modules. While one drives the same chip, the plugin only reads. It never removes the other tool."
+            'FanCtrl Plus, Dynamix Auto Fan, it87 and LED plugins and UGREEN kernel modules are detected. The plugin steps aside and never removes them.'
         ]
     ]
 } as const;

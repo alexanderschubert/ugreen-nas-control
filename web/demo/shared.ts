@@ -15,6 +15,7 @@ export const PAGES: Record<string, string> = {
     sensors: 'sensors',
     fans: 'curves',
     safety: 'safety',
+    history: 'history',
     leds: 'led:overview',
     drives: 'led:drives',
     night: 'led:schedules',
@@ -25,7 +26,7 @@ export const PAGES: Record<string, string> = {
 export const pageOfNav = (nav: string): string => Object.entries(PAGES).find(([, v]) => v === nav)?.[0] ?? 'overview';
 
 export function pageAvailable(model: Model, page: string): boolean {
-    if (page === 'fans' || page === 'safety') return model.fan !== null;
+    if (page === 'fans' || page === 'safety' || page === 'history') return model.fan !== null;
     if (page === 'case') return model.caseView !== 'none';
     if (['leds', 'drives', 'night', 'alerts'].includes(page)) return model.led !== 'none';
     return page in PAGES;
