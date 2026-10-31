@@ -260,9 +260,12 @@ func TestHistorySocketSurvivesPanic(t *testing.T) {
 			t.Fatalf("query: %v", err)
 		}
 	}
-	mu.Lock()
-	defer mu.Unlock()
-	if logged != 3 {
-		t.Errorf("panics logged %d, want 3 (accept loop must keep running)", logged)
+	// the client returns before the server side has recovered and logged: wait for it
+	count := func() int { mu.Lock(); defer mu.Unlock(); return logged }
+	for deadline := time.Now().Add(5 * time.Second); count() < 3 && time.Now().Before(deadline); {
+		time.Sleep(2 * time.Millisecond)
+	}
+	if n := count(); n != 3 {
+		t.Errorf("panics logged %d, want 3 (accept loop must keep running)", n)
 	}
 }
