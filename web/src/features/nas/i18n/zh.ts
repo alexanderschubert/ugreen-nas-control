@@ -196,8 +196,8 @@ export const zh: Record<Key, string> = {
     'leds.imported': '设置已导入',
     'case.unknown': '{model} 暂无机箱视图：目前支持 DXP6800 Pro、DXP4800 GT、DXP4800 / Plus / Pro、DXP8800 Plus、DXP2800 以及 iDX6011 / Pro。',
     'leds.limited':
-        '{model} 支持 LED 控制、系统信息和温度。风扇控制仅适用于 DXP6800 Pro 和 DXP4800 GT；机箱视图另外支持 DXP4800 / Plus / Pro、DXP8800 Plus、DXP2800 以及 iDX6011 / Pro。',
-    'leds.limited_fans': '{model} 支持 LED 控制、系统信息、温度和机箱视图。风扇控制仅适用于 DXP6800 Pro 和 DXP4800 GT。',
+        '{model} 支持 LED 控制、系统信息和温度。风扇控制仅适用于型号列表中的机型（固定接线，或经检测或确认后）；机箱视图另外支持 DXP4800 / Plus / Pro、DXP8800 Plus、DXP2800 以及 iDX6011 / Pro。',
+    'leds.limited_fans': '{model} 支持 LED 控制、系统信息、温度和机箱视图。风扇控制仅适用于型号列表中的机型（固定接线，或经检测或确认后）。',
     'leds.untested':
         '{model} 的 LED 控制尚未测试：所有 UGREEN 型号的控制器相同，但此型号的盘位顺序和 LED 编号是推测的，或来自其他插件的反馈。请用“识别”确认亮起的是正确的 LED，如有问题请提交 issue。',
     'leds.warn_standalone':
@@ -278,7 +278,7 @@ export const zh: Record<Key, string> = {
     'fanctl.switch': '启用此插件的风扇控制',
     'fanctl.on': '已开启。风扇按所选模式运行。',
     'fanctl.off': '已关闭。此插件不会操作风扇芯片，风扇按 BIOS 设定运行。',
-    'fanctl.unsupported': '此型号没有风扇控制（仅 DXP6800 Pro 和 DXP4800 GT 支持）。插件不会操作风扇芯片，风扇按 BIOS 设定运行，因此无需开关。',
+    'fanctl.unsupported': '此型号没有风扇控制（需要固定接线，或经检测或确认，见型号列表）。插件不会操作风扇芯片，风扇按 BIOS 设定运行，因此无需开关。',
     'fanctl.hint': '当其他插件或脚本在控制风扇时，请将其关闭。此插件将不再操作风扇芯片，风扇会恢复为 BIOS 的值。',
     'fanctl.off_note': '风扇控制已关闭。请在“设置”中开启。',
     'safety.ignore_title': '忽略硬盘',
@@ -288,7 +288,7 @@ export const zh: Record<Key, string> = {
 
     'about.how': '工作原理',
     'about.how_text':
-        '通过 I/O 端口直接与风扇控制器通信（DXP6800 Pro 上为 ITE IT8613E，DXP4800 GT 上为嵌入式控制器 IT5571），并通过 I²C 与 LED 控制器通信，无需内核模块。停止或卸载后，风扇会恢复为 BIOS 的值。',
+        '通过 I/O 端口直接与风扇控制器通信（多数 DXP 型号为 ITE IT8613E，DXP4800 GT 和 iDX6011 Pro 为嵌入式控制器 IT5571），并通过 I²C 与 LED 控制器通信，无需内核模块。停止或卸载后，风扇会恢复为 BIOS 的值。',
     'models.series': '{s} 系列',
     'models.confirm_title': '确认我的设备',
     'models.confirm_intro': '试用过插件了吗？勾选对你有效的功能，并作为 GitHub issue 提交：这样我们才能了解你的型号上哪些功能可用。',

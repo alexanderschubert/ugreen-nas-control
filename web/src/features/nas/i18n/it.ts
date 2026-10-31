@@ -201,9 +201,9 @@ export const it: Record<Key, string> = {
     'case.unknown':
         'Per il {model} non esiste ancora una vista del case: esiste per DXP6800 Pro, DXP4800 GT, DXP4800 / Plus / Pro, DXP8800 Plus, DXP2800 e iDX6011 / Pro.',
     'leds.limited':
-        'Per il {model} ci sono il controllo dei LED, le info di sistema e le temperature. Il controllo delle ventole esiste solo per DXP6800 Pro e DXP4800 GT, la vista del case anche per DXP4800 / Plus / Pro, DXP8800 Plus, DXP2800 e iDX6011 / Pro.',
+        'Per il {model} ci sono il controllo dei LED, le info di sistema e le temperature. Il controllo delle ventole esiste solo per i modelli dell’elenco dei modelli (cablaggio fisso, oppure dopo un test o una conferma), la vista del case anche per DXP4800 / Plus / Pro, DXP8800 Plus, DXP2800 e iDX6011 / Pro.',
     'leds.limited_fans':
-        'Per il {model} ci sono il controllo dei LED, le info di sistema, le temperature e la vista del case. Il controllo delle ventole esiste solo per DXP6800 Pro e DXP4800 GT.',
+        'Per il {model} ci sono il controllo dei LED, le info di sistema, le temperature e la vista del case. Il controllo delle ventole esiste solo per i modelli dell’elenco dei modelli (cablaggio fisso, oppure dopo un test o una conferma).',
     'leds.untested':
         'Il controllo dei LED per il {model} non è testato: il controller è lo stesso su tutti i modelli UGREEN, ma l’ordine dei vani e i numeri dei LED sono ipotizzati per questo modello o derivano da segnalazioni di altri plugin. Con «Identifica» controlla che si accenda il LED giusto e segnala i problemi con una issue.',
     'leds.warn_standalone':
@@ -286,7 +286,7 @@ export const it: Record<Key, string> = {
     'fanctl.on': 'Attivo. Le ventole seguono la modalità scelta.',
     'fanctl.off': 'Disattivato. Questo plugin non tocca il chip delle ventole, che girano come impostato dal BIOS.',
     'fanctl.unsupported':
-        'Per questo modello non c’è il controllo delle ventole (esiste solo per DXP6800 Pro e DXP4800 GT). Il plugin non tocca il chip delle ventole, che girano come impostato dal BIOS, quindi non serve alcun interruttore.',
+        'Per questo modello non c’è il controllo delle ventole (richiede cablaggio fisso o un test o una conferma, vedi l’elenco dei modelli). Il plugin non tocca il chip delle ventole, che girano come impostato dal BIOS, quindi non serve alcun interruttore.',
     'fanctl.hint':
         'Disattivalo quando un altro plugin o script controlla le ventole. Questo plugin allora non tocca il chip delle ventole e queste tornano ai valori del BIOS.',
     'fanctl.off_note': 'Il controllo delle ventole è disattivato. Attivalo in Impostazioni.',
@@ -298,7 +298,7 @@ export const it: Record<Key, string> = {
 
     'about.how': 'Come funziona',
     'about.how_text':
-        'Parla direttamente con il controller delle ventole tramite porte I/O (ITE IT8613E sul DXP6800 Pro, controller integrato IT5571 sul DXP4800 GT) e con il controller dei LED via I²C, senza modulo kernel. Quando viene fermato o disinstallato, le ventole tornano ai valori del BIOS.',
+        'Parla direttamente con il controller delle ventole tramite porte I/O (ITE IT8613E sulla maggior parte dei DXP, controller integrato IT5571 su DXP4800 GT e iDX6011 Pro) e con il controller dei LED via I²C, senza modulo kernel. Quando viene fermato o disinstallato, le ventole tornano ai valori del BIOS.',
     'models.series': 'Serie {s}',
     'models.confirm_title': 'Conferma il mio dispositivo',
     'models.confirm_intro': 'Hai provato il plugin? Seleziona ciò che funziona e invialo come issue su GitHub: così sappiamo cosa funziona sul tuo modello.',

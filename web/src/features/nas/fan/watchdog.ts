@@ -5,7 +5,7 @@ import { registerFanModule } from './module';
 
 export const watchdogVisible = (status: StatusResponse): boolean => status.fan_caps?.watchdog === true;
 
-const TONES = { armed: 'ok', off: 'plain', action_needed: 'warn', yielded: 'plain', not_counting: 'plain' } as const;
+const TONES = { armed: 'ok', off: 'plain', action_needed: 'warn', yielded: 'plain', not_counting: 'plain', not_effective: 'warn' } as const;
 
 registerFanModule({
     id: 'watchdog',

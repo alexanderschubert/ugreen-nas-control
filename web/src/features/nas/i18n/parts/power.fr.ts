@@ -3,6 +3,7 @@ import type { powerEn } from './power.en';
 export const powerFr: Record<keyof typeof powerEn, string> = {
     'watchdog.state.yielded': 'Géré par le pilote it87_wdt',
     'watchdog.state.not_counting': "Le minuteur est réglé mais ne compte pas ; le plugin n'y touche pas",
+    'watchdog.state.not_effective': 'Le nourrissage n’a aucun effet sur le minuteur de cet appareil',
     'conflict.c_watchdog': 'watchdog',
     'power_ac.title': 'Allumage après une coupure de courant',
     'power_ac.hint':

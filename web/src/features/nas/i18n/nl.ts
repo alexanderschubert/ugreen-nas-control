@@ -201,9 +201,9 @@ export const nl: Record<Key, string> = {
     'case.unknown':
         'Voor de {model} is er nog geen behuizingsweergave: die bestaat voor de DXP6800 Pro, de DXP4800 GT, de DXP4800 / Plus / Pro, de DXP8800 Plus, de DXP2800 en de iDX6011 / Pro.',
     'leds.limited':
-        'Voor de {model} is er LED-besturing, systeeminfo en temperaturen. Ventilatorregeling bestaat alleen voor de DXP6800 Pro en de DXP4800 GT, de behuizingsweergave ook voor de DXP4800 / Plus / Pro, de DXP8800 Plus, de DXP2800 en de iDX6011 / Pro.',
+        'Voor de {model} is er LED-besturing, systeeminfo en temperaturen. Ventilatorregeling bestaat alleen voor de modellen uit de modellenlijst (vaste bedrading, of na een test of bevestiging), de behuizingsweergave ook voor de DXP4800 / Plus / Pro, de DXP8800 Plus, de DXP2800 en de iDX6011 / Pro.',
     'leds.limited_fans':
-        'Voor de {model} is er LED-besturing, systeeminfo, temperaturen en de behuizingsweergave. Ventilatorregeling bestaat alleen voor de DXP6800 Pro en de DXP4800 GT.',
+        'Voor de {model} is er LED-besturing, systeeminfo, temperaturen en de behuizingsweergave. Ventilatorregeling bestaat alleen voor de modellen uit de modellenlijst (vaste bedrading, of na een test of bevestiging).',
     'leds.untested':
         'LED-besturing voor de {model} is niet getest: de controller is op alle UGREEN-modellen hetzelfde, maar de volgorde van de bays en de LED-nummers zijn voor dit model gegokt of komen uit meldingen van andere plugins. Controleer met “Identificeren” of de juiste LED oplicht en meld problemen als issue.',
     'leds.warn_standalone':
@@ -286,7 +286,7 @@ export const nl: Record<Key, string> = {
     'fanctl.on': 'Aan. De ventilatoren volgen de gekozen modus.',
     'fanctl.off': 'Uit. Deze plugin blijft van de ventilatorchip af, de ventilatoren draaien zoals het BIOS ze instelde.',
     'fanctl.unsupported':
-        'Voor dit model is er geen ventilatorregeling (die bestaat alleen voor de DXP6800 Pro en de DXP4800 GT). De plugin raakt de ventilatorchip niet aan, de ventilatoren draaien zoals het BIOS ze instelde, dus een schakelaar is niet nodig.',
+        'Voor dit model is er geen ventilatorregeling (daarvoor is vaste bedrading of een test of bevestiging nodig, zie de modellenlijst). De plugin raakt de ventilatorchip niet aan, de ventilatoren draaien zoals het BIOS ze instelde, dus een schakelaar is niet nodig.',
     'fanctl.hint':
         'Schakel het uit als een andere plugin of een script de ventilatoren aanstuurt. Deze plugin raakt de ventilatorchip dan niet aan en de ventilatoren krijgen de BIOS-waarden terug.',
     'fanctl.off_note': 'Ventilatorregeling staat uit. Schakel hem in onder Instellingen.',
@@ -298,7 +298,7 @@ export const nl: Record<Key, string> = {
 
     'about.how': 'Hoe het werkt',
     'about.how_text':
-        'Praat rechtstreeks met de ventilatorcontroller via I/O-poorten (ITE IT8613E op de DXP6800 Pro, embedded controller IT5571 op de DXP4800 GT) en met de LED-controller via I²C, zonder kernelmodule. Bij stoppen of verwijderen krijgen de ventilatoren de BIOS-waarden terug.',
+        'Praat rechtstreeks met de ventilatorcontroller via I/O-poorten (ITE IT8613E op de meeste DXP-modellen, embedded controller IT5571 op de DXP4800 GT en iDX6011 Pro) en met de LED-controller via I²C, zonder kernelmodule. Bij stoppen of verwijderen krijgen de ventilatoren de BIOS-waarden terug.',
     'models.series': '{s}-serie',
     'models.confirm_title': 'Mijn apparaat bevestigen',
     'models.confirm_intro': 'Plugin uitgeprobeerd? Vink aan wat bij jou werkt en stuur het als GitHub-issue: zo weten we wat er op jouw model draait.',

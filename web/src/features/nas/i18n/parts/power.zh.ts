@@ -3,6 +3,7 @@ import type { powerEn } from './power.en';
 export const powerZh: Record<keyof typeof powerEn, string> = {
     'watchdog.state.yielded': '由 it87_wdt 驱动处理',
     'watchdog.state.not_counting': '定时器已设置但未计数；插件不会改动它',
+    'watchdog.state.not_effective': '喂狗对此设备的定时器没有作用',
     'conflict.c_watchdog': '看门狗',
     'power_ac.title': '断电恢复后开机',
     'power_ac.hint': '市电在断电后恢复时 NAS 的行为。该设置保存在主板中，而不是插件里；只有下方按钮会修改它。',

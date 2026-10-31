@@ -3,6 +3,7 @@ import type { powerEn } from './power.en';
 export const powerIt: Record<keyof typeof powerEn, string> = {
     'watchdog.state.yielded': 'Gestito dal driver it87_wdt',
     'watchdog.state.not_counting': 'Il timer è impostato ma non conta; il plugin non lo tocca',
+    'watchdog.state.not_effective': 'L’alimentazione non ha effetto sul timer di questo dispositivo',
     'conflict.c_watchdog': 'watchdog',
     'power_ac.title': 'Accensione dopo un blackout',
     'power_ac.hint':

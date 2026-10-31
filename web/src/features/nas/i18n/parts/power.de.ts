@@ -3,6 +3,7 @@ import type { powerEn } from './power.en';
 export const powerDe: Record<keyof typeof powerEn, string> = {
     'watchdog.state.yielded': 'Vom Treiber it87_wdt betreut',
     'watchdog.state.not_counting': 'Timer ist gesetzt, zählt aber nicht; das Plugin lässt ihn in Ruhe',
+    'watchdog.state.not_effective': 'Füttern wirkt sich nicht auf den Timer dieses Geräts aus',
     'conflict.c_watchdog': 'Watchdog',
     'power_ac.title': 'Einschalten nach Stromausfall',
     'power_ac.hint':

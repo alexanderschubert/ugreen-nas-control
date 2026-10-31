@@ -194,9 +194,9 @@ export const es: Record<Key, string> = {
     'case.unknown':
         'Todavía no hay vista de la caja para {model}: existe para el DXP6800 Pro, el DXP4800 GT, los DXP4800 / Plus / Pro el DXP8800 Plus, el DXP2800 y los iDX6011 / Pro.',
     'leds.limited':
-        'Para el {model} hay control de LEDs, información del sistema y temperaturas. El control de ventiladores existe solo para el DXP6800 Pro y el DXP4800 GT, la vista de la caja también para los DXP4800 / Plus / Pro el DXP8800 Plus, el DXP2800 y los iDX6011 / Pro.',
+        'Para el {model} hay control de LEDs, información del sistema y temperaturas. El control de ventiladores existe solo para los modelos de la lista de modelos (cableado fijo, o tras una prueba o confirmación), la vista de la caja también para los DXP4800 / Plus / Pro el DXP8800 Plus, el DXP2800 y los iDX6011 / Pro.',
     'leds.limited_fans':
-        'Para el {model} hay control de LEDs, información del sistema, temperaturas y la vista de la caja. El control de ventiladores existe solo para el DXP6800 Pro y el DXP4800 GT.',
+        'Para el {model} hay control de LEDs, información del sistema, temperaturas y la vista de la caja. El control de ventiladores existe solo para los modelos de la lista de modelos (cableado fijo, o tras una prueba o confirmación).',
     'leds.untested':
         'El control de LEDs para el {model} no está probado: el controlador es el mismo en todos los modelos UGREEN, pero el orden de las bahías y los números de LED son estimados para este modelo o proceden de informes de otros plugins. Comprueba con «Identificar» que se enciende el LED correcto e informa de los problemas en un issue.',
     'leds.warn_standalone':
@@ -277,7 +277,7 @@ export const es: Record<Key, string> = {
     'fanctl.on': 'Activado. Los ventiladores funcionan según el modo elegido.',
     'fanctl.off': 'Desactivado. Este plugin no toca el chip de los ventiladores; funcionan como los dejó la BIOS.',
     'fanctl.unsupported':
-        'Este modelo no tiene control de ventiladores (solo el DXP6800 Pro y el DXP4800 GT). El plugin no toca el chip, los ventiladores funcionan como los configuró la BIOS, así que no hace falta un interruptor.',
+        'Este modelo no tiene control de ventiladores (requiere cableado fijo o una prueba o confirmación, ver la lista de modelos). El plugin no toca el chip, los ventiladores funcionan como los configuró la BIOS, así que no hace falta un interruptor.',
     'fanctl.hint':
         'Desactívalo cuando otro plugin o script controle los ventiladores. Entonces este plugin no toca el chip y los ventiladores recuperan los valores de la BIOS.',
     'fanctl.off_note': 'El control de ventiladores está desactivado. Actívalo en Ajustes.',
@@ -288,7 +288,7 @@ export const es: Record<Key, string> = {
     'safety.saved': 'Ajustes de seguridad guardados',
     'about.how': 'Cómo funciona',
     'about.how_text':
-        'Habla directamente con el controlador de ventiladores a través de puertos de E/S (ITE IT8613E en el DXP6800 Pro, controlador embebido IT5571 en el DXP4800 GT) y con el controlador de LEDs por I²C, sin módulo del kernel. Al detenerlo o desinstalarlo, los ventiladores recuperan los valores de la BIOS.',
+        'Habla directamente con el controlador de ventiladores a través de puertos de E/S (ITE IT8613E en la mayoría de los DXP, controlador embebido IT5571 en el DXP4800 GT y el iDX6011 Pro) y con el controlador de LEDs por I²C, sin módulo del kernel. Al detenerlo o desinstalarlo, los ventiladores recuperan los valores de la BIOS.',
     'models.series': 'Serie {s}',
     'models.confirm_title': 'Confirmar mi equipo',
     'models.confirm_intro': '¿Has probado el plugin? Marca lo que funciona en tu equipo y envíalo como issue de GitHub: así sabemos qué funciona en tu modelo.',

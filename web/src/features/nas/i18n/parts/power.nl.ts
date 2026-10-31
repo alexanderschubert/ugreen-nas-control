@@ -3,6 +3,7 @@ import type { powerEn } from './power.en';
 export const powerNl: Record<keyof typeof powerEn, string> = {
     'watchdog.state.yielded': 'Afgehandeld door het stuurprogramma it87_wdt',
     'watchdog.state.not_counting': 'De timer is ingesteld maar telt niet; de plugin laat hem met rust',
+    'watchdog.state.not_effective': 'Voeden heeft geen effect op de timer van dit apparaat',
     'conflict.c_watchdog': 'watchdog',
     'power_ac.title': 'Inschakelen na stroomuitval',
     'power_ac.hint':

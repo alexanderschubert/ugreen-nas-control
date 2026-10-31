@@ -201,9 +201,9 @@ export const de: Record<Key, string> = {
     'case.unknown':
         'Für {model} gibt es keine Gehäuseansicht: sie gibt es für den DXP6800 Pro, den DXP4800 GT, die DXP4800 / Plus / Pro den DXP8800 Plus, den DXP2800 und die iDX6011 / Pro.',
     'leds.limited':
-        'Für {model} gibt es die LED-Steuerung, Systeminfo und Temperaturen. Lüftersteuerung und Gehäuseansicht gibt es nur für den DXP6800 Pro, den DXP4800 GT und (Gehäuseansicht) die DXP4800 / Plus / Pro den DXP8800 Plus, den DXP2800 und die iDX6011 / Pro.',
+        'Für {model} gibt es die LED-Steuerung, Systeminfo und Temperaturen. Die Lüftersteuerung gibt es nur für Modelle der Modellliste (feste Verdrahtung oder nach Probe bzw. Bestätigung), die Gehäuseansicht auch für die DXP4800 / Plus / Pro den DXP8800 Plus, den DXP2800 und die iDX6011 / Pro.',
     'leds.limited_fans':
-        'Für {model} gibt es die LED-Steuerung, Systeminfo, Temperaturen und die Gehäuseansicht. Lüftersteuerung gibt es nur für den DXP6800 Pro und den DXP4800 GT.',
+        'Für {model} gibt es die LED-Steuerung, Systeminfo, Temperaturen und die Gehäuseansicht. Die Lüftersteuerung gibt es nur für Modelle der Modellliste (feste Verdrahtung oder nach Probe bzw. Bestätigung).',
     'leds.untested':
         'Die LED-Steuerung für die {model} ist ungetestet: der Controller ist bei allen UGREEN-Modellen derselbe, aber die Reihenfolge der Schächte und LED-Nummern ist für dieses Modell geraten oder stammt aus Berichten anderer Plugins. Prüfe mit „Schacht identifizieren“, ob die richtige LED leuchtet, und melde Probleme als Issue.',
     'leds.warn_standalone':
@@ -286,7 +286,7 @@ export const de: Record<Key, string> = {
     'fanctl.on': 'An. Die Lüfter laufen nach dem gewählten Modus.',
     'fanctl.off': 'Aus. Dieses Plugin fasst den Lüfter-Chip nicht an, die Lüfter laufen wie vom BIOS eingestellt.',
     'fanctl.unsupported':
-        'Für dieses Modell gibt es keine Lüftersteuerung (bekannt nur beim DXP6800 Pro und DXP4800 GT). Das Plugin fasst den Lüfter-Chip nicht an, die Lüfter laufen wie vom BIOS eingestellt. Ein Schalter ist deshalb nicht nötig.',
+        'Für dieses Modell gibt es keine Lüftersteuerung (sie braucht feste Verdrahtung oder eine Probe bzw. Bestätigung, siehe Modellliste). Das Plugin fasst den Lüfter-Chip nicht an, die Lüfter laufen wie vom BIOS eingestellt. Ein Schalter ist deshalb nicht nötig.',
     'fanctl.hint':
         'Ausschalten, wenn ein anderes Plugin oder Skript die Lüfter steuert. Dann fasst dieses Plugin den Lüfter-Chip nicht an, und die Lüfter bekommen die Werte des BIOS zurück.',
     'fanctl.off_note': 'Die Lüftersteuerung ist aus. Einschalten unter Einstellungen.',
@@ -298,7 +298,7 @@ export const de: Record<Key, string> = {
 
     'about.how': 'Funktionsweise',
     'about.how_text':
-        'Spricht den Lüfter-Chip direkt über I/O-Ports an (ITE IT8613E beim DXP6800 Pro, Embedded Controller IT5571 beim DXP4800 GT) und den LED-Controller über I²C, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.',
+        'Spricht den Lüfter-Chip direkt über I/O-Ports an (ITE IT8613E bei den meisten DXP-Modellen, Embedded Controller IT5571 beim DXP4800 GT und iDX6011 Pro) und den LED-Controller über I²C, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.',
     'models.series': '{s}-Serie',
     'models.confirm_title': 'Mein Gerät bestätigen',
     'models.confirm_intro':

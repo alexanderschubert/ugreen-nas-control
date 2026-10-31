@@ -39,8 +39,9 @@ export interface Watchdog {
      * off: not armed; armed: fed in time; action_needed: armed, but not fed for more than twice the interval;
      * yielded (IT8613E): the it87_wdt module owns the timer, the plugin accesses nothing;
      * not_counting (IT8613E): the value is set but does not count down, so the plugin writes nothing.
+     * not_effective: feeding does not change this unit's timer (see docs/watchdog.md).
      */
-    state: 'off' | 'armed' | 'action_needed' | 'yielded' | 'not_counting';
+    state: 'off' | 'armed' | 'action_needed' | 'yielded' | 'not_counting' | 'not_effective';
 }
 
 export interface ProbeOutput {

@@ -2,6 +2,7 @@
 export const powerEn = {
     'watchdog.state.yielded': 'Handled by the it87_wdt driver',
     'watchdog.state.not_counting': 'Timer is set but not counting; the plugin leaves it alone',
+    'watchdog.state.not_effective': 'Feeding has no effect on this unit’s timer',
     'conflict.c_watchdog': 'watchdog',
     'power_ac.title': 'Power on after AC loss',
     'power_ac.hint':

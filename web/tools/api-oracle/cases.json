@@ -207,7 +207,7 @@
             "ok": true,
             "read": {
               "model": "DXP2800 GT",
-              "chip_id": "0x2012",
+              "chip_id": "0x2011",
               "host_ec": "active"
             }
           }

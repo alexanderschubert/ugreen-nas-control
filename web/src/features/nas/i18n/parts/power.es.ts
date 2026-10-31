@@ -3,6 +3,7 @@ import type { powerEn } from './power.en';
 export const powerEs: Record<keyof typeof powerEn, string> = {
     'watchdog.state.yielded': 'Gestionado por el controlador it87_wdt',
     'watchdog.state.not_counting': 'El temporizador está configurado pero no cuenta; el plugin no lo toca',
+    'watchdog.state.not_effective': 'Alimentar no tiene efecto en el temporizador de este equipo',
     'conflict.c_watchdog': 'watchdog',
     'power_ac.title': 'Encendido tras un corte de corriente',
     'power_ac.hint':
