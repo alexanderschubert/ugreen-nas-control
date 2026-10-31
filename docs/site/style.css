@@ -1757,3 +1757,15 @@ main:focus {
 .src-points b {
     color: var(--text);
 }
+.credits {
+    max-width: 64ch;
+    margin: 14px 0;
+    color: var(--muted);
+}
+.credits b {
+    color: var(--text);
+}
+.credits a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}

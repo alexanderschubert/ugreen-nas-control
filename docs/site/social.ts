@@ -1,7 +1,7 @@
 // The 1200x630 social preview as an SVG, rasterised by build.ts with rsvg-convert (no browser). Fonts: rsvg-convert resolves them through fontconfig, build.ts points it at Archivo.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { HEADLINE, SOCIAL_SUB } from './content';
+import { SOCIAL_HEAD, SOCIAL_SUB } from './content';
 
 const root = resolve(import.meta.dir, '../..');
 
@@ -21,7 +21,7 @@ const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;'
 export function socialSvg(): string {
     const icon = `data:image/svg+xml;base64,${readFileSync(resolve(root, 'web/assets/icon.svg')).toString('base64')}`;
     // One line per sentence; three lines get a smaller size so the card keeps its margins.
-    const head = HEADLINE.split(/(?<=\.) /);
+    const head = SOCIAL_HEAD.split(/(?<=\.) /);
     const [size, step, top] = head.length > 2 ? [62, 74, 230] : [76, 92, 266];
     const sub = wrap(SOCIAL_SUB, 40);
     const font = `font-family="Archivo, Helvetica, Arial, sans-serif"`;
