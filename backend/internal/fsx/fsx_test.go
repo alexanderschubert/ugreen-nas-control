@@ -3,6 +3,7 @@ package fsx
 import (
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 )
 
@@ -89,4 +90,29 @@ func intString(n int) string {
 		b = append([]byte{byte('0' + n%10)}, b...)
 	}
 	return string(b)
+}
+
+func TestWriteFileConcurrentWritersInOneProcess(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "state")
+	var wg sync.WaitGroup
+	for i := range 16 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for range 20 {
+				if err := WriteFile(p, []byte(itoa(i)+"\n"), 0o640); err != nil {
+					t.Error(err)
+					return
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	if entries, _ := os.ReadDir(dir); len(entries) != 1 {
+		t.Errorf("leftovers: %v", entries)
+	}
+	if st, err := os.Stat(p); err != nil || st.Mode().Perm() != 0o640 {
+		t.Errorf("mode %v %v", st, err)
+	}
 }

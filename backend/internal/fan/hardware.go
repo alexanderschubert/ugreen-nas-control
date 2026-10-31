@@ -1,6 +1,7 @@
 package fan
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -9,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
 	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
@@ -258,7 +260,9 @@ func readMemory() []DIMM {
 	if readCache("memory", &dimms) && len(dimms) > 0 {
 		return dimms
 	}
-	out, err := exec.Command(dmidecodeBn, "-t", "memory").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), toolTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, dmidecodeBn, "-t", "memory").Output()
 	if err != nil {
 		return nil
 	}
@@ -471,16 +475,25 @@ func ReadNetIO() []NetIO {
 	return out
 }
 
+// toolTimeout bounds dmidecode and ethtool: both answer in milliseconds, a hung one must not hang the page.
+const toolTimeout = 10 * time.Second
+
 var linkModeRe = regexp.MustCompile(`(\d+)base`)
 
 func maxLinkSpeed(name string) int {
 	speeds := map[string]int{}
 	readCache("maxspeed", &speeds)
-	if n := speeds[name]; n > 0 {
-		return n
+	if n := speeds[name]; n != 0 {
+		return max(n, 0) // -1: ethtool said no for this port (virtual, no driver support), do not ask again
 	}
-	out, err := exec.Command(ethtoolBn, name).Output()
+	ctx, cancel := context.WithTimeout(context.Background(), toolTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, ethtoolBn, name).Output()
 	if err != nil {
+		if ctx.Err() == nil {
+			speeds[name] = -1
+			writeCache("maxspeed", speeds)
+		}
 		return 0
 	}
 	n := parseMaxLinkSpeed(string(out))
