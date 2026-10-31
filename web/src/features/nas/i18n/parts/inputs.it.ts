@@ -10,6 +10,7 @@ export const inputsIt: Record<keyof typeof inputsEn, string> = {
     'inputs.kind_disk_avg': 'Media dei dischi',
     'inputs.kind_nvme': 'NVMe',
     'inputs.kind_gpu': 'GPU',
+    'inputs.kind_hba': 'Controller SAS/RAID (HBA)',
     'inputs.kind_nic': 'Rete {name}',
     'inputs.kind_script': 'Script {name}',
     'inputs.kind_max': 'La più alta tra più sorgenti',

@@ -8,6 +8,7 @@ export const inputsEn = {
     'inputs.kind_disk_avg': 'Average of drives',
     'inputs.kind_nvme': 'NVMe',
     'inputs.kind_gpu': 'GPU',
+    'inputs.kind_hba': 'SAS/RAID controller (HBA)',
     'inputs.kind_nic': 'Network {name}',
     'inputs.kind_script': 'Script {name}',
     'inputs.kind_max': 'Hottest of several sources',

@@ -161,7 +161,7 @@ func TestV2PresetModeIgnoresCurveOverride(t *testing.T) {
 
 func TestInputSpecRoundTrip(t *testing.T) {
 	for _, s := range []string{
-		"cpu", "disk_max", "disk_max:disk1+disk2", "disk_avg:disk1+cache", "nvme", "gpu", "nic:eth0",
+		"cpu", "disk_max", "disk_max:disk1+disk2", "disk_avg:disk1+cache", "nvme", "gpu", "hba", "nic:eth0",
 		"script:my_probe", "max:cpu|gpu", "max:disk_avg:disk1+disk2|nvme|script:a|nic:eth1",
 	} {
 		in, err := ParseInputSpec(s)

@@ -23,7 +23,7 @@ export const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 const DRIVE = '[A-Za-z0-9_.-]{1,40}';
 const PART = new RegExp(
-    `^(?:cpu|nvme|gpu|disk_max|disk_avg|disk_(?:max|avg):${DRIVE}(?:\\+${DRIVE}){0,31}|nic:[A-Za-z0-9_.@-]{1,15}|script:[a-z0-9_-]{1,32})$`
+    `^(?:cpu|nvme|gpu|hba|disk_max|disk_avg|disk_(?:max|avg):${DRIVE}(?:\\+${DRIVE}){0,31}|nic:[A-Za-z0-9_.@-]{1,15}|script:[a-z0-9_-]{1,32})$`
 );
 
 export const validSpec = (spec: string): boolean => {

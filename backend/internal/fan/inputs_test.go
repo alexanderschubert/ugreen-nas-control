@@ -357,3 +357,148 @@ func TestRegistryAsDaemonInputSourceHonoursIgnoredDrives(t *testing.T) {
 		t.Fatalf("stale tick cache: %v", v)
 	}
 }
+
+func fakeStorcli(t *testing.T, out string, exit int) (count string) {
+	t.Helper()
+	dir := t.TempDir()
+	count = filepath.Join(dir, "count")
+	path := filepath.Join(dir, "storcli64")
+	body := fmt.Sprintf("#!/bin/sh\necho \"x $*\" >> %s\nprintf '%s'\nexit %d\n", count, out, exit)
+	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := storcliPaths
+	storcliPaths = []string{path}
+	t.Cleanup(func() { storcliPaths = old })
+	return count
+}
+
+func fakeHBAHwmon(t *testing.T, chips map[string][]string) {
+	t.Helper()
+	dir := t.TempDir()
+	n := 0
+	for name, milli := range chips {
+		h := filepath.Join(dir, fmt.Sprintf("hwmon%d", n))
+		n++
+		if err := os.MkdirAll(h, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		_ = os.WriteFile(filepath.Join(h, "name"), []byte(name+"\n"), 0o644)
+		for i, m := range milli {
+			_ = os.WriteFile(filepath.Join(h, fmt.Sprintf("temp%d_input", i+1)), []byte(m+"\n"), 0o644)
+		}
+	}
+	old := hwmonDir
+	hwmonDir = dir
+	t.Cleanup(func() { hwmonDir = old })
+}
+
+func TestHBAFromHwmon(t *testing.T) {
+	absentStorcli(t)
+	// IOC 42, Board 38 on one card, a second card at 51; a GPU and an NVMe chip are not HBAs.
+	fakeHBAHwmon(t, map[string][]string{"mpt3sas": {"42000", "38000"}, "amdgpu": {"90000"}, "nvme": {"80000"}})
+	r, _, _, _ := newTestRegistry(t, Sensors{})
+	if v, ok := r.Read(context.Background(), mustSpec(t, "hba")); !ok || v != 42 {
+		t.Fatalf("hba = %v, %v", v, ok)
+	}
+	dir := hwmonDir
+	h := filepath.Join(dir, "hwmon9")
+	_ = os.MkdirAll(h, 0o755)
+	_ = os.WriteFile(filepath.Join(h, "name"), []byte("mpt3sas\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(h, "temp1_input"), []byte("51000\n"), 0o644)
+	r, _, _, _ = newTestRegistry(t, Sensors{})
+	if v, ok := r.Read(context.Background(), mustSpec(t, "hba")); !ok || v != 51 {
+		t.Fatalf("the hottest card counts: %v, %v", v, ok)
+	}
+}
+
+func absentStorcli(t *testing.T) {
+	t.Helper()
+	old := storcliPaths
+	storcliPaths = []string{filepath.Join(t.TempDir(), "absent")}
+	t.Cleanup(func() { storcliPaths = old })
+}
+
+func TestHBAFromStorcliWithTTL(t *testing.T) {
+	fakeHBAHwmon(t, map[string][]string{})
+	count := fakeStorcli(t, "Controller = 0\\nROC temperature(Degree Celsius) = 55\\nController = 1\\nROC temperature(Degree Celsius) = 63\\n", 0)
+	r, clock, _, _ := newTestRegistry(t, Sensors{})
+	ctx := context.Background()
+	for range 3 {
+		r.Tick(nil)
+		if v, ok := r.Read(ctx, mustSpec(t, "hba")); !ok || v != 63 {
+			t.Fatalf("hba = %v, %v (the hottest controller counts)", v, ok)
+		}
+		clock.advance(2 * time.Second)
+	}
+	if n := runs(t, count); n != 1 {
+		t.Fatalf("storcli ran %d times inside its 10 s TTL, want 1", n)
+	}
+	if b, _ := os.ReadFile(count); !strings.Contains(string(b), "/call show temperature") {
+		t.Fatalf("storcli called with %q", b)
+	}
+	clock.advance(10 * time.Second)
+	r.Tick(nil)
+	r.Read(ctx, mustSpec(t, "hba"))
+	if n := runs(t, count); n != 2 {
+		t.Fatalf("after the TTL it must run again: %d", n)
+	}
+}
+
+func TestHBAFailures(t *testing.T) {
+	fakeHBAHwmon(t, map[string][]string{"mpt3sas": {}}) // a chip without a reading is no reading
+	for name, c := range map[string]struct {
+		out  string
+		exit int
+	}{
+		"exit":    {"ROC temperature(Degree Celsius) 55\\n", 1},
+		"garbage": {"ROC temperature(Degree Celsius) N/A\\n", 0},
+		"no line": {"Controller = 0\\n", 0},
+		"empty":   {"", 0},
+		"hot":     {"ROC temperature(Degree Celsius) 500\\n", 0},
+	} {
+		fakeStorcli(t, c.out, c.exit)
+		r, _, _, _ := newTestRegistry(t, Sensors{})
+		if v, ok := r.Read(context.Background(), mustSpec(t, "hba")); ok {
+			t.Errorf("%s: read %v, want missing", name, v)
+		}
+	}
+	absentStorcli(t)
+	r, _, _, _ := newTestRegistry(t, Sensors{})
+	if _, ok := r.Read(context.Background(), mustSpec(t, "hba")); ok {
+		t.Error("no storcli and no hwmon must be missing")
+	}
+}
+
+func TestHBAListedOnlyWhenPresent(t *testing.T) {
+	oldNvidia, oldDir := nvidiaSMIPaths, sensorsDir
+	t.Cleanup(func() { nvidiaSMIPaths, sensorsDir = oldNvidia, oldDir })
+	nvidiaSMIPaths = []string{filepath.Join(t.TempDir(), "absent")}
+	sensorsDir = filepath.Join(t.TempDir(), "none")
+	fakeHBAHwmon(t, map[string][]string{})
+	absentStorcli(t)
+	list := func() InputsReport {
+		r, _, _, _ := newTestRegistry(t, Sensors{})
+		return ListInputs(context.Background(), r, defaultConfig(), Sensors{})
+	}
+	for _, o := range list().Options {
+		if o.Spec == "hba" {
+			t.Fatal("hba offered on a NAS without a controller")
+		}
+	}
+	fakeStorcli(t, "ROC temperature(Degree Celsius) 57\\n", 0)
+	var got *InputOption
+	rep := list()
+	for i := range rep.Options {
+		if rep.Options[i].Spec == "hba" {
+			got = &rep.Options[i]
+		}
+	}
+	if got == nil || !got.Usable || got.Reading == nil || *got.Reading != 57 || got.Kind != "hba" {
+		t.Fatalf("hba option: %+v", got)
+	}
+	res := TestInput(context.Background(), func() *Registry { r, _, _, _ := newTestRegistry(t, Sensors{}); return r }(), defaultConfig(), "hba")
+	if !res.OK || !res.Usable || res.Reading == nil || *res.Reading != 57 {
+		t.Fatalf("input test: %+v", res)
+	}
+}

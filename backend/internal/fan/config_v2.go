@@ -298,7 +298,7 @@ func (q Quiet) DaysString() string {
 
 func Clock(minutes int) string { return fmt.Sprintf("%02d:%02d", minutes/60, minutes%60) }
 
-// InputSpec names a temperature source for a group. Kinds: auto (empty), cpu, disk_max, disk_avg, nvme, gpu, nic,
+// InputSpec names a temperature source for a group. Kinds: auto (empty), cpu, disk_max, disk_avg, nvme, gpu, hba, nic,
 // max (of the readable parts) and script. Only the syntax lives here; the readers belong to the inputs code.
 type InputSpec struct {
 	Kind string
@@ -310,7 +310,7 @@ type InputSpec struct {
 	Parts []InputSpec
 }
 
-// ParseInputSpec reads "cpu", "disk_max", "disk_avg:disk1+disk2", "nvme", "gpu", "nic:eth0", "script:name" or
+// ParseInputSpec reads "cpu", "disk_max", "disk_avg:disk1+disk2", "nvme", "gpu", "hba", "nic:eth0", "script:name" or
 // "max:a|b|c" (2 to 8 parts, none of them max). Empty and "auto" are the default input.
 func ParseInputSpec(s string) (InputSpec, error) {
 	return parseInput(s, true)
@@ -326,7 +326,7 @@ func parseInput(s string, top bool) (InputSpec, error) {
 		if !hasArg && top {
 			return InputSpec{}, nil
 		}
-	case "cpu", "nvme", "gpu":
+	case "cpu", "nvme", "gpu", "hba":
 		if !hasArg {
 			return InputSpec{Kind: kind}, nil
 		}

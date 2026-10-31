@@ -14,7 +14,7 @@ type Draft = Record<Group, { input: string; on_missing: FanOnMissing }>;
 const REFRESH_MS = 8000;
 const MAX_PARTS = [2, 8] as const;
 const MAX_DRIVES = 32;
-const COMPONENT = ['cpu', 'nvme', 'gpu', 'nic', 'script', 'disk_max', 'disk_avg'];
+const COMPONENT = ['cpu', 'nvme', 'gpu', 'hba', 'nic', 'script', 'disk_max', 'disk_avg'];
 const DRIVE_NAME = /^[A-Za-z0-9_.-]{1,40}$/;
 
 export const specMode = (spec: string): string => {

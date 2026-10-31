@@ -16,6 +16,7 @@ var (
 	cpuHintRe  = regexp.MustCompile(`(?i)cpu`)
 	cpuChipRe  = regexp.MustCompile(`coretemp|k10temp|zenpower|x86_pkg`)
 	auxGPURe   = regexp.MustCompile(`^nvidia:gpu[0-9]{1,2}$`)
+	auxHBARe   = regexp.MustCompile(`^storcli:c[0-9]{1,3}:roc$`)
 	auxCustom  = regexp.MustCompile(`^custom:([a-z0-9_-]{1,32})$`)
 	fcFileRe   = regexp.MustCompile(`^fanctrlplus2?_[A-Za-z0-9_-]+\.cfg$`)
 	groupKeyRe = regexp.MustCompile(`^disk_group_([0-9]{1,3})_(name|disks|low|high)$`)
@@ -326,6 +327,8 @@ func (b *fcBlock) auxParts(r *Result) []string {
 		switch {
 		case auxGPURe.MatchString(tok):
 			parts = append(parts, "gpu")
+		case auxHBARe.MatchString(tok):
+			parts = append(parts, "hba")
 		case auxCustom.MatchString(tok):
 			parts = append(parts, "script:"+auxCustom.FindStringSubmatch(tok)[1])
 			r.warnf("%s: the script %s is not copied; put it into the sensors folder of this plugin", b.file, auxCustom.FindStringSubmatch(tok)[1])

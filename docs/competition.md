@@ -31,7 +31,7 @@ Columns: **US** this plugin; **FC2** FanCtrl Plus 2; **FC1** FanCtrl Plus; **DAF
 | Several fans with separate inputs                      | ~       | y   | y   | y   | ~   | -   | -   | ~   | -   |
 | Disk temperatures without waking disks                 | y       | y   | y   | y   | ?   | -   | -   | ~   | -   |
 | NVMe as fan input                                      | y       | y   | y   | y   | ?   | -   | -   | n   | -   |
-| GPU, HBA, NIC or custom script as fan input            | ~       | y   | n   | n   | n   | -   | -   | n   | -   |
+| GPU, HBA, NIC or custom script as fan input            | y       | y   | n   | n   | n   | -   | -   | n   | -   |
 | Failsafe to 100 percent, BIOS values restored          | y       | ~   | n   | n   | y   | -   | -   | y   | -   |
 | Stall watchdog and notification                        | y       | ~   | n   | n   | y   | -   | -   | y   | -   |
 | Fan calibration (rpm per duty)                         | y       | n   | n   | n   | n   | -   | -   | n   | -   |
