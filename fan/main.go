@@ -198,6 +198,9 @@ func main() {
 		if err != nil {
 			fail(err)
 		}
+		if _, ok := chip.(*CS201x); ok {
+			fail(errors.New("the fan speeds of the DXP2800 GT are not measured yet: the fans are not driven below 25 %"))
+		}
 		if err := runCalibrate(chip); err != nil {
 			fail(err)
 		}

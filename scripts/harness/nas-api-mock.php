@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 $flag = '/boot/config/plugins/ugreen-nas-control/led.enabled';
 // docker exec ugreen-fake sh -c 'echo "iDX6011 Pro" > /tmp/model' to try another model
 $model = is_file('/tmp/model') ? trim(file_get_contents('/tmp/model')) : 'DXP6800 Pro';
-$known = (bool) preg_match('/^(DXP6800|DXP4800.*GT)/', $model);
+$known = (bool) preg_match('/^(DXP6800|DXP4800.*GT|DXP2800 GT)/', $model);
 $family = (bool) preg_match('/^(DXP4800( Plus| Pro)?|DXP8800 Plus|DXP2800( GT)?|iDX6011( Pro)?)$/', $model);
 $m = $_SERVER['REQUEST_METHOD'];
 // The lowest fan speed and the CPU help switch are the settings the mock keeps (the "min" action).

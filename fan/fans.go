@@ -6,10 +6,10 @@ import (
 )
 
 // Fans is a fan controller as the commands and the daemon see it: the
-// IT8613E Super-I/O chip of the DXP6800 Pro or the IT5571 embedded controller
-// of the DXP4800 GT. Callers hold the lock around every call.
+// IT8613E Super-I/O chip of the DXP6800 Pro, the IT5571 embedded controller
+// of the DXP4800 GT or the CS201x of the DXP2800 GT. Callers hold the lock around every call.
 type Fans interface {
-	Name() string                                  // IT8613, IT5571
+	Name() string                                  // IT8613, IT5571, CS2011
 	Describe() string                              // for the log: where the chip sits
 	Details() map[string]any                       // extra fields of probe
 	Outputs() []Channel                            // fan headers in use
@@ -48,9 +48,16 @@ func isDXP4800GT(model string) bool {
 	return strings.HasPrefix(model, "DXP4800 GT")
 }
 
-// detectFans picks the controller by model: the GT has no Super-I/O fan chip,
-// its fans hang on the embedded controller.
+// detectFans picks the controller by model: the DXP4800 GT has no Super-I/O fan chip,
+// its fans hang on the IT5571 embedded controller; the DXP2800 GT has a Chipsea CS201x.
 func detectFans(p Ports, model string) (Fans, error) {
+	if isDXP2800GT(model) {
+		ec, err := DetectCS201x(p)
+		if err != nil {
+			return nil, err
+		}
+		return ec, nil
+	}
 	if isDXP4800GT(model) {
 		ec, err := DetectEC(p)
 		if err != nil {

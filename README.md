@@ -14,7 +14,7 @@
 [![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
 
 Unraid plugin for UGREEN NASync devices (DX, DXP and iDX series): **LED control**, a **case view** that draws your NAS
-with its real bays, ports, RAM and SSDs, **temperatures** of everything, and, for the **DXP6800 Pro and DXP4800 GT**, **fan control**
+with its real bays, ports, RAM and SSDs, **temperatures** of everything, and, for the **DXP6800 Pro, DXP4800 GT and DXP2800 GT**, **fan control**
 like the fan settings of UGOS. No kernel module, so Unraid updates don't break it. It runs on its own; the LED control grew out of
 [UGREEN LED Control](https://github.com/alexanderschubert/ugreen-led-control) and is maintained here now.
 
@@ -26,7 +26,7 @@ like the fan settings of UGOS. No kernel module, so Unraid updates don't break i
 - **Temperatures** (Sensors page): CPU package and hottest core, mainboard, the iGPU, the fan controller's own sensors, the LAN chips, every NVMe SSD
   (with its extra sensors) and every disk, read from Unraid, so sleeping disks are never woken up; each one shows whether it steers the fans
   and which limit applies
-- **Fans** (DXP6800 Pro, DXP4800 GT): live speed of the CPU fan and the case fans; modes BIOS (no control), Quiet, Standard, Performance,
+- **Fans** (DXP6800 Pro, DXP4800 GT, DXP2800 GT): live speed of the CPU fan and the case fans; modes BIOS (no control), Quiet, Standard, Performance,
   Full speed, or your own curves; the CPU fan follows the CPU, the case fans the hottest disk or NVMe. **Minimum fan speed** (10–60 %) is set on
   the Fans page. **Case fans help cool the CPU** (switch on the Fans page, works in every mode with curves): the case fans run at least as fast
   as the CPU curve asks for at the current CPU temperature
@@ -55,7 +55,7 @@ Every UGREEN NASync model and what the plugin does for it (the same table is on 
 | DX4700 / Plus | reported by users | – | – |
 | **DXP series** | | | |
 | DXP2800 | reported by users | front, rear | – |
-| DXP2800 GT | untested | front, rear | – |
+| DXP2800 GT | untested | front, rear | yes |
 | DXP480T Plus | power LED only | – | – |
 | DXP4800 / Plus / Pro | confirmed | front, rear | – |
 | DXP4800 GT | confirmed | front, rear, inside | yes |
@@ -76,6 +76,9 @@ Verified: tested by the author or by miskcoo. Confirmed or reported: users saw i
 - **UGREEN DXP4800 GT**: ITE IT5571 embedded controller; CPU fan (fan1) and case fan (fan3), with rpm,
   manual speed and the curves; the CPU temperature comes from the AMD sensor (`k10temp`), the mainboard
   temperature from the controller
+- **UGREEN DXP2800 GT**: Chipsea CS201x embedded controller; CPU fan and system fan, with rpm, manual speed
+  and the curves; never below 25 %. The register map was read on a real DXP2800 GT (issue #95); the fan
+  control itself is new and not yet confirmed there
 
 On any other model the plugin does not touch the fan controller (the fan pages are not shown). System info and temperatures still work, as they only read.
 
@@ -142,6 +145,16 @@ Unraid's kernel has no driver for the IT8613E (the in-tree `it87` doesn't know i
   cycle every 2 seconds after the curves
 - the first start after boot saves the BIOS values to `/var/run/ugreen-nas-control.bios`; stopping the
   daemon (also on update or removal) writes them back
+
+The DXP2800 GT has a Chipsea CS201x. Its Super-I/O ports `0x2e`/`0x2f` hold chip id `0x2011`; behind device `0x0A`
+sits the host interface of the embedded controller (base address from registers `0x60`/`0x61`, `0x0200` on the
+unit it was read on). A register is reached by writing `0` to base+1, the 32-bit address to base+4…7 (least
+significant byte first) and reading or writing base+8. Fan registers: enable `0x200053F0`/`F1`, duty in percent
+`0x200053F4`/`F5`, rpm as a 16-bit number `0x200053F8/F9` and `0x200053FA/FB`; temperatures `0x200053E2` (near
+the CPU) and `0x200053E4` (board). The controller has no automatic mode: the BIOS leaves 60 % and the tool never
+writes below 25 %. Only bit 0 of the enable register is touched (the BIOS leaves `0x11` and `0x21`), every value
+written is read back, and stopping the daemon (also on update or removal) and `restore` write the saved BIOS duty
+and enable byte back. `ugreen-nas-fan cs201x` reads the chip without writing a fan setting.
 
 On the DXP4800 GT there is no Super-I/O fan chip. The fans hang on the IT5571 embedded controller, which
 the tool reaches through the standard ACPI EC ports `0x62` (data) and `0x66` (command/status), under the
@@ -247,7 +260,7 @@ Questions and problems: the [support thread in the Unraid forum](https://forums.
 
 ## Disclaimer
 
-- Use at your own risk. The plugin writes directly to the fan controller (the embedded controller on the DXP4800 GT, the ITE IT8613E on the DXP6800 Pro) and controls the LEDs.
+- Use at your own risk. The plugin writes directly to the fan controller (the embedded controller on the DXP4800 GT and DXP2800 GT, the ITE IT8613E on the DXP6800 Pro) and controls the LEDs.
 - Bad fan curves or settings can let disks or the CPU run hot or reduce hardware lifetime. Check temperatures after changing a curve; the emergency limit (all fans at 100 %) is a backstop, not a substitute.
 - Not affiliated with or endorsed by UGREEN. Using it may affect the manufacturer's warranty.
 - Provided as is, without warranty or liability; see [License](#license).

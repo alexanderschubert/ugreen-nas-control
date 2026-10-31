@@ -171,7 +171,7 @@
 
     const deg = value => value == null ? '–' : `${value} °C`;
 
-    const chipName = name => String(name || '').replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571');
+    const chipName = name => String(name || '').replace('IT8613', 'ITE IT8613E').replace('IT5571', 'ITE IT5571').replace('CS2011', 'Chipsea CS2011');
 
     function setRangeFill(input) {
         const min = Number(input.min) || 0;
@@ -705,7 +705,7 @@
         ['DX', 'DX4700 / Plus', /^DX4700/, 'reported', '', false],
         // DXP: 2 bays to 8 bays, by size
         ['DXP', 'DXP2800', /^DXP2800$/, 'reported', 'fr', false],
-        ['DXP', 'DXP2800 GT', /^DXP2800 GT/, 'untested', 'fr', false],
+        ['DXP', 'DXP2800 GT', /^DXP2800 GT/, 'untested', 'fr', true],
         ['DXP', 'DXP480T Plus', /^DXP480T/, 'power', '', false],
         ['DXP', 'DXP4800 / Plus / Pro', /^DXP4800( Plus| Pro)?$/, 'confirmed', 'fr', false],
         ['DXP', 'DXP4800 GT', /^DXP4800.*GT/, 'confirmed', 'full', true],
@@ -1839,7 +1839,7 @@
     // Fan control exists for the two models whose wiring is known; the case pictures also for the DXP4800 family,
     // drawn after the DXP4800 Plus; elsewhere the pages stay out of the way.
     const modelName = () => state.hw?.model || state.data?.info?.model || '';
-    const fanKnown = () => /^(DXP6800|DXP4800.*GT)/.test(modelName());
+    const fanKnown = () => /^(DXP6800|DXP4800.*GT|DXP2800 GT)/.test(modelName());
     const fanOff = () => state.data?.settings?.fan_control === false;
     const caseKnown = () => fanKnown() || /^(DXP4800( Plus| Pro)?|DXP8800 Plus|DXP2800( GT)?|iDX6011( Pro)?)$/.test(modelName());
 

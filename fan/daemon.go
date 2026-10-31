@@ -32,8 +32,9 @@ const (
 	stallDefaultPct = 20
 )
 
-// Role of each fan: fan2 to fan4 on the DXP6800 Pro, fan1 and fan3 on the DXP4800 GT.
-var roles = map[string]string{"fan1": "cpu", "fan2": "cpu", "fan3": "case", "fan4": "case"}
+// Role of each fan: fan2 to fan4 on the DXP6800 Pro, fan1 and fan3 on the DXP4800 GT,
+// csfan0 and csfan1 on the DXP2800 GT.
+var roles = map[string]string{"fan1": "cpu", "fan2": "cpu", "fan3": "case", "fan4": "case", "csfan0": "cpu", "csfan1": "case"}
 
 // State is written after every tick for the web page and the dashboard.
 type State struct {

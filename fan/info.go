@@ -26,10 +26,10 @@ type Info struct {
 }
 
 // ModelSupported tells whether the fan wiring of this tool (see roles and the
-// IT8613E and IT5571 channels) is that of the machine: the DXP6800 Pro and the
-// DXP4800 GT are known.
+// IT8613E, IT5571 and CS201x channels) is that of the machine: the DXP6800 Pro,
+// the DXP4800 GT and the DXP2800 GT are known.
 func ModelSupported(model string) bool {
-	return strings.HasPrefix(model, "DXP6800") || isDXP4800GT(model)
+	return strings.HasPrefix(model, "DXP6800") || isDXP4800GT(model) || isDXP2800GT(model)
 }
 
 // requireSupportedModel keeps every access to the fan controller ports to the model
@@ -42,7 +42,7 @@ func requireSupportedModel() error {
 	if model == "" {
 		model = "unknown model"
 	}
-	return fmt.Errorf("%s has no fan control: it exists for the DXP6800 Pro and the DXP4800 GT only", model)
+	return fmt.Errorf("%s has no fan control: it exists for the DXP6800 Pro, the DXP4800 GT and the DXP2800 GT only", model)
 }
 
 func ReadInfo() Info {

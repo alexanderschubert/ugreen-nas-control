@@ -338,7 +338,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 
     <article class="unc-card" data-nofan-model hidden>
         <h2 data-i18n="fanctl.title">Lüftersteuerung</h2>
-        <p class="unc-hint" data-i18n="fanctl.unsupported">Für dieses Modell gibt es keine Lüftersteuerung (bekannt nur beim DXP6800 Pro und DXP4800 GT). Das Plugin fasst den Lüfter-Chip nicht an, die Lüfter laufen wie vom BIOS eingestellt. Ein Schalter ist deshalb nicht nötig.</p>
+        <p class="unc-hint" data-i18n="fanctl.unsupported">Für dieses Modell gibt es keine Lüftersteuerung (bekannt nur beim DXP6800 Pro, DXP4800 GT und DXP2800 GT). Das Plugin fasst den Lüfter-Chip nicht an, die Lüfter laufen wie vom BIOS eingestellt. Ein Schalter ist deshalb nicht nötig.</p>
     </article>
 
     <article class="unc-card">
@@ -419,7 +419,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
         </div>
 
         <dl class="unc-facts">
-            <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip direkt über I/O-Ports an (ITE IT8613E beim DXP6800 Pro, Embedded Controller IT5571 beim DXP4800 GT) und den LED-Controller über I²C, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
+            <dt data-i18n="about.how">Funktionsweise</dt><dd data-i18n="about.how_text">Spricht den Lüfter-Chip direkt über I/O-Ports an (ITE IT8613E beim DXP6800 Pro, Embedded Controller IT5571 beim DXP4800 GT, Chipsea CS2011 beim DXP2800 GT) und den LED-Controller über I²C, ohne Kernel-Modul. Beim Stoppen oder Deinstallieren bekommen die Lüfter die Werte des BIOS zurück.</dd>
             <dt data-i18n="about.thanks">Dank an</dt><dd data-i18n-html="about.thanks_text"><a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a> (Protokoll und Schacht-Zuordnung der LED-Steuerung), <a href="https://github.com/alexanderschubert" target="_blank" rel="noopener">Alexander</a> und <a href="https://github.com/j3n57h0m45" target="_blank" rel="noopener">j3n57h0m45</a> (Entwicklung von UGREEN NAS Control; j3n57h0m45 auch die Unterstützung des DXP4800 GT: Lüfter über den IT5571, LEDs, Gehäuse- und Systemansicht, sowie die Überarbeitung der Oberfläche) und alle, die auf ihrem Modell getestet haben</dd>
         </dl>
     </article>
