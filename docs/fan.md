@@ -58,7 +58,7 @@ The daemons run with GC at 25 % and a 24 MiB soft memory limit (`backend/cmd/ugr
 - On any model not in `web/models/` with a `fan` entry, the plugin does not touch the fan controller.
 - A fan that stops turning raises a notification (Unraid notify script, killed after 10 s, at most one run per alert at a time, never under the lock). Drives can be excluded from fan control.
 - Nothing slow runs under the hardware lock. Scripts, `nvidia-smi`, `storcli`, `pgrep` (3 s) and the notify script run before or outside it; the locked part of a tick is register I/O only. An emergency never waits for an input read. The shutdown signal cancels a running input read.
-- Every wait for the lock (daemon, CLI, LED backend) ends after 5 s with an error: the daemon skips that tick (no write, retry on the next) and the CLI reports it. An EC that does not answer fails the first register after 3 x 0.5 s and every further call of the next second at once.
+- Every wait for the lock (daemon, CLI, LED backend) ends after 5 s with an error: the daemon skips that tick (no write, retry on the next) and the CLI reports it. An EC that does not answer fails the first register after 3 x 0.5 s and every further call of the next second at once. The hand-back is the exception: a daemon stop, `restore` and the end of a calibration wait up to 30 s for the lock, and Restore and the watchdog disarm ignore that one-second window, so they always get the full retry budget.
 - A panic while answering one history request is logged and closes that connection; the daemon and the fans are unaffected.
 - Rival tools writing the same chip make the daemon read-only: [conflicts.md](conflicts.md).
 

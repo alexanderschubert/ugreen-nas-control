@@ -281,3 +281,26 @@ func TestECDeadFailsFast(t *testing.T) {
 		t.Errorf("recovered read: %v", err)
 	}
 }
+
+// A hand-back right after a timeout gets the full retry budget: the dead window never blocks Restore or the disarm.
+func TestECRestoreIgnoresDeadWindow(t *testing.T) {
+	oldWait, oldDead := ecWait, ecDeadFor
+	defer func() { ecWait, ecDeadFor = oldWait, oldDead }()
+	ecWait, ecDeadFor = 20*time.Millisecond, time.Hour
+	f := newFakeEC()
+	ec := &EC{ports: f}
+	f.busy = 1 << 30
+	if _, err := ec.read(0xb0); !errors.Is(err, errECTimeout) {
+		t.Fatalf("first read: %v", err)
+	}
+	f.busy = 0 // the controller answers again, the window (an hour) is still open
+	if err := ec.Restore(nil); err != nil {
+		t.Fatalf("restore inside the dead window: %v", err)
+	}
+	f.busy = 1 << 30
+	_, _ = ec.read(0xb0)
+	f.busy = 0
+	if err := ec.DisarmWatchdog(); errors.Is(err, errECUnresponsive) {
+		t.Fatalf("disarm inside the dead window: %v", err)
+	}
+}

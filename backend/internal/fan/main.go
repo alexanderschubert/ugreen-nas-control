@@ -26,6 +26,16 @@ func withLock(fn func() error) error {
 	return hw.WithLock(fn)
 }
 
+// withLockStop is withLock for the paths that hand the fans back or disarm the watchdog (daemon stop, restore, end of
+// a calibration): they wait up to hw.StopLockTimeout instead of hw.LockTimeout, so a busy CLI never leaves the fans at
+// their last duty.
+func withLockStop(fn func() error) error {
+	if lockPath != "" {
+		return hw.WithLockAtFor(lockPath, hw.StopLockTimeout, fn)
+	}
+	return hw.WithLockFor(hw.StopLockTimeout, fn)
+}
+
 func usage() {
 	fmt.Fprint(os.Stderr, `Usage: ugreen-nas-fan <command>
 
@@ -246,7 +256,7 @@ func Main() {
 		if err != nil {
 			fail(err)
 		}
-		if err := withLock(func() error { return chip.Restore(s) }); err != nil {
+		if err := withLockStop(func() error { return chip.Restore(s) }); err != nil {
 			fail(err)
 		}
 		fmt.Println("BIOS fan settings restored.")

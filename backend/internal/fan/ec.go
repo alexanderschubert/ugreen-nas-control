@@ -244,6 +244,9 @@ func (c *EC) send(port uint16, v byte) error {
 	return c.ports.Out(port, v)
 }
 
+// revive clears the dead window: a hand-back (Restore, disarming the watchdog) always gets the full retry budget.
+func (c *EC) revive() { c.deadUntil = time.Time{} }
+
 func (c *EC) retry(fn func() error) (err error) {
 	if time.Now().Before(c.deadUntil) {
 		return errECUnresponsive
@@ -451,6 +454,7 @@ func (c *EC) Restore(Snapshot) error {
 	}
 	var errs []error
 	for _, ch := range c.channels() {
+		c.revive()
 		errs = append(errs, c.write(ch.Ctrl, ecModeAuto))
 	}
 	// Last, so that a stop never leaves an armed watchdog that nobody feeds.

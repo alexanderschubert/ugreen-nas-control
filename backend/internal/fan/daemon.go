@@ -207,12 +207,12 @@ var daemonSignals = []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP,
 // over (writing then would override it).
 func endFanControl(chip Fans, bios Snapshot, pet *Petter, rivals []conflict.Conflict, logf func(string, ...any)) {
 	if len(rivals) > 0 {
-		_ = withLock(func() error { stopWatchdog(pet, chip, logf); return nil })
+		_ = withLockStop(func() error { stopWatchdog(pet, chip, logf); return nil })
 		_ = os.Remove(statePath)
 		logf("fan control stopped, fans left to %s", rivalNames(rivals))
 		return
 	}
-	err := withLock(func() error {
+	err := withLockStop(func() error {
 		stopWatchdog(pet, chip, logf)
 		return restoreRetry(chip, bios, restoreTries, restoreBackoff, logf)
 	})
@@ -737,7 +737,7 @@ func runWatchdogOnly(chip Fans) error {
 		_ = withLock(func() error { petWatchdog(pet, chip, now(), logf); return nil })
 		select {
 		case <-stop:
-			_ = withLock(func() error { stopWatchdog(pet, chip, logf); return nil })
+			_ = withLockStop(func() error { stopWatchdog(pet, chip, logf); return nil })
 			logf("watchdog petter stopped")
 			return nil
 		case <-ticker.C:

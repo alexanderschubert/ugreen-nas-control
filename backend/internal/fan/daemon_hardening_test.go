@@ -175,3 +175,31 @@ func TestLockTimeoutIsAFailedTick(t *testing.T) {
 		t.Fatal("daemon never wrote after the lock came free")
 	}
 }
+
+type restoreChip struct {
+	loopChip
+	restored atomic.Int32
+}
+
+func (c *restoreChip) Restore(Snapshot) error { c.restored.Add(1); return nil }
+
+// A CLI holds the lock longer than a tick waits: the stop still hands the fans back (it waits StopLockTimeout).
+func TestStopWaitsLongerThanATickForTheLock(t *testing.T) {
+	dir := t.TempDir()
+	oldLock, oldState := lockPath, statePath
+	lockPath, statePath = filepath.Join(dir, "lock"), filepath.Join(dir, "state.json")
+	oldTick, oldStop := hw.LockTimeout, hw.StopLockTimeout
+	hw.LockTimeout, hw.StopLockTimeout = 30*time.Millisecond, 5*time.Second
+	t.Cleanup(func() { lockPath, statePath, hw.LockTimeout, hw.StopLockTimeout = oldLock, oldState, oldTick, oldStop })
+
+	locked := make(chan struct{})
+	go func() {
+		_ = hw.WithLockAt(lockPath, func() error { close(locked); time.Sleep(250 * time.Millisecond); return nil })
+	}()
+	<-locked
+	chip := &restoreChip{loopChip: loopChip{writes: map[string][]byte{}}}
+	endFanControl(chip, Snapshot{}, &Petter{}, nil, func(string, ...any) {})
+	if chip.restored.Load() != 1 {
+		t.Fatal("fans not handed back while the lock was busy for longer than a tick's wait")
+	}
+}

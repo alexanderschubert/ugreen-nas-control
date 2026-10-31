@@ -358,7 +358,7 @@ func handBack(cb *calibrator, bios Snapshot, crashed bool, reason string, daemon
 		}
 	}
 	if reason == "daemon_stopped" || biosMode || !daemonUp {
-		_ = withLock(func() error { return restoreRetry(cb.chip, bios, restoreTries, restoreBackoff, cb.logf) })
+		_ = withLockStop(func() error { return restoreRetry(cb.chip, bios, restoreTries, restoreBackoff, cb.logf) })
 	}
 }
 
