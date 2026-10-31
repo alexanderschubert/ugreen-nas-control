@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/led/chip"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/led/chip"
 )
 
 var (

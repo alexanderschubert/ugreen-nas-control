@@ -4,7 +4,7 @@ labels: [enhancement]
 body:
   - type: markdown
     attributes:
-      value: Ideas start in [Discussions, Ideas](https://github.com/alexanderschubert/ugreen-nas-control/discussions/new?category=ideas). Use this form for a concrete change that was agreed there.
+      value: Ideas start in [Discussions, Ideas](https://github.com/ugreen-nas-control/ugreen-nas-control/discussions/new?category=ideas). Use this form for a concrete change that was agreed there.
   - type: textarea
     id: problem
     attributes:

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
 )
 
 type fixture struct {

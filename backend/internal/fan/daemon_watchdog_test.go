@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
 )
 
 // runECDaemon runs the daemon on a fake EC with a clock that moves 10 s per reading, until it has fed or skipped for a

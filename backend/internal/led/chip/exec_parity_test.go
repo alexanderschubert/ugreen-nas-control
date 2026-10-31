@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/led/chip"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/led/ledctl"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/led/chip"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/led/ledctl"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 const fakeBusEnv = "CHIP_TEST_FAKE_BUS_LOG"

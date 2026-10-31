@@ -9,8 +9,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 // lockPath overrides the shared lock file (tests); empty means hw.LockPath, the one every process resolves alike.

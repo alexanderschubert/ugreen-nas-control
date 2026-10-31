@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
 )
 
 // Calibration measures the rpm of every fan at fixed speeds. The table lives next to fan.cfg (it must survive a

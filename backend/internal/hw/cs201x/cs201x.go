@@ -9,7 +9,7 @@ package cs201x
 import (
 	"fmt"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 const (

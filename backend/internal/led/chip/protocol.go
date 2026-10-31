@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 // The LED controller of UGREEN NAS devices (I2C address 0x3a), as described by

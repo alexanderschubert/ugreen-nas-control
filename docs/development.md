@@ -109,5 +109,5 @@ This runs the real install path: plugin manager, install script, boot cache, dae
 
 - The test version is `X.Y.Z.tYYYYMMDDHHMM` (X.Y.Z = latest release in `CHANGELOG.md`; a two-part heading up to 4.x counts as X.Y.0): it sorts above its release and below the next patch, and every serve run gets a new minute stamp ([releasing.md](releasing.md#versions)).
 - Only `--test` renders accept `--release-url` and `--plugin-url`; `just plg-check` refuses a stable or next plg whose release URL is not a GitHub release of this repository.
-- The plg installs as `ugreen-nas-control.plg`, replacing the official one. Roll back: `plugin remove ugreen-nas-control.plg`, then `plugin install https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugin/ugreen-nas-control.plg`. `fan.cfg`, `leds.cfg` and the other settings in `/boot/config/plugins/ugreen-nas-control/` survive the remove.
+- The plg installs as `ugreen-nas-control.plg`, replacing the official one. Roll back: `plugin remove ugreen-nas-control.plg`, then `plugin install https://raw.githubusercontent.com/ugreen-nas-control/ugreen-nas-control/main/plugin/ugreen-nas-control.plg`. `fan.cfg`, `leds.cfg` and the other settings in `/boot/config/plugins/ugreen-nas-control/` survive the remove.
 - The NAS must reach the dev machine on port 8790. Say in the PR which model you tested on.

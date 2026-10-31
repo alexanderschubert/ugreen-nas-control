@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 // powerACRecordPath keeps what `power-on-ac set` last sent. The GT cannot be read back, so this is the only answer

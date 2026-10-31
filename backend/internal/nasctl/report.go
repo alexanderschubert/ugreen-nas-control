@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
 )
 
 // Report is what a model report needs and nothing that identifies the NAS or its owner: no serial numbers, MAC or

@@ -4,7 +4,7 @@ The plugin runs as root on the NAS: the fan daemon writes to the fan controller,
 
 ## Report a vulnerability
 
-Do not open a public issue. Use [private vulnerability reporting](https://github.com/alexanderschubert/ugreen-nas-control/security/advisories/new) on GitHub. Include the plugin version, what you did and what happened.
+Do not open a public issue. Use [private vulnerability reporting](https://github.com/ugreen-nas-control/ugreen-nas-control/security/advisories/new) on GitHub. Include the plugin version, what you did and what happened.
 
 ## Supported versions
 

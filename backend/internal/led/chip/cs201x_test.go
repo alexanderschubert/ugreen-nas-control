@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
-	cs "github.com/alexanderschubert/ugreen-nas-control/internal/hw/cs201x"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
+	cs "github.com/ugreen-nas-control/ugreen-nas-control/internal/hw/cs201x"
 )
 
 // fakeCSChip is the Super-I/O window and the EC register file of a CS201x; it logs every EC write.

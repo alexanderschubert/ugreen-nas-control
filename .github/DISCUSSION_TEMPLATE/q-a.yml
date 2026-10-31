@@ -2,7 +2,7 @@ title: '[Q&A] '
 body:
   - type: markdown
     attributes:
-      value: A bug? Open an [issue](https://github.com/alexanderschubert/ugreen-nas-control/issues/new/choose) instead.
+      value: A bug? Open an [issue](https://github.com/ugreen-nas-control/ugreen-nas-control/issues/new/choose) instead.
   - type: input
     id: model
     attributes:

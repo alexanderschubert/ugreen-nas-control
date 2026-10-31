@@ -3,7 +3,7 @@ package ledctl
 import (
 	"strings"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/led/chip"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/led/chip"
 )
 
 // powerBoot lights the power LED of an iDX601x front panel once, when the status daemon starts.

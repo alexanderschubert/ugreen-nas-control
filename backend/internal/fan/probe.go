@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 // Fan probe. On an IT8613E whose header wiring is not known, it finds out which PWM output moves which tachometer

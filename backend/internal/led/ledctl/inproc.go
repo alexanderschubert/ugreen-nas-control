@@ -5,7 +5,7 @@ import (
 	"io"
 	"slices"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/led/chip"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/led/chip"
 )
 
 // InProcChip drives the LED controller inside this process (internal/led/chip) instead of running the

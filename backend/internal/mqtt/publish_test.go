@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan"
 )
 
 func writeFile(t *testing.T, path, content string) {
