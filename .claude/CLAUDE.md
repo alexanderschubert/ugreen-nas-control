@@ -13,6 +13,7 @@
 - Stack: TypeScript on Bun, Go. No Python, no Node. No new dependency, tool, top-level file/folder or workflow without need.
 - Docs: look up via docs/README.md (one line per file). One topic per file, one home per fact, links elsewhere: versions → docs/releasing.md#versions, languages → docs/translations.md, model reporting → docs/cli.md#report-a-model, watchdog → docs/watchdog.md. New doc = a line in docs/README.md (`just docs-check` fails otherwise); current facts only, no dates or history.
 - Comments: only facts the code cannot show. → .github/CONTRIBUTING.md
+- PR labels: one type (matches the fragment type) + areas, `needs hardware test` when registers are written. → .github/CONTRIBUTING.md
 
 ## One component for all
 
@@ -23,4 +24,4 @@ Plugin page, Unraid dashboard tile (`web/src/dash`), website (SSR `docs/site/liv
 
 ## Site copy
 
-Bold. UGREEN hardware is special, the plugin is the bridge. Never blame Unraid, never mention UGOS, never write "NASync". Watchdog: keep the BIOS watchdog on, the plugin feeds it, a frozen box reboots itself. No false facts. → docs/site/content.ts
+Confident and factual: every claim backed by code or docs, hardware status as in the model matrix. Model names as in `web/models` (DXP4800 GT). Watchdog: keep the BIOS watchdog on, the plugin feeds it, a frozen box reboots itself. → docs/site/content.ts
