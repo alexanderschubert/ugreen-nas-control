@@ -109,3 +109,18 @@ jobs:
 
       - name: Check the MD5 of every download in the .plg
         run: python3 scripts/plg-hashes.py plugin/ugreen-nas-control.plg --binary ugreen-nas-fan=build/ugreen-nas-fan --binary ugreen-led-i2c=build/ugreen-led-i2c --check
+
+  # main requires a check named ci-ok. It is green only when every job above is, and it runs even when one of
+  # them failed, so a red job shows up as a red ci-ok instead of a check that never reports.
+  ci-ok:
+    if: always()
+    needs: [build, led, hashes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Every job must have succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          for r in $RESULTS; do [ "$r" = success ] || exit 1; done
