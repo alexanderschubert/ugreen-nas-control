@@ -316,7 +316,7 @@ func addChipStatus(out map[string]any, sensors *Sensors, open func() (Fans, erro
 		return
 	}
 	if c, ok := chip.(io.Closer); ok {
-		defer c.Close()
+		defer func() { _ = c.Close() }()
 	}
 	var fans []FanStatus
 	var temps []*int
