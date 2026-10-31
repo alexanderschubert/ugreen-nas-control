@@ -70,6 +70,19 @@ func ended(ch <-chan struct{}) bool {
 	}
 }
 
+// waitFile returns the content of path once it exists. The scripts under test publish it with an atomic rename, since
+// `echo >file` creates the file empty before it writes.
+func waitFile(t *testing.T, path string) string {
+	t.Helper()
+	for end := time.Now().Add(30 * time.Second); time.Now().Before(end); time.Sleep(5 * time.Millisecond) {
+		if data, err := os.ReadFile(path); err == nil {
+			return strings.TrimSpace(string(data))
+		}
+	}
+	t.Fatalf("%s was not written", filepath.Base(path))
+	return ""
+}
+
 func TestStopNeverSignalsAForeignProcess(t *testing.T) {
 	f := newFixture(t)
 	pid, gone := f.fakeProcess("sleep 100")
@@ -159,7 +172,7 @@ func TestBlockerComesFromTheRivalDetector(t *testing.T) {
 func TestEventStopping(t *testing.T) {
 	f := newFixture(t)
 	marker := filepath.Join(f.dir, "called")
-	write(t, f.c.Env.LEDCtl, "#!/bin/sh\necho \"$@\" >"+marker+"\n")
+	write(t, f.c.Env.LEDCtl, "#!/bin/sh\necho \"$@\" >"+marker+".tmp && mv "+marker+".tmp "+marker+"\n")
 	if err := os.Chmod(f.c.Env.LEDCtl, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -176,17 +189,9 @@ func TestEventStopping(t *testing.T) {
 	if rc := f.c.Main([]string{"event", "stopping"}); rc != 0 {
 		t.Fatalf("rc %d", rc)
 	}
-	deadline := time.Now().Add(3 * time.Second)
-	for time.Now().Before(deadline) {
-		if data, err := os.ReadFile(marker); err == nil {
-			if strings.TrimSpace(string(data)) != "shutdown" {
-				t.Errorf("called with %q", data)
-			}
-			return
-		}
-		time.Sleep(50 * time.Millisecond)
+	if got := waitFile(t, marker); got != "shutdown" {
+		t.Errorf("called with %q", got)
 	}
-	t.Error("the LED tool was not started")
 }
 
 func TestUsage(t *testing.T) {
@@ -206,7 +211,7 @@ func TestUsage(t *testing.T) {
 func fakePublisher(t *testing.T, f *fixture, script string) (args string) {
 	t.Helper()
 	args = filepath.Join(f.dir, "args")
-	write(t, f.c.Env.FanTool, "#!/bin/sh\necho \"$@\" >"+args+"\n"+script+"\n")
+	write(t, f.c.Env.FanTool, "#!/bin/sh\necho \"$@\" >"+args+".tmp && mv "+args+".tmp "+args+"\n"+script+"\n")
 	if err := os.Chmod(f.c.Env.FanTool, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -236,7 +241,7 @@ func TestMQTTPublisherOnlyRunsWhenSwitchedOn(t *testing.T) {
 	if rc := f.c.Main([]string{"mqtt-start"}); rc != 0 {
 		t.Fatalf("rc %d: %s", rc, f.errw)
 	}
-	if got, _ := os.ReadFile(args); strings.TrimSpace(string(got)) != "publish" {
+	if got := waitFile(t, args); got != "publish" {
 		t.Errorf("started with %q", got)
 	}
 	if rc := f.c.Main([]string{"mqtt-status"}); rc != 0 {
@@ -286,7 +291,8 @@ func TestStartRunsThePublisherNextToTheFans(t *testing.T) {
 
 func TestStopKillsADaemonThatIgnoresSIGTERM(t *testing.T) {
 	f := newFixture(t)
-	child := exec.Command("sh", "-c", `trap "" TERM; while :; do sleep 1; done`)
+	ready := filepath.Join(f.dir, "ready")
+	child := exec.Command("sh", "-c", `trap "" TERM; : >"$0"; while :; do sleep 1; done`, ready)
 	if err := child.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -296,7 +302,7 @@ func TestStopKillsADaemonThatIgnoresSIGTERM(t *testing.T) {
 	pid := child.Process.Pid
 	write(t, filepath.Join(f.c.Env.Proc, strconv.Itoa(pid), "cmdline"), "/x/backend/ugreen-nas-fan\x00daemon\x00")
 	write(t, f.c.Env.PidFile, strconv.Itoa(pid)+"\n")
-	time.Sleep(200 * time.Millisecond)
+	waitFile(t, ready)
 	f.c.Sleep = time.Sleep
 	f.c.terminate(f.c.Env.PidFile, 2)
 	if !ended(done) {
