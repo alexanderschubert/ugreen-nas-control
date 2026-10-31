@@ -19,6 +19,8 @@ export interface FanCaps {
     watchdog: boolean;
     /** The LCD backlight can be read and set (iDX Pro). */
     backlight: boolean;
+    /** The lowest speed the hardware runs at: a lower minimum is raised to it by the daemon (CS201x, 25 %). Absent: no floor. */
+    min_pct_floor?: number;
 }
 
 /**

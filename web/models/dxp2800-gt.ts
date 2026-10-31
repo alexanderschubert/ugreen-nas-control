@@ -14,7 +14,7 @@ export default {
     led: 'bays',
     caseView: 'front-rear',
     caseVariant: 'rear2800',
-    fan: { chip: 'Chipsea CS201x embedded controller', fans: { fan1: 'cpu', fan3: 'case' }, kind: 'probe' },
+    fan: { chip: 'Chipsea CS201x embedded controller', fans: { fan1: 'cpu', fan3: 'case' }, kind: 'probe', minPctFloor: 25 },
     verified: {
         leds: {
             status: 'expected',

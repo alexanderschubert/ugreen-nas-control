@@ -154,6 +154,7 @@ export const fr: Record<Key, string> = {
     'curves.warn_top': 'Cette courbe n’atteint jamais 100 % ; la limite d’urgence est la seule protection.',
     'curves.raised': 'relevé à min {pct} %',
     'curves.min_hint': 'Aucun ventilateur ne tourne moins vite, même si une courbe indique moins.',
+    'curves.min_floor': 'Les ventilateurs de ce modèle tournent à {pct} % au minimum, même si une valeur plus basse est réglée.',
     'calib.lead': 'La mesure est la première étape pour des courbes personnalisées. Elle dure environ {min} minutes.',
     'calib.gain_rpm': 'Les vrais tr/min à côté de chaque point de courbe et sur l’axe du graphique',
     'calib.gain_floor': 'La vitesse la plus basse à laquelle chaque ventilateur tourne encore, pour régler la vitesse minimale',

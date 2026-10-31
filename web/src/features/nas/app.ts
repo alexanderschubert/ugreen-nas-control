@@ -921,7 +921,9 @@ function main(root: HTMLElement): void {
 
     // The daemon never runs a fan below this speed (Safety page), whatever the curve says.
     // An unsaved value from the field on the curves page counts for the preview.
-    const minPct = (): number => Math.min(60, Math.max(10, Number(state.minEdit ?? state.data?.settings?.min_pct ?? 25) || 25));
+    // The hardware floor of the model (fan_caps.min_pct_floor): the daemon raises a lower minimum to it.
+    const minFloor = (): number => state.data?.fan_caps?.min_pct_floor ?? 10;
+    const minPct = (): number => Math.min(60, Math.max(minFloor(), Number(state.minEdit ?? state.data?.settings?.min_pct ?? 25) || 25));
 
     function paintMix() {
         const line = q('#unc-mix-now');
@@ -1557,7 +1559,11 @@ function main(root: HTMLElement): void {
         }
         renderCurvesMode();
         q<HTMLInputElement>('#unc-case-cpu').checked = state.caseFollows;
+        q<HTMLInputElement>('#unc-curve-min').min = String(minFloor());
         q<HTMLInputElement>('#unc-curve-min').value = String(minPct());
+        const floorHint = q('#unc-min-floor');
+        floorHint.hidden = minFloor() <= 10;
+        floorHint.textContent = t('curves.min_floor', { pct: minFloor() });
         showCurveMin();
         drawChart('cpu');
         drawChart('case');

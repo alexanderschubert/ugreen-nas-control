@@ -147,6 +147,7 @@ export const es: Record<Key, string> = {
     'curves.warn_top': 'Esta curva nunca llega al 100 %; el límite de emergencia es la única protección.',
     'curves.raised': 'elevado a mín. {pct} %',
     'curves.min_hint': 'Ningún ventilador va más lento que esto, aunque una curva indique menos.',
+    'curves.min_floor': 'Los ventiladores de este modelo giran como mínimo al {pct} %, aunque se ajuste menos.',
     'calib.lead': 'Medir es el primer paso para curvas propias. Dura unos {min} minutos.',
     'calib.gain_rpm': 'Las rpm reales junto a cada punto de la curva y en el eje del gráfico',
     'calib.gain_floor': 'La velocidad más baja a la que cada ventilador aún gira, como guía para la velocidad mínima',

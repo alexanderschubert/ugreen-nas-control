@@ -208,7 +208,14 @@ done
 rm -f "${BOOT_DIR}/ugreen-nas-control.cron"
 rmdir "${BOOT_DIR}" 2>/dev/null
 
-rm -f /var/run/ugreen-nas-control.*
+# The BIOS snapshot and the CS201x write marker stay: if stop could not restore, a reinstall restores from them
+# instead of saving our own duty as the BIOS value. /var/run is RAM, a reboot clears them.
+for f in /var/run/ugreen-nas-control.*; do
+    case "${f}" in
+        */ugreen-nas-control.bios | */ugreen-nas-control.cs201x-wrote) ;;
+        *) rm -f "${f}" ;;
+    esac
+done
 /usr/local/sbin/update_cron
 
 log "Removed, the fans run at the BIOS values again. Settings stay in ${BOOT_DIR} (delete the folder to wipe them)."

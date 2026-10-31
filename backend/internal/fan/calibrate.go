@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"sort"
 	"sync/atomic"
 	"syscall"
@@ -44,6 +45,11 @@ const (
 )
 
 var calibSteps = []int{10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100}
+
+// stepsFrom drops the steps below floor: the hardware runs those at the floor, so they would record the same rpm.
+func stepsFrom(floor int) []int {
+	return slices.DeleteFunc(slices.Clone(calibSteps), func(p int) bool { return p < floor })
+}
 
 // CalibTable: per fan the measured (percent, rpm) pairs, rising in percent.
 type CalibTable struct {
@@ -174,6 +180,7 @@ func median3(v [3]int) int {
 
 type calibrator struct {
 	chip        Fans
+	floor       int // steps below it are skipped
 	cfg         func() Config
 	sensors     func() Sensors
 	daemonAlive func() bool
@@ -287,7 +294,8 @@ func (cb *calibrator) setAll(pct int, only string) error {
 func (cb *calibrator) run() (CalibTable, string) {
 	tbl := CalibTable{Fans: map[string][][2]int{}}
 	outs := cb.chip.Outputs()
-	total, step := len(outs)*len(calibSteps), 0
+	steps := stepsFrom(cb.floor)
+	total, step := len(outs)*len(steps), 0
 
 	fail := func(reason string) (CalibTable, string) {
 		// A stopped daemon has handed the fans back already; do not leave them in manual mode.
@@ -299,7 +307,7 @@ func (cb *calibrator) run() (CalibTable, string) {
 
 	for _, ch := range outs {
 		prev := 100
-		for _, pct := range calibSteps {
+		for _, pct := range steps {
 			if r := cb.unsafe(); r != "" {
 				return fail(r)
 			}
@@ -367,7 +375,7 @@ func runCalibrate(chip Fans) (err error) {
 	defer func() { _ = lock.Close() }()
 
 	logf := func(format string, args ...any) { fmt.Fprintf(os.Stderr, format+"\n", args...) }
-	steps := len(chip.Outputs()) * len(calibSteps)
+	steps := len(chip.Outputs()) * len(stepsFrom(minPctFloor(productName())))
 	report := func(p CalibProgress) { _ = writeJSONAtomic(calibStatePath, p) }
 	abort := func(reason string) error {
 		report(CalibProgress{State: "aborted", Reason: reason, Steps: steps, Time: time.Now().Unix()})
@@ -411,7 +419,7 @@ func runCalibrate(chip Fans) (err error) {
 	})
 
 	cb := &calibrator{
-		chip: chip, cfg: func() Config { return LoadConfig(configPath) }, sensors: ReadSensors,
+		chip: chip, floor: minPctFloor(productName()), cfg: func() Config { return LoadConfig(configPath) }, sensors: ReadSensors,
 		daemonAlive: func() bool { return fresh(statePath, daemonFresh) },
 		stop:        stop, progress: progress, logf: logf,
 		settle: 8 * time.Second, settleBig: 15 * time.Second, gap: time.Second,

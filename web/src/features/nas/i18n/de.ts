@@ -153,6 +153,7 @@ export const de: Record<Key, string> = {
     'curves.warn_top': 'Diese Kurve erreicht nie 100 %; die Notfall-Grenze ist die einzige Absicherung.',
     'curves.raised': 'angehoben auf min. {pct} %',
     'curves.min_hint': 'Kein Lüfter läuft langsamer, auch wenn eine Kurve weniger vorgibt.',
+    'curves.min_floor': 'Die Lüfter dieses Modells laufen mindestens mit {pct} %, auch wenn weniger eingestellt ist.',
     'calib.lead': 'Für eigene Kurven ist die Messung der erste Schritt. Sie dauert etwa {min} Minuten.',
     'calib.gain_rpm': 'Echte Drehzahl neben jedem Kurvenpunkt und an der Achse im Diagramm',
     'calib.gain_floor': 'Die niedrigste Stufe, bei der jeder Lüfter noch dreht, als Anhalt für die niedrigste Lüfterdrehzahl',

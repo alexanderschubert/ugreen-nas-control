@@ -153,6 +153,7 @@ export const nl: Record<Key, string> = {
     'curves.warn_top': 'Deze curve haalt nooit 100 %; de noodgrens is het enige vangnet.',
     'curves.raised': 'verhoogd naar min {pct} %',
     'curves.min_hint': 'Geen enkele ventilator draait langzamer dan dit, ook als een curve minder aangeeft.',
+    'curves.min_floor': 'De ventilatoren van dit model draaien minstens op {pct} %, ook als er een lagere waarde is ingesteld.',
     'calib.lead': 'Meten is de eerste stap voor eigen curves. Het duurt ongeveer {min} minuten.',
     'calib.gain_rpm': 'Echte rpm naast elk curvepunt en op de grafiekas',
     'calib.gain_floor': 'Het laagste toerental waarop elke ventilator nog draait, als hulp bij het instellen van het laagste ventilatortoerental',

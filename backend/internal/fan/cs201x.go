@@ -1,6 +1,7 @@
 package fan
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -101,7 +102,32 @@ type csWindow = cs.Window
 
 type csEC = cs.EC
 
-func csReadWindow(p Ports, enableHost bool) (csWindow, error) { return cs.ReadWindow(p, enableHost) }
+// csReadWindow never switches the host interface on: whether the BIOS exposes the fan controller is not ours to change.
+func csReadWindow(p Ports) (csWindow, error) { return cs.ReadWindow(p, false) }
+
+// csRPM reads a 16-bit speed register as two bytes. The controller can roll the pair over between the reads, so it
+// reads again until the high byte is the same on both sides of the low byte (three tries).
+func csRPM(ec csEC, reg uint32) (int, error) {
+	hi, err := ec.Read(reg)
+	if err != nil {
+		return 0, err
+	}
+	for range 3 {
+		lo, err := ec.Read(reg + 1)
+		if err != nil {
+			return 0, err
+		}
+		hi2, err := ec.Read(reg)
+		if err != nil {
+			return 0, err
+		}
+		if hi2 == hi {
+			return int(hi)<<8 | int(lo), nil
+		}
+		hi = hi2
+	}
+	return 0, errors.New("fan speed register keeps changing between the two byte reads")
+}
 
 func plausibleBase(base uint16) bool { return cs.PlausibleBase(base) }
 
@@ -111,7 +137,7 @@ func plausibleBase(base uint16) bool { return cs.PlausibleBase(base) }
 func ProbeCS201x(p Ports, model string) (CS201xReading, error) {
 	r := CS201xReading{Model: model, Temps: map[string]int{}}
 
-	w, err := csReadWindow(p, false)
+	w, err := csReadWindow(p)
 	r.ChipID = fmt.Sprintf("0x%04x", w.ID)
 	r.Revision = fmt.Sprintf("0x%04x", w.Rev)
 	if err != nil {
@@ -120,7 +146,7 @@ func ProbeCS201x(p Ports, model string) (CS201xReading, error) {
 
 	if w.Active&0x01 == 0 {
 		r.HostEC = "not active"
-		r.Notes = append(r.Notes, "the host interface of the embedded controller is off (cfg 0x30 = 0); the read-only probe does not switch it on, so no EC register was read. The fan driver switches it on before its first write")
+		r.Notes = append(r.Notes, "the host interface of the embedded controller is off (cfg 0x30 = 0): the BIOS does not expose the fan controller. Nothing switches it on, so no EC register was read and fan control stays off")
 		if plausibleBase(w.Base) {
 			r.Base = fmt.Sprintf("0x%04x", w.Base)
 		}
@@ -142,6 +168,14 @@ func ProbeCS201x(p Ports, model string) (CS201xReading, error) {
 		return int(v)
 	}
 
+	rpm := func(reg uint32) int {
+		v, err := csRPM(ec, reg)
+		if err != nil && firstErr == nil {
+			firstErr = err
+		}
+		return v
+	}
+
 	for i, f := range []struct {
 		role          string
 		en, duty, spd uint32
@@ -154,7 +188,7 @@ func ProbeCS201x(p Ports, model string) (CS201xReading, error) {
 			Role:    f.role,
 			Enabled: get(f.en),
 			Duty:    get(f.duty),
-			RPM:     get(f.spd)<<8 | get(f.spd+1),
+			RPM:     rpm(f.spd),
 		})
 	}
 	// Unsigned bytes, as UGREEN reads them (ug_201x.c:276-291).
