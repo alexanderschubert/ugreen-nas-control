@@ -42,12 +42,12 @@ function fan_v2_int(string $value, int $lo, int $hi): bool
     return preg_match('/^[+-]?\d{1,9}$/D', $value) === 1 && (int) $value >= $lo && (int) $value <= $hi;
 }
 
-// One input: cpu, nvme, gpu, disk_max[:a+b], disk_avg[:a+b], nic:eth0, script:name.
+// One input: cpu, nvme, gpu, hba, disk_max[:a+b], disk_avg[:a+b], nic:eth0, script:name.
 function fan_v2_input_part(string $spec): bool
 {
     $drive = '[A-Za-z0-9_.-]{1,40}';
 
-    return in_array($spec, ['cpu', 'nvme', 'gpu', 'disk_max', 'disk_avg'], true)
+    return in_array($spec, ['cpu', 'nvme', 'gpu', 'hba', 'disk_max', 'disk_avg'], true)
         || preg_match("/^disk_(max|avg):{$drive}(\\+{$drive}){0,31}$/D", $spec) === 1
         || preg_match('/^nic:[A-Za-z0-9_.@-]{1,15}$/D', $spec) === 1
         || preg_match('/^script:[a-z0-9_-]{1,32}$/D', $spec) === 1;

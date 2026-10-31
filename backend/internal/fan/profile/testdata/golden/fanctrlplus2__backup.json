@@ -59,11 +59,6 @@
     },
     {
       "key": "aux_sensor",
-      "reason": "\"storcli:c0:roc\" has no input here",
-      "file": "fanctrlplus2_Front_Intake.cfg"
-    },
-    {
-      "key": "aux_sensor",
       "reason": "\"mlx:0000:03:00.0\" has no input here",
       "file": "fanctrlplus2_Front_Intake.cfg"
     },

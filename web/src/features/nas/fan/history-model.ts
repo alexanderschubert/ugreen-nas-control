@@ -6,7 +6,7 @@ export const RANGE_SECONDS: Record<FanHistoryRange, number> = { '1h': 3600, '24h
 /** How often a visible card asks again: as often as a new point arrives, at most every 10 s. */
 export const REFRESH_SECONDS: Record<FanHistoryRange, number> = { '1h': 10, '24h': 60 };
 
-export type SourceKind = 'cpu' | 'disk' | 'nvme' | 'gpu' | 'nic' | 'script' | 'idle' | 'emergency' | 'off' | 'other';
+export type SourceKind = 'cpu' | 'disk' | 'nvme' | 'gpu' | 'hba' | 'nic' | 'script' | 'idle' | 'emergency' | 'off' | 'other';
 
 /** What a source is, for the colour of its band: "disk:sdb" is a disk, "emergency:cpu_hot" an emergency. */
 export function sourceKind(source: string): SourceKind {
@@ -15,6 +15,7 @@ export function sourceKind(source: string): SourceKind {
         case 'cpu':
         case 'nvme':
         case 'gpu':
+        case 'hba':
         case 'nic':
         case 'script':
         case 'emergency':

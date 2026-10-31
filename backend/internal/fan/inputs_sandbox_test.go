@@ -219,7 +219,7 @@ func TestRunSandboxedStdoutCapKillsTheWriter(t *testing.T) {
 	dir := useScriptDir(t)
 	p := writeScript(t, dir, "flood", "#!/bin/sh\nwhile :; do echo 12345678901234567890; done\n", 0o755)
 	start := time.Now()
-	_, err := runSandboxed(context.Background(), p, nil, 5*time.Second, 64)
+	_, err := runSandboxed(context.Background(), p, nil, "", 5*time.Second, 64)
 	if err == nil || !strings.Contains(err.Error(), "longer than 64") {
 		t.Fatalf("err = %v", err)
 	}

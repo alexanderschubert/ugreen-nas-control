@@ -29,6 +29,7 @@ const KNOWN_SOURCES = [
     'disk_max',
     'nvme',
     'gpu',
+    'hba',
     'nic',
     'script',
     'idle',
@@ -39,7 +40,7 @@ const KNOWN_SOURCES = [
     'rival',
     'calibration'
 ];
-const KINDS: SourceKind[] = ['cpu', 'disk', 'nvme', 'gpu', 'nic', 'script', 'idle', 'emergency', 'off', 'other'];
+const KINDS: SourceKind[] = ['cpu', 'disk', 'nvme', 'gpu', 'hba', 'nic', 'script', 'idle', 'emergency', 'off', 'other'];
 
 /** The text of a source: "Hottest drive disk2", "CPU", "Emergency: The CPU reached the emergency limit." */
 export function sourceText(ctx: Pick<FanCtx, 'tRaw'>, source: string): string {
@@ -61,6 +62,7 @@ function shortText(ctx: Pick<FanCtx, 'tRaw'>, source: string): string {
             return 'Ø';
         case 'cpu':
         case 'gpu':
+        case 'hba':
             return kind.toUpperCase();
         case 'nvme':
             return 'NVMe';

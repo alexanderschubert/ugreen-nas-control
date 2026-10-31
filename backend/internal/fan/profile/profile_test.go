@@ -196,3 +196,20 @@ func FuzzBackup(f *testing.F) {
 	f.Add([]byte(`{"format":"fanctrlplus2-config","version":1,"files":{"fanctrlplus2_a.cfg":"custom=\"a\"\ncpu_enable=\"1\"\ncpu_min_temp=\"1\"\ncpu_max_temp=\"2\"\n"}}`))
 	f.Fuzz(func(_ *testing.T, b []byte) { _, _ = ParseFanCtrlPlus2Backup(b, Env{}, passRules{}) })
 }
+
+func TestFanCtrlPlus2StorcliSensorImportsAsHBA(t *testing.T) {
+	cfg := "custom=\"Case\"\nlabel=\"Case\"\npwm=\"90\"\nmax=\"255\"\ncpu_enable=\"0\"\naux_enable=\"1\"\n" +
+		"aux_sensor=\"storcli:c0:roc,storcli:c1:roc,nvidia:gpu0\"\naux_min_temp=\"30\"\naux_max_temp=\"60\"\n"
+	res, err := ParseFanCtrlPlus(map[string][]byte{"fanctrlplus2_Case.cfg": []byte(cfg)}, 2, Env{}, passRules{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := res.Profile.Fan["case_input"]; got != "max:hba|gpu" {
+		t.Errorf("case_input = %q, want max:hba|gpu (two controllers are one input)", got)
+	}
+	for _, s := range res.NotImported {
+		if strings.Contains(s.Reason, "storcli") {
+			t.Errorf("storcli sensor listed as not imported: %+v", s)
+		}
+	}
+}

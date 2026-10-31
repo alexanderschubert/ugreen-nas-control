@@ -54,7 +54,7 @@ function validCurveText(text: string): boolean {
 function inputPart(spec: string): boolean {
     const drive = '[A-Za-z0-9_.-]{1,40}';
     return (
-        ['cpu', 'nvme', 'gpu', 'disk_max', 'disk_avg'].includes(spec) ||
+        ['cpu', 'nvme', 'gpu', 'hba', 'disk_max', 'disk_avg'].includes(spec) ||
         new RegExp(`^disk_(max|avg):${drive}(\\+${drive}){0,31}$`).test(spec) ||
         /^nic:[A-Za-z0-9_.@-]{1,15}$/.test(spec) ||
         /^script:[a-z0-9_-]{1,32}$/.test(spec)

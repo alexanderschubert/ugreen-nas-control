@@ -58,7 +58,7 @@ export interface Settings {
 export type FanOnMissing = 'fallback' | 'curve_low' | 'hold';
 export type FanJobMode = 'off' | 'floor' | 'boost';
 
-/** One group's (or one fan's, with fan.<id>.<key> overrides) tuning. `input` is a spec: auto, cpu, disk_max[:a+b], disk_avg[:a+b], nvme, gpu, nic:<iface>, script:<name> or max:<a>|<b>. */
+/** One group's (or one fan's, with fan.<id>.<key> overrides) tuning. `input` is a spec: auto, cpu, disk_max[:a+b], disk_avg[:a+b], nvme, gpu, hba, nic:<iface>, script:<name> or max:<a>|<b>. */
 export interface FanGroupConfig {
     input: string;
     curve: string;
@@ -109,7 +109,7 @@ export interface FanConfigV2 {
 export interface FanInputOption {
     spec: string;
     label: string;
-    kind: 'auto' | 'cpu' | 'disk_max' | 'disk_avg' | 'nvme' | 'gpu' | 'nic' | 'script' | 'max';
+    kind: 'auto' | 'cpu' | 'disk_max' | 'disk_avg' | 'nvme' | 'gpu' | 'hba' | 'nic' | 'script' | 'max';
     /** Current reading in °C, null when it cannot be read now. */
     reading: number | null;
     /** false: the source is not there on this NAS (shown greyed out). */

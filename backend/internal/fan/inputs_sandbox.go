@@ -149,14 +149,18 @@ func ScriptNames() []string {
 
 // runSandboxed starts path with args and an empty environment, no shell, no stdin, in its own process group, and gives
 // back its stdout. It fails when the timeout passes, more than maxOut bytes come, or the exit status is not 0; the
-// whole process group is killed in every failing case, so no child of the script survives.
-func runSandboxed(ctx context.Context, path string, args []string, timeout time.Duration, maxOut int) ([]byte, error) {
+// whole process group is killed in every failing case, so no child of the script survives. It runs in dir, or in / when
+// dir is empty.
+func runSandboxed(ctx context.Context, path string, args []string, dir string, timeout time.Duration, maxOut int) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.Command(path, args...)
 	cmd.Env = []string{} // empty, not nil: nil would hand over our environment
 	cmd.Dir = "/"
+	if dir != "" {
+		cmd.Dir = dir
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -227,7 +231,7 @@ func (r *Registry) readScript(ctx context.Context, name string) reading {
 		if err != nil {
 			return 0, err
 		}
-		out, err := runSandboxed(ctx, cmd[0], cmd[1:], scriptTimeout, scriptMaxOut)
+		out, err := runSandboxed(ctx, cmd[0], cmd[1:], "", scriptTimeout, scriptMaxOut)
 		if err != nil {
 			return 0, err
 		}
@@ -258,7 +262,7 @@ func readNvidia(ctx context.Context) (float64, error) {
 	if path == "" {
 		return 0, fmt.Errorf("nvidia-smi not found")
 	}
-	out, err := runSandboxed(ctx, path, []string{"--query-gpu=temperature.gpu", "--format=csv,noheader,nounits"}, scriptTimeout, 1024)
+	out, err := runSandboxed(ctx, path, []string{"--query-gpu=temperature.gpu", "--format=csv,noheader,nounits"}, "", scriptTimeout, 1024)
 	if err != nil {
 		return 0, fmt.Errorf("nvidia-smi %w", err)
 	}
@@ -279,4 +283,98 @@ func readNvidia(ctx context.Context) (float64, error) {
 		return 0, fmt.Errorf("nvidia-smi: no output")
 	}
 	return best, nil
+}
+
+// storcliPaths: where Broadcom's storcli is looked for (fixed paths, no PATH search).
+var storcliPaths = storcliCandidates()
+
+// hbaTimeout: storcli talks to the controller firmware and takes longer than nvidia-smi.
+var hbaTimeout = 5 * time.Second
+
+// storcliWorkDir: storcli writes storcli.log into its working directory on every call; on Unraid that must be RAM
+// under /var/run, not / (also RAM) or the flash. The nolog argument is not used: its first version is unverified.
+var storcliWorkDir = envOr("UGREEN_STORCLI_DIR", "/var/run/ugreen-nas-control.storcli")
+
+func storcliCandidates() []string {
+	if p := envOr("UGREEN_STORCLI", ""); p != "" {
+		return []string{p}
+	}
+	var out []string
+	for _, dir := range []string{"/opt/MegaRAID/storcli", "/usr/local/sbin", "/usr/local/bin", "/usr/sbin", "/usr/bin"} {
+		out = append(out, dir+"/storcli64", dir+"/storcli")
+	}
+	return out
+}
+
+// readHBA: the hottest SAS/RAID host bus adapter. The hwmon sensor of the mpt3sas driver when there is one, else
+// storcli (LSI/Broadcom MegaRAID and the HBAs it manages). Both are slow reads: mpt3sas asks the firmware on every
+// read.
+func (r *Registry) readHBA(ctx context.Context) reading {
+	return r.slowRead("hba", func() (float64, error) {
+		if v, ok := hbaHwmon(); ok {
+			return v, nil
+		}
+		return readStorcli(ctx)
+	})
+}
+
+// hbaHwmon takes the hottest temp*_input (IOC, Board) of every mpt3sas hwmon device.
+func hbaHwmon() (float64, bool) {
+	dirs, _ := filepath.Glob(filepath.Join(hwmonDir, "hwmon*"))
+	var temps []float64
+	for _, dir := range dirs {
+		if readString(filepath.Join(dir, "name")) != "mpt3sas" {
+			continue
+		}
+		inputs, _ := filepath.Glob(filepath.Join(dir, "temp*_input"))
+		for _, in := range inputs {
+			if t := milli(in); t != nil && float64(*t) >= scriptMin && float64(*t) <= scriptMax {
+				temps = append(temps, float64(*t))
+			}
+		}
+	}
+	got := hottest(temps)
+	return got.v, got.ok
+}
+
+func storcliPath() string {
+	for _, p := range storcliPaths {
+		if st, err := os.Stat(p); err == nil && st.Mode().IsRegular() && st.Mode().Perm()&0o111 != 0 {
+			return p
+		}
+	}
+	return ""
+}
+
+// readStorcli asks storcli for the temperature of every controller ("ROC temperature(Degree Celsius) 68") and takes
+// the hottest. A controller without a number on its line sits out.
+func readStorcli(ctx context.Context) (float64, error) {
+	path := storcliPath()
+	if path == "" {
+		return 0, fmt.Errorf("storcli not found")
+	}
+	if err := os.MkdirAll(storcliWorkDir, 0o700); err != nil {
+		return 0, fmt.Errorf("storcli: %w", unwrapPath(err))
+	}
+	out, err := runSandboxed(ctx, path, []string{"/call", "show", "temperature"}, storcliWorkDir, hbaTimeout, 16384)
+	// The log grows on every call (every 10 s); keep RAM flat.
+	_ = os.Remove(filepath.Join(storcliWorkDir, "storcli.log"))
+	if err != nil {
+		return 0, fmt.Errorf("storcli %w", err)
+	}
+	var temps []float64
+	for _, line := range strings.Split(string(out), "\n") {
+		if !strings.Contains(line, "ROC temperature") {
+			continue
+		}
+		f := strings.Fields(line)
+		if v, err := parseTemp([]byte(f[len(f)-1])); err == nil {
+			temps = append(temps, v)
+		}
+	}
+	got := hottest(temps)
+	if !got.ok {
+		return 0, fmt.Errorf("storcli: no ROC temperature in the output")
+	}
+	return got.v, nil
 }

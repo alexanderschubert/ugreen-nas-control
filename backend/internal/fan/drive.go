@@ -6,7 +6,7 @@ import "context"
 // the curve. The pipeline fills it from the decisions it makes anyway (shape_pipeline.go); the history records it.
 
 // Sources of a speed. Besides these, a source is "disk:<name>" (hottest drive of the selection), "disk_avg", "nvme",
-// "gpu", "nic:<iface>" or "script:<name>"; "emergency:<reason>" while an emergency holds all fans at 100 %.
+// "gpu", "hba", "nic:<iface>" or "script:<name>"; "emergency:<reason>" while an emergency holds all fans at 100 %.
 const (
 	SrcCPU         = "cpu"
 	SrcIdle        = "idle"        // all drives asleep and no NVMe: the lowest point of the curve

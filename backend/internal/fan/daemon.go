@@ -498,7 +498,7 @@ func notifyRival(reason, rival string) {
 		"-i", "alert").Run()
 }
 
-// InputSource reads the temperature of one non-default input spec (cpu, disk_max, disk_avg, nvme, gpu, nic, script,
+// InputSource reads the temperature of one non-default input spec (cpu, disk_max, disk_avg, nvme, gpu, hba, nic, script,
 // max). ok false = the source cannot be read now; the group's on_missing rule decides. The auto input (empty spec) is
 // not read through it: it keeps today's logic (Decide). Replace newInputSource to plug in the input registry.
 type InputSource interface {

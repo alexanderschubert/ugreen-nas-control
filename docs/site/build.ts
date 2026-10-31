@@ -429,7 +429,7 @@ const COMPARE: [string, string, string][] = [
     ['LEDs without a kernel module built per Unraid release', 'Yes', 'No for the ich777 LED driver and the single-model LED projects'],
     ['Multi-point fan curves', 'Yes', 'No in FanCtrl Plus 2 and Dynamix Auto Fan; partial in two others'],
     ['Fan calibration (rpm per duty)', 'Yes', 'No'],
-    ['Fan inputs: GPU, HBA, NIC, custom script', 'Partly', 'Ahead: FanCtrl Plus 2'],
+    ['Fan inputs: GPU, HBA, NIC, custom script', 'Yes', 'Same in FanCtrl Plus 2; no in the others'],
     ['Fan speed history graph', 'No', 'Ahead: FanCtrl Plus 2'],
     ['Touch LCD (iDX6011 Pro)', 'No (declined)', 'Ahead: iDX6011 plugin']
 ];

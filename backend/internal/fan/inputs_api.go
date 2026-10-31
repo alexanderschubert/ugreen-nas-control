@@ -73,7 +73,7 @@ func gpuPresent(ctx context.Context, r *Registry, s Sensors) bool {
 	return ok
 }
 
-// ListInputs offers only inputs that are present: a GPU or NIC shows up when probed, a script when its file passes the
+// ListInputs offers only inputs that are present: a GPU, HBA or NIC shows up when probed, a script when its file passes the
 // checks. Specs the config already uses stay listed (unusable) so the select never loses the saved value.
 func ListInputs(ctx context.Context, r *Registry, c Config, s Sensors) InputsReport {
 	r.begin(c, s)
@@ -110,6 +110,9 @@ func ListInputs(ctx context.Context, r *Registry, c Config, s Sensors) InputsRep
 	}
 	if gpuPresent(ctx, r, s) {
 		add(InputSpec{Kind: "gpu"}, "GPU")
+	}
+	if _, ok := r.Read(ctx, InputSpec{Kind: "hba"}); ok {
+		add(InputSpec{Kind: "hba"}, "HBA")
 	}
 	seen := map[string]bool{}
 	for _, n := range s.NIC {

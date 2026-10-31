@@ -10,6 +10,7 @@ export const inputsZh: Record<keyof typeof inputsEn, string> = {
     'inputs.kind_disk_avg': '硬盘平均值',
     'inputs.kind_nvme': 'NVMe',
     'inputs.kind_gpu': 'GPU',
+    'inputs.kind_hba': 'SAS/RAID 控制器 (HBA)',
     'inputs.kind_nic': '网络 {name}',
     'inputs.kind_script': '脚本 {name}',
     'inputs.kind_max': '多个来源中的最高值',

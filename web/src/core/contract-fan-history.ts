@@ -23,7 +23,7 @@ export interface FanHistorySeries {
 }
 
 /**
- * `drivers` are the sources: cpu, disk:<name> (hottest drive), disk_avg, nvme, gpu, nic:<iface>, script:<name>,
+ * `drivers` are the sources: cpu, disk:<name> (hottest drive), disk_avg, nvme, gpu, hba, nic:<iface>, script:<name>,
  * idle (all drives asleep), missing, hold, emergency:<reason>, bios, calibration, rival, other.
  */
 export interface FanHistoryResponse extends ApiOk {

@@ -14,7 +14,7 @@ import (
 // a Registry once per tick: Tick hands over that tick's sensor snapshot, Read answers from it.
 //
 // Safety (docs: fan features, invariants 2 and 5): an unreadable input reports ok=false and the caller falls back by
-// the group's on_missing rule; no reader here ever writes the fan chip, and a script, GPU or NIC temperature never
+// the group's on_missing rule; no reader here ever writes the fan chip, and a script, GPU, HBA or NIC temperature never
 // feeds the disk emergency rule (the caller only compares disks and NVMe to disk_crit).
 
 type Input interface {
@@ -23,7 +23,7 @@ type Input interface {
 }
 
 const (
-	// slowTTL: a script or nvidia-smi runs at most this often; the answer (or the failure) is reused in between.
+	// slowTTL: a script, nvidia-smi or storcli runs at most this often; the answer (or the failure) is reused in between.
 	slowTTL = 10 * time.Second
 	// Plausible range of an external temperature: outside it the reading is treated as missing.
 	scriptMin, scriptMax = -20.0, 150.0
@@ -140,6 +140,8 @@ func (r *Registry) read(ctx context.Context, spec InputSpec) (float64, bool) {
 		got = hottest(nicTemps(r.sensorSnapshot(), spec.Name))
 	case "gpu":
 		got = r.readGPU(ctx)
+	case "hba":
+		got = r.readHBA(ctx)
 	case "script":
 		got = r.readScript(ctx, spec.Name)
 	case "max":
