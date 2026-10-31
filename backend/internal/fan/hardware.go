@@ -1,7 +1,10 @@
 package fan
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -9,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
 	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
@@ -258,7 +262,9 @@ func readMemory() []DIMM {
 	if readCache("memory", &dimms) && len(dimms) > 0 {
 		return dimms
 	}
-	out, err := exec.Command(dmidecodeBn, "-t", "memory").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), toolTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, dmidecodeBn, "-t", "memory").Output()
 	if err != nil {
 		return nil
 	}
@@ -471,7 +477,13 @@ func ReadNetIO() []NetIO {
 	return out
 }
 
+// toolTimeout bounds dmidecode and ethtool: both answer in milliseconds, a hung one must not hang the page.
+const toolTimeout = 10 * time.Second
+
 var linkModeRe = regexp.MustCompile(`(\d+)base`)
+
+// missTTL is how long "ethtool said no for this port" is believed: a NIC that was not ready at boot gets asked again.
+var missTTL = 10 * time.Minute
 
 func maxLinkSpeed(name string) int {
 	speeds := map[string]int{}
@@ -479,8 +491,21 @@ func maxLinkSpeed(name string) int {
 	if n := speeds[name]; n > 0 {
 		return n
 	}
-	out, err := exec.Command(ethtoolBn, name).Output()
+	// The failures live in their own file with the time of the miss (unix seconds); a stale -1 in "maxspeed" is ignored.
+	misses := map[string]int64{}
+	readCache("maxspeed_miss", &misses)
+	if t, ok := misses[name]; ok && time.Since(time.Unix(t, 0)) < missTTL {
+		return 0
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), toolTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, ethtoolBn, name).Output()
 	if err != nil {
+		// Only an answer of ethtool itself is a miss: no binary, a timeout or a cancel says nothing about the port.
+		if ctx.Err() == nil && !errors.Is(err, exec.ErrNotFound) && !errors.Is(err, fs.ErrNotExist) {
+			misses[name] = time.Now().Unix()
+			writeCache("maxspeed_miss", misses)
+		}
 		return 0
 	}
 	n := parseMaxLinkSpeed(string(out))

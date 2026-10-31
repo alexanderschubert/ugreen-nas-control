@@ -11,6 +11,8 @@ import (
 	"strings"
 	"syscall"
 	"unsafe"
+
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 const (
@@ -78,13 +80,14 @@ func findBus() (string, error) {
 	return "", errors.New("no SMBus I801 or DesignWare I2C adapter found; load the i2c_i801 module (modprobe i2c_i801) and check dmesg | grep -i -e i801 -e designware")
 }
 
-// acquireLock allows one writer at a time: the web UI and the status daemon share the controller.
+// acquireLock allows one writer at a time: the web UI and the status daemon share the controller. It waits at most
+// hw.LockTimeout, then fails with hw.ErrLockTimeout.
 func acquireLock() (*os.File, error) {
 	lock, err := os.OpenFile(lockFile, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return nil, err
 	}
-	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
+	if err := hw.FlockExclusive(int(lock.Fd())); err != nil {
 		_ = lock.Close()
 		return nil, err
 	}

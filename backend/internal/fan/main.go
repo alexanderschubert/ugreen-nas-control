@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 
@@ -23,6 +24,16 @@ func withLock(fn func() error) error {
 		return hw.WithLockAt(lockPath, fn)
 	}
 	return hw.WithLock(fn)
+}
+
+// withLockStop is withLock for the paths that hand the fans back or disarm the watchdog (daemon stop, restore, end of
+// a calibration): they wait up to hw.StopLockTimeout instead of hw.LockTimeout, so a busy CLI never leaves the fans at
+// their last duty.
+func withLockStop(fn func() error) error {
+	if lockPath != "" {
+		return hw.WithLockAtFor(lockPath, hw.StopLockTimeout, fn)
+	}
+	return hw.WithLockFor(hw.StopLockTimeout, fn)
 }
 
 func usage() {
@@ -74,18 +85,52 @@ func openChip() (Fans, error) {
 }
 
 func openChipUnchecked() (Fans, error) {
+	chip, _, err := openChipPorts()
+	return chip, err
+}
+
+// openChipPorts is openChipUnchecked that also hands out the opened ports, for callers that outlive one command.
+func openChipPorts() (Fans, hw.Ports, error) {
 	p, err := hw.OpenPorts()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var chip Fans
 	model := productName()
 	err = withLock(func() (err error) { chip, err = detectFans(p, model); return })
 	if err != nil {
 		_ = p.Close()
+		return nil, nil, err
+	}
+	return chip, p, nil
+}
+
+// closableFans is a chip that closes its ports after a one-shot read. It still answers BoardTemper (nil: none).
+type closableFans struct {
+	Fans
+	ports hw.Ports
+}
+
+func (c closableFans) Close() error { return c.ports.Close() }
+
+func (c closableFans) BoardTemp() *int {
+	if bt, ok := c.Fans.(BoardTemper); ok {
+		return bt.BoardTemp()
+	}
+	return nil
+}
+
+// openChipOnce is openChip for readers that run repeatedly in one process (the MQTT publisher): addChipStatus
+// closes what it opened.
+func openChipOnce() (Fans, error) {
+	if err := requireSupportedModel(); err != nil {
 		return nil, err
 	}
-	return chip, nil
+	chip, p, err := openChipPorts()
+	if err != nil {
+		return nil, err
+	}
+	return closableFans{chip, p}, nil
 }
 
 type FanStatus struct {
@@ -211,7 +256,7 @@ func Main() {
 		if err != nil {
 			fail(err)
 		}
-		if err := withLock(func() error { return chip.Restore(s) }); err != nil {
+		if err := withLockStop(func() error { return chip.Restore(s) }); err != nil {
 			fail(err)
 		}
 		fmt.Println("BIOS fan settings restored.")
@@ -279,6 +324,9 @@ func addChipStatus(out map[string]any, sensors *Sensors, open func() (Fans, erro
 	if err != nil {
 		out["chip_error"] = err.Error()
 		return
+	}
+	if c, ok := chip.(io.Closer); ok {
+		defer func() { _ = c.Close() }()
 	}
 	var fans []FanStatus
 	var temps []*int

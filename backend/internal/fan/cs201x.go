@@ -252,6 +252,7 @@ func cs201xCommand() {
 	}
 	printJSON(out)
 	if err != nil {
+		_ = p.Close() // os.Exit skips the defer
 		os.Exit(1)
 	}
 }

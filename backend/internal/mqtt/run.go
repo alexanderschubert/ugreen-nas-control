@@ -72,7 +72,8 @@ func Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
 	go func() { <-sig; close(stop) }()
-	go cl.run(stop)
+	runDone := make(chan struct{})
+	go func() { cl.run(stop); close(runDone) }()
 
 	tick := time.NewTicker(cfg.Interval)
 	defer tick.Stop()
@@ -91,8 +92,11 @@ func Run() error {
 		select {
 		case <-tick.C:
 		case <-stop:
-			_ = cl.publish(prefix+"availability", []byte("offline"), true)
-			time.Sleep(200 * time.Millisecond)
+			// The client publishes the offline message itself before it disconnects (session).
+			select {
+			case <-runDone:
+			case <-time.After(3 * time.Second):
+			}
 			return nil
 		}
 	}

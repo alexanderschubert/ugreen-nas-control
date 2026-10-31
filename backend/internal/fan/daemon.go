@@ -10,11 +10,13 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
 	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 var (
@@ -205,12 +207,12 @@ var daemonSignals = []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP,
 // over (writing then would override it).
 func endFanControl(chip Fans, bios Snapshot, pet *Petter, rivals []conflict.Conflict, logf func(string, ...any)) {
 	if len(rivals) > 0 {
-		_ = withLock(func() error { stopWatchdog(pet, chip, logf); return nil })
+		_ = withLockStop(func() error { stopWatchdog(pet, chip, logf); return nil })
 		_ = os.Remove(statePath)
 		logf("fan control stopped, fans left to %s", rivalNames(rivals))
 		return
 	}
-	err := withLock(func() error {
+	err := withLockStop(func() error {
 		stopWatchdog(pet, chip, logf)
 		return restoreRetry(chip, bios, restoreTries, restoreBackoff, logf)
 	})
@@ -244,8 +246,20 @@ func runDaemon(chip Fans) (runErr error) {
 		return fmt.Errorf("cannot save the BIOS fan settings: %w", err)
 	}
 
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, daemonSignals...)
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, daemonSignals...)
+	// stopped closes on the first signal and cancels ctx, so a slow input read does not hold the shutdown up.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stopped := make(chan struct{})
+	go func() {
+		select {
+		case <-sig:
+			close(stopped)
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
 
 	current := map[string]int{}
 	zero := map[string]int{}
@@ -302,6 +316,26 @@ func runDaemon(chip Fans) (runErr error) {
 			}
 		}
 
+		// Everything slow happens before the lock: user scripts, nvidia-smi, storcli and pgrep never hold it. The registry keeps
+		// the answers for the per-tick cache, so the locked part below only reads them back.
+		var in InputSource
+		var jobs JobStatus
+		if len(rivals) == 0 && c.Mode != "bios" && !calibPaused() {
+			in = newInputSource(c, s)
+			if Decide(c, s).Failsafe == "" { // an emergency never reads an input: nothing delays its 100 %
+				warmInputs(ctx, in, c, outputIDs(chip.Outputs()))
+			}
+			if c.Mover.Mode != "off" || c.Parity.Mode != "off" {
+				jobs = probe.Status(now(), c.Mover.Mode != "off", c.Parity.Mode != "off")
+			}
+		}
+		select {
+		case <-stopped:
+			endFanControl(chip, bios, pet, rivals, logf)
+			return nil
+		default:
+		}
+
 		err := withLock(func() error {
 			// Feed the EC or IT8613E watchdog if the BIOS armed it, on every path below (also while yielding to a rival, in bios
 			// mode, during a calibration and in an emergency). Never arms it; rate-limited by the petter.
@@ -341,12 +375,11 @@ func runDaemon(chip Fans) (runErr error) {
 			}
 			lastStep = at
 
-			var jobs JobStatus
-			if c.Mover.Mode != "off" || c.Parity.Mode != "off" {
-				jobs = probe.Status(at, c.Mover.Mode != "off", c.Parity.Mode != "off")
+			if in == nil { // the state changed since the check above: only the tick's own sensors, no slow input
+				in = sensorSource{c, s}
 			}
-			plan := k.step(context.Background(), tickIn{
-				Cfg: c, Sens: s, In: newInputSource(c, s), Calib: calibCache.get(calibPath),
+			plan := k.step(ctx, tickIn{
+				Cfg: c, Sens: s, In: in, Calib: calibCache.get(calibPath),
 				Now: at, Dt: dt, Jobs: jobs, IDs: outputIDs(chip.Outputs()),
 			})
 			d := plan.Decision
@@ -401,33 +434,35 @@ func runDaemon(chip Fans) (runErr error) {
 
 		calib := calibCache.get(calibPath)
 		sample := Sample{At: now(), CPU: s.CPU, CaseTemp: st.CaseTemp, Fans: map[string]FanSample{}}
-		_ = withLock(func() error {
-			for _, ch := range chip.Outputs() {
-				rpm, err := chip.RPM(ch)
-				sample.Fans[ch.ID] = fanSample(chip, ch, rpm, err == nil, current, drives[ch.ID])
-				if err != nil {
-					continue
-				}
-				if rpm == 0 && current[ch.ID] >= stallStart(calib, ch.ID) {
-					zero[ch.ID]++
-				} else {
-					zero[ch.ID] = 0
-					notified[ch.ID] = false
-				}
-				if zero[ch.ID] >= stallTicks {
-					st.Stalled = append(st.Stalled, ch.ID)
-					if !notified[ch.ID] {
-						notified[ch.ID] = true
-						logf("%s stands still", ch.ID)
-						if c.StallNotify {
-							notify(ch.ID)
+		if !errors.Is(err, hw.ErrLockTimeout) { // the lock is busy: no second wait in the same tick
+			_ = withLock(func() error {
+				for _, ch := range chip.Outputs() {
+					rpm, err := chip.RPM(ch)
+					sample.Fans[ch.ID] = fanSample(chip, ch, rpm, err == nil, current, drives[ch.ID])
+					if err != nil {
+						continue
+					}
+					if rpm == 0 && current[ch.ID] >= stallStart(calib, ch.ID) {
+						zero[ch.ID]++
+					} else {
+						zero[ch.ID] = 0
+						notified[ch.ID] = false
+					}
+					if zero[ch.ID] >= stallTicks {
+						st.Stalled = append(st.Stalled, ch.ID)
+						if !notified[ch.ID] {
+							notified[ch.ID] = true
+							logf("%s stands still", ch.ID)
+							if c.StallNotify {
+								notify(ch.ID)
+							}
 						}
 					}
 				}
-			}
-			st.ChipTemps = chip.Temps()
-			return nil
-		})
+				st.ChipTemps = chip.Temps()
+				return nil
+			})
+		}
 
 		hist.Record(sample)
 		if b, err := json.Marshal(st); err == nil {
@@ -435,7 +470,7 @@ func runDaemon(chip Fans) (runErr error) {
 		}
 
 		select {
-		case <-stop:
+		case <-stopped:
 			endFanControl(chip, bios, pet, rivals, logf)
 			return nil
 		case <-ticker.C:
@@ -460,9 +495,54 @@ func fanSample(chip Fans, ch Channel, rpm int, rpmOK bool, current map[string]in
 
 func notify(id string) {
 	name := map[string]string{"cpu": "CPU fan", "case": "Case fan"}[roles[id]]
-	_ = exec.Command(notifyCmd, "-e", "UGREEN NAS Control", "-s", name+" stopped",
+	notifications.send("stall:"+id, "-e", "UGREEN NAS Control", "-s", name+" stopped",
 		"-d", fmt.Sprintf("%s (%s) reports 0 rpm although it is driven. Check the fan and its cable.", name, id),
-		"-i", "alert").Run()
+		"-i", "alert")
+}
+
+// notifyTimeout bounds one run of the Unraid notify script (a variable for tests).
+var notifyTimeout = 10 * time.Second
+
+// notifier runs the notify script in the background: never under the hardware lock, never longer than notifyTimeout,
+// and at most one run per key at a time (a hung script drops the repeats instead of piling up processes).
+type notifier struct {
+	mu   sync.Mutex
+	busy map[string]bool
+	wg   sync.WaitGroup // tests wait on it
+}
+
+var notifications = &notifier{busy: map[string]bool{}}
+
+func (n *notifier) send(key string, args ...string) {
+	n.mu.Lock()
+	if n.busy[key] {
+		n.mu.Unlock()
+		return
+	}
+	n.busy[key] = true
+	n.mu.Unlock()
+	n.wg.Add(1)
+	go func() {
+		defer n.wg.Done()
+		defer func() {
+			n.mu.Lock()
+			delete(n.busy, key)
+			n.mu.Unlock()
+		}()
+		ctx, cancel := context.WithTimeout(context.Background(), notifyTimeout)
+		defer cancel()
+		_ = exec.CommandContext(ctx, notifyCmd, args...).Run()
+	}()
+}
+
+// warmInputs reads every configured input once, before the lock is taken, so that the slow ones (script, GPU, HBA) run
+// outside it and the registry has their answers (or failures, kept for slowTTL) when the locked part asks.
+func warmInputs(ctx context.Context, in InputSource, c Config, ids []string) {
+	for _, id := range ids {
+		if spec := c.ForChannel(id).Input; spec.Kind != "" {
+			in.Read(ctx, spec)
+		}
+	}
 }
 
 // detectConflicts is a variable so that tests can stand in for the system.
@@ -514,9 +594,9 @@ func (y *yielding) reset(logf func(string, ...any)) {
 }
 
 func notifyRival(reason, rival string) {
-	_ = exec.Command(notifyCmd, "-e", "UGREEN NAS Control", "-s", "Emergency, fans not set to 100 %",
+	notifications.send("rival", "-e", "UGREEN NAS Control", "-s", "Emergency, fans not set to 100 %",
 		"-d", fmt.Sprintf("%s (%s) would need all fans at 100 %%, but %s controls them. Check the cooling now.", reason, rival, rival),
-		"-i", "alert").Run()
+		"-i", "alert")
 }
 
 // InputSource reads the temperature of one non-default input spec (cpu, disk_max, disk_avg, nvme, gpu, hba, nic, script,
@@ -657,7 +737,7 @@ func runWatchdogOnly(chip Fans) error {
 		_ = withLock(func() error { petWatchdog(pet, chip, now(), logf); return nil })
 		select {
 		case <-stop:
-			_ = withLock(func() error { stopWatchdog(pet, chip, logf); return nil })
+			_ = withLockStop(func() error { stopWatchdog(pet, chip, logf); return nil })
 			logf("watchdog petter stopped")
 			return nil
 		case <-ticker.C:

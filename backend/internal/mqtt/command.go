@@ -1,6 +1,7 @@
 package mqtt
 
 import (
+	"context"
 	"encoding/json"
 	"os/exec"
 	"path/filepath"
@@ -38,6 +39,7 @@ type commander struct {
 	mu    sync.Mutex
 	seen  map[string]time.Time
 	lastC time.Time
+	busy  bool // an accepted command has not finished
 }
 
 // handle checks one command and returns the answer. The program is started by `after`, which the caller runs once
@@ -78,9 +80,11 @@ func (c *commander) handle(raw []byte, now time.Time) (res cmdResult, after func
 	if len(c.seen) >= 256 {
 		return reject("too many commands")
 	}
-	c.seen[cmd.Nonce] = now
 	if now.Sub(c.lastC) < cmdMinSpace {
 		return reject("too fast, wait a moment")
+	}
+	if c.busy {
+		return reject("the previous command is still running")
 	}
 
 	var prog []string
@@ -114,10 +118,18 @@ func (c *commander) handle(raw []byte, now time.Time) (res cmdResult, after func
 		return reject("unknown command")
 	}
 
+	// Only an accepted command uses up its nonce: a refused one (switched off, too fast) was never carried out.
+	c.seen[cmd.Nonce] = now
 	c.lastC = now
+	c.busy = true
 	logf("command %q accepted: %s", cmd.Cmd, strings.Join(prog, " "))
 	res.OK, res.Text = true, "started"
 	return res, func() {
+		defer func() {
+			c.mu.Lock()
+			c.busy = false
+			c.mu.Unlock()
+		}()
 		time.Sleep(c.delay)
 		if err := c.run(prog[0], prog[1:]...); err != nil {
 			logf("command %q failed: %v", cmd.Cmd, err)
@@ -125,6 +137,11 @@ func (c *commander) handle(raw []byte, now time.Time) (res cmdResult, after func
 	}
 }
 
+// cmdTimeout bounds one program: a plugin update downloads and installs, which can take minutes.
+const cmdTimeout = 30 * time.Minute
+
 func execRun(name string, args ...string) error {
-	return exec.Command(name, args...).Run()
+	ctx, cancel := context.WithTimeout(context.Background(), cmdTimeout)
+	defer cancel()
+	return exec.CommandContext(ctx, name, args...).Run()
 }

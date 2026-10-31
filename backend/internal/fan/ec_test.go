@@ -2,10 +2,12 @@ package fan
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // fakeEC answers like the IT5571 of the DXP4800 GT through the ACPI EC ports
@@ -245,5 +247,60 @@ func TestFanStatusAutoDuty(t *testing.T) {
 	_ = ec.SetPWM(ch, percentToDuty(50, ec.MaxDuty()))
 	if fs := readFanStatus(ec, ch); fs.Auto || fs.Pct == nil || *fs.Pct != 50 {
 		t.Fatalf("manual: %+v", fs)
+	}
+}
+
+// A dead controller costs one full timeout, not ecTries x ecWait per register: after it every call of the same
+// tick fails at once.
+func TestECDeadFailsFast(t *testing.T) {
+	oldWait, oldDead := ecWait, ecDeadFor
+	defer func() { ecWait, ecDeadFor = oldWait, oldDead }()
+	ecWait, ecDeadFor = 20*time.Millisecond, 300*time.Millisecond
+	f := newFakeEC()
+	ec := &EC{ports: f}
+	f.busy = 1 << 30
+	if _, err := ec.read(0xb0); !errors.Is(err, errECTimeout) {
+		t.Fatalf("first read: %v", err)
+	}
+	start := time.Now()
+	for range 5 {
+		if _, err := ec.read(0xb1); !errors.Is(err, errECUnresponsive) {
+			t.Fatalf("read while dead: %v", err)
+		}
+		if err := ec.write(0xb1, 1); !errors.Is(err, errECUnresponsive) {
+			t.Fatalf("write while dead: %v", err)
+		}
+	}
+	if d := time.Since(start); d > 10*time.Millisecond {
+		t.Errorf("dead calls took %v", d)
+	}
+	// Once the controller answers again and the window has passed, it is used as before.
+	f.busy = 0
+	time.Sleep(350 * time.Millisecond)
+	if _, err := ec.read(0xb1); err != nil {
+		t.Errorf("recovered read: %v", err)
+	}
+}
+
+// A hand-back right after a timeout gets the full retry budget: the dead window never blocks Restore or the disarm.
+func TestECRestoreIgnoresDeadWindow(t *testing.T) {
+	oldWait, oldDead := ecWait, ecDeadFor
+	defer func() { ecWait, ecDeadFor = oldWait, oldDead }()
+	ecWait, ecDeadFor = 20*time.Millisecond, time.Hour
+	f := newFakeEC()
+	ec := &EC{ports: f}
+	f.busy = 1 << 30
+	if _, err := ec.read(0xb0); !errors.Is(err, errECTimeout) {
+		t.Fatalf("first read: %v", err)
+	}
+	f.busy = 0 // the controller answers again, the window (an hour) is still open
+	if err := ec.Restore(nil); err != nil {
+		t.Fatalf("restore inside the dead window: %v", err)
+	}
+	f.busy = 1 << 30
+	_, _ = ec.read(0xb0)
+	f.busy = 0
+	if err := ec.DisarmWatchdog(); errors.Is(err, errECUnresponsive) {
+		t.Fatalf("disarm inside the dead window: %v", err)
 	}
 }

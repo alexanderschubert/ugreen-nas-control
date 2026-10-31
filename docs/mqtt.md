@@ -53,8 +53,9 @@ A fixed list, nothing else is run:
 
 A command is refused when:
 
-- `ts` is more than 30 s from the NAS clock, or `nonce` is missing, longer than 64 characters or already seen in the last minute (at most 256 are remembered);
+- `ts` is more than 30 s from the NAS clock, or `nonce` is missing, longer than 64 characters or already used by an accepted command in the last minute (at most 256 are remembered);
 - another command was accepted less than 10 s before;
+- the previous command has not finished (one program at a time, each ends after 30 minutes at the latest);
 - the plugin is not on the `updates` list. Containers and Unraid itself are refused.
 
 The program starts after `cmd_result` is sent. Give the broker a user that may write `cmd` only where you want it, and keep the broker on your LAN.

@@ -7,6 +7,8 @@ import (
 	"os"
 	"slices"
 	"time"
+
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
 )
 
 // Fan driver of the DXP2800 GT (CS201x embedded controller). Registers and sequence after UGREEN's GPL-2.0-only
@@ -202,7 +204,7 @@ func (c *CS201x) SetPWM(ch Channel, duty byte) error {
 	}
 	want := min(max(duty, csFloorPct), 100)
 	// Marked before the first write: a crash between the write and the mark would leave our duty unmarked.
-	if err := os.WriteFile(csWrotePath, []byte("1\n"), 0o644); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := fsx.WriteFile(csWrotePath, []byte("1\n"), 0o644); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("cannot mark the fan duty as written: %w", err)
 	}
 	// Read back: a duty the controller did not take (one retry) is an error, not a silent no-op.

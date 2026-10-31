@@ -119,6 +119,7 @@ func (c *EC) WatchdogPet(timeout int) error {
 
 // DisarmWatchdog clears the enable byte; the only value this tool ever writes there.
 func (c *EC) DisarmWatchdog() error {
+	c.revive()
 	w, err := c.wdtRegs()
 	if err != nil {
 		return err

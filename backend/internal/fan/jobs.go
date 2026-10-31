@@ -2,6 +2,7 @@ package fan
 
 import (
 	"bufio"
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,6 +33,15 @@ type jobProbe struct {
 
 const jobTTL = 10 * time.Second
 
+// pgrepTimeout bounds the mover lookup: it runs on the daemon tick (a variable for tests).
+var pgrepTimeout = 3 * time.Second
+
+func pgrepMover() bool {
+	ctx, cancel := context.WithTimeout(context.Background(), pgrepTimeout)
+	defer cancel()
+	return exec.CommandContext(ctx, "pgrep", "-x", "mover").Run() == nil
+}
+
 func newJobProbe() *jobProbe {
 	return &jobProbe{
 		mdstat:   envOr("UGREEN_FAN_MDSTAT", "/proc/mdstat"),
@@ -39,7 +49,7 @@ func newJobProbe() *jobProbe {
 		moverPID: envOr("UGREEN_FAN_MOVER_PID", "/var/run/mover.pid"),
 		procDir:  "/proc",
 		alive:    pidAlive,
-		pgrep:    func() bool { return exec.Command("pgrep", "-x", "mover").Run() == nil },
+		pgrep:    pgrepMover,
 	}
 }
 

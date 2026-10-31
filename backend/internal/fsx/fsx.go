@@ -6,22 +6,34 @@ package fsx
 import (
 	"os"
 	"path/filepath"
-	"strconv"
+	"strings"
 	"syscall"
+	"time"
 )
 
 // WriteFile replaces path with data (like os.WriteFile, but atomic). A symbolic link at path is replaced, not followed.
 func WriteFile(path string, data []byte, perm os.FileMode) error {
-	tmp := filepath.Join(filepath.Dir(path), "."+filepath.Base(path)+".tmp"+strconv.Itoa(os.Getpid()))
-	_ = os.Remove(tmp)
-	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_EXCL|syscall.O_NOFOLLOW, perm)
+	sweepStale(filepath.Dir(path), filepath.Base(path))
+	// CreateTemp: O_EXCL, a name no other goroutine or process shares, never through a link. It creates 0600.
+	f, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".tmp*")
 	if err != nil {
 		return err
 	}
-	if _, err := f.Write(data); err != nil {
+	tmp := f.Name()
+	fail := func(err error) error {
 		_ = f.Close()
 		_ = os.Remove(tmp)
 		return err
+	}
+	if err := f.Chmod(perm); err != nil {
+		return fail(err)
+	}
+	if _, err := f.Write(data); err != nil {
+		return fail(err)
+	}
+	// On the flash behind /boot a rename can reach the disk before the data (FAT, power cut).
+	if err := f.Sync(); err != nil {
+		return fail(err)
 	}
 	if err := f.Close(); err != nil {
 		_ = os.Remove(tmp)
@@ -31,7 +43,33 @@ func WriteFile(path string, data []byte, perm os.FileMode) error {
 		_ = os.Remove(tmp)
 		return err
 	}
+	// Make the rename itself durable; FAT and some filesystems cannot sync a directory, which is no failure.
+	if d, err := os.Open(filepath.Dir(path)); err == nil {
+		_ = d.Sync()
+		_ = d.Close()
+	}
 	return nil
+}
+
+// staleTemp is the age after which a temporary file of an earlier write counts as left by a crash.
+const staleTemp = time.Minute
+
+// sweepStale removes ".base.tmp*" files older than staleTemp: a crash between CreateTemp and rename would
+// otherwise leave one behind per crash on the flash behind /boot. Errors are ignored; the write goes on.
+func sweepStale(dir, base string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	prefix := "." + base + ".tmp"
+	for _, e := range entries {
+		if !strings.HasPrefix(e.Name(), prefix) || !e.Type().IsRegular() {
+			continue
+		}
+		if info, err := e.Info(); err == nil && time.Since(info.ModTime()) > staleTemp {
+			_ = os.Remove(filepath.Join(dir, e.Name()))
+		}
+	}
 }
 
 // OpenTrunc opens path for writing, emptied (a log that is rewritten); it fails on a symbolic link.

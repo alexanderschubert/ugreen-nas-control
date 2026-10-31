@@ -171,7 +171,7 @@ func (c *client) subscribe(topic string) error {
 }
 
 // session connects once and serves the connection until it breaks.
-func (c *client) session() error {
+func (c *client) session(quit <-chan struct{}) error {
 	d := net.Dialer{Timeout: 10 * time.Second}
 	var conn net.Conn
 	var err error
@@ -213,6 +213,20 @@ func (c *client) session() error {
 
 	stop := make(chan struct{})
 	defer close(stop)
+	// The publisher is shutting down: a clean DISCONNECT makes the broker drop the last will, so the retained offline
+	// message goes out first (same connection, in order), then goodbye and close, so that the read below ends now and
+	// not after the keep-alive period.
+	go func() {
+		select {
+		case <-quit:
+			if c.willTopic != "" {
+				_ = c.publish(c.willTopic, c.willPayload, true)
+			}
+			_ = c.write(packet(mqttDisconn, 0, nil))
+			_ = conn.Close()
+		case <-stop:
+		}
+	}()
 	go func() {
 		t := time.NewTicker(mqttKeepAlive / 2)
 		defer t.Stop()
@@ -266,7 +280,7 @@ func (c *client) run(stop <-chan struct{}) {
 	wait := time.Second
 	for {
 		start := time.Now()
-		err := c.session()
+		err := c.session(stop)
 		select {
 		case <-stop:
 			return
