@@ -2,6 +2,7 @@ package fan
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -222,7 +223,8 @@ func TestCS201xDetectAndReadsWriteNothing(t *testing.T) {
 	}
 }
 
-func TestCS201xHostInterfaceOffStaysUnreadUntilWrite(t *testing.T) {
+// With the host interface off nothing is switched on, written or snapshotted: the BIOS does not expose the controller.
+func TestCS201xHostInterfaceOffRefusesEverything(t *testing.T) {
 	confirmedMap(t, csChip, "fan1")
 	f := newFakeCS()
 	f.active = 0
@@ -230,17 +232,128 @@ func TestCS201xHostInterfaceOffStaysUnreadUntilWrite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.RPM(c.Outputs()[0]); err == nil {
-		t.Fatal("read with the interface off")
+	ch := c.Outputs()[0]
+	if _, err := c.RPM(ch); !errors.Is(err, errCSHostOff) {
+		t.Fatalf("read with the interface off: %v", err)
 	}
-	if f.active != 0 {
-		t.Fatal("detect switched it on")
+	if _, err := c.Snapshot(); !errors.Is(err, errCSHostOff) {
+		t.Fatalf("snapshot: %v", err)
 	}
+	if err := c.SetPWM(ch, 50); !errors.Is(err, errCSHostOff) {
+		t.Fatalf("set: %v", err)
+	}
+	if err := c.Restore(Snapshot{"fan1": {1, 80}}); !errors.Is(err, errCSHostOff) {
+		t.Fatalf("restore: %v", err)
+	}
+	if f.active != 0 || len(f.ecData) != 0 {
+		t.Fatalf("active %d, EC writes %v", f.active, f.ecData)
+	}
+	for _, v := range f.cfgData {
+		if v != cs.LDNHost2EC {
+			t.Fatalf("config write 0x%02x: only the device number may be written", v)
+		}
+	}
+	if _, err := os.Stat(csWrotePath); err == nil {
+		t.Fatal("marked as written without a write")
+	}
+}
+
+// Only bit 0 of an enable register is written, and only when it differs.
+func TestCS201xEnableRegisterBitZeroOnly(t *testing.T) {
+	confirmedMap(t, csChip, "fan1", "fan3")
+	f := newFakeCS()
+	f.ec[csRegFan0En], f.ec[csRegFan1En] = 0x02, 0x03 // fan1: bit 0 off, bit 1 set; fan3: bit 0 on
+	c, _ := DetectCS201x(f, "DXP2800 GT")
 	if err := c.SetPWM(c.Outputs()[0], 50); err != nil {
 		t.Fatal(err)
 	}
-	if f.active != 1 || f.ec[csRegFan0Duty] != 50 {
-		t.Fatalf("active %d duty %d", f.active, f.ec[csRegFan0Duty])
+	if f.ec[csRegFan0En] != 0x03 || f.ec[csRegFan1En] != 0x03 {
+		t.Fatalf("enable %#x/%#x", f.ec[csRegFan0En], f.ec[csRegFan1En])
+	}
+	for _, a := range f.ecLog {
+		if a == csRegFan1En {
+			t.Fatal("enable of fan3 written although bit 0 was set")
+		}
+	}
+	n := len(f.ecLog)
+	if err := c.Restore(Snapshot{"fan1": {0x02, 70}, "fan3": {0x03, 70}}); err != nil {
+		t.Fatal(err)
+	}
+	if f.ec[csRegFan0En] != 0x02 {
+		t.Fatalf("restored enable %#x, want 0x02", f.ec[csRegFan0En])
+	}
+	for _, a := range f.ecLog[n:] {
+		if a == csRegFan1En {
+			t.Fatal("restore wrote an enable that already matched")
+		}
+	}
+}
+
+// A zero, missing or oversized saved duty never ends below the safe duty or above 100.
+func TestCS201xRestoreEdgeSnapshots(t *testing.T) {
+	confirmedMap(t, csChip, "fan1", "fan3")
+	f := newFakeCS()
+	c, _ := DetectCS201x(f, "DXP2800 GT")
+	for _, s := range []Snapshot{nil, {}, {"fan1": {1, 0}}, {"fan1": {1, 255}, "fan3": {1, 0}}} {
+		if err := c.Restore(s); err != nil {
+			t.Fatal(err)
+		}
+		for _, d := range []byte{f.ec[csRegFan0Duty], f.ec[csRegFan1Duty]} {
+			if d < csSafePct || d > 100 {
+				t.Fatalf("snapshot %v: duty %d", s, d)
+			}
+		}
+	}
+}
+
+// The two bytes of the speed can tear at a rollover: read again until the high byte holds.
+type tearCS struct {
+	*fakeCS
+	hiReads int
+}
+
+func (f *tearCS) In(port uint16) (byte, error) {
+	v, err := f.fakeCS.In(port)
+	if port == f.base+csEcData {
+		a := uint32(f.addr[0]) | uint32(f.addr[1])<<8 | uint32(f.addr[2])<<16 | uint32(f.addr[3])<<24
+		if a == csRegFan0Spd {
+			f.hiReads++
+			if f.hiReads == 2 { // the second read of the high byte: the counter rolled over meanwhile
+				v = 0x08
+				f.ec[csRegFan0Spd], f.ec[csRegFan0Spd+1] = 0x08, 0x00
+			}
+		}
+	}
+	return v, err
+}
+
+func TestCS201xRPMReadsAgainOnRollover(t *testing.T) {
+	confirmedMap(t, csChip, "fan1")
+	f := &tearCS{fakeCS: newFakeCS()}
+	f.ec[csRegFan0Spd], f.ec[csRegFan0Spd+1] = 0x07, 0xff
+	c, _ := DetectCS201x(f, "DXP2800 GT")
+	rpm, err := c.RPM(c.Outputs()[0])
+	if err != nil || rpm != 0x0800 {
+		t.Fatalf("rpm %#x (%v), want 0x800", rpm, err)
+	}
+}
+
+func TestConfirmCS201xRefusesImplausibleReadings(t *testing.T) {
+	old := fanMapPath
+	defer func() { fanMapPath = old }()
+	for name, set := range map[string]func(f *fakeCS){
+		"stopped fan":  func(f *fakeCS) { f.ec[csRegFan0Spd], f.ec[csRegFan0Spd+1] = 0, 0 },
+		"floating bus": func(f *fakeCS) { f.ec[csRegFan0Spd], f.ec[csRegFan0Spd+1] = 0xff, 0xff },
+	} {
+		fanMapPath = filepath.Join(t.TempDir(), "fan_map.json")
+		f := newFakeCS()
+		set(f)
+		if _, err := confirmCS201x(f, "DXP2800 GT", []string{"fan1"}); err == nil {
+			t.Fatalf("%s: confirmed", name)
+		}
+		if _, err := os.Stat(fanMapPath); err == nil {
+			t.Fatalf("%s: map saved", name)
+		}
 	}
 }
 

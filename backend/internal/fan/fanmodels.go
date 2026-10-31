@@ -110,8 +110,13 @@ func modelLimits(model string) (cpuCrit, diskCrit int, ok bool) {
 	return 0, 0, false
 }
 
-// ApplyModelLimits lowers the emergency limits of a config to what the model needs; it never raises one.
+// ApplyModelLimits lowers the emergency limits of a config to what the model needs; it never raises one. The minimum
+// speed never goes below the duty the hardware applies (DXP2800 GT: csFloorPct), so that the targets the daemon records
+// are what runs.
 func ApplyModelLimits(c Config, model string) Config {
+	if isDXP2800GT(model) {
+		c.MinPct = max(c.MinPct, csFloorPct)
+	}
 	if cpu, disk, ok := modelLimits(model); ok {
 		c.CPUCrit = min(c.CPUCrit, cpu)
 		c.DiskCrit = min(c.DiskCrit, disk)

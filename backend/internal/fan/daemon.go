@@ -198,9 +198,33 @@ func release(chip Fans, bios Snapshot, current map[string]int) error {
 	return nil
 }
 
+// daemonSignals end the daemons like SIGTERM: a hangup (closed terminal, supervisor) or a quit must hand the fans back too.
+var daemonSignals = []os.Signal{syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP, syscall.SIGQUIT}
+
+// endFanControl ends fan control: the watchdog feeding stops and the BIOS values go back, unless a rival tool took the fans
+// over (writing then would override it).
+func endFanControl(chip Fans, bios Snapshot, pet *Petter, rivals []conflict.Conflict, logf func(string, ...any)) {
+	if len(rivals) > 0 {
+		_ = withLock(func() error { stopWatchdog(pet, chip, logf); return nil })
+		_ = os.Remove(statePath)
+		logf("fan control stopped, fans left to %s", rivalNames(rivals))
+		return
+	}
+	err := withLock(func() error {
+		stopWatchdog(pet, chip, logf)
+		return restoreRetry(chip, bios, restoreTries, restoreBackoff, logf)
+	})
+	_ = os.Remove(statePath)
+	if err != nil {
+		logf("fan control stopped, BIOS fan settings NOT restored: %v", err)
+		return
+	}
+	logf("fan control stopped, BIOS fan settings restored")
+}
+
 var daemonModel = productName
 
-func runDaemon(chip Fans) error {
+func runDaemon(chip Fans) (runErr error) {
 	logger, _ := syslog.New(syslog.LOG_INFO|syslog.LOG_DAEMON, "ugreen-nas-control")
 	logf := func(format string, args ...any) {
 		msg := fmt.Sprintf(format, args...)
@@ -221,7 +245,7 @@ func runDaemon(chip Fans) error {
 	}
 
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(stop, daemonSignals...)
 
 	current := map[string]int{}
 	zero := map[string]int{}
@@ -232,6 +256,14 @@ func runDaemon(chip Fans) error {
 	k := newController()
 	pet := &Petter{}
 	probe := newJobProbe()
+	// A panic in the loop must not leave the fans at the last written speed.
+	defer func() {
+		if r := recover(); r != nil {
+			logf("fan control crashed: %v", r)
+			endFanControl(chip, bios, pet, conflict.Blocking(detectConflicts(), conflict.Fan), logf)
+			runErr = fmt.Errorf("fan control crashed: %v", r)
+		}
+	}()
 	lastStep := time.Time{}
 	lastJob, lastQuiet := "", false
 	hist := NewHistory(outputIDs(chip.Outputs()), now())
@@ -346,17 +378,22 @@ func runDaemon(chip Fans) error {
 				lastQuiet = plan.QuietActive
 			}
 
+			// One failing output must not keep the others from their speed (an emergency 100 % included).
+			var werrs []error
 			for _, ch := range chip.Outputs() {
 				next := plan.Out[ch.ID]
 				if err := chip.SetPWM(ch, percentToDuty(next, chip.MaxDuty())); err != nil {
-					clear(current)
-					k.reset()
-					return err
+					werrs = append(werrs, fmt.Errorf("%s: %w", ch.ID, err))
+					delete(current, ch.ID)
+					continue
 				}
 				current[ch.ID] = next
 				st.Targets[ch.ID] = next
 			}
-			return nil
+			if len(werrs) > 0 {
+				k.reset()
+			}
+			return errors.Join(werrs...)
 		})
 		if err != nil {
 			logf("fan write failed: %v", err)
@@ -399,23 +436,7 @@ func runDaemon(chip Fans) error {
 
 		select {
 		case <-stop:
-			// Writing the BIOS values now would override the rival that took the fans over.
-			if len(rivals) > 0 {
-				_ = withLock(func() error { stopWatchdog(pet, chip, logf); return nil })
-				_ = os.Remove(statePath)
-				logf("fan control stopped, fans left to %s", rivalNames(rivals))
-				return nil
-			}
-			err := withLock(func() error {
-				stopWatchdog(pet, chip, logf)
-				return restoreRetry(chip, bios, restoreTries, restoreBackoff, logf)
-			})
-			_ = os.Remove(statePath)
-			if err != nil {
-				logf("fan control stopped, BIOS fan settings NOT restored: %v", err)
-				return nil
-			}
-			logf("fan control stopped, BIOS fan settings restored")
+			endFanControl(chip, bios, pet, rivals, logf)
 			return nil
 		case <-ticker.C:
 		}
@@ -624,7 +645,7 @@ func runWatchdogOnly(chip Fans) error {
 		}
 	}
 	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(stop, daemonSignals...)
 	defer signal.Stop(stop)
 
 	pet := &Petter{}

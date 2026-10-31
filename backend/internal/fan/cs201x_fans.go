@@ -16,8 +16,8 @@ import (
 // at the start back.
 //
 // Off by default: the model counts as a fan model only with a confirmed map (`ugreen-nas-fan cs201x confirm`,
-// stored in fan_map.json like the IT8613E models). Nothing is written before the first Snapshot or SetPWM; the
-// host interface (cfg 0x30 = 1, ug_201x.c:264-266) is switched on there if it is off.
+// stored in fan_map.json like the IT8613E models). The host interface (cfg 0x30) is never switched on: with
+// it off the BIOS does not expose the fan controller, and Snapshot, SetPWM and Restore refuse.
 const (
 	csChip = "CS201x"
 
@@ -26,6 +26,8 @@ const (
 	csFloorPct = probeFloorPct
 	// csSafePct is written back when no usable duty was saved: UGREEN's driver has no automatic mode to return to.
 	csSafePct = 60
+	// csMaxRPM: a reading above this (a floating bus reads 0xffff) is no fan.
+	csMaxRPM = 30000
 )
 
 // csWrotePath marks that this tool wrote a CS201x duty since boot and has not handed the fans back. A snapshot taken
@@ -56,9 +58,11 @@ type CS201x struct {
 	ec       csEC
 	chans    []Channel
 	active   bool // the host interface is on
-	hostOn   bool // this instance made sure of it (writes allowed)
+	hostOn   bool // writes allowed: the host interface was on when checked
 	prepared bool // fan enables and temperature inputs are set
 }
+
+var errCSHostOff = errors.New("host interface off: the BIOS does not expose the fan controller")
 
 var errCSNotConfirmed = errors.New("fan control of the DXP2800 GT is off until you confirm the fans: ugreen-nas-fan cs201x confirm")
 
@@ -71,7 +75,7 @@ func DetectCS201x(p Ports, model string) (*CS201x, error) {
 		}
 		return nil, err
 	}
-	w, err := csReadWindow(p, false)
+	w, err := csReadWindow(p)
 	if err != nil {
 		return nil, err
 	}
@@ -94,17 +98,21 @@ func (c *CS201x) Outputs() []Channel  { return c.chans }
 func (c *CS201x) MaxDuty() byte       { return 100 }  // percent
 func (c *CS201x) AutoDutyKnown() bool { return true } // no automatic mode: the register is the output
 
-// switchOn makes sure the host interface is on; the first write path calls it.
-func (c *CS201x) switchOn() error {
+// hostReady checks that the host interface is on (it never switches it on); every snapshot and write path calls it.
+func (c *CS201x) hostReady() error {
 	if c.hostOn {
 		return nil
 	}
-	w, err := csReadWindow(c.p, true)
+	w, err := csReadWindow(c.p)
 	if err != nil {
 		return err
 	}
-	if w.Active&0x01 == 0 || !plausibleBase(w.Base) {
-		return errors.New("the host interface of the embedded controller does not switch on")
+	if w.Active&0x01 == 0 {
+		c.active = false
+		return errCSHostOff
+	}
+	if !plausibleBase(w.Base) {
+		return fmt.Errorf("implausible base address 0x%04x of the embedded controller", w.Base)
 	}
 	c.ec.Base, c.active, c.hostOn = w.Base, true, true
 	return nil
@@ -116,7 +124,7 @@ func (c *CS201x) prepare() error {
 	if c.prepared {
 		return nil
 	}
-	if err := c.switchOn(); err != nil {
+	if err := c.hostReady(); err != nil {
 		return err
 	}
 	set := func(reg uint32) error {
@@ -127,7 +135,7 @@ func (c *CS201x) prepare() error {
 	}
 	for _, ch := range c.chans {
 		f, _ := csFanOf(ch.ID)
-		if err := set(f.en); err != nil {
+		if err := c.setEnableBit(f.en, 1); err != nil {
 			return err
 		}
 	}
@@ -144,11 +152,21 @@ func (c *CS201x) prepare() error {
 	return nil
 }
 
-func (c *CS201x) readable() error {
-	if !c.active {
-		return errors.New("the host interface of the embedded controller is off")
+// setEnableBit sets bit 0 of an enable register to bit, leaves the other bits alone and writes only when bit 0 differs.
+func (c *CS201x) setEnableBit(reg uint32, bit byte) error {
+	v, err := c.ec.Read(reg)
+	if err != nil || v&1 == bit {
+		return err
 	}
-	return nil
+	return c.ec.Write(reg, v&^1|bit)
+}
+
+// readable: reads need the interface on too; it is looked at again while it was off (the LED backend may have switched it on).
+func (c *CS201x) readable() error {
+	if c.active {
+		return nil
+	}
+	return c.hostReady()
 }
 
 func (c *CS201x) RPM(ch Channel) (int, error) {
@@ -159,15 +177,7 @@ func (c *CS201x) RPM(ch Channel) (int, error) {
 	if err := c.readable(); err != nil {
 		return 0, err
 	}
-	hi, err := c.ec.Read(f.spd)
-	if err != nil {
-		return 0, err
-	}
-	lo, err := c.ec.Read(f.spd + 1)
-	if err != nil {
-		return 0, err
-	}
-	return int(hi)<<8 | int(lo), nil
+	return csRPM(c.ec, f.spd)
 }
 
 func (c *CS201x) PWM(ch Channel) (byte, bool, error) {
@@ -229,11 +239,10 @@ func (c *CS201x) temp(reg uint32) *int {
 func (c *CS201x) Temps() []*int   { return []*int{c.temp(csRegNTC2)} }
 func (c *CS201x) BoardTemp() *int { return c.temp(csRegNTC4) }
 
-// Snapshot is {enable, duty} per fan as found. It switches the host interface on (it must, to read) but writes
-// nothing else. If this tool wrote a duty since boot (csWrotePath), the duty register holds ours, not the BIOS's: it
+// Snapshot is {enable, duty} per fan as found. It refuses while the host interface is off and writes nothing. If this tool wrote a duty since boot (csWrotePath), the duty register holds ours, not the BIOS's: it
 // is saved as 0, which Restore turns into the safe duty.
 func (c *CS201x) Snapshot() (Snapshot, error) {
-	if err := c.switchOn(); err != nil {
+	if err := c.hostReady(); err != nil {
 		return nil, err
 	}
 	s := Snapshot{}
@@ -261,7 +270,7 @@ func (c *CS201x) Snapshot() (Snapshot, error) {
 // automatic mode to give the fans to, so what stays behind must be safe: a saved duty below the floor (the BIOS
 // value was lost, or a snapshot kept across restarts holds one we wrote) and a missing or 0 duty get csSafePct.
 func (c *CS201x) Restore(s Snapshot) error {
-	if err := c.switchOn(); err != nil {
+	if err := c.hostReady(); err != nil {
 		return err
 	}
 	var errs []error
@@ -273,10 +282,8 @@ func (c *CS201x) Restore(s Snapshot) error {
 			duty = min(max(saved[1], csSafePct), 100)
 		}
 		errs = append(errs, c.ec.Write(f.duty, duty))
-		if have && saved[0] <= 1 {
-			if en, err := c.ec.Read(f.en); err == nil && en != saved[0] {
-				errs = append(errs, c.ec.Write(f.en, saved[0]))
-			}
+		if have {
+			errs = append(errs, c.setEnableBit(f.en, saved[0]&1))
 		}
 	}
 	err := errors.Join(errs...)
@@ -357,7 +364,7 @@ func confirmCS201x(p Ports, model string, ids []string) (*FanMap, error) {
 		return nil, err
 	}
 	if rd.HostEC != "active" {
-		return nil, errors.New("the host interface of the embedded controller is off, so no fan could be checked: start the fan driver once (it switches the interface on) or switch it on, then confirm again")
+		return nil, errors.New("host interface off: the BIOS does not expose the fan controller, so no fan could be checked")
 	}
 	m := &FanMap{Version: 1, Model: model, Chip: csChip, Time: time.Now().Unix()}
 	for _, id := range ids {
@@ -368,6 +375,8 @@ func confirmCS201x(p Ports, model string, ids []string) (*FanMap, error) {
 		// The probe lists the fans in the order of csFans.
 		if i := slices.IndexFunc(csFans, func(x csFan) bool { return x.id == id }); i < len(rd.Fans) && rd.Fans[i].RPM == 0 {
 			return nil, fmt.Errorf("%s reads no rpm: nothing connected, or the fan is stopped", id)
+		} else if i < len(rd.Fans) && rd.Fans[i].RPM > csMaxRPM {
+			return nil, fmt.Errorf("%s reads %d rpm: not a plausible speed, the interface does not answer like the fan controller", id, rd.Fans[i].RPM)
 		}
 		m.Outputs = append(m.Outputs, FanMapOutput{ID: id, Role: f.role, PWM: "duty", Tach: "rpm"})
 	}

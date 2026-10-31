@@ -26,7 +26,7 @@ Talks to the fan chip, runs the curves every 2 s, reads sensors. Subcommands: `i
 `cs201x` (DXP2800 GT only):
 
 - no argument: reads chip id, 16-bit revision, host interface state, fans, temperatures (cpu = NTC2, board = NTC4, unsigned), the temperature input registers and the watchdog registers (counter read twice, 1.5 s apart). Writes only the Super-I/O unlock and device select.
-- `confirm [fan1] [fan3]`: switches fan control on for the named fans (default both; fan1 = cpu, fan3 = case) by saving `fan_map.json` (`chip: CS201x`). With the host interface on, a fan that reads 0 rpm is refused. Reads only.
+- `confirm [fan1] [fan3]`: switches fan control on for the named fans (default both; fan1 = cpu, fan3 = case) by saving `fan_map.json` (`chip: CS201x`). Refused while the host interface is off, or when a fan reads 0 rpm or more than 30000. Reads only; the host interface is never switched on.
 - `forget`: removes the map; fan control is off again.
 
 Without the map the daemon does not start on this model.

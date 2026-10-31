@@ -28,8 +28,9 @@ How `ugreen-nas-fan` reads and drives the fan chips. Unraid's kernel has no driv
 
 - Reached through the Super-I/O window `0x2e`/`0x2f` (host-to-EC device) and the EC's indirect register window; two fans: CPU (fan1) and system (fan3 role case), duty in percent (0-100), tachometer the rpm.
 - No EC automatic mode exists. `restore` writes the duty back that each fan had when the daemon started, never below 60 % (a lower or unusable value, or a snapshot taken after this tool had written a duty since boot, gives 60 %), not a curve. A duty write is read back; a mismatch after one retry is an error.
-- The 25 % floor is the class default, not measured on this model.
-- Control stays off until `ugreen-nas-fan cs201x confirm` saved `fan_map.json` (the IT8613E `probe-fans` commands refuse on this model); `cs201x confirm` refuses while the host interface is off (nothing could be checked); `cs201x forget` hands the fans back (restore) and then removes it, keeping the map if that fails; `cs201x` alone only reads.
+- The 25 % floor is the class default, not measured on this model; the daemon raises a lower `min_pct` to 25.
+- The host interface (Super-I/O cfg 0x30 bit 0) is never switched on by the fan driver: if the BIOS left it off, snapshot, writes and `confirm` refuse with "host interface off: the BIOS does not expose the fan controller" and fan control stays off. Reads only look. The enable registers are written only in bit 0 and only where it differs; the speed (two bytes) is read again until the high byte is stable.
+- Control stays off until `ugreen-nas-fan cs201x confirm` saved `fan_map.json` (the IT8613E `probe-fans` commands refuse on this model); `cs201x confirm` refuses while the host interface is off (nothing could be checked) or a fan reads 0 rpm or an implausible speed (above 30000); `cs201x forget` hands the fans back (restore) and then removes it, keeping the map if that fails; `cs201x` alone only reads.
 
 ### Plain iDX6011 and iDX6012, ITE IT5571 embedded controller
 
@@ -51,7 +52,7 @@ The daemons run with GC at 25 % and a 24 MiB soft memory limit (`backend/cmd/ugr
 
 ## Safety logic
 
-- The first start after boot saves the BIOS values to `/var/run/ugreen-nas-control.bios`. Stopping the daemon (also on update or removal) and `restore` write them back.
+- The first start after boot saves the BIOS values to `/var/run/ugreen-nas-control.bios`. Stopping the daemon (also on update or removal) and `restore` write them back; SIGTERM, SIGINT, SIGHUP, SIGQUIT and a panic in the loop all end that way. A failing output never keeps the others from their speed (an emergency 100 % reaches every fan it can).
 - All fans go to 100 % when the CPU or a disk reaches its limit, when the CPU temperature cannot be read, and when the hottest non-ignored NVMe minus the NVMe offset reaches the disk limit.
 - With fan control switched off in Settings the tool makes no read or write on the fan chip.
 - On any model not in `web/models/` with a `fan` entry, the plugin does not touch the fan controller.

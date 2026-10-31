@@ -338,7 +338,7 @@ func powerACFor(model string, e *acEnv) (acLoss, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, err := csReadWindow(p, false); err != nil { // chip id check only, the host interface stays as it is
+		if _, err := csReadWindow(p); err != nil { // chip id check only, the host interface stays as it is
 			return nil, err
 		}
 		m, err := e.mem()
