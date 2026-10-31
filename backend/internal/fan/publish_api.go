@@ -30,7 +30,7 @@ func ReadLive() Live {
 	l := Live{Sensors: ReadSensors(), Info: ReadInfo(), FanControl: LoadConfig(configPath).FanControl}
 	if l.FanControl {
 		out := map[string]any{}
-		addChipStatus(out, &l.Sensors, openChip)
+		addChipStatus(out, &l.Sensors, openChipOnce)
 		l.Fans, _ = out["fans"].([]FanStatus)
 	}
 	return l

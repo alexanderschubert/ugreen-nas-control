@@ -148,3 +148,21 @@ func TestReleaseRetriesAfterFailure(t *testing.T) {
 		t.Fatalf("calls %d", chip.restoreCalls)
 	}
 }
+
+type closeSpy struct {
+	Fans
+	closed int
+}
+
+func (c *closeSpy) Close() error { c.closed++; return nil }
+
+func TestAddChipStatusClosesWhatItOpened(t *testing.T) {
+	f := newFakeEC()
+	ec, _ := DetectEC(f)
+	spy := &closeSpy{Fans: ec}
+	out := map[string]any{}
+	addChipStatus(out, &Sensors{}, func() (Fans, error) { return spy, nil })
+	if spy.closed != 1 {
+		t.Fatalf("closed %d times, want 1", spy.closed)
+	}
+}
