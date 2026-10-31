@@ -14,7 +14,15 @@ export default {
     led: 'bays',
     caseView: 'front-rear',
     caseVariant: 'rear8800',
-    fan: { chip: 'ITE IT8613E', fans: { fan2: 'cpu', fan3: 'case', fan4: 'case' }, kind: 'probe' },
+    fan: {
+        chip: 'ITE IT8613E',
+        fans: { fan2: 'cpu', fan3: 'case', fan4: 'case' },
+        kind: 'probe',
+        watchdog: {
+            status: 'expected',
+            note: 'Expected, from the vendor driver and the kernel it87_wdt: the plugin only feeds a timer it sees counting, never arms it, and yields to it87_wdt. Not confirmed on this hardware.'
+        }
+    },
     verified: {
         leds: {
             status: 'community',
