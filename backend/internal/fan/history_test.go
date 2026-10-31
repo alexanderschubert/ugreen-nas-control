@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
@@ -237,5 +238,31 @@ func TestFanSampleUsesWrittenSpeedElseTheChip(t *testing.T) {
 	// not driven (BIOS mode, rival): the chip's own duty; loopChip reports 0 and manual mode
 	if f := fanSample(chip, ch, 0, false, map[string]int{}, d); f.Pct != 0 || f.RPM != -1 {
 		t.Fatalf("not driven: %+v", f)
+	}
+}
+
+// A panic while answering one connection must not end the daemon or the accept loop.
+func TestHistorySocketSurvivesPanic(t *testing.T) {
+	dir, err := os.MkdirTemp("", "h")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	path := filepath.Join(dir, "s")
+
+	var mu sync.Mutex
+	logged := 0
+	logf := func(string, ...any) { mu.Lock(); logged++; mu.Unlock() }
+	stop := serveHistory(path, nil, logf) // a nil history panics in Answer
+	defer stop()
+	for range 3 {
+		if _, err := QueryHistory(path, Range1h); err != nil {
+			t.Fatalf("query: %v", err)
+		}
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if logged != 3 {
+		t.Errorf("panics logged %d, want 3 (accept loop must keep running)", logged)
 	}
 }

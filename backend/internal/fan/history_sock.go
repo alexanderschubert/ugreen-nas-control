@@ -39,13 +39,25 @@ func serveHistory(path string, h *History, logf func(string, ...any)) (stop func
 			if err != nil {
 				return
 			}
-			answerHistory(conn, h)
+			serveConn(conn, h, logf)
 		}
 	}()
 	return func() {
 		_ = ln.Close()
 		_ = os.Remove(path)
 	}
+}
+
+// serveConn answers one connection; a panic there is logged and ends that connection only: an unrecovered one would take
+// the whole daemon down without handing the fans back.
+func serveConn(conn net.Conn, h *History, logf func(string, ...any)) {
+	defer func() {
+		if r := recover(); r != nil {
+			logf("fan history connection crashed: %v", r)
+			_ = conn.Close()
+		}
+	}()
+	answerHistory(conn, h)
 }
 
 func answerHistory(conn net.Conn, h *History) {

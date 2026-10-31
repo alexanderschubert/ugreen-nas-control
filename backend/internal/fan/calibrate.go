@@ -392,7 +392,7 @@ func runCalibrate(chip Fans) (err error) {
 
 	stop := make(chan struct{})
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
+	signal.Notify(sig, daemonSignals...)
 	go func() {
 		<-sig
 		close(stop)

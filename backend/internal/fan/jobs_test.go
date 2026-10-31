@@ -127,3 +127,21 @@ func TestJobProbeCachesTenSeconds(t *testing.T) {
 	p.pgrep = func() bool { t.Error("pgrep although mover is off"); return true }
 	_ = p.Status(t0.Add(time.Hour), false, true)
 }
+
+func TestPgrepMoverTimesOut(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "pgrep"), []byte("#!/bin/sh\nexec /bin/sleep 10\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	old := pgrepTimeout
+	pgrepTimeout = 100 * time.Millisecond
+	defer func() { pgrepTimeout = old }()
+	start := time.Now()
+	if pgrepMover() {
+		t.Error("a pgrep that never answers must not report a mover")
+	}
+	if d := time.Since(start); d > 3*time.Second {
+		t.Errorf("pgrep not stopped: %v", d)
+	}
+}
