@@ -24,6 +24,17 @@ How `ugreen-nas-fan` reads and drives the fan chips. Unraid's kernel has no driv
 - Never below 25 % (the case fan stalls near 20 %); emergency limits 88 C CPU and 60 C disk.
 - `ugreen-nas-fan backlight [set <0-100>]` reads and sets the LCD brightness (EC register `0xa5`, 1 = full, 198 = off) and touches nothing else of the display.
 
+### DXP2800 GT, Chipsea CS201x embedded controller
+
+- Reached through the Super-I/O window `0x2e`/`0x2f` (host-to-EC device) and the EC's indirect register window; two fans: CPU (fan1) and system (fan3 role case), duty in percent (0-100), tachometer the rpm.
+- No EC automatic mode exists. `restore` writes the duty back that each fan had when the daemon started, never below 60 % (a lower or unusable value, or a snapshot taken after this tool had written a duty since boot, gives 60 %), not a curve. A duty write is read back; a mismatch after one retry is an error.
+- The 25 % floor is the class default, not measured on this model.
+- Control stays off until `ugreen-nas-fan cs201x confirm` saved `fan_map.json` (the IT8613E `probe-fans` commands refuse on this model); `cs201x confirm` refuses while the host interface is off (nothing could be checked); `cs201x forget` hands the fans back (restore) and then removes it, keeping the map if that fails; `cs201x` alone only reads.
+
+### Plain iDX6011 and iDX6012, ITE IT5571 embedded controller
+
+- Readings only: fan1 and fan2 (tachometer `0x96`-`0x99`, mode and duty `0x9c`-`0x9f`) are shown as `readonly` in `fan_caps.kind`. No register is written, the daemon refuses to start and `set` and `calibrate` fail with a read-only error. No EC temperatures, no watchdog feed, no backlight.
+
 The EC watchdog of the DXP4800 GT and iDX6011 Pro: [watchdog.md](watchdog.md).
 
 ## Fan settings and pipeline order
@@ -54,4 +65,4 @@ The daemons run with GC at 25 % and a 24 MiB soft memory limit (`backend/cmd/ugr
 
 ## Fan probe for unknown wiring
 
-Models with an IT8613E whose header wiring is not known (DXP2800, DXP4800, DXP4800 Plus, DXP4800 Pro, DXP8800 Plus) keep fan control off until a probe result is confirmed. `ugreen-nas-fan probe-fans run` takes about a minute and only starts on that command: the daemon is paused, one output at a time goes to 80 % for at most 8 seconds while the others hold 50 %, and the tach that responds is attributed to it. It never writes below 25 %, stops on a hot CPU or disk, a fan that stops turning, or SIGTERM, and puts the previous speeds back on every exit (`probe-fans restore` does that after a killed probe). The result is a proposal; `probe-fans confirm pwm2=cpu pwm3=case` saves it as `fan_map.json` next to `fan.cfg`, `probe-fans forget` removes it, `probe-fans tachs` reads the tach inputs without writing.
+Models with an IT8613E whose header wiring is not known (DXP2800, DXP4800, DXP4800 Plus, DXP4800 Pro, DXP8800 Plus) keep fan control off until a probe result is confirmed. `ugreen-nas-fan probe-fans run` takes about a minute and only starts on that command: the daemon is paused, one output at a time goes to 80 % for at most 8 seconds while the others hold 50 %, and the tach that responds is attributed to it. It never writes below 25 %, stops on a hot CPU or disk, a fan that stops turning, or SIGTERM, and puts the previous speeds back on every exit (`probe-fans restore` does that after a killed probe). UGREEN's own open-source drivers name the expected wiring per model (`probeHints` in `fanmodels.go`: DXP2800 and DXP4800 case on header 3; Plus, Pro and DXP8800 Plus cpu on header 2; case on 3, on the DXP8800 Plus also on 4); the probe shows whether its finding agrees. That is a hint, not proof: the driver never shows which physical fan sits on which header. Header 4's control register is unconfirmed (UGREEN `0x1e`, ours `0x7f`), so header 4 is only written by the probe, and a tach count of `0x0fff` reads as no fan (like UGREEN's driver). The result is a proposal; `probe-fans confirm pwm2=cpu pwm3=case` saves it as `fan_map.json` next to `fan.cfg`, `probe-fans forget` removes it, `probe-fans tachs` reads the tach inputs without writing.

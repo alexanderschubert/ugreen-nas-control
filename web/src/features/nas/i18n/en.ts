@@ -1,6 +1,8 @@
 import { inputsEn } from './parts/inputs.en';
 import { historyEn } from './parts/history.en';
 import { scheduleEn } from './parts/schedule.en';
+import { panelEn } from './parts/panel.en';
+import { powerEn } from './parts/power.en';
 import { toolsEn } from './parts/tools.en';
 
 export const en = {
@@ -197,9 +199,9 @@ export const en = {
     'case.unknown':
         'There is no case view for {model} yet: it exists for the DXP6800 Pro, the DXP4800 GT, the DXP4800 / Plus / Pro the DXP8800 Plus, the DXP2800 and the iDX6011 / Pro.',
     'leds.limited':
-        'For the {model} there is LED control, system info and temperatures. Fan control exists for the DXP6800 Pro and the DXP4800 GT only, the case view also for the DXP4800 / Plus / Pro the DXP8800 Plus, the DXP2800 and the iDX6011 / Pro.',
+        'For the {model} there is LED control, system info and temperatures. Fan control exists only for the models on the model list (fixed wiring, or after a probe or confirmation), the case view also for the DXP4800 / Plus / Pro the DXP8800 Plus, the DXP2800 and the iDX6011 / Pro.',
     'leds.limited_fans':
-        'For the {model} there is LED control, system info, temperatures and the case view. Fan control exists for the DXP6800 Pro and the DXP4800 GT only.',
+        'For the {model} there is LED control, system info, temperatures and the case view. Fan control exists only for the models on the model list (fixed wiring, or after a probe or confirmation).',
     'leds.untested':
         'LED control for the {model} is untested: the controller is the same on all UGREEN models, but the order of the bays and the LED numbers is guessed for this model or comes from reports of other plugins. Check with “Identify” that the right LED lights up, and report problems as an issue.',
     'leds.warn_standalone':
@@ -282,7 +284,7 @@ export const en = {
     'fanctl.on': 'On. The fans run after the chosen mode.',
     'fanctl.off': 'Off. This plugin leaves the fan chip alone, the fans run as the BIOS set them.',
     'fanctl.unsupported':
-        'There is no fan control for this model (it exists only for the DXP6800 Pro and the DXP4800 GT). The plugin does not touch the fan chip, the fans run as the BIOS set them, so no switch is needed.',
+        'There is no fan control for this model (it needs fixed wiring or a probe or confirmation, see the model list). The plugin does not touch the fan chip, the fans run as the BIOS set them, so no switch is needed.',
     'fanctl.hint':
         'Switch it off when another plugin or script controls the fans. This plugin then does not touch the fan chip, and the fans get the BIOS values back.',
     'fanctl.off_note': 'Fan control is off. Switch it on under Settings.',
@@ -293,7 +295,7 @@ export const en = {
 
     'about.how': 'How it works',
     'about.how_text':
-        'Talks to the fan controller directly through I/O ports (ITE IT8613E on the DXP6800 Pro, IT5571 embedded controller on the DXP4800 GT) and to the LED controller over I²C, without a kernel module. When stopped or uninstalled, the fans get the BIOS values back.',
+        'Talks to the fan controller directly through I/O ports (ITE IT8613E on most DXP models, IT5571 embedded controller on the DXP4800 GT and iDX6011 Pro) and to the LED controller over I²C, without a kernel module. When stopped or uninstalled, the fans get the BIOS values back.',
     'models.series': '{s} series',
     'models.confirm_title': 'Confirm my device',
     'models.confirm_intro': 'Tried the plugin? Tick what works for you and send it as a GitHub issue: that is how we learn what runs on your model.',
@@ -450,7 +452,9 @@ export const en = {
     ...inputsEn,
     ...historyEn,
     ...scheduleEn,
-    ...toolsEn
+    ...toolsEn,
+    ...panelEn,
+    ...powerEn
 } as const;
 
 export type Key = keyof typeof en;

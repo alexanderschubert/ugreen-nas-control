@@ -58,6 +58,8 @@ import { resolveTheme } from '../../core/theme';
 import { fanName, ssdRoleText } from './names';
 import { type Key, t, tEnum, tRaw } from './text';
 import './fan/index';
+import { isCs201xModel } from './fan/cs201x';
+import { hasBeeper, hasButtons } from './panel-models';
 import { fanModules, type FanCtx, type FanModule } from './fan/module';
 import * as components from './ui/components';
 
@@ -177,7 +179,7 @@ function main(root: HTMLElement): void {
     function fanTile(fan: Fan, fans: Fan[], { sub, hint = '', why = '' }: { sub: string; hint?: string; why?: string | undefined }): string {
         const running = fan.rpm > 0 && !fan.error;
         const rpm = fan.rpm > 0 ? `${fan.rpm} <small>${escapeHtml(t('fan.rpm'))}</small>` : escapeHtml(t(fan.error ? 'fan.error' : 'fan.stopped'));
-        const power = fan.error ? '' : fan.pct == null ? t('fan.auto') : t('fan.speed', { pct: fan.pct });
+        const power = fan.error ? '' : fan.pct == null ? (fanReadOnly() ? '' : t('fan.auto')) : t('fan.speed', { pct: fan.pct });
 
         return `
             <div class="unc-fantile ${running ? '' : 'stopped'}" ${hint ? `title="${escapeHtml(hint)}"` : ''}>
@@ -300,7 +302,8 @@ function main(root: HTMLElement): void {
         const data = state.data;
         if (!data?.ok) return;
         for (const { module, ctx, el } of mounted) {
-            el.hidden = module.visible ? !module.visible(data) : false;
+            // Readings only: no inputs, tuning, schedule or profiles to offer.
+            el.hidden = (fanReadOnly() && module.host === 'curves') || (module.visible ? !module.visible(data) : false);
             if (!el.hidden) module.update?.(data, ctx);
         }
     }
@@ -380,6 +383,7 @@ function main(root: HTMLElement): void {
         curves: 'curves.intro',
         safety: 'safety.intro',
         history: 'hist.sub',
+        panel: 'sub.panel',
         'led:overview': 'leds.intro',
         'led:drives': 'sub.led_drives',
         'led:schedules': 'sub.led_schedules',
@@ -392,7 +396,15 @@ function main(root: HTMLElement): void {
         const nav = state.nav;
 
         q('#unc-title').textContent = tRaw(`nav.${nav.replace(':', '_')}`);
-        q('#unc-subtitle').innerHTML = t(nav === 'curves' && fanProbing() ? 'probe.title' : SUBTITLES[nav] || 'sub.overview');
+        q('#unc-subtitle').innerHTML = t(
+            nav === 'curves' && fanProbing()
+                ? isCs201xModel(modelName())
+                    ? 'cs201x.title'
+                    : 'probe.title'
+                : nav === 'curves' && fanReadOnly()
+                  ? 'readonly.sub'
+                  : SUBTITLES[nav] || 'sub.overview'
+        );
         qa('[data-model]').forEach(element => {
             element.textContent = state.data?.info?.model || 'UGREEN NAS';
         });
@@ -476,12 +488,13 @@ function main(root: HTMLElement): void {
         box.innerHTML = rivals
             .map(c => {
                 const name = escapeHtml(c.name);
-                const lines = c.controls.map(what => `<p>${escapeHtml(t(what === 'fan' ? 'conflict.fan' : 'conflict.led'))}</p>`).join('');
+                const controls = c.controls.filter(what => what !== 'watchdog');
+                const lines = controls.map(what => `<p>${escapeHtml(t(what === 'fan' ? 'conflict.fan' : 'conflict.led'))}</p>`).join('');
                 const alert =
                     unapplied && c.controls.includes('fan')
                         ? `<p><strong>${escapeHtml(t('conflict.unapplied', { name: c.name, reason: tEnum(`failsafe.${unapplied}`, unapplied) }))}</strong></p>`
                         : '';
-                const keep = c.controls
+                const keep = controls
                     .filter(what => (what === 'fan' ? !fanOff() : Boolean(state.data?.led?.enabled)))
                     .map(what =>
                         btn({ label: t(what === 'fan' ? 'conflict.keep_fan' : 'conflict.keep_led', { name: c.name }), attrs: `data-conflict-off="${what}"` })
@@ -514,7 +527,7 @@ function main(root: HTMLElement): void {
         const heat = heatRow();
 
         q('.unc-ov-cool').classList.toggle('fan-off', off);
-        q('.unc-ov-cool').hidden = (Boolean(modelName()) && !fanKnown()) || (!heat && (off || !fans.length));
+        q('.unc-ov-cool').hidden = (Boolean(modelName()) && !fanShown()) || (!heat && (off || !fans.length));
         q('.unc-ov').classList.toggle('no-cool', Boolean(q('.unc-ov-cool').hidden));
         q('#unc-heat').innerHTML = heat;
 
@@ -524,6 +537,11 @@ function main(root: HTMLElement): void {
             return;
         }
 
+        if (fanReadOnly()) {
+            q('#unc-fans').innerHTML = fans.map(fan => fanTile(fan, fans, { sub: t('readonly.tile') })).join('');
+            q('#unc-follow').innerHTML = linkRow(navLink('curves', 'readonly.more'), navLink('sensors', 'ov.all_sensors'));
+            return;
+        }
         q('#unc-fans').innerHTML = fans.map(fan => fanTile(fan, fans, { sub: fanSourceShort(fan), hint: fanSource(fan) })).join('');
 
         q('#unc-follow').innerHTML = followLinks();
@@ -582,8 +600,12 @@ function main(root: HTMLElement): void {
         const fans = data.fans || [];
         const box = q('#unc-now');
 
-        if (fanOff()) {
+        if (fanOff() && !fanReadOnly()) {
             box.innerHTML = emptyText(t('fanctl.off_note'));
+            return;
+        }
+        if (fanReadOnly()) {
+            box.innerHTML = fans.map(fan => fanTile(fan, fans, { sub: t('readonly.tile') })).join('');
             return;
         }
 
@@ -623,6 +645,13 @@ function main(root: HTMLElement): void {
     }
 
     function renderModes() {
+        // Readings only: there is no daemon to take a mode.
+        for (const id of ['#unc-modes', '#unc-modes-fans']) q(id).hidden = fanReadOnly();
+        if (fanReadOnly()) {
+            q('#unc-mode-hint').hidden = true;
+            q('#unc-mode-note').textContent = '';
+            return;
+        }
         const mode = state.data?.settings?.mode || 'standard';
         const disabled = state.data?.chip ? '' : 'disabled';
         q('#unc-modes').innerHTML = modeTiles(mode, disabled);
@@ -694,17 +723,22 @@ function main(root: HTMLElement): void {
     // LEDs: verified | confirmed | reported (by users) | untested | power (power LED only) | none; case: full | fr | ''.
     type LedSupport = 'verified' | 'confirmed' | 'reported' | 'untested' | 'power' | 'none';
     const MODELS: [series: string, model: string, test: RegExp, leds: LedSupport, view: '' | 'fr' | 'full', fans: boolean][] = [
+        ['DH', 'DH2600', /^DH2600/, 'none', '', false],
         ['DX', 'DX4600 Pro', /^DX4600/, 'confirmed', '', false],
         ['DX', 'DX4700+', /^DX4700/, 'reported', '', false],
         ['DXP', 'DXP2800', /^DXP2800$/, 'reported', 'fr', false],
-        ['DXP', 'DXP2800 GT', /^DXP2800 GT/, 'untested', 'fr', false],
+        ['DXP', 'DXP2800S', /^DXP2800S$/, 'untested', '', false],
+        ['DXP', 'DXP2800 GT', /^DXP2800 GT/, 'untested', 'fr', true],
         ['DXP', 'DXP480T Plus', /^DXP480T/, 'power', '', false],
         ['DXP', 'DXP4800', /^DXP4800$/, 'confirmed', 'fr', false],
         ['DXP', 'DXP4800S', /^DXP4800S$/, 'untested', '', false],
         ['DXP', 'DXP4800 Plus / Pro', /^DXP4800 (Plus|Pro)$/, 'confirmed', 'fr', false],
         ['DXP', 'DXP4800 GT', /^DXP4800.*GT/, 'verified', 'full', true],
+        ['DXP', 'DXP6800 / Plus', /^DXP6800( Plus|\+)?$/, 'untested', 'full', true],
+        ['DXP', 'DXP6800S', /^DXP6800S$/, 'untested', '', false],
         ['DXP', 'DXP6800 Pro', /^DXP6800 Pro$/, 'verified', 'full', true],
         ['DXP', 'DXP6800 Ultra', /^DXP6800 Ultra/, 'untested', '', false],
+        ['DXP', 'DXP8800 / Pro', /^DXP8800( Pro)?$/, 'untested', 'fr', true],
         ['DXP', 'DXP8800 Plus', /^DXP8800 Plus$/, 'confirmed', 'fr', false],
         ['DXP', 'DXP8800 Ultra', /^DXP8800 Ultra/, 'untested', '', false],
         ['iDX', 'iDX6011 / iDX6012 / Pro', /^iDX601[12]/, 'untested', 'fr', false]
@@ -806,7 +840,7 @@ function main(root: HTMLElement): void {
             ? list
                   .map(
                       c =>
-                          `${c.name} (${c.controls.map(w => t(w === 'fan' ? 'conflict.c_fan' : 'conflict.c_led')).join(', ')}; ${t(`conflict.k_${c.kind}` as Key)}${c.detail ? `, ${c.detail}` : ''})`
+                          `${c.name} (${c.controls.map(w => t(w === 'fan' ? 'conflict.c_fan' : w === 'watchdog' ? 'conflict.c_watchdog' : 'conflict.c_led')).join(', ')}; ${t(`conflict.k_${c.kind}` as Key)}${c.detail ? `, ${c.detail}` : ''})`
                   )
                   .join(' · ')
             : t('conflict.none');
@@ -1733,16 +1767,26 @@ function main(root: HTMLElement): void {
             el.hidden = !caseKnown();
         });
         qa('[data-fan-only]').forEach(el => {
-            el.hidden = (!fanKnown() || fanOff()) && !(fanProbing() && el.matches('[data-nav="curves"], .unc-nav-group'));
+            // The probe and the read-only fans keep the group and the Fans page; history and safety need a daemon.
+            const keep = (fanProbing() || fanReadOnly()) && el.matches('[data-nav="curves"], .unc-nav-group');
+            el.hidden = (!fanKnown() || fanOff()) && !keep;
         });
         qa('[data-view="curves"] > :not(.unc-fanslot)').forEach(el => {
             el.hidden = fanProbing();
         });
+        q('[data-view="curves"]').classList.toggle('is-readonly', fanReadOnly());
+        q('#unc-fan-readonly').hidden = !fanReadOnly();
         qa('[data-fan-model]').forEach(el => {
             el.hidden = !fanKnown();
         });
+        qa('[data-fan-readonly]').forEach(el => {
+            el.hidden = !fanReadOnly();
+        });
         qa('[data-nofan-model]').forEach(el => {
-            el.hidden = fanKnown() || !modelName();
+            el.hidden = fanShown() || !modelName();
+        });
+        qa('[data-panel-only]').forEach(el => {
+            el.hidden = !panelKnown();
         });
         renderFanSwitch();
         if (state.hw && state.nav === 'case') renderRear(state.hw);
@@ -1833,7 +1877,12 @@ function main(root: HTMLElement): void {
     const fanKnown = () => state.data?.fan_caps?.kind === 'fixed' || (state.data?.fan_caps?.kind === 'probe' && state.data.fan_caps.channels > 0);
     const fanProbing = () => state.data?.fan_caps?.kind === 'probe' && state.data.fan_caps.channels === 0 && !fanOff();
     const fanOff = () => state.data?.settings?.fan_control === false;
-    const caseKnown = () => fanKnown() || /^(DXP4800( Plus| Pro)?|DXP8800 Plus|DXP2800( GT)?|iDX601[12]( Pro)?)$/.test(modelName());
+    // The plain iDX6011/6012: readings only (fan_caps.kind 'readonly'): no daemon, no writes, so no modes, curves, limits or history.
+    const fanReadOnly = () => state.data?.fan_caps?.kind === 'readonly';
+    // A model whose fan readings the page shows: driven (fixed, confirmed probe) or read only.
+    const fanShown = () => fanKnown() || fanReadOnly();
+    const panelKnown = () => hasButtons(modelName()) || hasBeeper(modelName());
+    const caseKnown = () => fanKnown() || /^(DXP4800( Plus| Pro)?|DXP8800( Plus| Pro)?|DXP2800( GT)?|iDX601[12]( Pro)?)$/.test(modelName());
 
     function renderFront(hw: Hardware, target = '#unc-front'): void {
         q(target).innerHTML = frontHtml(hw);
@@ -2686,9 +2735,11 @@ function main(root: HTMLElement): void {
                 ? ['sensors.no_fanctl', '']
                 : !data.chip
                   ? ['sensors.not_found', 'bad']
-                  : fanOff()
-                    ? ['sensors.ctl_off', 'warn']
-                    : ['sensors.ctl_on', 'ok'];
+                  : fanReadOnly()
+                    ? ['sensors.read_only', '']
+                    : fanOff()
+                      ? ['sensors.ctl_off', 'warn']
+                      : ['sensors.ctl_on', 'ok'];
         const ledState: [Key, string] | null = led === 'found' ? ['sensors.found', 'ok'] : led === 'missing' ? ['sensors.not_found', 'bad'] : null;
 
         return [

@@ -8,7 +8,9 @@ import "fmt"
 // Registers: headers 2 to 4 are the ones already verified on the DXP6800 Pro (it8613Channels). Header 1 follows the
 // same pattern of the ITE hardware-monitor family (tach 0x0d/0x18, duty 0x63, control 0x15). Header 5 has a tach
 // input (0x82/0x4c) but no PWM output is written: its registers are not confirmed, so the probe reads that tach only.
-// Header 1 and the tach of 5 are not confirmed on a device with this plugin.
+// Header 1 and the tach of 5 are not confirmed on a device with this plugin. UGREEN's drivers have no header 1 and
+// declare PWM 5 (control 0x1f, duty 0xa3) without ever using it (ug_it86x-cpufan.c:85-86@c75c5ab). Header 4's control
+// register is unconfirmed: ours 0x7f, UGREEN's 0x1e (ug_it86x-cpufan.c:82-83@c75c5ab).
 type iteHeader struct{ tachLow, tachHigh, duty, ctrl byte }
 
 var it8613Headers = [...]iteHeader{

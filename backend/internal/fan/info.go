@@ -28,8 +28,12 @@ type Info struct {
 }
 
 // ModelSupported tells whether this tool can drive the fans of the model: wiring known (DXP6800 Pro, DXP4800 GT,
-// iDX6011 Pro) or found by the probe (IT8613E models, see FanKind). A probe model still needs a confirmed map.
-func ModelSupported(model string) bool { return FanKind(model) != "" }
+// iDX6011 Pro) or found by the probe (IT8613E models, DXP2800 GT, see FanKind). A probe model still needs a
+// confirmed map. The plain iDX is read only and not driven.
+func ModelSupported(model string) bool {
+	k := FanKind(model)
+	return k != "" && k != KindReadOnly
+}
 
 // requireSupportedModel keeps every access to the fan controller ports to the models the tool was made for, and on
 // a probe model to a confirmed map: without one the fan wiring is a guess, so fan control stays off.
@@ -38,8 +42,17 @@ func requireSupportedModel() error {
 	switch FanKind(model) {
 	case KindFixed:
 		return nil
+	case KindReadOnly:
+		// Reads only: the daemon refuses this kind, SetPWM returns errReadOnly.
+		return nil
 	case KindProbe:
 		if _, err := loadFanMap(model); err != nil {
+			if errors.Is(err, errNoFanMap) && isDXP2800GT(model) {
+				return errCSNotConfirmed
+			}
+			if isDXP2800GT(model) {
+				return fmt.Errorf("%s: %w; confirm again: ugreen-nas-fan cs201x confirm", model, err)
+			}
 			if errors.Is(err, errNoFanMap) {
 				return fmt.Errorf("%s has no confirmed fan map yet: run the fan probe first (ugreen-nas-fan probe-fans run)", model)
 			}

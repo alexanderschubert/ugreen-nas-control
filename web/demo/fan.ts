@@ -1,6 +1,7 @@
 // The fan actions of api.php (inputs, schedule, profiles, v2 settings, probe, backlight) for the in-browser demo; the
 // answers follow web/tools/harness/api-fixture.php. Their state lives under `nas.fan` of the model's saved state.
-import { fanCaps, fanConfig, fanSamples } from '../models/fixture';
+import { fanConfig } from '../models/fixture';
+import { shape } from './variants';
 import { fanHistory } from './fixture-history';
 import type { Model } from '../models/schema';
 
@@ -122,8 +123,9 @@ export interface FanHost {
 }
 
 export function createFan(model: Model, host: FanHost) {
-    const samples = fanSamples(model);
-    const caps = fanCaps(model);
+    const shaped = shape(model);
+    const samples = shaped.fan;
+    const caps = (shaped.status as { fan_caps?: { kind: string; channels: number } }).fan_caps ?? null;
     const fan = (): Obj => (host.nas.fan ??= {});
     const roleOf = (id: string): string => model.fan?.fans[id] ?? (id === 'fan1' ? 'cpu' : 'case');
     const dmi = model.fixtureDmi;
@@ -163,10 +165,29 @@ export function createFan(model: Model, host: FanHost) {
     }
 
     function backlightOnly(): Reply | null {
-        return model.series === 'iDX' && model.fan ? null : fail(`${dmi} has no backlight control: it exists for the iDX6011 Pro only`, 409);
+        return samples.meta.backlight ? null : fail(`${dmi} has no backlight control: it exists for the iDX6011 Pro only`, 409);
+    }
+
+    // The DXP2800 GT only (Chipsea CS201x): the sample of `cs201x`, else the same refusal as the tool.
+    function cs201x(): { read: Obj; confirmed: Obj } | Reply {
+        return shaped.cs201x ?? fail(`"${dmi}" is not a DXP2800 GT`, 409);
     }
 
     const mapOf = (): Obj | null => fan().map ?? null;
+
+    // Power on after AC loss: the model's sample, or the refusal the tool gives where nothing can be reached.
+    function powerAc(): { readable: boolean; settable: string[]; source: string; mode: string } | Reply {
+        return shaped.powerAc ?? fail('this model has no power-on setting this tool can reach', 409);
+    }
+    const powerAcAnswer = (ac: { readable: boolean; settable: string[]; source: string; mode: string }): Obj => ({
+        model: dmi,
+        mode: ac.readable ? (fan().powerAc?.mode ?? ac.mode) : 'unknown',
+        readable: ac.readable,
+        raw: ac.readable ? { value: 1 } : {},
+        settable: ac.settable,
+        source: ac.source,
+        last_set: fan().powerAc?.last ?? null
+    });
 
     function probeStatus(): Obj {
         const kind = caps ? caps.kind : '';
@@ -254,6 +275,8 @@ export function createFan(model: Model, host: FanHost) {
         config,
         /** `fan_caps` of the status: a confirmed map gives the probe model its channels. */
         caps: () => (caps ? { ...caps, channels: mapOf() ? mapOf()!.outputs.length : caps.channels } : null),
+        /** The DXP2800 GT with confirmed fans: the status fields the chip adds (the fixture's `cs201x.confirmed`). */
+        confirmed: (): Obj | null => (shaped.cs201x && mapOf() ? structuredClone(shaped.cs201x.confirmed) : null),
 
         get(action: string, query: URLSearchParams, settings: Obj, fanControl: boolean): Reply | null {
             switch (action) {
@@ -301,6 +324,23 @@ export function createFan(model: Model, host: FanHost) {
                     const no = backlightOnly();
                     return no ?? ok({ ...(fan().backlight ?? samples.backlight) });
                 }
+                case 'cs201x_read': {
+                    const cs = cs201x();
+                    return 'status' in cs ? cs : ok({ read: cs.read });
+                }
+                case 'power_ac_get': {
+                    const ac = powerAc();
+                    return 'status' in ac ? ac : ok(powerAcAnswer(ac));
+                }
+                case 'panel_buttons':
+                    if (!shaped.panel.buttons) return fail(`no button map for model "${dmi}"`, 409);
+                    return ok({
+                        model: dmi,
+                        power: shaped.panel.power,
+                        reset: shaped.panel.reset,
+                        power_readable: shaped.panel.power_readable,
+                        time: Math.floor(host.now() / 1000)
+                    });
                 default:
                     void query;
                     return null;
@@ -392,6 +432,41 @@ export function createFan(model: Model, host: FanHost) {
                     delete fan().map;
                     host.persist();
                     return ok();
+                case 'cs201x_confirm': {
+                    const cs = cs201x();
+                    if ('status' in cs) return cs;
+                    const raw = form.get('fans') ?? '';
+                    if (raw !== '' && !/^(fan1|fan3)(,(fan1|fan3))?$/.test(raw)) return fail('Invalid fans');
+                    const ids = raw === '' ? ['fan1', 'fan3'] : [...new Set(raw.split(','))];
+                    const outputs = ids.map(id => ({ id, role: id === 'fan1' ? 'cpu' : 'case', pwm: 'duty', tach: 'rpm' }));
+                    const map = { version: 1, model: dmi, chip: 'CS201x', time: Math.floor(host.now() / 1000), outputs };
+                    fan().map = map;
+                    host.persist();
+                    return ok({ map });
+                }
+                case 'cs201x_forget': {
+                    const cs = cs201x();
+                    if ('status' in cs) return cs;
+                    delete fan().map;
+                    host.persist();
+                    return ok();
+                }
+                case 'power_ac_set': {
+                    const mode = form.get('mode') ?? '';
+                    if (!['on', 'off', 'last'].includes(mode)) return fail('Invalid mode');
+                    const ac = powerAc();
+                    if ('status' in ac) return ac;
+                    if (!ac.settable.includes(mode)) return fail('this model does not offer that mode: no "last state" value here', 409);
+                    fan().powerAc = { mode, last: { mode, time: Math.floor(host.now() / 1000) } };
+                    host.persist();
+                    return ok({ set: mode, ...powerAcAnswer(ac), verified: ac.readable });
+                }
+                case 'panel_beep': {
+                    const raw = form.get('ms') ?? '200';
+                    if (!/^([2-9][0-9]|[1-9][0-9]{2}|1[0-9]{3}|2000)$/.test(raw)) return fail('Invalid duration');
+                    if (!shaped.panel.beeper) return fail(`no beeper known for model "${dmi}"`, 409);
+                    return ok({ ms: Number(raw) });
+                }
                 case 'fan_backlight': {
                     const raw = form.get('pct') ?? '';
                     if (!/^(100|[1-9]?[0-9])$/.test(raw)) return fail('Invalid value');

@@ -16,7 +16,10 @@ export default {
     caseVariant: 'none',
     fan: null,
     verified: {
-        leds: { status: 'expected', note: 'Same family as the DXP4800; the DMI name is not confirmed.' },
+        leds: {
+            status: 'expected',
+            note: 'Same family as the DXP4800; the name DXP4800S appears in the driver sources of UGREEN, the LED frame is not confirmed.'
+        },
         fans: { status: 'unsupported' },
         case: { status: 'unsupported' },
         sensors: { status: 'expected' }

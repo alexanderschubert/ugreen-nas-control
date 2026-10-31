@@ -23,6 +23,7 @@ func TestResolve(t *testing.T) {
 		{[]string{"ugreen-nas-ctl"}, "nas-ctl", "ugreen-nas-ctl", []string{}, true},
 		{[]string{"/x/ugreen-nas", "led-ctl", "status"}, "led-ctl", "/x/ugreen-nas led-ctl", []string{"status"}, true},
 		{[]string{"/x/ugreen-nas", "fan", "info"}, "fan", "/x/ugreen-nas fan", []string{"info"}, true},
+		{[]string{"/x/ugreen-nas", "panel", "buttons", "--watch"}, "panel", "/x/ugreen-nas panel", []string{"buttons", "--watch"}, true},
 		{[]string{"/x/ugreen-nas", "ugreen-nas-ctl", "report"}, "nas-ctl", "/x/ugreen-nas ugreen-nas-ctl", []string{"report"}, true},
 		{[]string{"/x/ugreen-nas"}, "", "", nil, false},
 		{[]string{"/x/ugreen-nas", "bogus"}, "", "", nil, false},

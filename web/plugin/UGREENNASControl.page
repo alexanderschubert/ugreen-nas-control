@@ -74,6 +74,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
         <button type="button" data-nav="led:schedules" data-led-only hidden><span class="unc-ico" data-unc-icon="clock"></span><span data-i18n="nav.led_schedules">Nachtmodus</span></button>
         <button type="button" data-nav="led:system" data-led-only hidden><span class="unc-ico" data-unc-icon="bell"></span><span data-i18n="nav.led_system">Meldungen &amp; Herunterfahren</span></button>
         <div class="unc-nav-group" data-i18n="nav.group_system">System</div>
+        <button type="button" data-nav="panel" data-panel-only hidden><span class="unc-ico" data-unc-icon="panel"></span><span data-i18n="nav.panel">Frontblende</span></button>
         <button type="button" data-nav="settings"><span class="unc-ico" data-unc-icon="gear"></span><span data-i18n="nav.settings">Einstellungen</span></button>
         <button type="button" data-nav="about"><span class="unc-ico" data-unc-icon="info"></span><span data-i18n="nav.about">Über</span></button>
     </nav>
@@ -167,6 +168,10 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
 <section class="unc-view" data-view="curves">
     <article class="unc-card">
         <div class="unc-fantiles" id="unc-now"></div>
+        <div class="unc-note is-info is-box is-icon" id="unc-fan-readonly" hidden>
+            <span class="unc-ico" data-unc-icon="info"></span>
+            <div data-i18n="readonly.note">Die Lüfter dieses Modells werden nur als Messwerte angezeigt.</div>
+        </div>
 
         <div class="unc-block">
             <div data-unc="sechead" data-unc-title="mode.title"></div>
@@ -266,6 +271,10 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
     <div class="unc-fanslot" data-fan-slot="history"></div>
 </section>
 
+<section class="unc-view" data-view="panel">
+    <div class="unc-fanslot" data-fan-slot="panel"></div>
+</section>
+
 <section class="unc-view" data-view="safety">
     <article class="unc-card">
         <div data-unc="cardhead" data-unc-title="safety.emergency" data-unc-ico="shield"></div>
@@ -336,6 +345,11 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
         <span data-unc="switch" data-unc-input="unc-fan-enabled" data-unc-title="fanctl.switch" data-unc-hint-id="unc-fan-state" id="unc-fan-row"></span>
         <p class="unc-note" data-i18n="fanctl.hint">Ausschalten, wenn ein anderes Plugin oder Skript die Lüfter steuert. Dann fasst dieses Plugin den Lüfter-Chip nicht an, und die Lüfter bekommen die Werte des BIOS zurück.</p>
         <p class="unc-hint" id="unc-conflict-list"></p>
+    </article>
+
+    <article class="unc-card" data-fan-readonly hidden>
+        <div data-unc="cardhead" data-unc-title="fanctl.title" data-unc-ico="fan"></div>
+        <p class="unc-note" data-i18n="readonly.note">Die Lüfter dieses Modells werden nur als Messwerte angezeigt.</p>
     </article>
 
     <article class="unc-card" data-nofan-model hidden>

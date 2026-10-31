@@ -68,6 +68,7 @@ export const es: Record<Key, string> = {
     'fxset.idle_hint': 'El arcoíris y el indicador de temperatura se detienen mientras un disco está ocupado.',
     'led.power': 'LED de encendido',
     'led.netdev': 'LED de red',
+    'led.netdev2': 'Segundo LED de red',
     'led.bay': 'Bahía {n}',
     'bays.title': 'Asignación y estado',
     'bays.intro': 'Qué disco se encuentra en qué bahía y cómo lo reporta Unraid. En el modo de estado, los LED muestran exactamente eso.',

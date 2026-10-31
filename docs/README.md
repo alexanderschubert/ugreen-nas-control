@@ -17,7 +17,9 @@ One line per file: what it answers. One topic per file; a topic that appears els
 - [docs/architecture.md](architecture.md) — Which parts exist (Go binary, PHP API, web UI), how they talk, repo layout, how to add a feature.
 - [docs/fan.md](fan.md) — How fan chips are read and driven, fan settings and pipeline order, safety rules, fan history, the wiring probe.
 - [docs/led.md](led.md) — How the LED controller is driven and what the LED tool and backend do.
+- [docs/panel.md](panel.md) — How the front-panel buttons are read and the beeper is driven, per model, vendor source only.
 - [docs/watchdog.md](watchdog.md) — Why the hardware watchdog stays on and what the plugin does with it.
+- [docs/power-on-ac.md](power-on-ac.md) — What the power-on-after-AC-loss setting is, per model, and how to read and set it.
 - [docs/conflicts.md](conflicts.md) — Which other tools write the same chips and what the plugin does about them.
 - [backend/internal/led/ledctl/SPEC.md](../backend/internal/led/ledctl/SPEC.md) — Which LED tool behaviour the Go port must keep (parity contract).
 - [plugin/README.md](../plugin/README.md) — What is in the plugin package, how the archive and `.plg` are built, install and remove.
@@ -34,7 +36,7 @@ One line per file: what it answers. One topic per file; a topic that appears els
 
 ## Reference
 
-- [docs/third-party.md](third-party.md) — Credits, licences, where borrowed facts come from, the MIT notice.
+- [docs/third-party.md](third-party.md) — Credits, licences, UGREEN's open-source drivers as hardware source, where borrowed facts come from, the MIT notice.
 - [docs/competition.md](competition.md) — How other community projects compare.
 - [CHANGELOG.md](../CHANGELOG.md) — What changed in each release (generated).
 - [.github/SECURITY.md](../.github/SECURITY.md) — How to report a vulnerability.

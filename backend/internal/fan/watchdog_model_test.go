@@ -7,22 +7,25 @@ import (
 	"time"
 )
 
-// The watchdog petter writes EC registers 0xa2/0xa3. That is safe only where 0x98 is the watchdog enable byte:
-// the DXP4800 GT and the iDX6011 Pro. On the iDX6012 (Pro or not) and the plain iDX6011 0x98/0x99 is the second
-// system fan's tachometer, so no model but these two may ever get a watchdog write.
-func TestWatchdogOnlyOnGTAndIdx6011Pro(t *testing.T) {
+// The EC petter writes registers 0xa2/0xa3. That is safe only where 0x98 is the watchdog enable byte: the DXP4800 GT
+// and the iDX6011 Pro. On the iDX6012 (Pro or not) and the plain iDX6011 0x98/0x99 is the second system fan's
+// tachometer. The IT8613E models (LDN 7 of the Super-I/O) get the other petter, nothing else gets one.
+func TestWatchdogOnlyOnKnownModels(t *testing.T) {
 	for model, want := range map[string]bool{
 		"DXP4800 GT":   true,
 		"iDX6011 Pro":  true,
 		"iDX6011":      false,
 		"iDX6012":      false,
 		"iDX6012 Pro":  false,
-		"DXP4800":      false,
-		"DXP4800 Plus": false,
-		"DXP4800 Pro":  false,
-		"DXP6800 Pro":  false,
-		"DXP2800":      false,
-		"DXP8800 Plus": false,
+		"DXP2800":      true,
+		"DXP4800":      true,
+		"DXP4800 Plus": true,
+		"DXP4800 Pro":  true,
+		"DXP6800 Pro":  true,
+		"DXP8800 Plus": true,
+		"DXP2800 GT":   false,
+		"dxp2800":      false,
+		"dxp6800 pro":  false,
 		"DX4600 Pro":   false,
 		"":             false,
 		"IDX6011 Pro":  false,

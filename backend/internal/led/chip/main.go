@@ -5,6 +5,7 @@ package chip
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ const usage = `Usage:
   ugreen-led-i2c [--bus /dev/i2c-N] [--force] set <led[,led...]|all> <command>
   ugreen-led-i2c [--bus /dev/i2c-N] scan [all]
   ugreen-led-i2c [--bus /dev/i2c-N] [--force] dxp480t white
+  ugreen-led-i2c cs201x [restore]
   ugreen-led-i2c [--speed 0-4] [--reverse] [--idle-only] effect <rainbow|temperature> <led[,led...]|all>
 
 LEDs:     power, netdev, disk1 ... disk8
@@ -26,6 +28,9 @@ Commands: color <R> <G> <B> | brightness <0-255> | on | off
 scan      lists the I2C addresses that answer (read only), on one bus or with
           "all" on every /dev/i2c-N, for models whose controller isn't at 0x3a
 dxp480t   DXP480T Plus: the power LED (controller at 0x26) to static white
+cs201x    DXP2800 GT: dump the ARGB registers of the four LEDs (read only); "restore" writes
+          back the state saved before the first write. The LED backend of this model is off
+          until cs201x_leds="1" is set in leds.cfg
 
 --bus     the SMBus device (default: the "SMBus I801 adapter")
 --force   use the address even while a kernel driver (led_ugreen) holds it
@@ -70,6 +75,9 @@ type ledBus interface {
 }
 
 var openLedBus = func(path string, force bool) (ledBus, error) {
+	if getLayout() == layoutCS201x {
+		return openCS201xBus(path, force)
+	}
 	b, err := openBus(path, force)
 	if err != nil {
 		return nil, err
@@ -94,8 +102,12 @@ func (c *cli) run(args []string) int {
 	}
 	args = flags.Args()
 
-	if len(args) == 0 || (args[0] != "probe" && args[0] != "scan" && len(args) < 2) {
+	if len(args) == 0 || (args[0] != "probe" && args[0] != "scan" && args[0] != "cs201x" && len(args) < 2) {
 		return c.usageError()
+	}
+
+	if args[0] == "cs201x" {
+		return c.runCS201x(args[1:])
 	}
 
 	if args[0] == "scan" {
@@ -110,6 +122,9 @@ func (c *cli) run(args []string) int {
 	}
 
 	if args[0] == "effect" {
+		if getLayout() == layoutCS201x {
+			return c.fail(errors.New("effects are not supported on the DXP2800 GT"))
+		}
 		if len(args) != 3 {
 			return c.usageError()
 		}
@@ -165,7 +180,7 @@ func (c *cli) run(args []string) int {
 				found = append(found, name)
 			}
 		}
-		c.printJSON(map[string]any{"bus": b.busPath(), "address": "0x3a", "leds": found})
+		c.printJSON(map[string]any{"bus": b.busPath(), "address": probeAddress(b), "leds": found})
 		if len(found) == 0 {
 			return c.fail(fmt.Errorf("no LED answered on %s", b.busPath()))
 		}
@@ -241,4 +256,12 @@ func (c *cli) runDXP480T(busPath string, force bool) int {
 		}
 	}
 	return 0
+}
+
+// probeAddress is the controller address shown by probe; the DXP2800 GT has none (it is an embedded controller).
+func probeAddress(b ledBus) string {
+	if a, ok := b.(interface{ address() string }); ok {
+		return a.address()
+	}
+	return "0x3a"
 }

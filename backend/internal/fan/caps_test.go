@@ -11,10 +11,12 @@ func TestCapsFor(t *testing.T) {
 	}{
 		{"DXP4800 GT", FanCaps{KindFixed, 2, true, false}, true},
 		{"iDX6011 Pro", FanCaps{KindFixed, 4, true, true}, true},
-		{"iDX6012 Pro", FanCaps{KindFixed, 4, false, true}, true},
-		{"DXP6800 Pro", FanCaps{KindFixed, 3, false, false}, true},
-		{"DXP4800 Plus", FanCaps{KindProbe, 0, false, false}, true},
-		{"iDX6011", FanCaps{}, false},
+		{"iDX6012 Pro", FanCaps{}, false},
+		{"DXP2800 GT", FanCaps{KindProbe, 0, false, false}, true},
+		{"DXP6800 Pro", FanCaps{KindFixed, 3, true, false}, true},
+		{"DXP4800 Plus", FanCaps{KindProbe, 0, true, false}, true},
+		{"iDX6011", FanCaps{KindReadOnly, 2, false, false}, true},
+		{"iDX6012", FanCaps{KindReadOnly, 2, false, false}, true},
 		{"DX4600 Pro", FanCaps{}, false},
 	} {
 		got, ok := CapsFor(tc.model)

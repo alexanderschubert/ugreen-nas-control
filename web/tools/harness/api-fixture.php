@@ -89,6 +89,44 @@ function fan_fail(string $error, int $code = 400): never
     out(['ok' => false, 'error' => $error], $code);
 }
 
+// The DXP2800 GT only (Chipsea CS201x): the sample data of `cs201x`, else the same refusal as the tool.
+function cs201x_fixture(): array
+{
+    $cs = $GLOBALS['fx']['cs201x'] ?? null;
+    if ($cs === null) {
+        fan_fail('"' . $GLOBALS['fx']['fan']['meta']['dmi'] . '" is not a DXP2800 GT', 409);
+    }
+
+    return $cs;
+}
+
+// Power on after AC loss: the sample of the model, or the refusal the tool gives where nothing can be reached.
+function power_ac_fixture(): array
+{
+    $ac = $GLOBALS['fx']['power_ac'] ?? null;
+    if ($ac === null) {
+        fan_fail('this model has no power-on setting this tool can reach', 409);
+    }
+
+    return $ac;
+}
+
+function power_ac_answer(array $state): array
+{
+    $ac = power_ac_fixture();
+    $mode = $state['power_ac_mode'] ?? $ac['mode'];
+
+    return [
+        'model' => $GLOBALS['fx']['fan']['meta']['dmi'],
+        'mode' => $ac['readable'] ? $mode : 'unknown',
+        'readable' => $ac['readable'],
+        'raw' => $ac['readable'] ? ['value' => 1] : new stdClass(),
+        'settable' => $ac['settable'],
+        'source' => $ac['source'],
+        'last_set' => $state['power_ac_last'] ?? null,
+    ];
+}
+
 function fan_no_backlight(array $fan): void
 {
     if (!$fan['meta']['backlight']) {
@@ -203,6 +241,26 @@ function fan_get(string $action, array $fan, array $status, array $state): void
         case 'fan_backlight':
             fan_no_backlight($fan);
             out(['ok' => true] + ($state['fan_backlight'] ?? $fan['backlight']));
+            // no break
+        case 'cs201x_read':
+            out(['ok' => true, 'read' => cs201x_fixture()['read']]);
+            // no break
+        case 'power_ac_get':
+            out(['ok' => true] + power_ac_answer($state));
+            // no break
+        case 'panel_buttons':
+            $panel = $GLOBALS['fx']['panel'];
+            if (!$panel['buttons']) {
+                fan_fail('no button map for model "' . $fan['meta']['dmi'] . '"', 409);
+            }
+            out([
+                'ok' => true,
+                'model' => $fan['meta']['dmi'],
+                'power' => $panel['power'],
+                'reset' => $panel['reset'],
+                'power_readable' => $panel['power_readable'],
+                'time' => time(),
+            ]);
     }
 }
 
@@ -385,14 +443,70 @@ function fan_post(string $action, array $fan, array $status, array $state, calla
             $pct = (int) $raw;
             $save(['fan_backlight' => ['pct' => $pct, 'raw' => (int) round($pct * 255 / 100)]]);
             out(['ok' => true, 'pct' => $pct]);
+            // no break
+        case 'cs201x_confirm':
+            $cs = cs201x_fixture();
+            $raw = $_POST['fans'] ?? '';
+            if (!is_string($raw) || ($raw !== '' && preg_match('/^(fan1|fan3)(,(fan1|fan3))?$/D', $raw) !== 1)) {
+                fan_fail('Invalid fans');
+            }
+            $ids = $raw === '' ? ['fan1', 'fan3'] : array_unique(explode(',', $raw));
+            $outputs = [];
+            foreach ($ids as $id) {
+                $outputs[] = ['id' => $id, 'role' => $id === 'fan1' ? 'cpu' : 'case', 'pwm' => 'duty', 'tach' => 'rpm'];
+            }
+            $map = ['version' => 1, 'model' => $fan['meta']['dmi'], 'chip' => 'CS201x', 'time' => time(), 'outputs' => $outputs];
+            $save(['fan_map' => $map]);
+            out(['ok' => true, 'map' => $map]);
+            // no break
+        case 'cs201x_forget':
+            cs201x_fixture();
+            $save(['fan_map' => null]);
+            out(['ok' => true]);
+            // no break
+        case 'power_ac_set':
+            $mode = $_POST['mode'] ?? null;
+            if (!is_string($mode) || !in_array($mode, ['on', 'off', 'last'], true)) {
+                fan_fail('Invalid mode');
+            }
+            $ac = power_ac_fixture();
+            if (!in_array($mode, $ac['settable'], true)) {
+                fan_fail('this model does not offer that mode: no "last state" value here', 409);
+            }
+            $save(['power_ac_mode' => $mode, 'power_ac_last' => ['mode' => $mode, 'time' => time()]]);
+            $state['power_ac_mode'] = $mode;
+            $state['power_ac_last'] = ['mode' => $mode, 'time' => time()];
+            out(['ok' => true, 'set' => $mode] + power_ac_answer($state) + ['verified' => $ac['readable']]);
+            // no break
+        case 'panel_beep':
+            $raw = $_POST['ms'] ?? '200';
+            if (!is_string($raw) || preg_match('/^([2-9][0-9]|[1-9][0-9]{2}|1[0-9]{3}|2000)$/D', $raw) !== 1) {
+                fan_fail('Invalid duration');
+            }
+            if (!$GLOBALS['fx']['panel']['beeper']) {
+                fan_fail('no beeper known for model "' . $fan['meta']['dmi'] . '"', 409);
+            }
+            out(['ok' => true, 'ms' => (int) $raw]);
     }
 }
 
 $fan = $fx['fan'];
 
-function build_status(array $fx, array $state): array
+// After `cs201x confirm` the chip answers with its fans: the fixture holds that status as `cs201x.confirmed`.
+function confirmed_status(array $fx, array $state): array
 {
     $status = $fx['status'];
+    if (isset($fx['cs201x']) && is_array($state['fan_map'] ?? null)) {
+        unset($status['chip_error']);
+        $status = array_replace($status, $fx['cs201x']['confirmed']);
+    }
+
+    return $status;
+}
+
+function build_status(array $fx, array $state): array
+{
+    $status = confirmed_status($fx, $state);
     foreach (['mode', 'min_pct', 'case_follows_cpu', 'cpu_curve', 'case_curve', 'cpu_crit', 'disk_crit', 'nvme_offset', 'stall_notify', 'ignore_drives', 'fan_control', 'ui_lang', 'ui_theme'] as $key) {
         if (array_key_exists($key, $state)) {
             $status['settings'][$key] = $state[$key];
@@ -477,7 +591,7 @@ if (($_GET['action'] ?? '') === 'hardware') {
     out($fx['hardware']);
 }
 
-$status = $fx['status'];
+$status = confirmed_status($fx, $state);
 // Counters that grow with the clock, so the LAN sockets of the case view flicker (eth0 busy, eth1 nearly idle).
 $rates = [[40000000, 9000000], [300000, 120000]];
 foreach ($status['net_io'] ?? [] as $i => $nic) {

@@ -1,6 +1,6 @@
 {
   "name": "bays-idx-fallback",
-  "product": "iDX6012 Pro",
+  "product": "iDX6011 Pro",
   "commands": [
     {
       "args": ["bays"],

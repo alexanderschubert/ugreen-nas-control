@@ -53,7 +53,16 @@ export function missingActions(cases: Case[]): string[] {
 
 // The text each `'error' => ...` of the PHP starts with (what is built from variables is skipped, its parts are covered by cases).
 export function errorTexts(): string[] {
-    const files = ['api.php', 'led/api.php', 'include/fan_backlight.php', 'include/fan_inputs.php', 'include/fan_probe.php', 'include/fan_profile.php'];
+    const files = [
+        'api.php',
+        'led/api.php',
+        'include/fan_backlight.php',
+        'include/fan_inputs.php',
+        'include/fan_probe.php',
+        'include/fan_profile.php',
+        'include/panel.php',
+        'include/power_ac.php'
+    ];
     const out = new Set<string>();
     for (const file of files) {
         for (const line of read(file).split('\n')) {

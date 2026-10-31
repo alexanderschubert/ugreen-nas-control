@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
-	"time"
 	"unsafe"
 )
 
@@ -22,13 +21,10 @@ const (
 	smbusWrite = 0
 	smbusRead  = 1
 
-	smbusByte         = 1
-	smbusByteData     = 2
-	smbusBlockData    = 5
-	smbusI2CBlockData = 8
-	smbusBlockMax     = 32
+	smbusByte     = 1
+	smbusByteData = 2
+	smbusBlockMax = 32
 
-	retries  = 5
 	lockFile = "/var/run/ugreen-led-i2c.lock"
 )
 
@@ -196,45 +192,9 @@ func (b *bus) readByte(command byte) (byte, error) {
 	return data[0], nil
 }
 
-// change sends one command and waits until the controller confirms it,
-// with the same timing and retries as the led-ugreen kernel driver.
+// change sends one command and waits until the controller confirms it (see framesFor for the frame order).
 func (b *bus) change(id, command byte, params [4]byte) error {
-	packet, size := commandPacket(id, command, params), uint32(smbusI2CBlockData)
-	if b.gt {
-		packet, size = gtCommandPacket(command, params), smbusBlockData
-	} else if idxFrames() {
-		packet, size = idxCommandPacket(command, params), smbusBlockData
-	}
-	err := errors.New("no attempt made")
-
-	for i := range retries {
-		backoff(i)
-
-		if err = b.writeBlock(id, size, packet); err != nil {
-			continue
-		}
-
-		time.Sleep(2 * time.Millisecond)
-
-		var ok byte
-		if ok, err = b.readByte(regLastCommandOK); err == nil && ok == 1 {
-			return nil
-		}
-		if err == nil {
-			err = errors.New("the controller did not confirm the command")
-		}
-	}
-
-	return err
-}
-
-// backoff waits before attempt i: 1 ms, then 30 ms.
-func backoff(i int) {
-	if i == 0 {
-		time.Sleep(time.Millisecond)
-	} else {
-		time.Sleep(30 * time.Millisecond)
-	}
+	return sendFrames(b, framesFor(b.gt), id, command, params)
 }
 
 func (b *bus) status(name string) (ledStatus, error) {

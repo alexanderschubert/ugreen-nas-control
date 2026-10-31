@@ -2535,6 +2535,677 @@
       }
     ]
   },
+  "nas.cs201x_read.ok": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "read": {
+        "model": "DXP2800 GT",
+        "chip_id": "0x2011",
+        "host_ec": "active"
+      }
+    },
+    "raw": "{\"ok\":true,\"read\":{\"model\":\"DXP2800 GT\",\"chip_id\":\"0x2011\",\"host_ec\":\"active\"}}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x"]
+      }
+    ]
+  },
+  "nas.cs201x_read.refused-json-409": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "\"DXP4800 Plus\" is not a DXP2800 GT"
+    },
+    "raw": "{\"ok\":false,\"error\":\"\\\"DXP4800 Plus\\\" is not a DXP2800 GT\"}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x"]
+      }
+    ]
+  },
+  "nas.cs201x_read.refused-plain-409": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "cannot open /dev/port"
+    },
+    "raw": "{\"ok\":false,\"error\":\"cannot open /dev/port\"}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x"]
+      }
+    ]
+  },
+  "nas.cs201x_confirm.default-both": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "map": {
+        "version": 1,
+        "model": "DXP2800 GT",
+        "chip": "CS201x"
+      }
+    },
+    "raw": "{\"ok\":true,\"map\":{\"version\":1,\"model\":\"DXP2800 GT\",\"chip\":\"CS201x\"}}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x", "confirm"]
+      }
+    ]
+  },
+  "nas.cs201x_confirm.one-fan": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "map": {
+        "version": 1,
+        "model": "DXP2800 GT",
+        "chip": "CS201x"
+      }
+    },
+    "raw": "{\"ok\":true,\"map\":{\"version\":1,\"model\":\"DXP2800 GT\",\"chip\":\"CS201x\"}}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x", "confirm", "fan3"]
+      }
+    ]
+  },
+  "nas.cs201x_confirm.two-fans": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "map": {
+        "version": 1,
+        "model": "DXP2800 GT",
+        "chip": "CS201x"
+      }
+    },
+    "raw": "{\"ok\":true,\"map\":{\"version\":1,\"model\":\"DXP2800 GT\",\"chip\":\"CS201x\"}}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x", "confirm", "fan1", "fan3"]
+      }
+    ]
+  },
+  "nas.cs201x_confirm.empty-is-default": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "map": {
+        "version": 1,
+        "model": "DXP2800 GT",
+        "chip": "CS201x"
+      }
+    },
+    "raw": "{\"ok\":true,\"map\":{\"version\":1,\"model\":\"DXP2800 GT\",\"chip\":\"CS201x\"}}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x", "confirm"]
+      }
+    ]
+  },
+  "nas.cs201x_confirm.bad-fan": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid fans"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid fans\"}",
+    "calls": []
+  },
+  "nas.cs201x_confirm.duplicate": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid fans"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid fans\"}",
+    "calls": []
+  },
+  "nas.cs201x_confirm.injection": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid fans"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid fans\"}",
+    "calls": []
+  },
+  "nas.cs201x_confirm.array": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid fans"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid fans\"}",
+    "calls": []
+  },
+  "nas.cs201x_confirm.refused-409": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "fan1 reads no rpm: nothing connected, or the fan is stopped"
+    },
+    "raw": "{\"ok\":false,\"error\":\"fan1 reads no rpm: nothing connected, or the fan is stopped\"}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x", "confirm", "fan1"]
+      }
+    ]
+  },
+  "nas.cs201x_forget.ok": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true
+    },
+    "raw": "{\"ok\":true}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x", "forget"]
+      }
+    ]
+  },
+  "nas.cs201x_forget.refused-409": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "\"DXP4800 Plus\" is not a DXP2800 GT"
+    },
+    "raw": "{\"ok\":false,\"error\":\"\\\"DXP4800 Plus\\\" is not a DXP2800 GT\"}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["cs201x", "forget"]
+      }
+    ]
+  },
+  "nas.power_ac_get.ok": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "model": "DXP4800 Plus",
+      "mode": "off",
+      "readable": true,
+      "raw": {
+        "f2": 208,
+        "f4": 96
+      },
+      "settable": ["on", "off", "last"],
+      "source": "it8613",
+      "last_set": null
+    },
+    "raw": "{\"ok\":true,\"model\":\"DXP4800 Plus\",\"mode\":\"off\",\"readable\":true,\"raw\":{\"f2\":208,\"f4\":96},\"settable\":[\"on\",\"off\",\"last\"],\"source\":\"it8613\",\"last_set\":null}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["power-on-ac"]
+      }
+    ]
+  },
+  "nas.power_ac_get.refused-json-409": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "this model has no power-on setting this tool can reach"
+    },
+    "raw": "{\"ok\":false,\"error\":\"this model has no power-on setting this tool can reach\"}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["power-on-ac"]
+      }
+    ]
+  },
+  "nas.power_ac_get.refused-plain-409": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "open /dev/mem: permission denied"
+    },
+    "raw": "{\"ok\":false,\"error\":\"open /dev/mem: permission denied\"}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["power-on-ac"]
+      }
+    ]
+  },
+  "nas.power_ac_set.on": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "model": "DXP4800 Plus",
+      "set": "last",
+      "mode": "last",
+      "readable": true,
+      "raw": {
+        "f2": 244,
+        "f4": 230
+      },
+      "settable": ["on", "off", "last"],
+      "source": "it8613",
+      "verified": true,
+      "last_set": {
+        "mode": "last",
+        "time": 1759999000
+      }
+    },
+    "raw": "{\"ok\":true,\"model\":\"DXP4800 Plus\",\"set\":\"last\",\"mode\":\"last\",\"readable\":true,\"raw\":{\"f2\":244,\"f4\":230},\"settable\":[\"on\",\"off\",\"last\"],\"source\":\"it8613\",\"verified\":true,\"last_set\":{\"mode\":\"last\",\"time\":1759999000}}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["power-on-ac", "set", "on"]
+      }
+    ]
+  },
+  "nas.power_ac_set.off": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "model": "DXP4800 Plus",
+      "set": "last",
+      "mode": "last",
+      "readable": true,
+      "raw": {
+        "f2": 244,
+        "f4": 230
+      },
+      "settable": ["on", "off", "last"],
+      "source": "it8613",
+      "verified": true,
+      "last_set": {
+        "mode": "last",
+        "time": 1759999000
+      }
+    },
+    "raw": "{\"ok\":true,\"model\":\"DXP4800 Plus\",\"set\":\"last\",\"mode\":\"last\",\"readable\":true,\"raw\":{\"f2\":244,\"f4\":230},\"settable\":[\"on\",\"off\",\"last\"],\"source\":\"it8613\",\"verified\":true,\"last_set\":{\"mode\":\"last\",\"time\":1759999000}}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["power-on-ac", "set", "off"]
+      }
+    ]
+  },
+  "nas.power_ac_set.last": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "model": "DXP4800 Plus",
+      "set": "last",
+      "mode": "last",
+      "readable": true,
+      "raw": {
+        "f2": 244,
+        "f4": 230
+      },
+      "settable": ["on", "off", "last"],
+      "source": "it8613",
+      "verified": true,
+      "last_set": {
+        "mode": "last",
+        "time": 1759999000
+      }
+    },
+    "raw": "{\"ok\":true,\"model\":\"DXP4800 Plus\",\"set\":\"last\",\"mode\":\"last\",\"readable\":true,\"raw\":{\"f2\":244,\"f4\":230},\"settable\":[\"on\",\"off\",\"last\"],\"source\":\"it8613\",\"verified\":true,\"last_set\":{\"mode\":\"last\",\"time\":1759999000}}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["power-on-ac", "set", "last"]
+      }
+    ]
+  },
+  "nas.power_ac_set.missing-mode": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid mode"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid mode\"}",
+    "calls": []
+  },
+  "nas.power_ac_set.bad-mode": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid mode"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid mode\"}",
+    "calls": []
+  },
+  "nas.power_ac_set.upper-case": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid mode"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid mode\"}",
+    "calls": []
+  },
+  "nas.power_ac_set.injection": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid mode"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid mode\"}",
+    "calls": []
+  },
+  "nas.power_ac_set.array": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid mode"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid mode\"}",
+    "calls": []
+  },
+  "nas.power_ac_set.rival-409": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "FanCtrl Plus controls the fans too; switch one of the two off first"
+    },
+    "raw": "{\"ok\":false,\"error\":\"FanCtrl Plus controls the fans too; switch one of the two off first\"}",
+    "calls": [
+      {
+        "tool": "fan",
+        "args": ["power-on-ac", "set", "on"]
+      }
+    ]
+  },
+  "nas.panel_buttons.ok": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "model": "DXP4800 Plus",
+      "power": "released",
+      "reset": "held",
+      "power_readable": true,
+      "time": 1760000000
+    },
+    "raw": "{\"ok\":true,\"model\":\"DXP4800 Plus\",\"power\":\"released\",\"reset\":\"held\",\"power_readable\":true,\"time\":1760000000}",
+    "calls": [
+      {
+        "tool": "nas",
+        "args": ["panel", "buttons"]
+      }
+    ]
+  },
+  "nas.panel_buttons.power-not-readable": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "model": "iDX6011",
+      "power": "released",
+      "reset": "released",
+      "power_readable": false,
+      "time": 1760000000
+    },
+    "raw": "{\"ok\":true,\"model\":\"iDX6011\",\"power\":\"released\",\"reset\":\"released\",\"power_readable\":false,\"time\":1760000000}",
+    "calls": [
+      {
+        "tool": "nas",
+        "args": ["panel", "buttons"]
+      }
+    ]
+  },
+  "nas.panel_buttons.refused-409": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "no button map for model \"DXP6800 Ultra\""
+    },
+    "raw": "{\"ok\":false,\"error\":\"no button map for model \\\"DXP6800 Ultra\\\"\"}",
+    "calls": [
+      {
+        "tool": "nas",
+        "args": ["panel", "buttons"]
+      }
+    ]
+  },
+  "nas.panel_buttons.no-state-500": {
+    "status": 500,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "The panel tool gave no button state"
+    },
+    "raw": "{\"ok\":false,\"error\":\"The panel tool gave no button state\"}",
+    "calls": [
+      {
+        "tool": "nas",
+        "args": ["panel", "buttons"]
+      }
+    ]
+  },
+  "nas.panel_buttons.tool-missing-500": {
+    "status": 500,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "The panel tool is missing or not executable"
+    },
+    "raw": "{\"ok\":false,\"error\":\"The panel tool is missing or not executable\"}",
+    "calls": []
+  },
+  "nas.panel_beep.default": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "ms": 200
+    },
+    "raw": "{\"ok\":true,\"ms\":200}",
+    "calls": [
+      {
+        "tool": "nas",
+        "args": ["panel", "beep", "--ms", "200"]
+      }
+    ]
+  },
+  "nas.panel_beep.ms": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "ms": 2000
+    },
+    "raw": "{\"ok\":true,\"ms\":2000}",
+    "calls": [
+      {
+        "tool": "nas",
+        "args": ["panel", "beep", "--ms", "2000"]
+      }
+    ]
+  },
+  "nas.panel_beep.min": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": true,
+      "ms": 20
+    },
+    "raw": "{\"ok\":true,\"ms\":20}",
+    "calls": [
+      {
+        "tool": "nas",
+        "args": ["panel", "beep", "--ms", "20"]
+      }
+    ]
+  },
+  "nas.panel_beep.too-short": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid duration"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid duration\"}",
+    "calls": []
+  },
+  "nas.panel_beep.too-long": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid duration"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid duration\"}",
+    "calls": []
+  },
+  "nas.panel_beep.leading-zero": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid duration"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid duration\"}",
+    "calls": []
+  },
+  "nas.panel_beep.text": {
+    "status": 400,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "Invalid duration"
+    },
+    "raw": "{\"ok\":false,\"error\":\"Invalid duration\"}",
+    "calls": []
+  },
+  "nas.panel_beep.refused-409": {
+    "status": 409,
+    "headers": {
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "ok": false,
+      "error": "no beeper known for model \"DXP4800 GT\""
+    },
+    "raw": "{\"ok\":false,\"error\":\"no beeper known for model \\\"DXP4800 GT\\\"\"}",
+    "calls": [
+      {
+        "tool": "nas",
+        "args": ["panel", "beep", "--ms", "200"]
+      }
+    ]
+  },
   "nas.mode.quiet-new-file": {
     "status": 200,
     "headers": {

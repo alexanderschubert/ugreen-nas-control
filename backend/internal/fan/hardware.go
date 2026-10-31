@@ -85,7 +85,7 @@ func layoutFor(model string) layout {
 		return layout{bayPorts: []int{1, 2, 3, 4}, otherSlot: "m2"}
 	case model == "DXP2800":
 		return layout{bayPorts: []int{1, 2}, otherSlot: "m2"}
-	case model == "DXP8800 Plus":
+	case model == "DXP8800 Plus", model == "DXP8800", model == "DXP8800 Pro":
 		return layout{bayPorts: []int{1, 2, 3, 4, 5, 6, 7, 8}, otherSlot: "m2"}
 	}
 	return layout{}

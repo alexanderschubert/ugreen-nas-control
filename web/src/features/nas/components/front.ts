@@ -133,7 +133,7 @@ export const CASE_MODELS: [RegExp, CaseModel][] = [
     ],
     // DXP8800 Plus: eight bays; the back after a photo (rear8800Html). No inside view, no fan control.
     [
-        /^DXP8800 Plus$/,
+        /^DXP8800( Plus| Pro)?$/,
         {
             front: [
                 ['sd', 'SD'],

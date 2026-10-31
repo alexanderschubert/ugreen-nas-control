@@ -3,6 +3,7 @@
 // Needs the install tree: `just web-build`. Run: `bun test demo` in web/ (`just demo` does).
 import { expect, test } from 'bun:test';
 import { loadModels } from '../models/index';
+import { withVariants } from './variants';
 import { startHarness } from '../tools/harness/serve';
 import { createDemo, type Store } from './api';
 
@@ -29,6 +30,9 @@ const READS: [string, string, string][] = [
     ['nas', 'api.php', 'action=fan_probe_status'],
     ['nas', 'api.php', 'action=fan_probe_tachs'],
     ['nas', 'api.php', 'action=fan_backlight'],
+    ['nas', 'api.php', 'action=cs201x_read'],
+    ['nas', 'api.php', 'action=panel_buttons'],
+    ['nas', 'api.php', 'action=power_ac_get'],
     ['led', 'led/api.php', 'action=status'],
     ['led', 'led/api.php', 'action=list'],
     ['led', 'led/api.php', 'action=all'],
@@ -39,7 +43,7 @@ const READS: [string, string, string][] = [
 ];
 
 test('every read action answers like the PHP harness, for every model', async () => {
-    for (const model of await loadModels()) {
+    for (const model of withVariants(await loadModels())) {
         const harness = await startHarness(model.id);
         try {
             const demo = createDemo(model, memory());

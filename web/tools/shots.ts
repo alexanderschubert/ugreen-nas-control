@@ -15,6 +15,8 @@ import { fixtureHasChip } from '../models/fixture';
 import { loadModels } from '../models/index';
 import type { Model } from '../models/schema';
 import { type Harness, startHarness } from './harness/serve';
+import { isCs201x, isReadOnlyFan, withVariants } from '../demo/variants';
+import { hasBeeper, hasButtons } from '../src/features/nas/panel-models';
 import { socialHtml } from '../../docs/site/social';
 
 const root = resolve(import.meta.dir, '../..');
@@ -46,7 +48,7 @@ export const PAGES: Page[] = [
         // A probe model after "Run probe": the result table with the role pickers.
         id: 'fans-probe',
         nav: 'curves',
-        applies: m => m.fan?.kind === 'probe',
+        applies: m => m.fan?.kind === 'probe' && !isCs201x(m),
         prepare: `document.querySelector('#unc-fm-probe [data-act="run"]')?.click()`,
         wait: `document.querySelector('#unc-fm-probe select[data-role]')`
     },
@@ -54,7 +56,7 @@ export const PAGES: Page[] = [
         // Drive and source checklists of the temperature source, and the quiet-hours fields.
         id: 'fans-edit',
         nav: 'curves',
-        applies: fixtureHasChip,
+        applies: m => fixtureHasChip(m) && !isReadOnlyFan(m),
         prepare: `(() => {
             const pick = (id, value) => { const s = document.querySelector(id); s.value = value; s.dispatchEvent(new Event('change', { bubbles: true })); };
             pick('#unc-fi-cpu-src', 'disk_max');
@@ -64,11 +66,11 @@ export const PAGES: Page[] = [
             quiet.dispatchEvent(new Event('change', { bubbles: true }));
         })()`
     },
-    { id: 'history', nav: 'history', applies: fixtureHasChip, wait: `document.querySelector('.unc-hist-svg polyline')` },
+    { id: 'history', nav: 'history', applies: m => fixtureHasChip(m) && !isReadOnlyFan(m), wait: `document.querySelector('.unc-hist-svg polyline')` },
     {
         id: 'history-24h',
         nav: 'history',
-        applies: fixtureHasChip,
+        applies: m => fixtureHasChip(m) && !isReadOnlyFan(m),
         prepare: `document.querySelector('[data-range="24h"]').click()`,
         wait: `document.querySelector('[data-range="24h"]').getAttribute('aria-pressed') === 'true' && document.querySelector('.unc-hist-svg polyline')`
     },
@@ -76,7 +78,7 @@ export const PAGES: Page[] = [
         // The tooltip of the second fan, 24 h, at a point where something limits the speed.
         id: 'history-tip',
         nav: 'history',
-        applies: fixtureHasChip,
+        applies: m => fixtureHasChip(m) && !isReadOnlyFan(m),
         prepare: `(async () => {
             document.querySelector('[data-range="24h"]').click();
             const end = Date.now() + 8000;
@@ -87,7 +89,21 @@ export const PAGES: Page[] = [
         })()`,
         wait: `document.querySelector('.unc-hist-tip:not([hidden])')`
     },
-    { id: 'safety', nav: 'safety', applies: fixtureHasChip },
+    { id: 'safety', nav: 'safety', applies: m => fixtureHasChip(m) && !isReadOnlyFan(m) },
+    {
+        // The DXP2800 GT before "Confirm fans": the CS201x card with its diagnostics.
+        id: 'fans-cs201x',
+        nav: 'curves',
+        applies: isCs201x,
+        wait: `document.querySelector('#unc-fm-cs201x .unc-facts')`
+    },
+    {
+        // The front panel: button state (read once on opening) and the beeper.
+        id: 'panel',
+        nav: 'panel',
+        applies: m => hasButtons(m.fixtureDmi) || hasBeeper(m.fixtureDmi),
+        wait: `document.querySelector('#unc-fm-panel-buttons .unc-pill, #unc-fm-panel-beeper .unc-btn')`
+    },
     { id: 'sensors', nav: 'sensors', applies: () => true },
     { id: 'leds', nav: 'led:overview', applies: m => m.led !== 'none' },
     { id: 'settings', nav: 'settings', applies: () => true },
@@ -188,7 +204,8 @@ const onlyTheme = opt('--theme');
 const social = !args.includes('--no-social');
 const ids = args.filter(a => !a.startsWith('--'));
 
-const models = (await loadModels()).filter(m => m.shots && (ids.length === 0 || ids.includes(m.id)));
+// The pseudo models (idx6011-plain) are only shot when named, so a full run keeps the registry's set of screenshots.
+const models = (ids.length === 0 ? await loadModels() : withVariants(await loadModels())).filter(m => m.shots && (ids.length === 0 || ids.includes(m.id)));
 if (models.length === 0) throw new Error(`no model with screenshots matches ${ids.join(', ')}`);
 
 const { view, scale, backend } = await openBrowser(WIDTH, MIN_HEIGHT);

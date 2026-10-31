@@ -18,7 +18,9 @@ type fakeEC struct {
 	out      []byte
 	busy     int // status polls that still show IBF after a byte was written
 	absent   bool
-	writes   []byte // registers written, in order
+	chipID   uint16        // 0 = the IT5571 id
+	writes   []byte        // registers written, in order
+	stuck    map[byte]bool // writes to these registers are logged but do not stick
 }
 
 func newFakeEC() *fakeEC {
@@ -39,8 +41,14 @@ func (f *fakeEC) In(port uint16) (byte, error) {
 	case ecSioData:
 		switch f.sioIndex {
 		case 0x20:
+			if f.chipID != 0 {
+				return byte(f.chipID >> 8), nil
+			}
 			return 0x55, nil
 		case 0x21:
+			if f.chipID != 0 {
+				return byte(f.chipID), nil
+			}
 			return 0x71, nil
 		}
 		return 0, nil
@@ -88,7 +96,9 @@ func (f *fakeEC) Out(port uint16, v byte) error {
 			if f.addr == ecRegWdtEnable && v != 0 {
 				panic("test: the code under test armed the EC watchdog")
 			}
-			f.regs[f.addr] = v
+			if !f.stuck[f.addr] {
+				f.regs[f.addr] = v
+			}
 			f.writes = append(f.writes, f.addr)
 			f.state = 0
 		}

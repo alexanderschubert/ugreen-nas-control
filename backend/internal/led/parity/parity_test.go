@@ -377,7 +377,7 @@ func scenarios() []scenario {
 		{name: "bays-idx", product: "iDX6011 Pro", intended: "Pro bay order after noodlemctwoodle/unraid-ugreen-idx6011-pro src/monitor.sh:70-75 (Intel = bays 3,4; ASMedia = 1,2,5,6); the shell keeps the plain order", setup: idxPorts, run: func(r *rig) { r.runs("bays", "status") }},
 		{name: "bays-idx-plain", product: "iDX6011", setup: idxPorts, run: func(r *rig) { r.runs("bays", "status") }},
 		{name: "bays-idx-6012", product: "iDX6012", setup: idxPorts, run: func(r *rig) { r.runs("bays", "status") }},
-		{name: "bays-idx-fallback", inert: true, product: "iDX6012 Pro", setup: func(r *rig) { r.remove("sys/class/ata_port") }, run: func(r *rig) { r.runs("bays") }},
+		{name: "bays-idx-fallback", inert: true, product: "iDX6011 Pro", setup: func(r *rig) { r.remove("sys/class/ata_port") }, run: func(r *rig) { r.runs("bays") }},
 		{name: "bays-no-disks", inert: true, setup: func(r *rig) {
 			r.remove("disks.ini")
 			r.remove("sys/block")

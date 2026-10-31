@@ -109,7 +109,10 @@ function main(root: HTMLElement): void {
     type Group = (typeof GROUPS)[number];
     const ANIMATED: EffectId[] = ['breath', 'blink', 'rainbow', 'temperature'];
 
-    const systemTargets = (): string[] => ['power', 'netdev'].filter(led => state.order.includes(led) && !managed(led));
+    // Power and the network LEDs. netdev2 is the second LAN LED of the iDX6011 Pro; it only shows where the LED list has it.
+    const SYSTEM_LEDS = ['power', 'netdev', 'netdev2'];
+    const systemLeds = (): string[] => SYSTEM_LEDS.filter(led => state.order.includes(led));
+    const systemTargets = (): string[] => systemLeds().filter(led => !managed(led));
 
     function groupLeds(group: Group): string[] {
         if (group === 'drives') return statusMode() ? [] : disks();
@@ -120,7 +123,7 @@ function main(root: HTMLElement): void {
     }
 
     const rowLeds = (key: string): string[] => (key === 'drives' ? disks() : [key]);
-    const rowDefault = (key: string): string => (key === 'power' ? DEFAULTS.power : key === 'netdev' ? DEFAULTS.netdev : DEFAULTS.disk);
+    const rowDefault = (key: string): string => (key === 'power' ? DEFAULTS.power : key === 'netdev' || key === 'netdev2' ? DEFAULTS.netdev : DEFAULTS.disk);
 
     const statusMode = () => state.status.mode === 'status';
 
@@ -133,7 +136,15 @@ function main(root: HTMLElement): void {
     const managed = (led: string): boolean => statusMode() && (led.startsWith('disk') || (led === 'netdev' && !netdevManual()));
 
     const ledLabel = (led: string): string =>
-        led === 'drives' ? t('drives.all') : led === 'power' ? t('led.power') : led === 'netdev' ? t('led.netdev') : t('led.bay', { n: led.slice(4) });
+        led === 'drives'
+            ? t('drives.all')
+            : led === 'power'
+              ? t('led.power')
+              : led === 'netdev'
+                ? t('led.netdev')
+                : led === 'netdev2'
+                  ? t('led.netdev2')
+                  : t('led.bay', { n: led.slice(4) });
 
     const effectName = (id: EffectId): string => t(`effect.${id}`);
 
@@ -307,14 +318,12 @@ function main(root: HTMLElement): void {
                 '<div class="ulc-nas-front">' +
                 '<span class="ulc-led" data-led="power"></span><span class="ulc-led-label">Power</span>' +
                 '<span class="ulc-led" data-led="netdev"></span><span class="ulc-led-label">LAN</span><span class="ulc-led-label ulc-link-speed" data-link-speed hidden></span>' +
+                (state.order.includes('netdev2') ? '<span class="ulc-led" data-led="netdev2"></span><span class="ulc-led-label">LAN 2</span>' : '') +
                 '<span class="ulc-nas-brand">UGREEN</span>' +
                 '</div>';
         });
 
-        buildRows(
-            q('#ulc-system-table'),
-            ['power', 'netdev'].filter(led => state.order.includes(led))
-        );
+        buildRows(q('#ulc-system-table'), systemLeds());
         buildRows(q('#ulc-drives-table'), disks().length ? ['drives'] : []);
         buildRows(q('#ulc-bay-table'), disks(), true);
     }
@@ -503,6 +512,9 @@ function main(root: HTMLElement): void {
         const targets = systemTargets();
 
         q('#ulc-system-target-row').hidden = targets.length < 2;
+        qa<HTMLOptionElement>('#ulc-system-target option[data-led]').forEach(option => {
+            option.hidden = !targets.includes(option.dataset.led ?? '');
+        });
         q<HTMLSelectElement>('#ulc-system-target').value = targets.includes(state.sysTarget) ? state.sysTarget : 'both';
         q('#ulc-system-effect-title').textContent = targets.length === 1 ? t('group.effect_for', { led: ledLabel(targets[0] ?? '') }) : t('group.effect');
     }
@@ -1150,7 +1162,7 @@ function main(root: HTMLElement): void {
         return run(async () => {
             const colors: [string[], string][] = [
                 [['power'], DEFAULTS.power],
-                [['netdev'], DEFAULTS.netdev],
+                [['netdev', 'netdev2'], DEFAULTS.netdev],
                 [disks(), DEFAULTS.disk]
             ];
 

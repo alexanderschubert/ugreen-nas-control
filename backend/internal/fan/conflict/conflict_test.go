@@ -67,6 +67,21 @@ func TestModules(t *testing.T) {
 	}
 }
 
+func TestLEDModules(t *testing.T) {
+	r := roots(t)
+	write(t, r.ProcModules, "leds_sio_201x 16384 0 - Live 0x0\n")
+	got := r.Detect()
+	if want := []string{"module:leds_sio_201x"}; !reflect.DeepEqual(ids(got), want) {
+		t.Fatalf("got %v", ids(got))
+	}
+	if got[0].Name != "UGREEN CS201x LED driver" || !reflect.DeepEqual(got[0].Controls, []string{LED}) || got[0].Severity != SeverityWarn {
+		t.Fatalf("bad fields %+v", got[0])
+	}
+	if len(Blocking(got, LED)) != 0 || Present(got, Fan) {
+		t.Fatal("a loaded module must not block, and controls only LEDs")
+	}
+}
+
 func TestHwmonManualOnly(t *testing.T) {
 	r := roots(t)
 	write(t, filepath.Join(r.Hwmon, "hwmon3", "name"), "it8613\n")
@@ -148,5 +163,67 @@ func TestDaemonNameInArgumentsIsNoRival(t *testing.T) {
 	got := r.Detect()
 	if want := []string{"daemon:ugreen-leds"}; !reflect.DeepEqual(ids(got), want) {
 		t.Fatalf("got %v want %v", ids(got), want)
+	}
+}
+
+// it87_wdt owns the IT8613E watchdog: found as a module, never a fan rival, but the watchdog petter yields to it.
+func TestWatchdogModule(t *testing.T) {
+	r := roots(t)
+	write(t, r.ProcModules, "it87_wdt 12288 0 - Live 0x0\n")
+	got := r.Detect()
+	if want := []string{"module:it87_wdt"}; !reflect.DeepEqual(ids(got), want) {
+		t.Fatalf("got %v", ids(got))
+	}
+	if len(Blocking(got, Fan)) != 0 || len(Blocking(got, Watchdog)) != 0 {
+		t.Fatal("a loaded module must not block")
+	}
+	if !Present(got, Watchdog) || Present(got, Fan) || Present(nil, Watchdog) {
+		t.Fatal("Present must see the watchdog control, and only that")
+	}
+
+	r = roots(t)
+	write(t, filepath.Join(r.SysModule, "it87_wdt", "version"), "1")
+	if !Present(r.Detect(), Watchdog) {
+		t.Fatal("/sys/module entry not found")
+	}
+}
+
+// UGREEN's own vendor modules: warn only, mapped to the controls they own.
+func TestUgreenVendorModules(t *testing.T) {
+	want := map[string][]string{
+		"ug_it86x_sio":            {Fan},
+		"ug_it86x_sio_dh2600":     {Fan},
+		"ug_it86x_cpufan":         {Fan},
+		"ug_idx6011_sio":          {Fan, Watchdog},
+		"ug_idx6011pro_sio":       {Fan, Watchdog},
+		"ug_201x":                 {Fan, LED, Watchdog},
+		"ug_sio201":               {Fan, LED, Watchdog},
+		"leds_mcu":                {LED},
+		"leds_mcu_28a48":          {LED},
+		"leds_mcu_68a88":          {LED},
+		"leds_mcu_n76e003":        {LED},
+		"leds_mcu_n76e003_dh2600": {LED},
+	}
+	for id, controls := range want {
+		r := roots(t)
+		write(t, r.ProcModules, id+" 16384 0 - Live 0x0\n")
+		got := r.Detect()
+		if len(got) != 1 || got[0].ID != id || got[0].Kind != KindModule || got[0].Severity != SeverityWarn || !reflect.DeepEqual(got[0].Controls, controls) {
+			t.Errorf("%s: %+v", id, got)
+		}
+		if len(Blocking(got, Fan)) != 0 || len(Blocking(got, LED)) != 0 {
+			t.Errorf("%s blocks", id)
+		}
+		r = roots(t)
+		write(t, filepath.Join(r.SysModule, id, "version"), "1")
+		if len(r.Detect()) != 1 {
+			t.Errorf("%s: /sys/module entry not found", id)
+		}
+	}
+	// Modules that only beep or read buttons collide with nothing we write.
+	r := roots(t)
+	write(t, r.ProcModules, "ug_sataio_beep 1 0 - Live 0x0\nug_gpio_btn 1 0 - Live 0x0\n")
+	if got := r.Detect(); len(got) != 0 {
+		t.Errorf("beeper/button modules reported: %+v", got)
 	}
 }

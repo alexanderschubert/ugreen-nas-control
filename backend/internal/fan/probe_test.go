@@ -341,3 +341,39 @@ func TestProbePausesTheDaemon(t *testing.T) {
 		t.Fatal("the daemon was not paused while the probe wrote")
 	}
 }
+
+func TestVendorHintsCompare(t *testing.T) {
+	mapped := func(pairs ...string) []ProbeOutput {
+		var o []ProbeOutput
+		for i := 0; i+1 < len(pairs); i += 2 {
+			o = append(o, ProbeOutput{PWM: pairs[i], Tach: pairs[i+1], Status: "mapped"})
+		}
+		return o
+	}
+	cases := []struct {
+		model string
+		outs  []ProbeOutput
+		text  string
+		agree bool
+	}{
+		{"DXP4800", mapped("pwm3", "fan3"), "outputs pwm3", true},
+		{"DXP4800", mapped("pwm2", "fan2", "pwm3", "fan3"), "outputs pwm3", false},
+		{"DXP8800 Plus", mapped("pwm2", "fan2", "pwm3", "fan3", "pwm4", "fan4"), "outputs pwm2 and pwm3 and pwm4", true},
+		{"DXP8800 Plus", mapped("pwm2", "fan2", "pwm3", "fan3"), "outputs pwm2 and pwm3 and pwm4", false},
+		{"DXP2800", mapped("pwm3", "fan2"), "outputs pwm3", false},
+		{"DXP6800 Plus", mapped("pwm2", "fan2", "pwm3", "fan3", "pwm4", "fan4"), "outputs pwm2 and pwm3 and pwm4", true},
+		{"DXP8800 Pro", mapped("pwm2", "fan2", "pwm3", "fan3"), "outputs pwm2 and pwm3 and pwm4", false},
+	}
+	for _, c := range cases {
+		text, ag := compareHint(c.model, c.outs)
+		if text != c.text || ag == nil || *ag != c.agree {
+			t.Errorf("%s %v: %q %v, want %q %v", c.model, c.outs, text, ag, c.text, c.agree)
+		}
+	}
+	if _, ag := compareHint("DXP6800 Pro", nil); ag != nil {
+		t.Error("no hint expected for a fixed model")
+	}
+	if FanKind("DXP480T Plus") != "" {
+		t.Error("DXP480T Plus must stay without fan control")
+	}
+}

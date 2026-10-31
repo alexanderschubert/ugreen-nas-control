@@ -4,11 +4,13 @@ import { errorMessage } from '../../../core/api';
 import type { StatusResponse } from '../../../core/contract';
 import type { FanProbeStatusResponse, ProbeOutput } from '../../../core/contract-fan-probe';
 import { escapeHtml } from '../../../core/html';
+import { isCs201xModel } from './cs201x';
 import { registerFanModule, type FanCtx } from './module';
 
 type Role = 'cpu' | 'case';
 
-export const probeVisible = (status: StatusResponse): boolean => status.fan_caps?.kind === 'probe';
+// The DXP2800 GT is a probe model too, but has its own card (cs201x.ts): the IT8613E probe would refuse there.
+export const probeVisible = (status: StatusResponse): boolean => status.fan_caps?.kind === 'probe' && !isCs201xModel(status.info?.model);
 
 export const chosenRoles = (outputs: ProbeOutput[], roles: Record<string, Role | ''>): { pwm: string; role: Role }[] =>
     outputs.flatMap(o => {

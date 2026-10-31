@@ -11,7 +11,7 @@
 //
 // cases.json: { base: { nas, led }, cases }. base holds the files and the fake-tool rules every case of that API starts with;
 // a case adds its own (its rules are tried first, `files` entries replace, null removes). A rule answers a call of `fan`,
-// `ctl` or `led` when its args are a prefix of the argv (and its stdin equals the piped text, when given): out (string as is,
+// `ctl`, `led` or `nas` (the multicall binary) when its args are a prefix of the argv (and its stdin equals the piped text, when given): out (string as is,
 // else JSON plus newline), err, code, sleep (ms, keeps /proc/<pid> alive). Request: method (default GET, POST with a body),
 // query, body (form fields; "values[k]" keys as sent, or a raw string), upload, missing/nonexec (tools), blockConfig (the
 // config folder is a file, so every save fails, also as root). A body, query or upload value "@repeat:<text>:<n>" is <text> n times.
@@ -58,6 +58,7 @@ export interface Case {
     fan?: Rule[];
     ctl?: Rule[];
     led?: Rule[];
+    nas?: Rule[];
     missing?: string[];
     nonexec?: string[];
     blockConfig?: boolean;
@@ -68,6 +69,7 @@ export interface Base {
     fan?: Rule[];
     ctl?: Rule[];
     led?: Rule[];
+    nas?: Rule[];
 }
 
 export interface CaseTable {
@@ -104,7 +106,8 @@ export function phpCommand(): string[] {
 const TOOLS: Record<string, string> = {
     'ugreen-nas-fan': `${PLUGIN}/backend/ugreen-nas-fan`,
     'ugreen-nas-ctl': `${PLUGIN}/backend/ugreen-nas-ctl`,
-    'ugreen-led-ctl': `${PLUGIN}/led/backend/ugreen-led-ctl`
+    'ugreen-led-ctl': `${PLUGIN}/led/backend/ugreen-led-ctl`,
+    'ugreen-nas': `${PLUGIN}/backend/ugreen-nas`
 };
 
 function walk(dir: string, out: Record<string, string> = {}, base = dir): Record<string, string> {
@@ -218,7 +221,7 @@ export async function startOracle(): Promise<Oracle> {
                 writeFileSync(join(fs, CONFIG_DIR), '');
             }
             const before = walk(join(fs, 'boot'));
-            const rules = Object.fromEntries((['fan', 'ctl', 'led'] as const).map(k => [k, [...(c[k] ?? []), ...(defaults[k] ?? [])]]));
+            const rules = Object.fromEntries((['fan', 'ctl', 'led', 'nas'] as const).map(k => [k, [...(c[k] ?? []), ...(defaults[k] ?? [])]]));
             writeFileSync(join(fs, 'var/run/unc-oracle/tools.json'), JSON.stringify(rules));
             writeFileSync(join(fs, 'var/run/unc-oracle/calls.jsonl'), '');
             installTools();

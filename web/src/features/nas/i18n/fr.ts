@@ -1,6 +1,8 @@
 import { inputsFr } from './parts/inputs.fr';
 import { historyFr } from './parts/history.fr';
 import { scheduleFr } from './parts/schedule.fr';
+import { panelFr } from './parts/panel.fr';
+import { powerFr } from './parts/power.fr';
 import { toolsFr } from './parts/tools.fr';
 import type { Key } from './en';
 
@@ -200,9 +202,9 @@ export const fr: Record<Key, string> = {
     'case.unknown':
         'Il n’existe pas encore de vue du boîtier pour le {model} : elle existe pour le DXP6800 Pro, le DXP4800 GT, les DXP4800 / Plus / Pro, le DXP8800 Plus, le DXP2800 et les iDX6011 / Pro.',
     'leds.limited':
-        'Pour le {model}, il y a le contrôle des LED, les infos système et les températures. Le contrôle des ventilateurs n’existe que pour le DXP6800 Pro et le DXP4800 GT, la vue du boîtier aussi pour les DXP4800 / Plus / Pro, le DXP8800 Plus, le DXP2800 et les iDX6011 / Pro.',
+        'Pour le {model}, il y a le contrôle des LED, les infos système et les températures. Le contrôle des ventilateurs n’existe que pour les modèles de la liste des modèles (câblage fixe, ou après un test ou une confirmation), la vue du boîtier aussi pour les DXP4800 / Plus / Pro, le DXP8800 Plus, le DXP2800 et les iDX6011 / Pro.',
     'leds.limited_fans':
-        'Pour le {model}, il y a le contrôle des LED, les infos système, les températures et la vue du boîtier. Le contrôle des ventilateurs n’existe que pour le DXP6800 Pro et le DXP4800 GT.',
+        'Pour le {model}, il y a le contrôle des LED, les infos système, les températures et la vue du boîtier. Le contrôle des ventilateurs n’existe que pour les modèles de la liste des modèles (câblage fixe, ou après un test ou une confirmation).',
     'leds.untested':
         'Le contrôle des LED du {model} n’est pas testé : le contrôleur est le même sur tous les modèles UGREEN, mais l’ordre des baies et les numéros de LED sont supposés pour ce modèle ou viennent de retours d’autres plugins. Vérifiez avec « Identifier » que la bonne LED s’allume, et signalez les problèmes dans un ticket.',
     'leds.warn_standalone':
@@ -285,7 +287,7 @@ export const fr: Record<Key, string> = {
     'fanctl.on': 'Activé. Les ventilateurs suivent le mode choisi.',
     'fanctl.off': 'Désactivé. Ce plugin ne touche pas à la puce des ventilateurs, ils tournent comme le BIOS les a réglés.',
     'fanctl.unsupported':
-        'Il n’y a pas de contrôle des ventilateurs pour ce modèle (il n’existe que pour le DXP6800 Pro et le DXP4800 GT). Le plugin ne touche pas à la puce des ventilateurs, ils tournent comme le BIOS les a réglés : aucun interrupteur n’est donc nécessaire.',
+        'Il n’y a pas de contrôle des ventilateurs pour ce modèle (il demande un câblage fixe ou un test ou une confirmation, voir la liste des modèles). Le plugin ne touche pas à la puce des ventilateurs, ils tournent comme le BIOS les a réglés : aucun interrupteur n’est donc nécessaire.',
     'fanctl.hint':
         'Désactivez-le quand un autre plugin ou script pilote les ventilateurs. Ce plugin ne touche alors pas à la puce des ventilateurs, et ceux-ci retrouvent les valeurs du BIOS.',
     'fanctl.off_note': 'Le contrôle des ventilateurs est désactivé. Activez-le dans Réglages.',
@@ -297,7 +299,7 @@ export const fr: Record<Key, string> = {
 
     'about.how': 'Fonctionnement',
     'about.how_text':
-        'Dialogue directement avec le contrôleur de ventilateurs via les ports d’E/S (ITE IT8613E sur le DXP6800 Pro, contrôleur embarqué IT5571 sur le DXP4800 GT) et avec le contrôleur de LED via I²C, sans module noyau. À l’arrêt ou à la désinstallation, les ventilateurs retrouvent les valeurs du BIOS.',
+        'Dialogue directement avec le contrôleur de ventilateurs via les ports d’E/S (ITE IT8613E sur la plupart des DXP, contrôleur embarqué IT5571 sur le DXP4800 GT et l’iDX6011 Pro) et avec le contrôleur de LED via I²C, sans module noyau. À l’arrêt ou à la désinstallation, les ventilateurs retrouvent les valeurs du BIOS.',
     'models.series': 'Série {s}',
     'models.confirm_title': 'Confirmer mon appareil',
     'models.confirm_intro':
@@ -456,5 +458,7 @@ export const fr: Record<Key, string> = {
     ...inputsFr,
     ...historyFr,
     ...scheduleFr,
-    ...toolsFr
+    ...toolsFr,
+    ...panelFr,
+    ...powerFr
 };

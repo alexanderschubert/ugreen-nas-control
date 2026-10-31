@@ -30,8 +30,9 @@ const (
 
 // What a finding controls.
 const (
-	Fan = "fan"
-	LED = "led"
+	Fan      = "fan"
+	LED      = "led"
+	Watchdog = "watchdog" // the IT8613E watchdog timer, owned by it87_wdt while that module is loaded
 )
 
 // Conflict is one finding.
@@ -103,6 +104,23 @@ type module struct {
 var modules = []module{
 	{"it87", "it87 kernel driver", []string{Fan}},
 	{"led_ugreen", "led_ugreen kernel driver", []string{LED}},
+	{"leds_sio_201x", "UGREEN CS201x LED driver", []string{LED}},
+	{"it87_wdt", "it87_wdt kernel driver", []string{Watchdog}},
+
+	// UGREEN's own vendor modules (drivers/ugreen, names as loaded: dashes become underscores). Fan and watchdog
+	// registers live behind the same Super-I/O or EC ports we use; the MCU LED drivers own the LED controller.
+	{"ug_it86x_sio", "UGREEN IT8613E driver (ug_it86x_sio)", []string{Fan}},
+	{"ug_it86x_sio_dh2600", "UGREEN DH2600 IT8613E driver", []string{Fan}},
+	{"ug_it86x_cpufan", "UGREEN DXP480T CPU fan driver", []string{Fan}},
+	{"ug_idx6011_sio", "UGREEN iDX6011 EC driver (ug_idx6011_sio)", []string{Fan, Watchdog}},
+	{"ug_idx6011pro_sio", "UGREEN iDX6011 Pro EC driver (ug_idx6011pro_sio)", []string{Fan, Watchdog}},
+	{"ug_201x", "UGREEN CS201x driver (ug_201x)", []string{Fan, LED, Watchdog}},
+	{"ug_sio201", "UGREEN CS201x driver (ug_sio201)", []string{Fan, LED, Watchdog}},
+	{"leds_mcu", "UGREEN LED MCU driver (leds_mcu)", []string{LED}},
+	{"leds_mcu_28a48", "UGREEN LED MCU driver (leds_mcu_28a48)", []string{LED}},
+	{"leds_mcu_68a88", "UGREEN LED MCU driver (leds_mcu_68a88)", []string{LED}},
+	{"leds_mcu_n76e003", "UGREEN LED MCU driver (leds_mcu_n76e003)", []string{LED}},
+	{"leds_mcu_n76e003_dh2600", "UGREEN LED MCU driver (leds_mcu_n76e003_dh2600)", []string{LED}},
 }
 
 type daemon struct {
@@ -240,6 +258,12 @@ func Blocking(list []Conflict, what string) []Conflict {
 		}
 	}
 	return out
+}
+
+// Present says whether any finding, of any severity, controls what. The watchdog petter yields on a loaded
+// it87_wdt, which is a warning for the fans and never blocks them.
+func Present(list []Conflict, what string) bool {
+	return slices.ContainsFunc(list, func(c Conflict) bool { return slices.Contains(c.Controls, what) })
 }
 
 func exists(p string) bool { _, err := os.Stat(p); return err == nil }

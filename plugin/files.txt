@@ -25,6 +25,8 @@ web/plugin/include/fan_inputs.php                include/fan_inputs.php         
 web/plugin/include/fan_profile.php               include/fan_profile.php                    644
 web/plugin/include/fan_probe.php                 include/fan_probe.php                      644
 web/plugin/include/fan_backlight.php             include/fan_backlight.php                  644
+web/plugin/include/panel.php                     include/panel.php                          644
+web/plugin/include/power_ac.php                  include/power_ac.php                       644
 web/plugin/css/app.css                           css/app.css                                644
 web/plugin/css/fan-inputs.css                    css/fan-inputs.css                         644
 web/plugin/css/fan-schedule.css                  css/fan-schedule.css                       644

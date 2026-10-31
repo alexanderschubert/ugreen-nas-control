@@ -8,28 +8,21 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"syscall"
 
 	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
 	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
 )
 
-var lockPath = envOr("UGREEN_FAN_LOCK", "/var/run/ugreen-nas-control.lock")
+// lockPath overrides the shared lock file (tests); empty means hw.LockPath, the one every process resolves alike.
+var lockPath string
 
 // withLock keeps the index/data port pair to one process at a time
-// (daemon, web page, command line).
+// (daemon, web page, command line, LED backend, front panel).
 func withLock(fn func() error) error {
-	f, err := fsx.OpenLock(lockPath, 0o644)
-	if err != nil {
-		return err
+	if lockPath != "" {
+		return hw.WithLockAt(lockPath, fn)
 	}
-	defer func() { _ = f.Close() }()
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
-		return err
-	}
-	defer func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN) }()
-	return fn()
+	return hw.WithLock(fn)
 }
 
 func usage() {
@@ -53,6 +46,8 @@ func usage() {
                       find which output drives which fan on an IT8613E model without a known map (JSON, run: about 1 minute)
   backlight [set <0-100>]
                       iDX6011 Pro LCD brightness: read, or set (JSON)
+  power-on-ac [set on|off|last]
+                      power-on behaviour after AC loss: read, or set (JSON; only ever written by this command)
   cs201x              DXP2800 GT only: read the chip and its fan registers, writes nothing to a fan (JSON)
   daemon              run the fan curves until SIGTERM
   publish             send the status to an MQTT broker (settings: mqtt_* in fan.cfg), until SIGTERM
@@ -132,6 +127,9 @@ func Main() {
 
 	case "backlight":
 		BacklightCommand(os.Args[2:])
+
+	case "power-on-ac":
+		PowerACCommand(os.Args[2:])
 
 	case "probe":
 		chip, err := openChip()
@@ -224,6 +222,12 @@ func Main() {
 		}
 		chip, err := openChip()
 		if err != nil {
+			if wd, werr := openWatchdogOnly(); werr == nil {
+				if err := runWatchdogOnly(wd); err != nil {
+					fail(err)
+				}
+				return
+			}
 			fail(err)
 		}
 		if err := runDaemon(chip); err != nil {

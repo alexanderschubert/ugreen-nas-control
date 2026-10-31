@@ -387,9 +387,9 @@ func ledModelOK(model string) bool {
 }
 
 // ledUntested: models UGREEN LED Control has verified or had confirmed by users; every other model works after the
-// same protocol but with a guessed bay order.
+// same protocol but with a guessed bay order. The DXP2800 GT has its LEDs in the CS201x, not on the LED MCU.
 func ledUntested(model string) bool {
-	return !hasPrefixAny(model, "DXP6800", "DXP8800", "DXP4800", "DX4600", "DX4700", "DXP2800", "DXP480T")
+	return model == "DXP2800 GT" || !hasPrefixAny(model, "DXP6800", "DXP8800", "DXP4800", "DX4600", "DX4700", "DXP2800", "DXP480T")
 }
 
 const standaloneID = "ugreen-led-control"

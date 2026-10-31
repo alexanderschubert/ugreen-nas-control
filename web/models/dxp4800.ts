@@ -14,7 +14,15 @@ export default {
     led: 'bays',
     caseView: 'front-rear',
     caseVariant: 'rear4800',
-    fan: { chip: 'ITE IT8613E', fans: { fan2: 'cpu', fan3: 'case' }, kind: 'probe' },
+    fan: {
+        chip: 'ITE IT8613E',
+        fans: { fan2: 'cpu', fan3: 'case' },
+        kind: 'probe',
+        watchdog: {
+            status: 'expected',
+            note: 'Expected, from the vendor driver and the kernel it87_wdt: the plugin only feeds a timer it sees counting, never arms it, and yields to it87_wdt. Not confirmed on this hardware.'
+        }
+    },
     verified: {
         leds: {
             status: 'community',
@@ -24,7 +32,7 @@ export default {
         },
         fans: {
             status: 'expected',
-            note: 'Same IT8613E as the DXP6800 Pro, header wiring not known: the fan probe finds which output drives which fan and fan control stays off until you confirm its result. Not run on this model yet. The Plus was reported to use outputs 2 and 3.'
+            note: "Same IT8613E as the DXP6800 Pro, header wiring not known: the fan probe finds which output drives which fan and fan control stays off until you confirm its result. Not run on this model yet. The Plus was reported to use outputs 2 and 3; UGREEN's own driver expects cpu on header 2 and case on header 3."
         },
         case: { status: 'expected', note: 'Drawn after a photo of the Plus; the Pro was not compared.' },
         sensors: { status: 'expected' }

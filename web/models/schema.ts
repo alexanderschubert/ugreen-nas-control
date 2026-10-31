@@ -35,8 +35,11 @@ export interface Check {
 
 export type LedSupport = 'bays' | 'power' | 'none';
 export type CaseView = 'none' | 'front-rear' | 'full';
-export type Series = 'DX' | 'DXP' | 'iDX';
-export const SERIES: Series[] = ['DX', 'DXP', 'iDX'];
+export type Series = 'DH' | 'DX' | 'DXP' | 'iDX';
+export const SERIES: Series[] = ['DH', 'DX', 'DXP', 'iDX'];
+
+/** fixtureDmi of the models the backend feeds a watchdog on: backend/internal/fan/caps.go WatchdogModel (EC: DXP4800 GT, iDX6011 Pro; IT8613E: isIT8613Model). Keep identical. */
+export const WATCHDOG_MODELS = ['DXP4800 GT', 'iDX6011 Pro', 'DXP2800', 'DXP4800', 'DXP4800 Plus', 'DXP4800 Pro', 'DXP6800 Pro', 'DXP8800 Plus'];
 
 export type Overall = 'verified' | 'partial' | 'community' | 'expected';
 
@@ -173,8 +176,8 @@ export function validate(m: Model, fileId: string): string[] {
     if (m.caseView === 'full' && m.m2 === null) bad.push('caseView full needs m2');
     if (m.fan !== null && !(m.fan?.chip && Object.keys(m.fan.fans ?? {}).length > 0)) bad.push('fan: {chip, fans} or null');
     if (m.fan?.watchdog) {
-        // The backend feeds it on exactly these (WatchdogModel); on the iDX6012 and the plain iDX6011 0x98/0x99 is a fan tachometer.
-        if (!/^(DXP4800.*GT|iDX6011.*Pro)/.test(m.fixtureDmi)) bad.push('fan.watchdog: only the DXP4800 GT and the iDX6011 Pro have the EC watchdog');
+        // The backend feeds it on exactly these (WatchdogModel: backend/internal/fan/caps.go); on the iDX6012 and the plain iDX6011 0x98/0x99 is a fan tachometer.
+        if (!WATCHDOG_MODELS.includes(m.fixtureDmi)) bad.push(`fan.watchdog: only ${WATCHDOG_MODELS.join(', ')} have a watchdog petter`);
         if (!EVIDENCE.includes(m.fan.watchdog.status) || m.fan.watchdog.status === 'unsupported')
             bad.push('fan.watchdog.status: not unsupported (omit the field instead)');
         if (m.fan.watchdog.date !== undefined && !DATE.test(m.fan.watchdog.date)) bad.push('fan.watchdog.date: YYYY-MM-DD');

@@ -37,7 +37,9 @@ const (
 )
 
 // IT8613E channels as wired on the DXP6800 Pro, where each PWM output was
-// raised on its own to see which fan follows. Headers 1 and 5 are unused.
+// raised on its own to see which fan follows. Headers 1 and 5 are unused. Header 4's control register is
+// unconfirmed: we use 0x7f, UGREEN's driver names 0x1e (ug_it86x-cpufan.c:82-83@c75c5ab; its tach 0x80/0x81 and duty
+// 0x7b agree with ours). Not changed until read on a device.
 var it8613Channels = []Channel{
 	{ID: "fan2", TachLow: 0x0e, TachHigh: 0x19, Duty: 0x6b, Ctrl: 0x16},
 	{ID: "fan3", TachLow: 0x0f, TachHigh: 0x1a, Duty: 0x73, Ctrl: 0x17},
@@ -60,33 +62,18 @@ type Chip struct {
 // Detect finds an IT8613E through the Super-I/O config ports at 0x2e and
 // reads where its hardware monitor sits. The config mode is left again.
 func Detect(p Ports) (*Chip, error) {
-	for _, b := range sioEnterKey {
-		if err := p.Out(sioIndex, b); err != nil {
-			return nil, err
-		}
+	var id uint16
+	var rev, active byte
+	var base uint16
+	err := runSIO(p, sioOpts{ldn: sioLDNMonitor, anyChip: true}, func(s *sio) error {
+		id, rev = s.id, s.rev
+		active = s.rd(sioRegActive)
+		base = uint16(s.rd(sioRegBaseHi))<<8 | uint16(s.rd(sioRegBaseLo))
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	read := func(reg byte) byte {
-		if err := p.Out(sioIndex, reg); err != nil {
-			return 0xff
-		}
-		v, err := p.In(sioData)
-		if err != nil {
-			return 0xff
-		}
-		return v
-	}
-
-	id := uint16(read(sioRegChipID))<<8 | uint16(read(sioRegChipID+1))
-	rev := read(sioRegRev)
-
-	_ = p.Out(sioIndex, sioRegLDN)
-	_ = p.Out(sioData, sioLDNMonitor)
-	active := read(sioRegActive)
-	base := uint16(read(sioRegBaseHi))<<8 | uint16(read(sioRegBaseLo))
-
-	_ = p.Out(sioIndex, sioRegExit)
-	_ = p.Out(sioData, 0x02)
 
 	if id != 0x8613 {
 		return nil, fmt.Errorf("no supported fan controller found (Super-I/O chip id 0x%04x)", id)
@@ -139,8 +126,9 @@ func (c *Chip) RPM(ch Channel) (int, error) {
 	return rpmFromCount(int(hi)<<8 | int(lo)), nil
 }
 
+// rpmFromCount: 0, 0xffff and 0x0fff are "no reading" (ug_it86x-sio.c:226-233@c75c5ab treats all three as 0 rpm).
 func rpmFromCount(count int) int {
-	if count == 0 || count == 0xffff {
+	if count == 0 || count == 0xffff || count == 0x0fff {
 		return 0
 	}
 	return 1350000 / (2 * count)
