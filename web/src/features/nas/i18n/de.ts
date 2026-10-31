@@ -335,7 +335,9 @@ export const de: Record<Key, string> = {
     'about.license_badge': 'MIT-Lizenz',
     'about.github_hint': 'Quellcode, Releases und Änderungen',
     'about.issues': 'Fehler melden',
-    'about.issues_hint': 'Probleme und Wünsche als Issue',
+    'about.issues_hint': 'Fehler und Modellberichte als Issue',
+    'about.discussions': 'Fragen und Ideen',
+    'about.discussions_hint': 'Fragen, Ideen und dein Setup in den Discussions',
     'about.thanks': 'Dank an',
     'about.thanks_text':
         '<a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a> (Protokoll und Schacht-Zuordnung der LED-Steuerung), <a href="https://github.com/alexanderschubert" target="_blank" rel="noopener">Alexander</a> und <a href="https://github.com/j3n57h0m45" target="_blank" rel="noopener">j3n57h0m45</a> (Entwicklung von UGREEN NAS Control; j3n57h0m45 auch die Unterstützung des DXP4800 GT: Lüfter über den IT5571, LEDs, Gehäuse- und Systemansicht, sowie die Überarbeitung der Oberfläche), <a href="https://github.com/ivolution" target="_blank" rel="noopener">ivolution</a> (spanische Übersetzung) und alle, die auf ihrem Modell getestet haben',

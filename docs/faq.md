@@ -16,6 +16,10 @@ This plugin replaces it. The LEDs page offers to take over its settings.
 
 The DH2300 and DH4300 Plus use ARM chips (Rockchip) and cannot run Unraid, which needs a 64-bit x86 CPU. Only the x86 models are supported.
 
+## Where do I ask
+
+Questions and ideas go to [Discussions](https://github.com/alexanderschubert/ugreen-nas-control/discussions) or the Unraid forum thread, bugs to an issue: [which channel for what](../.github/CONTRIBUTING.md#where-to-ask).
+
 ## What to include in a support request
 
 The output of the two `status` commands ([cli.md](cli.md#support-requests)), the NAS model, and the Unraid and plugin versions.

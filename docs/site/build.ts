@@ -16,6 +16,7 @@ import {
     EVIDENCE_HELP,
     EVIDENCE_LABEL,
     FORUM,
+    DISCUSSIONS,
     GITHUB,
     HEADLINE,
     KEYWORDS,
@@ -226,7 +227,7 @@ const installHint = CA_LIVE
     : 'In Unraid, open Plugins, Install Plugin and paste this URL:';
 
 const FOOTER = `<footer><div class="foot">
-  <nav aria-label="Project"><a href="${GITHUB}">GitHub</a><a href="${FORUM}">Unraid forum</a><a href="${GITHUB}/blob/main/docs/third-party.md">Credits and licences</a><a href="${GITHUB}/blob/main/LICENSE">MIT license</a></nav>
+  <nav aria-label="Project"><a href="${GITHUB}">GitHub</a><a href="${DISCUSSIONS}">Discussions</a><a href="${FORUM}">Unraid forum</a><a href="${GITHUB}/blob/main/docs/third-party.md">Credits and licences</a><a href="${GITHUB}/blob/main/LICENSE">MIT license</a></nav>
   <p>Not affiliated with UGREEN or Lime Technology. Product names belong to their owners. MIT licensed, source on GitHub. Set in Archivo (SIL Open Font License 1.1).</p>
 </div></footer>`;
 

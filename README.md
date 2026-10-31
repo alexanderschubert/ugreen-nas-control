@@ -22,6 +22,7 @@ This plugin is the bridge.
 [![Stars](https://img.shields.io/github/stars/alexanderschubert/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/alexanderschubert/ugreen-nas-control/stargazers)
 [![Unraid forum](https://img.shields.io/badge/support-Unraid%20forum-f15a2c)](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/)
 [![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
+[![Discussions](https://img.shields.io/github/discussions/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/discussions)
 
 **[Live demo](https://alexanderschubert.github.io/ugreen-nas-control/demo/?model=dxp6800-pro)** · [Install](#install-in-60-seconds) · [Models](#your-model-your-status) · [Docs](#documentation) · [Help](#help)
 
@@ -113,7 +114,7 @@ Model missing or marked Expected? [Report it](docs/cli.md#report-a-model).
 
 ## Help
 
-[Unraid forum thread](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/) · [GitHub issues](https://github.com/alexanderschubert/ugreen-nas-control/issues/new/choose) · [FAQ](docs/faq.md)
+[Discussions](https://github.com/alexanderschubert/ugreen-nas-control/discussions) · [Unraid forum thread](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/) · [GitHub issues](https://github.com/alexanderschubert/ugreen-nas-control/issues/new/choose) · [Which channel for what](.github/CONTRIBUTING.md#where-to-ask) · [FAQ](docs/faq.md)
 
 ## Documentation
 

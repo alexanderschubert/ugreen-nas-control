@@ -12,6 +12,7 @@ export const ROOT_URL = process.env.ROOT_URL ?? `https://${OWNER.toLowerCase()}.
 export const GITHUB = `https://github.com/${REPO}`;
 export const PLG_URL = `https://raw.githubusercontent.com/${REPO}/main/plugin/ugreen-nas-control.plg`;
 export const FORUM = 'https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/';
+export const DISCUSSIONS = 'https://github.com/alexanderschubert/ugreen-nas-control/discussions';
 /** Flip to true once the Community Applications entry is live: the Apps tab becomes the first install route. */
 export const CA_LIVE = false;
 
