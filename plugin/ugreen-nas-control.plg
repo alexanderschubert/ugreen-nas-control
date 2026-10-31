@@ -2,11 +2,11 @@
 <!DOCTYPE PLUGIN [
 <!ENTITY name      "ugreen-nas-control">
 <!ENTITY author    "Alexander Schubert">
-<!ENTITY version   "4.2">
+<!ENTITY version   "4.3">
 <!ENTITY launch    "Settings/UGREENNASControl">
-<!ENTITY repo      "https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control">
+<!ENTITY repo      "https://raw.githubusercontent.com/ugreen-nas-control/ugreen-nas-control">
 <!ENTITY gitURL    "&repo;/v&version;">
-<!ENTITY releaseURL "https://github.com/alexanderschubert/ugreen-nas-control/releases/download/v&version;">
+<!ENTITY releaseURL "https://github.com/ugreen-nas-control/ugreen-nas-control/releases/download/v&version;">
 <!ENTITY pluginURL "&repo;/main/plugin/ugreen-nas-control.plg">
 <!ENTITY bootDIR   "/boot/config/plugins/&name;">
 <!ENTITY srcDIR    "&bootDIR;/&version;">
@@ -24,6 +24,9 @@
 >
 
 <CHANGES>
+
+### 4.3
+- The project moved to the GitHub organisation ugreen-nas-control (github.com/ugreen-nas-control/ugreen-nas-control). The plugin now updates from the new address; the old one keeps working through GitHub's redirect. Links in the plugin, the README and the Community Applications template point to the new address. Nothing else changes.
 
 ### 4.2
 - Sensors: on a model without fan control (every one but the DXP6800 Pro and the DXP4800 GT) the fan controller now says "No fan control for this model" instead of a red "Not found", which looked like a defect. Nothing changes in what the plugin does with the fan chip: it still does not touch it on these models.
@@ -286,7 +289,7 @@
 
 <FILE Name="&srcDIR;/UGREENNASControl.page">
 <URL>&gitURL;/src/web/UGREENNASControl.page</URL>
-<MD5>270dea8e8789051f86156f2df63b16e7</MD5>
+<MD5>a23b8f7ad540033a0efa734aa1e9c94c</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/UGREENNASDashboard.page">
@@ -327,7 +330,7 @@
 
 <FILE Name="&srcDIR;/js/app.js">
 <URL>&gitURL;/src/web/js/app.js</URL>
-<MD5>ef3191b3c80d97dd7f52598a2b852679</MD5>
+<MD5>674b81b4196ae3cae08bd9aadd8c2ec0</MD5>
 </FILE>
 
 <FILE Name="&srcDIR;/js/ledfx.js">
