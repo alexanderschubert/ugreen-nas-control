@@ -222,7 +222,10 @@ func (r *rig) stopAll() {
 
 // killUnder ends whatever still runs from a rig's temp root: the detached timers behind identify and shutdown --test.
 func killUnder(root string) {
-	_ = exec.Command("pkill", "-f", root).Run()
+	cmd := exec.Command("pkill", "-f", root)
+	if startProc(cmd) == nil {
+		_ = cmd.Wait()
+	}
 }
 
 // sleeper starts a long-lived process whose pid can stand in for a running daemon. It runs under a tool name
