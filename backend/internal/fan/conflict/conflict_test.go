@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 func write(t *testing.T, path, content string) {

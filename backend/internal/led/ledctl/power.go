@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
 )
 
 // Night mode: night_enabled="1", night_start/night_end "HH:MM" (may span midnight),

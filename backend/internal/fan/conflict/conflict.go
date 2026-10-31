@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 // Kinds of finding.

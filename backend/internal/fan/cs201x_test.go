@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	cs "github.com/alexanderschubert/ugreen-nas-control/internal/hw/cs201x"
+	cs "github.com/ugreen-nas-control/ugreen-nas-control/internal/hw/cs201x"
 )
 
 type fakeCS struct {

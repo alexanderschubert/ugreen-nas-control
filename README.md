@@ -11,24 +11,24 @@ This plugin is the bridge.
 
 **Keep the hardware watchdog on. Leave it armed in the BIOS, the plugin feeds it, and a frozen box reboots itself** (DXP4800 GT, iDX6011 Pro; [how](docs/watchdog.md)).
 
-[![Release](https://img.shields.io/github/v/release/alexanderschubert/ugreen-nas-control?color=0078ff&label=release)](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/alexanderschubert/ugreen-nas-control/latest/total?color=00c853&label=downloads%20%28latest%29)](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
-[![Checks](https://img.shields.io/github/actions/workflow/status/alexanderschubert/ugreen-nas-control/checks.yml?branch=next&label=checks)](https://github.com/alexanderschubert/ugreen-nas-control/actions/workflows/checks.yml)
+[![Release](https://img.shields.io/github/v/release/ugreen-nas-control/ugreen-nas-control?color=0078ff&label=release)](https://github.com/ugreen-nas-control/ugreen-nas-control/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/ugreen-nas-control/ugreen-nas-control/latest/total?color=00c853&label=downloads%20%28latest%29)](https://github.com/ugreen-nas-control/ugreen-nas-control/releases/latest)
+[![Checks](https://img.shields.io/github/actions/workflow/status/ugreen-nas-control/ugreen-nas-control/checks.yml?branch=next&label=checks)](https://github.com/ugreen-nas-control/ugreen-nas-control/actions/workflows/checks.yml)
 [![Unraid](https://img.shields.io/badge/Unraid-7.2%2B-f15a2c)](docs/unraid.md)
 [![Models](https://img.shields.io/badge/models-DX%20%C2%B7%20DXP%20%C2%B7%20iDX-0078ff)](#your-model-your-status)
 [![Fan control](https://img.shields.io/badge/fan%20control-DXP6800%20Pro%20%C2%B7%20DXP4800%20GT-0078ff)](#your-model-your-status)
 [![Watchdog](https://img.shields.io/badge/watchdog-DXP4800%20GT%20%C2%B7%20iDX6011%20Pro-0078ff)](docs/watchdog.md)
-[![License: MIT](https://img.shields.io/github/license/alexanderschubert/ugreen-nas-control?color=lightgrey)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/alexanderschubert/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/alexanderschubert/ugreen-nas-control/stargazers)
+[![License: MIT](https://img.shields.io/github/license/ugreen-nas-control/ugreen-nas-control?color=lightgrey)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/ugreen-nas-control/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/ugreen-nas-control/ugreen-nas-control/stargazers)
 [![Unraid forum](https://img.shields.io/badge/support-Unraid%20forum-f15a2c)](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/)
-[![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
-[![Discussions](https://img.shields.io/github/discussions/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/discussions)
+[![Issues](https://img.shields.io/github/issues/ugreen-nas-control/ugreen-nas-control?color=ff8c00)](https://github.com/ugreen-nas-control/ugreen-nas-control/issues)
+[![Discussions](https://img.shields.io/github/discussions/ugreen-nas-control/ugreen-nas-control?color=ff8c00)](https://github.com/ugreen-nas-control/ugreen-nas-control/discussions)
 
-**[Live demo](https://alexanderschubert.github.io/ugreen-nas-control/demo/?model=dxp6800-pro)** · [Install](#install-in-60-seconds) · [Models](#your-model-your-status) · [Docs](#documentation) · [Help](#help)
+**[Live demo](https://ugreen-nas-control.github.io/ugreen-nas-control/demo/?model=dxp6800-pro)** · [Install](#install-in-60-seconds) · [Models](#your-model-your-status) · [Docs](#documentation) · [Help](#help)
 
-<a href="https://alexanderschubert.github.io/ugreen-nas-control/demo/?model=dxp6800-pro"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/ca/overview-dark.png"><img src="docs/ca/overview-light.png" alt="UGREEN NAS Control overview: the NAS drawn with its bays, drive temperatures and live LED colours" width="860"></picture></a>
+<a href="https://ugreen-nas-control.github.io/ugreen-nas-control/demo/?model=dxp6800-pro"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/ca/overview-dark.png"><img src="docs/ca/overview-light.png" alt="UGREEN NAS Control overview: the NAS drawn with its bays, drive temperatures and live LED colours" width="860"></picture></a>
 
-<sub>The real plugin UI, rendered by CI. No mockups. <a href="https://alexanderschubert.github.io/ugreen-nas-control/demo/?model=dxp6800-pro">Click through it in your browser.</a></sub>
+<sub>The real plugin UI, rendered by CI. No mockups. <a href="https://ugreen-nas-control.github.io/ugreen-nas-control/demo/?model=dxp6800-pro">Click through it in your browser.</a></sub>
 
 </div>
 
@@ -40,12 +40,12 @@ This plugin is the bridge.
 2. Paste this URL, hit **Install**:
 
 ```
-https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugin/ugreen-nas-control.plg
+https://raw.githubusercontent.com/ugreen-nas-control/ugreen-nas-control/main/plugin/ugreen-nas-control.plg
 ```
 
 3. Open **Settings, UGREEN NAS Control**. It names the model it found.
 
-Try the next build (latest head of `next`, not for production): install `https://alexanderschubert.github.io/ugreen-nas-control/next/ugreen-nas-control.plg`. It replaces a stable install in place and keeps your settings; to go back, run `plugin install <stable plg URL> forced`. See [docs/releasing.md](docs/releasing.md).
+Try the next build (latest head of `next`, not for production): install `https://ugreen-nas-control.github.io/ugreen-nas-control/next/ugreen-nas-control.plg`. It replaces a stable install in place and keeps your settings; to go back, run `plugin install <stable plg URL> forced`. See [docs/releasing.md](docs/releasing.md).
 
 ## What you get
 
@@ -69,42 +69,42 @@ Every model, every claim, on the record. Each cell is dated and links to its evi
 
 **DH series**
 
-| Model                                                                           | LEDs | Fan control | Case view | Sensors | Status     |
-| ------------------------------------------------------------------------------- | ---- | ----------- | --------- | ------- | ---------- |
-| [DH2600](https://alexanderschubert.github.io/ugreen-nas-control/models/dh2600/) | –    | –           | –         | ○       | ○ Expected |
+| Model                                                                            | LEDs | Fan control | Case view | Sensors | Status     |
+| -------------------------------------------------------------------------------- | ---- | ----------- | --------- | ------- | ---------- |
+| [DH2600](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dh2600/) | –    | –           | –         | ○       | ○ Expected |
 
 **DX series**
 
-| Model                                                                                   | LEDs | Fan control | Case view | Sensors | Status             |
-| --------------------------------------------------------------------------------------- | ---- | ----------- | --------- | ------- | ------------------ |
-| [DX4600 Pro](https://alexanderschubert.github.io/ugreen-nas-control/models/dx4600-pro/) | ◔    | –           | –         | ○       | ◔ Community-tested |
-| [DX4700+](https://alexanderschubert.github.io/ugreen-nas-control/models/dx4700/)        | ◔    | –           | –         | ○       | ◔ Community-tested |
+| Model                                                                                    | LEDs | Fan control | Case view | Sensors | Status             |
+| ---------------------------------------------------------------------------------------- | ---- | ----------- | --------- | ------- | ------------------ |
+| [DX4600 Pro](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dx4600-pro/) | ◔    | –           | –         | ○       | ◔ Community-tested |
+| [DX4700+](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dx4700/)        | ◔    | –           | –         | ○       | ◔ Community-tested |
 
 **DXP series**
 
-| Model                                                                                            | LEDs | Fan control | Case view | Sensors | Status             |
-| ------------------------------------------------------------------------------------------------ | ---- | ----------- | --------- | ------- | ------------------ |
-| [DXP4800 GT](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp4800-gt/)          | ●    | ●           | ●         | ●       | ● Verified         |
-| [DXP6800 Pro](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp6800-pro/)        | ●    | ●           | ●         | ●       | ● Verified         |
-| [DXP480T Plus](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp480t-plus/)      | ◐    | –           | –         | ○       | ◔ Community-tested |
-| [DXP2800](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp2800/)                | ◔    | ○           | ○         | ○       | ◔ Community-tested |
-| [DXP4800](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp4800-base/)           | ◔    | ○           | ○         | ○       | ◔ Community-tested |
-| [DXP4800 Plus / Pro](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp4800/)     | ◔    | ○           | ○         | ○       | ◔ Community-tested |
-| [DXP8800 Plus](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp8800-plus/)      | ◔    | ○           | ○         | ○       | ◔ Community-tested |
-| [DXP2800 GT](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp2800-gt/)          | ○    | ○           | ○         | ○       | ○ Expected         |
-| [DXP2800S](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp2800s/)              | ○    | –           | –         | ○       | ○ Expected         |
-| [DXP4800S](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp4800s/)              | ○    | –           | –         | ○       | ○ Expected         |
-| [DXP6800 / DXP6800 Plus](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp6800/) | ○    | ○           | ○         | ○       | ○ Expected         |
-| [DXP6800 Ultra](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp6800-ultra/)    | ○    | –           | –         | ○       | ○ Expected         |
-| [DXP6800S](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp6800s/)              | ○    | –           | –         | ○       | ○ Expected         |
-| [DXP8800 / DXP8800 Pro](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp8800/)  | ○    | ○           | ○         | ○       | ○ Expected         |
-| [DXP8800 Ultra](https://alexanderschubert.github.io/ugreen-nas-control/models/dxp8800-ultra/)    | ○    | –           | –         | ○       | ○ Expected         |
+| Model                                                                                             | LEDs | Fan control | Case view | Sensors | Status             |
+| ------------------------------------------------------------------------------------------------- | ---- | ----------- | --------- | ------- | ------------------ |
+| [DXP4800 GT](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp4800-gt/)          | ●    | ●           | ●         | ●       | ● Verified         |
+| [DXP6800 Pro](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp6800-pro/)        | ●    | ●           | ●         | ●       | ● Verified         |
+| [DXP480T Plus](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp480t-plus/)      | ◐    | –           | –         | ○       | ◔ Community-tested |
+| [DXP2800](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp2800/)                | ◔    | ○           | ○         | ○       | ◔ Community-tested |
+| [DXP4800](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp4800-base/)           | ◔    | ○           | ○         | ○       | ◔ Community-tested |
+| [DXP4800 Plus / Pro](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp4800/)     | ◔    | ○           | ○         | ○       | ◔ Community-tested |
+| [DXP8800 Plus](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp8800-plus/)      | ◔    | ○           | ○         | ○       | ◔ Community-tested |
+| [DXP2800 GT](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp2800-gt/)          | ○    | ○           | ○         | ○       | ○ Expected         |
+| [DXP2800S](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp2800s/)              | ○    | –           | –         | ○       | ○ Expected         |
+| [DXP4800S](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp4800s/)              | ○    | –           | –         | ○       | ○ Expected         |
+| [DXP6800 / DXP6800 Plus](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp6800/) | ○    | ○           | ○         | ○       | ○ Expected         |
+| [DXP6800 Ultra](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp6800-ultra/)    | ○    | –           | –         | ○       | ○ Expected         |
+| [DXP6800S](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp6800s/)              | ○    | –           | –         | ○       | ○ Expected         |
+| [DXP8800 / DXP8800 Pro](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp8800/)  | ○    | ○           | ○         | ○       | ○ Expected         |
+| [DXP8800 Ultra](https://ugreen-nas-control.github.io/ugreen-nas-control/models/dxp8800-ultra/)    | ○    | –           | –         | ○       | ○ Expected         |
 
 **iDX series**
 
-| Model                                                                                             | LEDs | Fan control | Case view | Sensors | Status     |
-| ------------------------------------------------------------------------------------------------- | ---- | ----------- | --------- | ------- | ---------- |
-| [iDX6011 / iDX6012 / Pro](https://alexanderschubert.github.io/ugreen-nas-control/models/idx6011/) | ○    | ○           | ○         | ○       | ○ Expected |
+| Model                                                                                              | LEDs | Fan control | Case view | Sensors | Status     |
+| -------------------------------------------------------------------------------------------------- | ---- | ----------- | --------- | ------- | ---------- |
+| [iDX6011 / iDX6012 / Pro](https://ugreen-nas-control.github.io/ugreen-nas-control/models/idx6011/) | ○    | ○           | ○         | ○       | ○ Expected |
 
 Versions, dates and evidence per cell: [docs/hardware.md](docs/hardware.md), or the model page on the website.
 
@@ -114,7 +114,7 @@ Model missing or marked Expected? [Report it](docs/cli.md#report-a-model).
 
 ## Help
 
-[Discussions](https://github.com/alexanderschubert/ugreen-nas-control/discussions) · [Unraid forum thread](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/) · [GitHub issues](https://github.com/alexanderschubert/ugreen-nas-control/issues/new/choose) · [Which channel for what](.github/CONTRIBUTING.md#where-to-ask) · [FAQ](docs/faq.md)
+[Discussions](https://github.com/ugreen-nas-control/ugreen-nas-control/discussions) · [Unraid forum thread](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/) · [GitHub issues](https://github.com/ugreen-nas-control/ugreen-nas-control/issues/new/choose) · [Which channel for what](.github/CONTRIBUTING.md#where-to-ask) · [FAQ](docs/faq.md)
 
 ## Documentation
 

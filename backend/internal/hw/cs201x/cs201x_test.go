@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 // fakeChip is the Super-I/O window and the host-to-EC window of a CS201x.

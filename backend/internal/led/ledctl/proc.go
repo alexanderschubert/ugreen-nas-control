@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
 )
 
 func (c *Ctl) daemonRunning() bool { return c.pidAlive(c.Env.PidFile) }

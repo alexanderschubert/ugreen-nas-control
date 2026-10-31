@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 // The publisher: sends the status of this NAS to an MQTT broker for displays and Home Assistant, and, only

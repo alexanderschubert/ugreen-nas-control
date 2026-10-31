@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 // Where the sensors live; tests point these at a fake tree.

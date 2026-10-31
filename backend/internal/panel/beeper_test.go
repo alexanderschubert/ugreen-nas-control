@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 func noLock(fn func() error) error { return fn() }

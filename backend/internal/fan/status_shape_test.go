@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
 )
 
 // The `status` answer is what the web fixtures (web/models/fixture.ts) imitate. This test runs the real code over a

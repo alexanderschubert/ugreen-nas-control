@@ -8,10 +8,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
-	cs "github.com/alexanderschubert/ugreen-nas-control/internal/hw/cs201x"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
+	cs "github.com/ugreen-nas-control/ugreen-nas-control/internal/hw/cs201x"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 // DXP2800 GT: four ARGB channels in the Chipsea CS201x embedded controller (power, network, disk1, disk2), reached

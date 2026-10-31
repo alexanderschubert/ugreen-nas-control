@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
-	cs "github.com/alexanderschubert/ugreen-nas-control/internal/hw/cs201x"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
+	cs "github.com/ugreen-nas-control/ugreen-nas-control/internal/hw/cs201x"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 // The fan tool, the LED backend (cs201x) and the front panel must lock the same file, with and without the env var.

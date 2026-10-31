@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/led/chip"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/led/chip"
 )
 
 // Where the hardware is read from; tests point these at a fake tree.

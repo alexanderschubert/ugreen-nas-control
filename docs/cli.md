@@ -56,7 +56,7 @@ Include the output of both `status` commands, the NAS model and the Unraid and p
 
 ## Report a model
 
-Run the report on the Unraid box and paste the JSON into the [model report form](https://github.com/alexanderschubert/ugreen-nas-control/issues/new?template=model-report.yml):
+Run the report on the Unraid box and paste the JSON into the [model report form](https://github.com/ugreen-nas-control/ugreen-nas-control/issues/new?template=model-report.yml):
 
 ```
 /usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-ctl report

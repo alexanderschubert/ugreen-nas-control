@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/profile"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/profile"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 // The fixtures are synthetic copies of the config shapes of the rival tools (profile/testdata); the goldens are what

@@ -3,7 +3,7 @@ package fan
 import (
 	"strings"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 // Fans is a fan controller as the commands and the daemon see it: the

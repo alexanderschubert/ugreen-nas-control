@@ -27,7 +27,7 @@ import { ALL_OUTPUTS } from '../../scripts/generated.ts';
 import { type Entry, type Link, linkTarget, MANIFEST, readLinks, readManifest } from './manifest.ts';
 
 const ROOT = join(import.meta.dir, '../..');
-const REPO = 'alexanderschubert/ugreen-nas-control';
+const REPO = 'ugreen-nas-control/ugreen-nas-control';
 const TMPL = join(ROOT, 'plugin/ugreen-nas-control.plg.tmpl');
 // Folders whose tracked files must all be in the manifest.
 const SHIPPED = ['web/plugin', 'plugin/event'];

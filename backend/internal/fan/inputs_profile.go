@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/profile"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/profile"
 )
 
 // The glue between package profile (pure parsers) and the fan settings: the rules that clamp a profile into what

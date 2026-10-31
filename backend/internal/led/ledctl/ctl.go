@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/proc"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/proc"
 )
 
 // Chip talks to the LED controller. The shipped implementation runs the

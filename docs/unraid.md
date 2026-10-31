@@ -75,7 +75,7 @@ Hardware: the fan and LED paths need a DXP6800 Pro or DXP4800 GT. Everything els
 
 ### Steps and pass criteria
 
-Preparation on every build: note `cat /etc/unraid-version`, `php -v`, the server clock. Browser console and `/var/log/syslog` open. "Plugins page" = Plugins tab. `/boot/config/plugins/ugreen-nas-control` is the boot folder. Install URL stable: the raw `.plg` on `main`; next: `https://alexanderschubert.github.io/ugreen-nas-control/next/ugreen-nas-control.plg` ([releasing.md](releasing.md)).
+Preparation on every build: note `cat /etc/unraid-version`, `php -v`, the server clock. Browser console and `/var/log/syslog` open. "Plugins page" = Plugins tab. `/boot/config/plugins/ugreen-nas-control` is the boot folder. Install URL stable: the raw `.plg` on `main`; next: `https://ugreen-nas-control.github.io/ugreen-nas-control/next/ugreen-nas-control.plg` ([releasing.md](releasing.md)).
 
 **A. Fresh install**
 

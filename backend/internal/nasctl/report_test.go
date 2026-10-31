@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
 )
 
 func write(t *testing.T, path, text string) {

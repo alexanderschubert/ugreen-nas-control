@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
 )
 
 // IFS whitespace of `read`: space, tab, newline.

@@ -3,8 +3,8 @@ package hw
 import (
 	"syscall"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 // The one flock every user of the shared index/data port pairs takes: the fan tool and daemon, the LED backend (via

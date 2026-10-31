@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan"
 )
 
 // Config is the mqtt_* part of fan.cfg. The keys are read whatever cfg_version the file has and are never written

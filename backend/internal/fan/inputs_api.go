@@ -9,7 +9,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fsx"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
 )
 
 // What the web page needs to let the user pick an input (api.php fan_inputs, fan_input_test; contract-fan-inputs.ts).

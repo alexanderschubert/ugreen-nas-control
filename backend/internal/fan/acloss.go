@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 // Power on after AC loss: what the NAS does when mains power returns. Explicit user action only (`ugreen-nas-fan

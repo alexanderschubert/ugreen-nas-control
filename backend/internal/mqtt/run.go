@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan"
 )
 
 // Run is `ugreen-nas-fan publish`: it publishes until SIGTERM or SIGINT.

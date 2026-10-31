@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
 
 // Env is what the commands touch; the zero value of a field means the real thing.

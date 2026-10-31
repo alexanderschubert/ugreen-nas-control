@@ -9,14 +9,14 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/fan/conflict"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/led/chip"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/led/ledctl"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/mqtt"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/nasctl"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/panel"
-	"github.com/alexanderschubert/ugreen-nas-control/internal/testenv"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fan/conflict"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/led/chip"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/led/ledctl"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/mqtt"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/nasctl"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/panel"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/testenv"
 )
 
 // runFan: the fan tool reads os.Args itself and exits on its own. `publish` is the MQTT publisher (own package, which

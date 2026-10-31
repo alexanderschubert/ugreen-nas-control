@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexanderschubert/ugreen-nas-control/internal/hw"
-	cs "github.com/alexanderschubert/ugreen-nas-control/internal/hw/cs201x"
+	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
+	cs "github.com/ugreen-nas-control/ugreen-nas-control/internal/hw/cs201x"
 )
 
 // Chipsea CS201x Super-I/O with an embedded controller (DXP2800 GT). Register addresses as published by UGREEN
