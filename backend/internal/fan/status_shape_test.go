@@ -87,6 +87,7 @@ func collectFanStatusShape(t *testing.T) statusShape {
 		{"fixed EC, fan control on", "DXP4800 GT", "", false, fakeECChip, false},
 		{"fan control off", "DXP6800 Pro", "fan_control=\"0\"\n", false, fakeITEChip, false},
 		{"probe model without a map", "DXP4800 Plus", "", false, openChip, true},
+		{"probe model with a hardware floor", "DXP2800 GT", "", false, openChip, true},
 		{"probe model with a map", "DXP4800 Plus", "", true, fakeITEChip, false},
 		{"model without fan control", "DX4600 Pro", "", false, openChip, true},
 	}

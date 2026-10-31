@@ -109,7 +109,8 @@ export function fanCaps(m: Model) {
         kind: probe ? 'probe' : 'fixed',
         channels: probe ? 0 : Object.keys(m.fan.fans).length,
         watchdog: Boolean(m.fan.watchdog),
-        backlight: m.series === 'iDX'
+        backlight: m.series === 'iDX',
+        ...(m.fan.minPctFloor ? { min_pct_floor: m.fan.minPctFloor } : {})
     };
 }
 

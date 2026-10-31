@@ -151,6 +151,7 @@ export const en = {
     'curves.warn_top': 'This curve never reaches 100 %; the emergency limit is the only backstop.',
     'curves.raised': 'raised to min {pct} %',
     'curves.min_hint': 'No fan runs slower than this, even if a curve says less.',
+    'curves.min_floor': 'The fans of this model run at {pct} % at the least, whatever is set lower.',
     'calib.lead': 'Measuring is the first step for custom curves. It takes about {min} minutes.',
     'calib.gain_rpm': 'Real rpm next to every curve point and on the chart axis',
     'calib.gain_floor': 'The lowest speed at which each fan still turns, to help set the lowest fan speed',

@@ -253,6 +253,7 @@ window.UGREEN_LED_THEME = <?= json_encode($unc_theme) ?>;
                             <div data-unc="range" data-unc-input="unc-curve-min" data-unc-min="10" data-unc-max="60" data-unc-value="25" data-unc-unit="%"></div>
                         </div>
                         <p class="unc-muted" data-i18n="curves.min_hint">Kein Lüfter läuft langsamer, auch wenn eine Kurve weniger vorgibt.</p>
+                        <p class="unc-muted" id="unc-min-floor" hidden></p>
                         <div class="unc-min-measured" id="unc-min-measured"></div>
                     </div>
                 </div>

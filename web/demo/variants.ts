@@ -81,7 +81,10 @@ export function shape(model: Model): Shaped {
     if (isCs201x(model)) {
         st.chip_error = CS201X_STATUS_ERROR;
         // The status once the fans are confirmed: the model as a fixed-wiring one with the CS201x's two fans.
-        const fixed = status({ ...model, fan: { chip: 'CS201x', fans: { fan1: 'cpu', fan3: 'case' } } }) as unknown as Bag;
+        const fixed = status({
+            ...model,
+            fan: { chip: 'CS201x', fans: { fan1: 'cpu', fan3: 'case' }, ...(model.fan?.minPctFloor ? { minPctFloor: model.fan.minPctFloor } : {}) }
+        }) as unknown as Bag;
         out.cs201x = {
             read: CS201X_READ,
             confirmed: {

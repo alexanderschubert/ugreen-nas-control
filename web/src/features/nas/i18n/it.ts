@@ -153,6 +153,7 @@ export const it: Record<Key, string> = {
     'curves.warn_top': 'Questa curva non raggiunge mai il 100 %; il limite di emergenza è l’unica protezione.',
     'curves.raised': 'alzato a min {pct} %',
     'curves.min_hint': 'Nessuna ventola gira più lenta di così, anche se una curva indica meno.',
+    'curves.min_floor': 'Le ventole di questo modello girano almeno al {pct} %, anche se è impostato un valore più basso.',
     'calib.lead': 'La misurazione è il primo passo per le curve personalizzate. Richiede circa {min} minuti.',
     'calib.gain_rpm': 'I giri/min reali accanto a ogni punto della curva e sull’asse del grafico',
     'calib.gain_floor': 'La velocità minima a cui ogni ventola gira ancora, per aiutarti a impostare la velocità minima',

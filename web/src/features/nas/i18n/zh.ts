@@ -151,6 +151,7 @@ export const zh: Record<Key, string> = {
     'curves.warn_top': '这条曲线永远不会达到 100 %；紧急上限是唯一的保障。',
     'curves.raised': '已提高到最低 {pct} %',
     'curves.min_hint': '即使曲线设得更低，也没有风扇会低于此转速。',
+    'curves.min_floor': '该型号的风扇至少以 {pct} % 运行，即使设置得更低。',
     'calib.lead': '测量是创建自定义曲线的第一步，大约需要 {min} 分钟。',
     'calib.gain_rpm': '在每个曲线点旁和图表坐标轴上显示真实 rpm',
     'calib.gain_floor': '每个风扇仍能转动的最低转速，帮助你设定最低风扇转速',

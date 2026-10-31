@@ -3,10 +3,11 @@ package fan
 // FanCaps is what the web page may offer for this model, so that it holds no model list of its own (`fan_caps` in
 // the status; absent for a model without fan control).
 type FanCaps struct {
-	Kind      string `json:"kind"`      // KindFixed, KindProbe or KindReadOnly
-	Channels  int    `json:"channels"`  // fans the plugin drives; 0 on a probe model until a map is confirmed
-	Watchdog  bool   `json:"watchdog"`  // a watchdog petter runs (EC or IT8613E)
-	Backlight bool   `json:"backlight"` // the LCD backlight can be read and set
+	Kind        string `json:"kind"`                    // KindFixed, KindProbe or KindReadOnly
+	Channels    int    `json:"channels"`                // fans the plugin drives; 0 on a probe model until a map is confirmed
+	Watchdog    bool   `json:"watchdog"`                // a watchdog petter runs (EC or IT8613E)
+	Backlight   bool   `json:"backlight"`               // the LCD backlight can be read and set
+	MinPctFloor int    `json:"min_pct_floor,omitempty"` // the lowest speed the hardware runs at; absent when the model has no floor
 }
 
 // WatchdogModel: a watchdog is fed on the DXP4800 GT and the iDX6011 Pro (IT5571 EC, one map: ug_it55_4800gt_functions.c:534-536,
@@ -36,6 +37,7 @@ func CapsFor(model string) (FanCaps, bool) {
 		return FanCaps{}, false
 	}
 	c := FanCaps{Kind: kind, Watchdog: WatchdogModel(model), Backlight: isIdxPro(model)}
+	c.MinPctFloor = minPctFloor(model)
 	switch {
 	case isDXP4800GT(model):
 		c.Channels = len(ecChannels)

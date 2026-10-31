@@ -114,9 +114,7 @@ func modelLimits(model string) (cpuCrit, diskCrit int, ok bool) {
 // speed never goes below the duty the hardware applies (DXP2800 GT: csFloorPct), so that the targets the daemon records
 // are what runs.
 func ApplyModelLimits(c Config, model string) Config {
-	if isDXP2800GT(model) {
-		c.MinPct = max(c.MinPct, csFloorPct)
-	}
+	c.MinPct = max(c.MinPct, minPctFloor(model))
 	if cpu, disk, ok := modelLimits(model); ok {
 		c.CPUCrit = min(c.CPUCrit, cpu)
 		c.DiskCrit = min(c.DiskCrit, disk)
@@ -247,4 +245,12 @@ func allocateIDs(choice map[string]string) ([]FanMapOutput, error) {
 	}
 	slices.SortFunc(out, func(a, b FanMapOutput) int { return strings.Compare(a.ID, b.ID) })
 	return out, nil
+}
+
+// minPctFloor is the lowest speed the hardware of the model runs at; 0 when it has none above the configurable minimum.
+func minPctFloor(model string) int {
+	if isDXP2800GT(model) {
+		return csFloorPct
+	}
+	return 0
 }

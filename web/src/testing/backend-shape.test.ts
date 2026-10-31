@@ -63,7 +63,7 @@ test('fan status fixtures use only keys and types the Go backend emits, for ever
             const sub = fanShape.nested[key];
             if (sub && value && typeof value === 'object' && !Array.isArray(value)) {
                 for (const k of Object.keys(value)) if (!sub.includes(k)) problems.push(`${name}: ${key}.${k} is not emitted by the backend`);
-                for (const k of sub) if (!(k in value) && key !== 'sensors') problems.push(`${name}: ${key}.${k} is missing`);
+                for (const k of sub) if (!(k in value) && key !== 'sensors' && k !== 'min_pct_floor') problems.push(`${name}: ${key}.${k} is missing`);
             }
         }
         for (const key of fanShape.always) if (!(key in st)) problems.push(`${name}: key "${key}" is missing`);
@@ -87,6 +87,8 @@ test('fan status fixtures use only keys and types the Go backend emits, for ever
         if ((st.watchdog !== null) !== Boolean(model.fan?.watchdog)) problems.push(`${name}: watchdog is a sample exactly on the models with a petter`);
         if (st.watchdog && Object.keys(st.watchdog).sort().join() !== 'armed,interval,last_pet,state,time,timeout')
             problems.push(`${name}: watchdog keys differ from WatchdogStatus`);
+        if (model.fan?.minPctFloor !== (st.fan_caps as { min_pct_floor?: number } | undefined)?.min_pct_floor)
+            problems.push(`${name}: fan_caps.min_pct_floor follows the model's floor`);
         // A probe model has no confirmed map in the sample data: no fans, no daemon.
         if (model.fan?.kind === 'probe' && ('fans' in st || 'daemon' in st)) problems.push(`${name}: a probe model without a map has no fans and no daemon`);
     }
