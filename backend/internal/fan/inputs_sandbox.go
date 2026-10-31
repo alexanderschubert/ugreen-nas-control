@@ -149,14 +149,18 @@ func ScriptNames() []string {
 
 // runSandboxed starts path with args and an empty environment, no shell, no stdin, in its own process group, and gives
 // back its stdout. It fails when the timeout passes, more than maxOut bytes come, or the exit status is not 0; the
-// whole process group is killed in every failing case, so no child of the script survives.
-func runSandboxed(ctx context.Context, path string, args []string, timeout time.Duration, maxOut int) ([]byte, error) {
+// whole process group is killed in every failing case, so no child of the script survives. It runs in dir, or in / when
+// dir is empty.
+func runSandboxed(ctx context.Context, path string, args []string, dir string, timeout time.Duration, maxOut int) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.Command(path, args...)
 	cmd.Env = []string{} // empty, not nil: nil would hand over our environment
 	cmd.Dir = "/"
+	if dir != "" {
+		cmd.Dir = dir
+	}
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -227,7 +231,7 @@ func (r *Registry) readScript(ctx context.Context, name string) reading {
 		if err != nil {
 			return 0, err
 		}
-		out, err := runSandboxed(ctx, cmd[0], cmd[1:], scriptTimeout, scriptMaxOut)
+		out, err := runSandboxed(ctx, cmd[0], cmd[1:], "", scriptTimeout, scriptMaxOut)
 		if err != nil {
 			return 0, err
 		}
@@ -258,7 +262,7 @@ func readNvidia(ctx context.Context) (float64, error) {
 	if path == "" {
 		return 0, fmt.Errorf("nvidia-smi not found")
 	}
-	out, err := runSandboxed(ctx, path, []string{"--query-gpu=temperature.gpu", "--format=csv,noheader,nounits"}, scriptTimeout, 1024)
+	out, err := runSandboxed(ctx, path, []string{"--query-gpu=temperature.gpu", "--format=csv,noheader,nounits"}, "", scriptTimeout, 1024)
 	if err != nil {
 		return 0, fmt.Errorf("nvidia-smi %w", err)
 	}
@@ -286,6 +290,10 @@ var storcliPaths = storcliCandidates()
 
 // hbaTimeout: storcli talks to the controller firmware and takes longer than nvidia-smi.
 var hbaTimeout = 5 * time.Second
+
+// storcliWorkDir: storcli writes storcli.log into its working directory on every call; on Unraid that must be RAM
+// under /var/run, not / (also RAM) or the flash. The nolog argument is not used: its first version is unverified.
+var storcliWorkDir = envOr("UGREEN_STORCLI_DIR", "/var/run/ugreen-nas-control.storcli")
 
 func storcliCandidates() []string {
 	if p := envOr("UGREEN_STORCLI", ""); p != "" {
@@ -345,7 +353,12 @@ func readStorcli(ctx context.Context) (float64, error) {
 	if path == "" {
 		return 0, fmt.Errorf("storcli not found")
 	}
-	out, err := runSandboxed(ctx, path, []string{"/call", "show", "temperature"}, hbaTimeout, 16384)
+	if err := os.MkdirAll(storcliWorkDir, 0o700); err != nil {
+		return 0, fmt.Errorf("storcli: %w", unwrapPath(err))
+	}
+	out, err := runSandboxed(ctx, path, []string{"/call", "show", "temperature"}, storcliWorkDir, hbaTimeout, 16384)
+	// The log grows on every call (every 10 s); keep RAM flat.
+	_ = os.Remove(filepath.Join(storcliWorkDir, "storcli.log"))
 	if err != nil {
 		return 0, fmt.Errorf("storcli %w", err)
 	}

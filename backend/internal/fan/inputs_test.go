@@ -367,9 +367,9 @@ func fakeStorcli(t *testing.T, out string, exit int) (count string) {
 	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	old := storcliPaths
-	storcliPaths = []string{path}
-	t.Cleanup(func() { storcliPaths = old })
+	old, oldDir := storcliPaths, storcliWorkDir
+	storcliPaths, storcliWorkDir = []string{path}, filepath.Join(dir, "work")
+	t.Cleanup(func() { storcliPaths, storcliWorkDir = old, oldDir })
 	return count
 }
 
@@ -442,6 +442,32 @@ func TestHBAFromStorcliWithTTL(t *testing.T) {
 	r.Read(ctx, mustSpec(t, "hba"))
 	if n := runs(t, count); n != 2 {
 		t.Fatalf("after the TTL it must run again: %d", n)
+	}
+}
+
+func TestStorcliRunsInWorkDirAndLeavesNoLog(t *testing.T) {
+	fakeHBAHwmon(t, map[string][]string{})
+	fakeStorcli(t, "ROC temperature(Degree Celsius) = 55\\n", 0)
+	cwd := filepath.Join(t.TempDir(), "cwd")
+	body := "#!/bin/sh\necho log > storcli.log\npwd > " + cwd + "\necho 'ROC temperature(Degree Celsius) = 55'\n"
+	if err := os.WriteFile(storcliPaths[0], []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readStorcli(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(cwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want, _ := filepath.EvalSymlinks(storcliWorkDir); strings.TrimSpace(string(got)) != want {
+		t.Errorf("storcli ran in %q, want %q", strings.TrimSpace(string(got)), want)
+	}
+	if _, err := os.Stat(filepath.Join(storcliWorkDir, "storcli.log")); err == nil {
+		t.Error("storcli.log left in the work dir")
+	}
+	if _, err := os.Stat("/storcli.log"); err == nil {
+		t.Error("storcli.log written to /")
 	}
 }
 
