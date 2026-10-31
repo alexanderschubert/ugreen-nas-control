@@ -4,12 +4,12 @@
 //   bun plugin/tools/changes.ts release --version 5.0.1   (scheme: plugin/tools/version.ts)
 import { existsSync, readdirSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { releaseProblem, STABLE_RE } from './version.ts';
+import { BASE_RE, releaseProblem } from './version.ts';
 
 export const ROOT = join(import.meta.dir, '../..');
 export const TYPES = ['feat', 'fix', 'model', 'docs', 'chore'] as const;
 export type ChangeType = (typeof TYPES)[number];
-export const VERSION_RE = STABLE_RE;
+export const VERSION_RE = BASE_RE;
 
 const CHANGES_DIR = join(ROOT, '.changes');
 const CHANGELOG = join(ROOT, 'CHANGELOG.md');
@@ -97,7 +97,7 @@ async function check(): Promise<number> {
 
 async function release(version: string | undefined): Promise<number> {
     if (!version) {
-        console.error('usage: changes.ts release --version X.Y[.Z] (scheme: plugin/tools/version.ts)');
+        console.error('usage: changes.ts release --version X.Y.Z (scheme: plugin/tools/version.ts)');
         return 2;
     }
     const { fragments, errors } = readFragments();
@@ -138,7 +138,7 @@ if (import.meta.main) {
     if (cmd === 'check') process.exit(await check());
     else if (cmd === 'release') process.exit(await release(arg('version')));
     else {
-        console.error('usage: changes.ts check | release --version X.Y[.Z]');
+        console.error('usage: changes.ts check | release --version X.Y.Z');
         process.exit(2);
     }
 }

@@ -76,7 +76,7 @@ jobs:
             [ ! -d "$wt/site" ] || build site site lab/
           '
       # Next channel: the plg, its archive and checksums go into /next/ of this deployment (only the current build is hosted).
-      # Off unless the repository variable NEXT_CHANNEL_ENABLED is "true". Version X.(Y+1)-next.<run number>: Unraid compares as text, so run numbers only go up.
+      # Off unless the repository variable NEXT_CHANNEL_ENABLED is "true". Version X.(Y+1).0-next.<run number>: Unraid compares as text, so run numbers only go up.
       - name: Build the next channel
         if: vars.NEXT_CHANNEL_ENABLED == 'true'
         run: |

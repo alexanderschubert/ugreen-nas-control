@@ -1,11 +1,13 @@
 // Plugin version scheme. Unraid compares plugin versions with strcmp (webgui
 // dynamix.plugin.manager/scripts/plugin: install, update, updateall), so every version must sort right as text.
-//   stable  X.Y or X.Y.Z   one digit each ("5.0.10" would sort below "5.0.9"); X.Y.0 is written X.Y
-//   next    X.Y-next.NNNNNN   X.Y = the stable after the newest heading, N = CI run, zero-padded
+//   stable  X.Y.Z   one digit each ("5.0.10" would sort below "5.0.9"); always three parts
+//   next    X.Y.0-next.NNNNNN   X.Y.0 = the minor after the newest heading, N = CI run, zero-padded
 //   local   X.Y.Z.tYYYYMMDDHHMM   Z always written, so it sorts above its release and below the next patch
 // Policy: docs/releasing.md, section Versions.
 
-export const STABLE_RE = /^[1-9]\.\d(\.[1-9])?$/;
+// Headings up to 4.x are two-part (4.2 = 4.2.0); they stay valid as the base of a step, a new release is always X.Y.Z.
+export const STABLE_RE = /^[1-9]\.\d\.\d$/;
+export const BASE_RE = /^[1-9]\.\d(\.\d)?$/;
 
 export type Bump = 'patch' | 'minor' | 'major';
 export type FragmentType = 'feat' | 'fix' | 'model' | 'docs' | 'chore';
@@ -26,8 +28,8 @@ const parts = (v: string) => {
 export function successor(base: string, bump: Bump): string | null {
     const { x, y, z } = parts(base);
     if (bump === 'patch') return z >= 9 ? null : `${x}.${y}.${z + 1}`;
-    if (bump === 'minor') return y >= 9 ? null : `${x}.${y + 1}`;
-    return x >= 9 ? null : `${x + 1}.0`;
+    if (bump === 'minor') return y >= 9 ? null : `${x}.${y + 1}.0`;
+    return x >= 9 ? null : `${x + 1}.0.0`;
 }
 
 /** Which step takes `base` to `version`, or null when it is none of the allowed steps. */
@@ -36,10 +38,10 @@ export function bumpBetween(base: string, version: string): Bump | null {
     return null;
 }
 
-/** The minor release the next channel builds towards (after X.9 comes (X+1).0). */
+/** The minor release the next channel builds towards (after X.9.Z comes (X+1).0.0). */
 export function nextAfter(base: string): string {
     const { x, y } = parts(base);
-    return y >= 9 ? `${x + 1}.0` : `${x}.${y + 1}`;
+    return y >= 9 ? `${x + 1}.0.0` : `${x}.${y + 1}.0`;
 }
 
 export const nextVersion = (base: string, run: number | string) => `${nextAfter(base)}-next.${String(run).padStart(6, '0')}`;
@@ -50,7 +52,7 @@ export const localVersion = (base: string, stamp: string) => {
 
 /** Why `version` may not follow `newest` in CHANGELOG.md, or null. */
 export function releaseProblem(newest: string | undefined, version: string, fragments: FragmentType[]): string | null {
-    if (!STABLE_RE.test(version)) return `${version}: stable versions are X.Y or X.Y.Z with one digit each (Unraid compares plugin versions as text); X.Y.0 is written X.Y`;
+    if (!STABLE_RE.test(version)) return `${version}: stable versions are X.Y.Z with one digit each, all three parts written (Unraid compares plugin versions as text)`;
     if (!newest) return null;
     if (!(version > newest)) return `${version} does not sort above ${newest} as text; Unraid would not offer it as an update`;
     const bump = bumpBetween(newest, version);

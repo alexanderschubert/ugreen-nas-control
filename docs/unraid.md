@@ -93,7 +93,7 @@ Preparation on every build: note `cat /etc/unraid-version`, `php -v`, the server
 2. Plugins, Check for Updates, Update (or install the new `.plg`).
 3. Pass: log ends with `Installation complete.`; settings unchanged (`diff` of `fan.cfg`, `leds.cfg` before and after); old cache folder `/boot/config/plugins/ugreen-nas-control/<old version>/` is gone and the new one exists; other folders created by the user inside the boot folder are still there; fan duty never reads 0 % for more than one poll; one daemon process; the page works after a hard reload (no stale JS: `autov` and `tar -m` give new mtimes).
 4. Fail test: delete the archive from the cache folder before the install script runs (or point `<URL>` to a 404 in a local copy). Pass: the install fails with a non-zero exit, the old version keeps running, no half-installed tree.
-5. Version order: `5.0.9` then `5.1` and next `5.1-next.000042` between `5.0.3` and `5.2` (the loader uses `strcmp`, see [Versions](releasing.md#versions)); run the comparison in `plugin/tools/plg.ts check` locally.
+5. Version order: `5.0.9` then `5.1.0` and next `5.1.0-next.000042` between `5.0.3` and `5.2.0` (the loader uses `strcmp`, see [Versions](releasing.md#versions)); run the comparison in `plugin/tools/plg.ts check` locally.
 
 **C. Reboot**
 
@@ -111,7 +111,7 @@ Preparation on every build: note `cat /etc/unraid-version`, `php -v`, the server
 
 **E. Next and stable**
 
-1. With stable installed, `plugin install <next url>`. Pass: the install replaces stable in place, the Plugins page shows exactly one entry, the page shows `X.Y-next.NNNNNN`, settings kept.
+1. With stable installed, `plugin install <next url>`. Pass: the install replaces stable in place, the Plugins page shows exactly one entry, the page shows `X.Y.0-next.NNNNNN`, settings kept.
 2. `plugin install <stable url> forced`. Pass: as in B; one entry, icon and README shown (same plugin `name`).
 3. Update check: with next installed, "Check for updates" shows no update unless a newer next build or a newer stable exists.
 
