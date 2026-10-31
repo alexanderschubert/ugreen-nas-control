@@ -35,9 +35,9 @@ Columns: **US** this plugin; **FC2** FanCtrl Plus 2; **FC1** FanCtrl Plus; **DAF
 | Failsafe to 100 percent, BIOS values restored          | y       | ~   | n   | n   | y   | -   | -   | y   | -   |
 | Stall watchdog and notification                        | y       | ~   | n   | n   | y   | -   | -   | y   | -   |
 | Fan calibration (rpm per duty)                         | y       | n   | n   | n   | n   | -   | -   | n   | -   |
-| Fan speed history graph                                | n       | y   | n   | n   | n   | -   | -   | ~   | -   |
-| Fan settings export and import                         | ~       | y   | n   | n   | ~   | n   | n   | n   | -   |
-| Fan schedules, PID, mover or parity override           | n       | n   | n   | n   | n   | -   | -   | n   | -   |
+| Fan speed history graph                                | y       | y   | n   | n   | n   | -   | -   | ~   | -   |
+| Fan settings export and import                         | y       | y   | n   | n   | ~   | n   | n   | n   | -   |
+| Fan schedules, PID, mover or parity override           | ~       | n   | n   | n   | n   | -   | -   | n   | -   |
 | Per-LED colour, brightness, effects                    | y       | -   | -   | -   | -   | ~   | y   | y   | y   |
 | Disk-activity LEDs                                     | y       | -   | -   | -   | -   | y   | y   | y   | y   |
 | SMART, standby and parity states on LEDs               | y       | -   | -   | -   | -   | ~   | ~   | ~   | ~   |
