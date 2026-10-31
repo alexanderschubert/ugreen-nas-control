@@ -2,16 +2,16 @@
 
 # UGREEN NAS Control
 
-[![Release](https://img.shields.io/github/v/release/alexanderschubert/ugreen-nas-control?color=0078ff&label=release)](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/alexanderschubert/ugreen-nas-control/latest/total?color=00c853&label=downloads%20(latest))](https://github.com/alexanderschubert/ugreen-nas-control/releases/latest)
-[![Build](https://img.shields.io/github/actions/workflow/status/alexanderschubert/ugreen-nas-control/fan.yml?branch=main&label=build)](https://github.com/alexanderschubert/ugreen-nas-control/actions/workflows/fan.yml)
+[![Release](https://img.shields.io/github/v/release/ugreen-nas-control/ugreen-nas-control?color=0078ff&label=release)](https://github.com/ugreen-nas-control/ugreen-nas-control/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/ugreen-nas-control/ugreen-nas-control/latest/total?color=00c853&label=downloads%20(latest))](https://github.com/ugreen-nas-control/ugreen-nas-control/releases/latest)
+[![Build](https://img.shields.io/github/actions/workflow/status/ugreen-nas-control/ugreen-nas-control/fan.yml?branch=main&label=build)](https://github.com/ugreen-nas-control/ugreen-nas-control/actions/workflows/fan.yml)
 [![Unraid](https://img.shields.io/badge/Unraid-7.0%2B-f15a2c)](https://unraid.net)
 [![Models](https://img.shields.io/badge/models-DX%20%C2%B7%20DXP%20%C2%B7%20iDX-0078ff)](#supported-models)
 [![Fans](https://img.shields.io/badge/fan%20control-DXP6800%20Pro%20%C2%B7%20DXP4800%20GT-0078ff)](#supported-models)
-[![License: MIT](https://img.shields.io/github/license/alexanderschubert/ugreen-nas-control?color=lightgrey)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/alexanderschubert/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/alexanderschubert/ugreen-nas-control/stargazers)
+[![License: MIT](https://img.shields.io/github/license/ugreen-nas-control/ugreen-nas-control?color=lightgrey)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/ugreen-nas-control/ugreen-nas-control?style=flat&color=ffd60a)](https://github.com/ugreen-nas-control/ugreen-nas-control/stargazers)
 [![Unraid forum](https://img.shields.io/badge/support-Unraid%20forum-f15a2c)](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/)
-[![Issues](https://img.shields.io/github/issues/alexanderschubert/ugreen-nas-control?color=ff8c00)](https://github.com/alexanderschubert/ugreen-nas-control/issues)
+[![Issues](https://img.shields.io/github/issues/ugreen-nas-control/ugreen-nas-control?color=ff8c00)](https://github.com/ugreen-nas-control/ugreen-nas-control/issues)
 
 Unraid plugin for UGREEN NASync devices (DX, DXP and iDX series): **LED control**, a **case view** that draws your NAS
 with its real bays, ports, RAM and SSDs, **temperatures** of everything, and, for the **DXP6800 Pro and DXP4800 GT**, **fan control**
@@ -103,7 +103,7 @@ them. The bays are matched to the disks by SATA port, after
 | other UGREEN models | ata1 … ataN | **untested**, bay order guessed |
 
 For a model marked untested the LEDs page says so; check with *Identify* that the right bay blinks and report
-problems in the [issues](https://github.com/alexanderschubert/ugreen-nas-control/issues). The DXP2800 V1.2 and other models miskcoo lists as experimental are not
+problems in the [issues](https://github.com/ugreen-nas-control/ugreen-nas-control/issues). The DXP2800 V1.2 and other models miskcoo lists as experimental are not
 confirmed.
 
 ## Install
@@ -111,7 +111,7 @@ confirmed.
 Unraid 7.0 or newer. In **Plugins → Install Plugin**:
 
 ```
-https://raw.githubusercontent.com/alexanderschubert/ugreen-nas-control/main/plugin/ugreen-nas-control.plg
+https://raw.githubusercontent.com/ugreen-nas-control/ugreen-nas-control/main/plugin/ugreen-nas-control.plg
 ```
 
 Settings: **Settings → UGREEN NAS Control**. The page has a sidebar; the page title and the controller chips at the top follow the entry you open:
@@ -227,7 +227,7 @@ The interface is available in German, English and Spanish (`src/web/js/i18n.js`,
 
 ## Support
 
-Questions and problems: the [support thread in the Unraid forum](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/). Bug reports and feature requests are also welcome as [GitHub issues](https://github.com/alexanderschubert/ugreen-nas-control/issues). Please include your NAS model, the Unraid and plugin versions and the output of:
+Questions and problems: the [support thread in the Unraid forum](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/). Bug reports and feature requests are also welcome as [GitHub issues](https://github.com/ugreen-nas-control/ugreen-nas-control/issues). Please include your NAS model, the Unraid and plugin versions and the output of:
 
 ```
 /usr/local/emhttp/plugins/ugreen-nas-control/backend/ugreen-nas-fan status

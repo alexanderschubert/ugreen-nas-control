@@ -762,7 +762,7 @@
             ...lines,
             ...(comment ? ['', comment] : [])
         ].join('\n');
-        const url = `https://github.com/alexanderschubert/ugreen-nas-control/issues/new?labels=${encodeURIComponent('model-report')}&title=${encodeURIComponent(`Model report: ${model}`)}&body=${encodeURIComponent(body)}`;
+        const url = `https://github.com/ugreen-nas-control/ugreen-nas-control/issues/new?labels=${encodeURIComponent('model-report')}&title=${encodeURIComponent(`Model report: ${model}`)}&body=${encodeURIComponent(body)}`;
 
         window.open(url, '_blank', 'noopener');
     }
