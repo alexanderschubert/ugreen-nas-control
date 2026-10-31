@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestWriteFileIsAtomicAndLeavesNoTemp(t *testing.T) {
@@ -114,5 +115,34 @@ func TestWriteFileConcurrentWritersInOneProcess(t *testing.T) {
 	}
 	if st, err := os.Stat(p); err != nil || st.Mode().Perm() != 0o640 {
 		t.Errorf("mode %v %v", st, err)
+	}
+}
+
+func TestWriteFileSweepsOnlyStaleTemps(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "state")
+	stale, fresh, other := filepath.Join(dir, ".state.tmp111"), filepath.Join(dir, ".state.tmp222"), filepath.Join(dir, ".other.tmp333")
+	for _, f := range []string{stale, fresh, other} {
+		if err := os.WriteFile(f, []byte("x"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old := time.Now().Add(-time.Hour)
+	for _, f := range []string{stale, other} {
+		if err := os.Chtimes(f, old, old); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := WriteFile(p, []byte("data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(stale); err == nil {
+		t.Error("stale temp of this file kept")
+	}
+	if _, err := os.Stat(fresh); err != nil {
+		t.Error("fresh temp removed")
+	}
+	if _, err := os.Stat(other); err != nil {
+		t.Error("temp of another file removed")
 	}
 }

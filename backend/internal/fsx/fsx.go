@@ -6,11 +6,14 @@ package fsx
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
+	"time"
 )
 
 // WriteFile replaces path with data (like os.WriteFile, but atomic). A symbolic link at path is replaced, not followed.
 func WriteFile(path string, data []byte, perm os.FileMode) error {
+	sweepStale(filepath.Dir(path), filepath.Base(path))
 	// CreateTemp: O_EXCL, a name no other goroutine or process shares, never through a link. It creates 0600.
 	f, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".tmp*")
 	if err != nil {
@@ -40,7 +43,33 @@ func WriteFile(path string, data []byte, perm os.FileMode) error {
 		_ = os.Remove(tmp)
 		return err
 	}
+	// Make the rename itself durable; FAT and some filesystems cannot sync a directory, which is no failure.
+	if d, err := os.Open(filepath.Dir(path)); err == nil {
+		_ = d.Sync()
+		_ = d.Close()
+	}
 	return nil
+}
+
+// staleTemp is the age after which a temporary file of an earlier write counts as left by a crash.
+const staleTemp = time.Minute
+
+// sweepStale removes ".base.tmp*" files older than staleTemp: a crash between CreateTemp and rename would
+// otherwise leave one behind per crash on the flash behind /boot. Errors are ignored; the write goes on.
+func sweepStale(dir, base string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	prefix := "." + base + ".tmp"
+	for _, e := range entries {
+		if !strings.HasPrefix(e.Name(), prefix) || !e.Type().IsRegular() {
+			continue
+		}
+		if info, err := e.Info(); err == nil && time.Since(info.ModTime()) > staleTemp {
+			_ = os.Remove(filepath.Join(dir, e.Name()))
+		}
+	}
 }
 
 // OpenTrunc opens path for writing, emptied (a log that is rewritten); it fails on a symbolic link.
