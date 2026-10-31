@@ -185,7 +185,7 @@ Off by default. With `mqtt_enabled="1"` in `fan.cfg` the plugin starts a small p
 | `mqtt_control_updates` | `1` lets a display update plugins (off by default) |
 | `mqtt_control_containers` | `1` lets a display update Docker containers, one that Unraid lists as having a new image (off by default) |
 
-Topics below `ugreen-nas/<name>/`: `state` (temperatures, fans, bays, NVMe, network rates, alarms), `notifications` (Unraid's unread notifications), `updates` (updates Unraid already knows of), `availability` (`online`/`offline`), `cmd` (commands in) and `cmd_result` (answers out). The payloads are JSON.
+Topics below `ugreen-nas/<name>/`: `state` (temperatures, fans, bays, NVMe, network rates, free space of the array and the pools, a running parity check, alarms), `notifications` (Unraid's unread notifications), `updates` (updates Unraid already knows of), `availability` (`online`/`offline`), `cmd` (commands in) and `cmd_result` (answers out). The payloads are JSON.
 
 Commands are a fixed list: `reboot`, `shutdown` and `update` (a plugin that is on the updates list; containers and Unraid itself are refused). Each command carries a `ts` (at most 30 s old) and a unique `nonce`; repeated, late or too frequent commands are refused. Give the broker a user that may write `cmd` only where you want it, and keep the broker on your LAN.
 
