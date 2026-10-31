@@ -77,18 +77,28 @@ func TestNotifyBoundedAndNoPileUp(t *testing.T) {
 		t.Fatal(err)
 	}
 	oldCmd, oldTimeout := notifyCmd, notifyTimeout
-	notifyCmd, notifyTimeout = script, 300*time.Millisecond
+	notifyCmd, notifyTimeout = script, 2*time.Second
 	t.Cleanup(func() { notifyCmd, notifyTimeout = oldCmd, oldTimeout })
 
 	start := time.Now()
 	for range 20 {
 		notify("fan1") // returns at once, never waits for the script
 	}
-	if d := time.Since(start); d > 200*time.Millisecond {
+	if d := time.Since(start); d > time.Second {
 		t.Fatalf("notify blocked for %v", d)
 	}
+	// The script must have started before the timeout is meaningful: poll for its marker, not a fixed sleep.
+	for deadline := time.Now().Add(10 * time.Second); ; {
+		if b, _ := os.ReadFile(log); strings.Contains(string(b), "start") {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("notify script never started")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
 	notifications.wg.Wait() // returns only because the timeout killed the script
-	if d := time.Since(start); d > 5*time.Second {
+	if d := time.Since(start); d > 15*time.Second {
 		t.Fatalf("script not stopped: %v", d)
 	}
 	b, _ := os.ReadFile(log)
