@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/ugreen-nas-control/ugreen-nas-control/internal/fsx"
@@ -38,21 +37,13 @@ func (c *Ctl) daemonStart() int {
 }
 
 func (c *Ctl) daemonStop() int {
-	pid := 0
 	if c.daemonRunning() {
-		pid = pidFromFile(c.Env.PidFile)
-		c.killPid(c.Env.PidFile)
+		// It restores the LEDs itself on SIGTERM; the config is applied only once it is gone.
+		c.killPid(c.Env.PidFile, 50)
 	}
 	_ = os.Remove(c.Env.PidFile)
 
 	if c.isCS201x() {
-		// Let the daemon finish its last write first (it restores itself on SIGTERM, the second restore is a no-op).
-		for range 20 {
-			if pid == 0 || syscall.Kill(pid, 0) != nil {
-				break
-			}
-			c.Sleep(100 * time.Millisecond)
-		}
 		// Back to the state found before our first write, not to the saved manual settings.
 		c.cs201xRestore()
 		c.out("Status daemon stopped.\n")
@@ -93,7 +84,7 @@ func (c *Ctl) fxRunning() bool { return c.pidAlive(c.Env.FxPidFile) }
 
 func (c *Ctl) fxStop() {
 	if c.fxRunning() {
-		c.killPid(c.Env.FxPidFile)
+		c.killPid(c.Env.FxPidFile, 30)
 	}
 	_ = os.Remove(c.Env.FxPidFile)
 }

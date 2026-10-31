@@ -3,6 +3,7 @@
 package ledctl
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -48,8 +49,17 @@ type ExecChip struct {
 	Prefix []string
 }
 
+// A hung chip tool (a stuck i2c transfer) or helper (ip, udevadm, pgrep) must not hang the controller or its daemon.
+var (
+	chipTimeout = 30 * time.Second
+	toolTimeout = 20 * time.Second
+)
+
 func (e ExecChip) Exec(args []string, stdout, stderr io.Writer) int {
-	cmd := exec.Command(e.Path, append(slices.Clone(e.Prefix), args...)...)
+	ctx, cancel := context.WithTimeout(context.Background(), chipTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, e.Path, append(slices.Clone(e.Prefix), args...)...)
+	cmd.WaitDelay = time.Second
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	return exitCode(cmd.Run(), stderr, e.Path)
@@ -71,7 +81,10 @@ func exitCode(err error, stderr io.Writer, path string) int {
 type ExecRunner struct{}
 
 func (ExecRunner) Output(name string, args ...string) ([]byte, int) {
-	cmd := exec.Command(name, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), toolTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.WaitDelay = time.Second
 	out, err := cmd.Output()
 	return out, exitCode(err, nil, name)
 }
@@ -300,9 +313,29 @@ func pidFromFile(path string) int {
 	return pid
 }
 
-// killPid ends the process of a pidfile, if it is one of ours: a stale file never kills an unrelated process.
-func (c *Ctl) killPid(path string) {
-	if pid := pidFromFile(path); pid > 0 && proc.Ours(c.Env.Proc, pid) {
-		_ = syscall.Kill(pid, syscall.SIGTERM)
+// killPid ends the process of a pidfile, if it is one of ours (a stale file never kills an unrelated process), and
+// waits up to n tenths of a second for it to go. One that is still there then gets SIGKILL.
+func (c *Ctl) killPid(path string, n int) {
+	pid := pidFromFile(path)
+	if pid <= 0 || !proc.Ours(c.Env.Proc, pid) {
+		return
 	}
+	_ = syscall.Kill(pid, syscall.SIGTERM)
+	if c.waitGone(pid, n) {
+		return
+	}
+	if proc.Ours(c.Env.Proc, pid) {
+		_ = syscall.Kill(pid, syscall.SIGKILL)
+		c.waitGone(pid, 20)
+	}
+}
+
+func (c *Ctl) waitGone(pid, n int) bool {
+	for range n {
+		if syscall.Kill(pid, 0) != nil {
+			return true
+		}
+		c.Sleep(100 * time.Millisecond)
+	}
+	return syscall.Kill(pid, 0) != nil
 }

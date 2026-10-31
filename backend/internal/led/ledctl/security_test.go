@@ -171,3 +171,44 @@ func TestDaemonYieldsToALedRival(t *testing.T) {
 		t.Error("the daemon left its pidfile")
 	}
 }
+
+// A daemon that ignores SIGTERM is waited for and then killed; the caller never goes on while it still runs.
+func TestKillPidEscalatesToSIGKILL(t *testing.T) {
+	r := newRig(t, "DXP6800 Pro")
+	child := exec.Command("sh", "-c", `trap "" TERM; while :; do sleep 1; done`)
+	if err := child.Start(); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan struct{})
+	go func() { _ = child.Wait(); close(done) }()
+	t.Cleanup(func() { _ = child.Process.Kill() })
+	time.Sleep(200 * time.Millisecond) // the trap is set
+
+	proc := filepath.Join(r.dir, "proc")
+	pid := strconv.Itoa(child.Process.Pid)
+	if err := os.MkdirAll(filepath.Join(proc, pid), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(proc, pid, "cmdline"), []byte("/x/backend/ugreen-nas\x00led-ctl\x00daemon\x00run\x00"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r.c.Env.Proc = proc
+	r.write("run/pid", pid+"\n")
+	r.c.Sleep = time.Sleep
+	r.c.killPid(r.c.Env.PidFile, 2)
+	select {
+	case <-done:
+	default:
+		t.Fatal("killPid returned while the process still ran")
+	}
+}
+
+func TestExecRunnerTimesOut(t *testing.T) {
+	old := toolTimeout
+	toolTimeout = 200 * time.Millisecond
+	defer func() { toolTimeout = old }()
+	start := time.Now()
+	if _, code := (ExecRunner{}).Output("sleep", "30"); code == 0 || time.Since(start) > 5*time.Second {
+		t.Fatalf("code %d after %v", code, time.Since(start))
+	}
+}
