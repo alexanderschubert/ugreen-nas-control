@@ -128,20 +128,22 @@ type Alarm struct {
 }
 
 type PubState struct {
-	Time       int64     `json:"time"`
-	Model      string    `json:"model"`
-	Unraid     string    `json:"unraid"`
-	Uptime     int       `json:"uptime"`
-	Mode       string    `json:"mode"`
-	FanControl bool      `json:"fan_control"`
-	CPU        *int      `json:"cpu"`
-	Board      *int      `json:"board"`
-	CaseTemp   *int      `json:"case_temp"`
-	Fans       []PubFan  `json:"fans"`
-	Bays       []Bay     `json:"bays"`
-	NVMe       []PubNVMe `json:"nvme"`
-	Net        []PubNet  `json:"net"`
-	Alarms     []Alarm   `json:"alarms"`
+	Time       int64       `json:"time"`
+	Model      string      `json:"model"`
+	Unraid     string      `json:"unraid"`
+	Uptime     int         `json:"uptime"`
+	Mode       string      `json:"mode"`
+	FanControl bool        `json:"fan_control"`
+	CPU        *int        `json:"cpu"`
+	Board      *int        `json:"board"`
+	CaseTemp   *int        `json:"case_temp"`
+	Fans       []PubFan    `json:"fans"`
+	Bays       []Bay       `json:"bays"`
+	NVMe       []PubNVMe   `json:"nvme"`
+	Net        []PubNet    `json:"net"`
+	Storage    *PubStorage `json:"storage"`
+	Parity     *PubParity  `json:"parity"`
+	Alarms     []Alarm     `json:"alarms"`
 }
 
 type Notification struct {
@@ -453,6 +455,7 @@ func (c *collector) state(now time.Time) PubState {
 	if s.Bays == nil {
 		s.Bays = []Bay{}
 	}
+	s.Storage, s.Parity = readStorage(disksINI), readParity(varINI)
 	if st != nil {
 		s.CaseTemp = st.CaseTemp
 		s.Mode = st.Mode
