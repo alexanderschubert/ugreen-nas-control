@@ -333,7 +333,9 @@ export const nl: Record<Key, string> = {
     'about.license_badge': 'MIT-licentie',
     'about.github_hint': 'Broncode, releases en wijzigingen',
     'about.issues': 'Een probleem melden',
-    'about.issues_hint': 'Problemen en verzoeken als issue',
+    'about.issues_hint': 'Bugs en modelmeldingen als issue',
+    'about.discussions': 'Vragen en ideeën',
+    'about.discussions_hint': 'Vragen, ideeën en je opstelling in Discussions',
     'about.thanks': 'Met dank aan',
     'about.thanks_text':
         '<a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a> (protocol en bay-indeling van de LED-besturing), <a href="https://github.com/alexanderschubert" target="_blank" rel="noopener">Alexander</a> en <a href="https://github.com/j3n57h0m45" target="_blank" rel="noopener">j3n57h0m45</a> (ontwikkeling van UGREEN NAS Control; j3n57h0m45 ook de ondersteuning van de DXP4800 GT: ventilatoren via de IT5571, LED’s, behuizings- en systeemweergaven en het nieuwe ontwerp van de interface), <a href="https://github.com/ivolution" target="_blank" rel="noopener">ivolution</a> (Spaanse vertaling) en iedereen die op zijn eigen model heeft getest',

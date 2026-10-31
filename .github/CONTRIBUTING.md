@@ -1,6 +1,6 @@
 # Contributing
 
-Bug reports, model reports, translations and code are welcome. Be kind: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Bug reports, model reports, ideas, translations and code are welcome. Be kind: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ## Setup
 
@@ -43,6 +43,20 @@ Everything `just check` runs (format, PHP syntax, XML, docs links, models, gener
 
 [docs/cli.md](../docs/cli.md#report-a-model) (`ugreen-nas-ctl report` and the form). To add the model yourself: [docs/development.md](../docs/development.md#add-a-model); status words: [docs/hardware.md](../docs/hardware.md#how-verification-works).
 
-## Bugs and ideas
+## Where to ask
 
-Use the [issue forms](https://github.com/alexanderschubert/ugreen-nas-control/issues/new/choose) or ask in the [forum thread](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/). Security problems: [SECURITY.md](SECURITY.md).
+| What                             | Where                                                                                                                                                                                                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Question, setup help             | [Discussions, Q&A](https://github.com/alexanderschubert/ugreen-nas-control/discussions/categories/q-a) or the [Unraid forum thread](https://forums.unraid.net/topic/201044-plugin-ugreen-nas-control-led-fan-and-system-control-for-ugreen-dxdxp-nas/) |
+| Feature wish, proposal           | [Discussions, Ideas](https://github.com/alexanderschubert/ugreen-nas-control/discussions/categories/ideas); an agreed change becomes a feature issue                                                                                                   |
+| Your setup, a showcase           | [Discussions, Show and tell](https://github.com/alexanderschubert/ugreen-nas-control/discussions/categories/show-and-tell)                                                                                                                             |
+| Bug                              | [Bug form](https://github.com/alexanderschubert/ugreen-nas-control/issues/new?template=bug.yml)                                                                                                                                                        |
+| New model or what works on yours | [Model report](../docs/cli.md#report-a-model)                                                                                                                                                                                                          |
+| Security problem                 | [SECURITY.md](SECURITY.md)                                                                                                                                                                                                                             |
+
+## Labels
+
+- Type, matching the `.changes` fragment type: `bug` = fix, `enhancement` = feat, `model` = model, `documentation` = docs, `chore` = chore. `no-changelog`: the CI guard skips the fragment check.
+- Area: `area: fans`, `area: leds`, `area: ui`, `area: site`, `area: tooling`.
+- Status: `needs hardware test` (writes registers or unconfirmed hardware: test on a device before release), `release` (release prep and tracking).
+- Other: `model-report`, `good first issue`, `help wanted`.

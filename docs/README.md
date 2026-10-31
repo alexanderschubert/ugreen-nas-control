@@ -5,7 +5,7 @@ One line per file: what it answers. One topic per file; a topic that appears els
 ## Using the plugin
 
 - [README.md](../README.md) — What the plugin does, how to install it, which models are verified.
-- [docs/faq.md](faq.md) — Is my model supported, what to send with a support request, the disclaimer.
+- [docs/faq.md](faq.md) — Is my model supported, where to ask, what to send with a support request, the disclaimer.
 - [docs/hardware.md](hardware.md) — What each verification status means, the per-model evidence, how to add a model.
 - [docs/cli.md](cli.md) — Which commands exist (`ugreen-nas-fan`, `ugreen-nas-ctl`), what `status` and `report` print, how to report a model.
 - [docs/mqtt.md](mqtt.md) — How to publish status to MQTT or Home Assistant, and which commands a display may send.

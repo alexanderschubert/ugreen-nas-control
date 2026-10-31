@@ -323,7 +323,9 @@ export const zh: Record<Key, string> = {
     'about.license_badge': 'MIT 许可证',
     'about.github_hint': '源代码、发行版和更新记录',
     'about.issues': '报告问题',
-    'about.issues_hint': '以 issue 形式提交问题和需求',
+    'about.issues_hint': '以 issue 形式提交缺陷和型号报告',
+    'about.discussions': '提问与分享',
+    'about.discussions_hint': '在 Discussions 中提问、提出想法、展示你的配置',
     'about.thanks': '致谢',
     'about.thanks_text':
         '<a href="https://github.com/miskcoo/ugreen_leds_controller" target="_blank" rel="noopener">miskcoo</a>（LED 控制的协议和盘位映射）、<a href="https://github.com/alexanderschubert" target="_blank" rel="noopener">Alexander</a> 和 <a href="https://github.com/j3n57h0m45" target="_blank" rel="noopener">j3n57h0m45</a>（UGREEN NAS Control 的开发；j3n57h0m45 还负责 DXP4800 GT 的支持：通过 IT5571 的风扇控制、LED、机箱和系统视图，以及界面的重新设计）、<a href="https://github.com/ivolution" target="_blank" rel="noopener">ivolution</a>（西班牙语翻译），以及所有在自己的型号上测试过的人',
