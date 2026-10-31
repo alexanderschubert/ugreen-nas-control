@@ -354,3 +354,33 @@ func TestReadNetIO(t *testing.T) {
 		t.Errorf("net_io %+v", got)
 	}
 }
+
+func TestMaxLinkSpeedMissIsNotPermanent(t *testing.T) {
+	oldEth, oldCache, oldTTL := ethtoolBn, cacheDir, missTTL
+	t.Cleanup(func() { ethtoolBn, cacheDir, missTTL = oldEth, oldCache, oldTTL })
+	cacheDir = t.TempDir()
+	dir := t.TempDir()
+	// No binary: nothing is cached.
+	ethtoolBn = filepath.Join(dir, "missing")
+	if n := maxLinkSpeed("eth9"); n != 0 {
+		t.Fatalf("got %d", n)
+	}
+	if _, err := os.Stat(cachePath("maxspeed_miss")); err == nil {
+		t.Error("a missing ethtool was cached as a miss")
+	}
+	// ethtool fails: a miss, believed for the TTL only.
+	bad := filepath.Join(dir, "bad.sh")
+	os.WriteFile(bad, []byte("#!/bin/sh\nexit 1\n"), 0o755)
+	good := filepath.Join(dir, "good.sh")
+	os.WriteFile(good, []byte("#!/bin/sh\necho '	Supported link modes:   2500baseT/Full'\necho '	Supported pause frame use: Symmetric'\n"), 0o755)
+	ethtoolBn = bad
+	maxLinkSpeed("eth9")
+	ethtoolBn = good
+	if n := maxLinkSpeed("eth9"); n != 0 {
+		t.Errorf("miss not remembered within the TTL: %d", n)
+	}
+	missTTL = 0
+	if n := maxLinkSpeed("eth9"); n != 2500 {
+		t.Errorf("miss never expires: %d", n)
+	}
+}

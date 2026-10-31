@@ -3,6 +3,8 @@ package fan
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -480,19 +482,29 @@ const toolTimeout = 10 * time.Second
 
 var linkModeRe = regexp.MustCompile(`(\d+)base`)
 
+// missTTL is how long "ethtool said no for this port" is believed: a NIC that was not ready at boot gets asked again.
+var missTTL = 10 * time.Minute
+
 func maxLinkSpeed(name string) int {
 	speeds := map[string]int{}
 	readCache("maxspeed", &speeds)
-	if n := speeds[name]; n != 0 {
-		return max(n, 0) // -1: ethtool said no for this port (virtual, no driver support), do not ask again
+	if n := speeds[name]; n > 0 {
+		return n
+	}
+	// The failures live in their own file with the time of the miss (unix seconds); a stale -1 in "maxspeed" is ignored.
+	misses := map[string]int64{}
+	readCache("maxspeed_miss", &misses)
+	if t, ok := misses[name]; ok && time.Since(time.Unix(t, 0)) < missTTL {
+		return 0
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), toolTimeout)
 	defer cancel()
 	out, err := exec.CommandContext(ctx, ethtoolBn, name).Output()
 	if err != nil {
-		if ctx.Err() == nil {
-			speeds[name] = -1
-			writeCache("maxspeed", speeds)
+		// Only an answer of ethtool itself is a miss: no binary, a timeout or a cancel says nothing about the port.
+		if ctx.Err() == nil && !errors.Is(err, exec.ErrNotFound) && !errors.Is(err, fs.ErrNotExist) {
+			misses[name] = time.Now().Unix()
+			writeCache("maxspeed_miss", misses)
 		}
 		return 0
 	}
