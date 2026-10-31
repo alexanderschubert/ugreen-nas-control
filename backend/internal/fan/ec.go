@@ -55,6 +55,15 @@ const (
 // Longest wait for IBF or OBF; a variable so that the test can shorten it.
 var ecWait = 500 * time.Millisecond
 
+// After a call timed out in every try, the controller counts as unresponsive for this long: the rest of that tick fails at once
+// instead of spending ecTries x ecWait on every register. A healthy controller never reaches it. A variable for tests.
+var ecDeadFor = time.Second
+
+var (
+	errECTimeout      = errors.New("embedded controller timeout")
+	errECUnresponsive = errors.New("embedded controller unresponsive")
+)
+
 // IT5571 channels as wired on the DXP4800 GT: fan1 is the CPU fan, fan3 the case fan (mode 0xb0/0xb4, duty
 // 0xb1/0xb5, tach 0x34-35/0x38-39: ug_it55_4800gt_functions.c:27-30,38-41@c75c5ab). fan2 and fan4 read 0 on this
 // model and are left alone (compiled out there, :31-36,42-47). The tach is a 16-bit big-endian counter that UGREEN
@@ -131,10 +140,11 @@ var (
 )
 
 type EC struct {
-	ports  Ports
-	spec   ecSpec
-	idNote string // chip id warning of a softID spec
-	fed    bool   // this process fed the watchdog (Petter.tickEC); only then does Restore clear the enable byte
+	ports     Ports
+	spec      ecSpec
+	idNote    string    // chip id warning of a softID spec
+	fed       bool      // this process fed the watchdog (Petter.tickEC); only then does Restore clear the enable byte
+	deadUntil time.Time // unresponsive until then (see ecDeadFor)
 }
 
 func (c *EC) sp() ecSpec {
@@ -221,7 +231,7 @@ func (c *EC) wait(flag byte, set bool) error {
 			return nil
 		}
 		if time.Now().After(deadline) {
-			return fmt.Errorf("embedded controller timeout (status 0x%02x)", st)
+			return fmt.Errorf("%w (status 0x%02x)", errECTimeout, st)
 		}
 		time.Sleep(ecPoll)
 	}
@@ -235,11 +245,17 @@ func (c *EC) send(port uint16, v byte) error {
 }
 
 func (c *EC) retry(fn func() error) (err error) {
+	if time.Now().Before(c.deadUntil) {
+		return errECUnresponsive
+	}
 	for i := 0; i < ecTries; i++ {
 		if err = fn(); err == nil {
 			return nil
 		}
 		time.Sleep(time.Duration(i+1) * 5 * time.Millisecond)
+	}
+	if errors.Is(err, errECTimeout) {
+		c.deadUntil = time.Now().Add(ecDeadFor)
 	}
 	return err
 }
