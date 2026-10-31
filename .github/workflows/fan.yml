@@ -4,8 +4,8 @@ on:
   push:
     branches: [main]
     paths: [fan/**, led/**, src/**, plugin/**, scripts/**, .github/workflows/fan.yml]
+  # Every pull request: main requires these checks, and a check that never ran would block a docs-only change forever.
   pull_request:
-    paths: [fan/**, led/**, src/**, plugin/**, scripts/**, .github/workflows/fan.yml]
 
 permissions:
   contents: read
