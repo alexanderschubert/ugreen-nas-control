@@ -167,6 +167,13 @@ function fan_profile_valid_key(string $key): bool
     return fan_v2_known($key) || in_array($key, array_merge(FAN_V1_INT, FAN_V1_BOOL, FAN_V1_TEXT, ['ignore_drives']), true);
 }
 
+// Timestamps the page shows: the harness start when the clock is frozen (e2e), else now.
+function fx_time(): int
+{
+    $h = $GLOBALS['fx']['history'];
+    return ($h['frozen'] ?? false) ? (int) $h['born'] : time();
+}
+
 // The history was generated when the harness started; it moves on with the clock, in whole minutes (the steps of both ranges).
 function fan_history_shifted(array $h): array
 {
@@ -259,7 +266,7 @@ function fan_get(string $action, array $fan, array $status, array $state): void
                 'power' => $panel['power'],
                 'reset' => $panel['reset'],
                 'power_readable' => $panel['power_readable'],
-                'time' => time(),
+                'time' => fx_time(),
             ]);
     }
 }
@@ -390,9 +397,9 @@ function fan_post(string $action, array $fan, array $status, array $state, calla
                 fan_fail('fan control is switched off in the settings', 409);
             }
             $proposal = $fan['probe']['proposal'];
-            $proposal['time'] = time();
+            $proposal['time'] = fx_time();
             $steps = count($proposal['outputs']);
-            $save(['fan_proposal' => $proposal, 'fan_progress' => ['state' => 'done', 'step' => $steps, 'steps' => $steps, 'time' => time()]]);
+            $save(['fan_proposal' => $proposal, 'fan_progress' => ['state' => 'done', 'step' => $steps, 'steps' => $steps, 'time' => fx_time()]]);
             out(['ok' => true]);
             // no break
         case 'fan_probe_confirm':
@@ -426,7 +433,7 @@ function fan_post(string $action, array $fan, array $status, array $state, calla
                 }
                 $outputs[] = ['id' => str_replace('pwm', 'fan', (string) $pwm), 'role' => $role, 'pwm' => (string) $pwm, 'tach' => $found['tach']];
             }
-            $map = ['version' => 1, 'model' => $fan['meta']['dmi'], 'chip' => $proposal['chip'], 'time' => time(), 'outputs' => $outputs];
+            $map = ['version' => 1, 'model' => $fan['meta']['dmi'], 'chip' => $proposal['chip'], 'time' => fx_time(), 'outputs' => $outputs];
             $save(['fan_map' => $map, 'fan_proposal' => null]);
             out(['ok' => true, 'map' => $map]);
             // no break
@@ -455,7 +462,7 @@ function fan_post(string $action, array $fan, array $status, array $state, calla
             foreach ($ids as $id) {
                 $outputs[] = ['id' => $id, 'role' => $id === 'fan1' ? 'cpu' : 'case', 'pwm' => 'duty', 'tach' => 'rpm'];
             }
-            $map = ['version' => 1, 'model' => $fan['meta']['dmi'], 'chip' => 'CS201x', 'time' => time(), 'outputs' => $outputs];
+            $map = ['version' => 1, 'model' => $fan['meta']['dmi'], 'chip' => 'CS201x', 'time' => fx_time(), 'outputs' => $outputs];
             $save(['fan_map' => $map]);
             out(['ok' => true, 'map' => $map]);
             // no break
@@ -473,9 +480,9 @@ function fan_post(string $action, array $fan, array $status, array $state, calla
             if (!in_array($mode, $ac['settable'], true)) {
                 fan_fail('this model does not offer that mode: no "last state" value here', 409);
             }
-            $save(['power_ac_mode' => $mode, 'power_ac_last' => ['mode' => $mode, 'time' => time()]]);
+            $save(['power_ac_mode' => $mode, 'power_ac_last' => ['mode' => $mode, 'time' => fx_time()]]);
             $state['power_ac_mode'] = $mode;
-            $state['power_ac_last'] = ['mode' => $mode, 'time' => time()];
+            $state['power_ac_last'] = ['mode' => $mode, 'time' => fx_time()];
             out(['ok' => true, 'set' => $mode] + power_ac_answer($state) + ['verified' => $ac['readable']]);
             // no break
         case 'panel_beep':
