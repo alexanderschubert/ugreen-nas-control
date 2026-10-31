@@ -65,6 +65,10 @@ func (e ExecChip) Exec(args []string, stdout, stderr io.Writer) int {
 	return exitCode(cmd.Run(), stderr, e.Path)
 }
 
+// stopWait is how long a stop waits for a daemon after SIGTERM, in tenths of a second: longer than one chip call
+// (chipTimeout), so a daemon blocked in ExecChip while it restores the LEDs is not SIGKILLed mid-restore.
+func stopWait() int { return int((chipTimeout + 5*time.Second) / (100 * time.Millisecond)) }
+
 func exitCode(err error, stderr io.Writer, path string) int {
 	if err == nil {
 		return 0

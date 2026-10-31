@@ -39,7 +39,7 @@ func (c *Ctl) daemonStart() int {
 func (c *Ctl) daemonStop() int {
 	if c.daemonRunning() {
 		// It restores the LEDs itself on SIGTERM; the config is applied only once it is gone.
-		c.killPid(c.Env.PidFile, 50)
+		c.killPid(c.Env.PidFile, stopWait())
 	}
 	_ = os.Remove(c.Env.PidFile)
 
@@ -84,7 +84,7 @@ func (c *Ctl) fxRunning() bool { return c.pidAlive(c.Env.FxPidFile) }
 
 func (c *Ctl) fxStop() {
 	if c.fxRunning() {
-		c.killPid(c.Env.FxPidFile, 30)
+		c.killPid(c.Env.FxPidFile, stopWait())
 	}
 	_ = os.Remove(c.Env.FxPidFile)
 }
