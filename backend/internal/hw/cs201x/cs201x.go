@@ -8,6 +8,9 @@ package cs201x
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/ugreen-nas-control/ugreen-nas-control/internal/hw"
 )
@@ -46,19 +49,37 @@ type Window struct {
 	Base    uint16
 }
 
+// holdSignals keeps SIGTERM, SIGINT and SIGHUP from killing the process while the config window is unlocked; the
+// returned func hands a caught signal back to the process once the window is closed (default action, or the handler
+// of a daemon).
+func holdSignals() (release func()) {
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
+	return func() {
+		signal.Stop(ch)
+		select {
+		case s := <-ch:
+			_ = syscall.Kill(os.Getpid(), s.(syscall.Signal))
+		default:
+		}
+	}
+}
+
 // ReadWindow opens the Super-I/O window, reads chip id, revision, the host interface state and the base address,
 // and closes it again. It writes the unlock key, the device number and, only with enableHost and only when the
 // interface is off, cfg 0x30 = 1 (ug_201x.c:264-266: UGREEN does that on every load). A chip id other than
 // CS201x ends it before the device number is written.
 func ReadWindow(p hw.Ports, enableHost bool) (w Window, err error) {
-	for _, b := range enterKey {
-		if err := p.Out(sioIndex, b); err != nil {
-			return w, err
-		}
-	}
+	defer holdSignals()()
 	leave := func() {
 		for _, b := range exitKey {
 			_ = p.Out(sioIndex, b)
+		}
+	}
+	for _, b := range enterKey {
+		if err := p.Out(sioIndex, b); err != nil {
+			leave() // part of the key may be in: the exit key resets the unlock state machine
+			return w, err
 		}
 	}
 	read := func(reg byte) byte {

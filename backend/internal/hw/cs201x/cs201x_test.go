@@ -1,8 +1,12 @@
 package cs201x
 
 import (
+	"errors"
+	"os"
+	"os/signal"
 	"path/filepath"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 
@@ -150,5 +154,63 @@ func TestLockPathMatchesSharedHelper(t *testing.T) {
 	t.Setenv(hw.LockEnv, "")
 	if LockPath() != hw.DefaultLockPath {
 		t.Errorf("default %q", LockPath())
+	}
+}
+
+// idxLog records what goes to the index port; failAt (1-based, 0 = never) fails that write; onWrite runs after a write.
+type idxLog struct {
+	*fakeChip
+	idxOut  []byte
+	failAt  int
+	onWrite func(n int)
+}
+
+func (l *idxLog) Out(port uint16, v byte) error {
+	if port == sioIndex {
+		l.idxOut = append(l.idxOut, v)
+		if n := len(l.idxOut); n == l.failAt {
+			return errors.New("port write failed")
+		} else if l.onWrite != nil {
+			l.onWrite(n)
+		}
+	}
+	return l.fakeChip.Out(port, v)
+}
+
+func hasSuffix(b, tail []byte) bool {
+	return len(b) >= len(tail) && string(b[len(b)-len(tail):]) == string(tail)
+}
+
+func TestReadWindowLeavesAfterKeyError(t *testing.T) {
+	l := &idxLog{fakeChip: newChip(), failAt: 2}
+	if _, err := ReadWindow(l, false); err == nil {
+		t.Fatal("want the write error")
+	}
+	if !hasSuffix(l.idxOut, exitKey) {
+		t.Fatalf("exit key missing after a failed unlock: % x", l.idxOut)
+	}
+}
+
+func TestReadWindowHoldsSignal(t *testing.T) {
+	got := make(chan os.Signal, 1)
+	signal.Notify(got, syscall.SIGHUP) // a handler, so the re-sent signal does not end the test
+	defer signal.Stop(got)
+	l := &idxLog{fakeChip: newChip()}
+	l.onWrite = func(n int) {
+		if n == 4 { // inside the config window
+			_ = syscall.Kill(os.Getpid(), syscall.SIGHUP)
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+	if _, err := ReadWindow(l, false); err != nil {
+		t.Fatal(err)
+	}
+	if !hasSuffix(l.idxOut, exitKey) {
+		t.Fatalf("window not closed: % x", l.idxOut)
+	}
+	select {
+	case <-got:
+	case <-time.After(2 * time.Second):
+		t.Fatal("signal not handed back after the window closed")
 	}
 }
