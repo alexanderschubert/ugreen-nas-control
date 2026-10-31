@@ -32,6 +32,9 @@ var (
 	procNetDev   = envOr("UGREEN_PROC_NET_DEV", "/proc/net/dev")
 	powerdownBin = envOr("UGREEN_POWERDOWN", "/usr/local/sbin/powerdown")
 	pluginBin    = envOr("UGREEN_PLUGIN_BIN", "/usr/local/sbin/plugin")
+	dockerBin    = envOr("UGREEN_DOCKER_BIN", "/usr/bin/docker")
+	// Unraid's own script for pulling a new image and recreating a container, the same one its Docker page uses.
+	updateContainerBin = envOr("UGREEN_UPDATE_CONTAINER", "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container")
 )
 
 // MQTTConfig is read from the same fan.cfg as the fan settings.
@@ -45,9 +48,11 @@ type MQTTConfig struct {
 	// Name is the part of the topics that tells this NAS from another one.
 	Name     string
 	Interval time.Duration
-	// Control: restart and shut down. ControlUpdates: update plugins. Both off unless switched on.
-	Control        bool
-	ControlUpdates bool
+	// Control: restart and shut down. ControlUpdates: update plugins. ControlContainers: update containers.
+	// All off unless switched on.
+	Control           bool
+	ControlUpdates    bool
+	ControlContainers bool
 }
 
 var nameRe = regexp.MustCompile(`[^a-zA-Z0-9_-]`)
@@ -55,16 +60,17 @@ var nameRe = regexp.MustCompile(`[^a-zA-Z0-9_-]`)
 func LoadMQTTConfig(path string) MQTTConfig {
 	v := readValues(path)
 	c := MQTTConfig{
-		Enabled:        v["mqtt_enabled"] == "1",
-		Host:           v["mqtt_host"],
-		Port:           1883,
-		TLS:            v["mqtt_tls"] == "1",
-		User:           v["mqtt_user"],
-		Pass:           v["mqtt_pass"],
-		Name:           nameRe.ReplaceAllString(v["mqtt_name"], ""),
-		Interval:       5 * time.Second,
-		Control:        v["mqtt_control"] == "1",
-		ControlUpdates: v["mqtt_control_updates"] == "1",
+		Enabled:           v["mqtt_enabled"] == "1",
+		Host:              v["mqtt_host"],
+		Port:              1883,
+		TLS:               v["mqtt_tls"] == "1",
+		User:              v["mqtt_user"],
+		Pass:              v["mqtt_pass"],
+		Name:              nameRe.ReplaceAllString(v["mqtt_name"], ""),
+		Interval:          5 * time.Second,
+		Control:           v["mqtt_control"] == "1",
+		ControlUpdates:    v["mqtt_control_updates"] == "1",
+		ControlContainers: v["mqtt_control_containers"] == "1",
 	}
 	if c.TLS {
 		c.Port = 8883
@@ -494,8 +500,10 @@ const (
 type commander struct {
 	cfg     MQTTConfig
 	updates func() []Update
-	run     func(name string, args ...string) error
-	delay   time.Duration
+	// containers returns the names of the containers that were created from an image.
+	containers func(image string) ([]string, error)
+	run        func(name string, args ...string) error
+	delay      time.Duration
 
 	mu    sync.Mutex
 	seen  map[string]time.Time
@@ -545,46 +553,101 @@ func (c *commander) handle(raw []byte, now time.Time) (res cmdResult, after func
 		return reject("too fast, wait a moment")
 	}
 
-	var prog []string
+	var progs [][]string
 	switch cmd.Cmd {
 	case "reboot", "shutdown":
 		if !c.cfg.Control {
 			return reject("remote control is switched off")
 		}
-		prog = []string{powerdownBin}
+		prog := []string{powerdownBin}
 		if cmd.Cmd == "reboot" {
 			prog = append(prog, "-r")
 		}
+		progs = [][]string{prog}
 	case "update":
-		if !c.cfg.ControlUpdates {
-			return reject("updates from the display are switched off")
-		}
-		if cmd.Target != "plugin" {
-			return reject("only plugin updates can be installed this way")
-		}
-		file := ""
-		for _, u := range c.updates() {
-			if u.Kind == "plugin" && u.Name == cmd.Name {
-				file = u.File
+		switch cmd.Target {
+		case "plugin":
+			if !c.cfg.ControlUpdates {
+				return reject("updates from the display are switched off")
 			}
+			file := ""
+			for _, u := range c.updates() {
+				if u.Kind == "plugin" && u.Name == cmd.Name {
+					file = u.File
+				}
+			}
+			if file == "" || filepath.Base(file) != file {
+				return reject("no such update")
+			}
+			progs = [][]string{{pluginBin, "update", file}}
+		case "container":
+			if !c.cfg.ControlContainers {
+				return reject("container updates from the display are switched off")
+			}
+			known := false
+			for _, u := range c.updates() {
+				if u.Kind == "container" && u.Name == cmd.Name {
+					known = true
+				}
+			}
+			if !known {
+				return reject("no such update")
+			}
+			names, err := c.containers(cmd.Name)
+			if err != nil || len(names) == 0 {
+				return reject("no container found for that image")
+			}
+			for _, n := range names {
+				if !containerNameRe.MatchString(n) {
+					return reject("container name not allowed")
+				}
+				progs = append(progs, []string{updateContainerBin, n})
+			}
+		default:
+			return reject("only plugin and container updates can be installed this way")
 		}
-		if file == "" || filepath.Base(file) != file {
-			return reject("no such update")
-		}
-		prog = []string{pluginBin, "update", file}
 	default:
 		return reject("unknown command")
 	}
 
 	c.lastC = now
-	fmt.Printf("command %q accepted: %s\n", cmd.Cmd, strings.Join(prog, " "))
+	for _, p := range progs {
+		fmt.Printf("command %q accepted: %s\n", cmd.Cmd, strings.Join(p, " "))
+	}
 	res.OK, res.Text = true, "started"
 	return res, func() {
 		time.Sleep(c.delay)
-		if err := c.run(prog[0], prog[1:]...); err != nil {
-			fmt.Printf("command %q failed: %v\n", cmd.Cmd, err)
+		for _, p := range progs {
+			if err := c.run(p[0], p[1:]...); err != nil {
+				fmt.Printf("command %q failed: %v\n", cmd.Cmd, err)
+			}
 		}
 	}
+}
+
+// containerNameRe is what Docker allows for a container name; anything else is not passed to a program.
+var containerNameRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`)
+
+// dockerContainers lists the containers created from image. Unraid names an update by its image, but the
+// update script wants the container's name.
+func dockerContainers(image string) ([]string, error) {
+	out, err := exec.Command(dockerBin, "ps", "-a", "--format", "{{.Names}}\t{{.Image}}").Output()
+	if err != nil {
+		return nil, err
+	}
+	return matchContainers(string(out), image), nil
+}
+
+func matchContainers(listing, image string) []string {
+	norm := func(s string) string { return strings.TrimPrefix(strings.TrimSpace(s), "library/") }
+	var names []string
+	for _, l := range strings.Split(listing, "\n") {
+		f := strings.SplitN(l, "\t", 2)
+		if len(f) == 2 && norm(f[1]) == norm(image) {
+			names = append(names, strings.TrimSpace(f[0]))
+		}
+	}
+	return names
 }
 
 func execRun(name string, args ...string) error {
@@ -604,7 +667,7 @@ func runPublish() error {
 
 	prefix := "ugreen-nas/" + cfg.Name + "/"
 	col := &collector{cfgPath: configPath, statusFn: collectLive}
-	cmdr := &commander{cfg: cfg, run: execRun, delay: time.Second,
+	cmdr := &commander{cfg: cfg, run: execRun, containers: dockerContainers, delay: time.Second,
 		updates: func() []Update { return readUpdates(pluginsBoot, pluginsFresh, dockerStatus, unraidCheck) }}
 
 	client := &mqttClient{
@@ -631,7 +694,7 @@ func runPublish() error {
 		last = map[string][]byte{}
 		lastMu.Unlock()
 		_ = client.publish(prefix+"availability", []byte("online"), true)
-		if cfg.Control || cfg.ControlUpdates {
+		if cfg.Control || cfg.ControlUpdates || cfg.ControlContainers {
 			_ = client.subscribe(prefix + "cmd")
 		}
 	}
