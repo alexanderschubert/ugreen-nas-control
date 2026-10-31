@@ -1,15 +1,15 @@
 #!/usr/bin/env bun
 // Packs the plugin and renders the .plg from plugin/ugreen-nas-control.plg.tmpl + plugin/files.txt + CHANGELOG.md.
-//   bun plugin/tools/plg.ts pack   [--version X.Y] [--next --run N] [--out .build/dist] [--binary-dir .build/bin] [--binary name=path]
-//   bun plugin/tools/plg.ts render [--version X.Y] [--next --run N] [--out .build/dist] [--archive path] [--changes 20]
+//   bun plugin/tools/plg.ts pack   [--version X.Y.Z] [--next --run N] [--out .build/dist] [--binary-dir .build/bin] [--binary name=path]
+//   bun plugin/tools/plg.ts render [--version X.Y.Z] [--next --run N] [--out .build/dist] [--archive path] [--changes 20]
 //   bun plugin/tools/plg.ts check  [--binary-dir .build/bin]
-//   bun plugin/tools/plg.ts serve  [--version X.Y] [--port 8790] [--host IP]   test install from this machine (see below)
+//   bun plugin/tools/plg.ts serve  [--version X.Y.Z] [--port 8790] [--host IP]   test install from this machine (see below)
 // pack builds the web files (web/tools/build.ts) and writes ONE archive, <out>/ugreen-nas-control-<version>.tar.xz: every
 // file of plugin/files.txt at its install-relative path, binaries from .build/bin/. The archive is reproducible (sorted
 // entries, fixed mtime, uid/gid 0), so the same sources give the same SHA256.
 // render writes the .plg with the archive's hashes; the plugin manager downloads that one file from the release.
 // Stable: version X.Y or X.Y.Z (plugin/tools/version.ts), archive from the release v<X.Y>, installed as ugreen-nas-control.plg.
-// Next:   version X.(Y+1)-next.NNNNNN (X.Y = latest stable, NNNNNN = CI run, zero-padded), archive from the Pages folder /next/ (website.yml, only the current build),
+// Next:   version X.(Y+1).0-next.NNNNNN (X.Y.Z = latest stable, NNNNNN = CI run, zero-padded), archive from the Pages folder /next/ (website.yml, only the current build),
 //         installed as ugreen-nas-control.plg too (Unraid names the installed file after the URL's basename), so the channels switch in place;
 //         the pluginURL points at the Pages copy so the update check follows the channel.
 // Test:   --test (render, pack) or `serve`: version X.Y.Z.tYYYYMMDDHHMM, installed as ugreen-nas-control.plg from
@@ -192,7 +192,7 @@ function stamp(d = new Date()): string {
 
 async function options(a: ReturnType<typeof args>): Promise<{ opts: Opts; base: string }> {
     const base = a.val('version') ?? (await latestStable());
-    if (!VERSION_RE.test(base)) throw new Error(`version "${base}" must be X.Y or X.Y.Z (Unraid compares plugin versions as text)`);
+    if (!VERSION_RE.test(base)) throw new Error(`version "${base}" must be X.Y.Z, or X.Y for CHANGELOG headings up to 4.x (Unraid compares plugin versions as text)`);
     if ((a.has('release-url') || a.has('plugin-url')) && !a.has('test')) throw new Error('--release-url and --plugin-url are for --test renders only');
     if (a.has('test')) {
         if (a.has('next')) throw new Error('--test and --next exclude each other');

@@ -12,7 +12,7 @@ on:
   push:
     branches: [main, next]
   merge_group:
-  # Started by the release workflow on release/X.Y when no RELEASE_PR_TOKEN is set (PRs from GITHUB_TOKEN start no CI).
+  # Started by the release workflow on release/X.Y.Z when no RELEASE_PR_TOKEN is set (PRs from GITHUB_TOKEN start no CI).
   workflow_dispatch:
     inputs:
       e2e:
@@ -160,7 +160,7 @@ jobs:
             release/*) echo "Release branch: guard skipped."; exit 0 ;;
           esac
           if printf '%s\n' "$files" | grep -Eq '^[a-z_]+ (plugin/ugreen-nas-control\.plg|CHANGELOG\.md)$'; then
-            echo "::error::plugin/ugreen-nas-control.plg and CHANGELOG.md are only changed by the release workflow (branch release/X.Y). Remove them from this PR and add a fragment .changes/<slug>.md instead."
+            echo "::error::plugin/ugreen-nas-control.plg and CHANGELOG.md are only changed by the release workflow (branch release/X.Y.Z). Remove them from this PR and add a fragment .changes/<slug>.md instead."
             fail=1
           fi
           case ",${LABELS}," in
@@ -186,7 +186,7 @@ jobs:
       - run: nix develop .#lint -c actionlint
       - run: nix develop .#lint -c zizmor --offline .github/workflows
 
-  # The release PR (release/X.Y -> main): rebuild from the branch and compare with the draft release the
+  # The release PR (release/X.Y.Z -> main): rebuild from the branch and compare with the draft release the
   # Release workflow created. The archive is reproducible, so any difference is a bad or tampered build.
   release:
     if: >-

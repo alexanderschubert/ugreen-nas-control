@@ -3,22 +3,22 @@ name: 'Release (manual)'
 # Order of events (nothing public exists before the release PR is merged):
 # 1. workflow_dispatch on next (input version): folds .changes/ fragments, builds, renders the plg, attests the
 #    build output, pushes
-#    release/X.Y, creates the DRAFT release vX.Y (archive, plg, SHA256SUMS, SBOM; no tag yet) and opens the PR
-#    release/X.Y -> main. Checks job `release` (checks.yml) rebuilds from the branch and compares with the draft, so a bad
+#    release/X.Y.Z, creates the DRAFT release vX.Y.Z (archive, plg, SHA256SUMS, SBOM; no tag yet) and opens the PR
+#    release/X.Y.Z -> main. Checks job `release` (checks.yml) rebuilds from the branch and compares with the draft, so a bad
 #    build blocks the merge.
 # 2. Push to main that changes the plg version (the merge of that PR): verifies the draft's assets against the plg
-#    on main, deploys the Pages site (website.yml), then creates the tag vX.Y at the merge commit and
+#    on main, deploys the Pages site (website.yml), then creates the tag vX.Y.Z at the merge commit and
 #    publishes the draft. A failed deploy keeps the release a draft. Safe to re-run.
 # 3. Opens a main -> next PR (a fast-forward unless next moved on).
 #
 # PRs created with GITHUB_TOKEN do not start workflows. Optional secret RELEASE_PR_TOKEN (GitHub App installation
 # token or fine-grained PAT with contents + pull-requests write) opens the PRs, so CI starts by itself. Without it
-# `prepare` starts checks.yml on release/X.Y with workflow_dispatch (the checks attach to the same commit).
+# `prepare` starts checks.yml on release/X.Y.Z with workflow_dispatch (the checks attach to the same commit).
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: Release version, X.Y or X.Y.Z (for example 5.0.1; scheme in docs/releasing.md)
+        description: Release version, X.Y.Z (for example 5.0.1; scheme in docs/releasing.md)
         required: true
         type: string
   push:
@@ -50,7 +50,7 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           [ "$REF" = refs/heads/next ] || { echo "::error::Run this workflow on next."; exit 1; }
-          printf '%s' "$VERSION" | grep -Eq '^[1-9]\.[0-9](\.[0-9])?$' || { echo "::error::Version must be X.Y or X.Y.Z, one digit each."; exit 1; }
+          printf '%s' "$VERSION" | grep -Eq '^[1-9]\.[0-9]\.[0-9]$' || { echo "::error::Version must be X.Y.Z, one digit each."; exit 1; }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
