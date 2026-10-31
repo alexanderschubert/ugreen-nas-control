@@ -213,11 +213,15 @@ func (c *client) session(quit <-chan struct{}) error {
 
 	stop := make(chan struct{})
 	defer close(stop)
-	// The publisher is shutting down: say goodbye and close, so that the read below ends now and not after the
-	// keep-alive period.
+	// The publisher is shutting down: a clean DISCONNECT makes the broker drop the last will, so the retained offline
+	// message goes out first (same connection, in order), then goodbye and close, so that the read below ends now and
+	// not after the keep-alive period.
 	go func() {
 		select {
 		case <-quit:
+			if c.willTopic != "" {
+				_ = c.publish(c.willTopic, c.willPayload, true)
+			}
 			_ = c.write(packet(mqttDisconn, 0, nil))
 			_ = conn.Close()
 		case <-stop:

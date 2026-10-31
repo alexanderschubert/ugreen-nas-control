@@ -441,3 +441,67 @@ func TestCommanderNonceOnlyUsedWhenAccepted(t *testing.T) {
 		t.Fatalf("after finishing: %+v", res)
 	}
 }
+
+func TestMQTTClientStopPublishesOfflineBeforeDisconnect(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	got := make(chan []string, 1)
+	up := make(chan struct{})
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		r := bufio.NewReader(conn)
+		if _, _, _, err := readPacket(r); err != nil {
+			return
+		}
+		conn.Write([]byte{mqttConnack << 4, 2, 0, 0})
+		close(up)
+		var seen []string
+		for {
+			typ, _, body, err := readPacket(r)
+			if err != nil {
+				break
+			}
+			switch typ {
+			case mqttPublish:
+				tl := int(body[0])<<8 | int(body[1])
+				seen = append(seen, string(body[2+tl:]))
+			case mqttDisconn:
+				seen = append(seen, "DISCONNECT")
+			}
+			if typ == mqttDisconn {
+				break
+			}
+		}
+		got <- seen
+	}()
+	c := &client{addr: ln.Addr().String(), clientID: "id", willTopic: "t/availability", willPayload: []byte("offline")}
+	stop := make(chan struct{})
+	done := make(chan struct{})
+	go func() { c.run(stop); close(done) }()
+	select {
+	case <-up:
+	case <-time.After(5 * time.Second):
+		t.Fatal("no connection")
+	}
+	close(stop)
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("run kept the connection after stop")
+	}
+	select {
+	case seen := <-got:
+		if len(seen) != 2 || seen[0] != "offline" || seen[1] != "DISCONNECT" {
+			t.Errorf("broker saw %v, want [offline DISCONNECT]", seen)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("broker saw nothing")
+	}
+}
