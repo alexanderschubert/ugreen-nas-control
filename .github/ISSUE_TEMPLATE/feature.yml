@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest a change or an addition.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: Ideas start in [Discussions, Ideas](https://github.com/alexanderschubert/ugreen-nas-control/discussions/new?category=ideas). Use this form for a concrete change that was agreed there.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do that you cannot do now
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you change
+  - type: input
+    id: model
+    attributes:
+      label: NAS model
