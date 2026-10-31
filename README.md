@@ -183,6 +183,7 @@ Off by default. With `mqtt_enabled="1"` in `fan.cfg` the plugin starts a small p
 | `mqtt_interval` | seconds between two states, 2 to 60 (default 5) |
 | `mqtt_control` | `1` lets a display restart and shut down the NAS (off by default) |
 | `mqtt_control_updates` | `1` lets a display update plugins (off by default) |
+| `mqtt_control_containers` | `1` lets a display update Docker containers, one that Unraid lists as having a new image (off by default) |
 
 Topics below `ugreen-nas/<name>/`: `state` (temperatures, fans, bays, NVMe, network rates, alarms), `notifications` (Unraid's unread notifications), `updates` (updates Unraid already knows of), `availability` (`online`/`offline`), `cmd` (commands in) and `cmd_result` (answers out). The payloads are JSON.
 
